@@ -1,0 +1,194 @@
+---
+title: "Phospho Differential Expression Analysis Overview and Integration"
+author: "Functional Genomics Center Zurich"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    toc: true
+  bookdown::html_document2:
+    toc: true
+  pdf_document: 
+    toc: true
+header-includes: 
+  \usepackage{fancyhdr}
+  \pagestyle{fancy}
+  \fancyhead[CO,CE]{Phospho - Differential Expression Analysis}
+  \fancyfoot[CO,CE]{\textbf{FGCZ} - www.fgcz.ch - 2018}
+  \fancyfoot[LE,RO]{\thepage} 
+params:
+  grp: NULL
+vignette: >
+  %\VignetteIndexEntry{FGCZ Two-Group Analysis}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+bibliography: bibliography.bib
+editor_options: 
+  chunk_output_type: console
+always_allow_html: true
+---
+
+
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE
+)
+
+# for RMD report
+grp2 <- prolfquapp::make_DEA_config(PROJECTID = "ppp", ORDERID = "ooo", WORKUNITID = "WUxxx")
+
+# here is important that we have the combined table of both statistics and with MSstatsPTM adjustment for protein changes
+# > colnames(comboWithAdj)
+#  [1] "protein_Id"               "description.x"            "IDcolumn.x"               "CON.x"                    "REV.x"                    "modelName.x"             
+#  [7] "site"                     "contrast"                 "diff.x"                   "std.error.x"              "avgAbd.x"                 "statistic.x"             
+# [13] "df.x"                     "p.value.x"                "conf.low.x"               "conf.high.x"              "sigma.x"                  "FDR.x"                   
+# [19] "originalSite"             "peptideSequence"          "AccFromSite"              "startModSite"             "endModSite"               "NumPhos"                 
+# [25] "LocalizedNumPhos"         "PhosSites"                "SinglePhos_bool"          "AllLocalized"             "SinglePhosLocalized_bool" "AA"                      
+# [31] "posInProtein"             "SiteFoundInManyPeptides"  "SequenceWindows"          "protein_Id.y"             "IDcolumn.y"               "description.y"           
+# [37] "nrPeptides"               "CON.y"                    "REV.y"                    "modelName.y"              "diff.y"                   "std.error.y"             
+# [43] "avgAbd.y"                 "statistic.y"              "df.y"                     "p.value.y"                "conf.low.y"               "conf.high.y"             
+# [49] "sigma.y"                  "FDR.y"                    "MSstatsPTMadj_log2fc"     "MSstatsPTMadj_s2"         "MSstatsPTMadj_s2prot"     "MSstatsPTMadj_stderr"    
+# [55] "MSstatsPTMadj_numer"      "MSstatsPTMadj_denom"      "MSstatsPTMadj_df"         "MSstatsPTMadj_tval"       "MSstatsPTMadj_pVals"      "MSstatsPTMadj_FDR"     
+#comboWithAdj
+```
+
+# Overview
+This report is stored in the LIMS system [_bfabric_](https://fgcz-bfabric.uzh.ch) [@Trker2010] in
+__project__: `r grp2$Bfabric$projectID`, __order__: `r grp2$Bfabric$orderID`, `r if(!is.null(grp2$Bfabric$workunitID)){ "with the workunit name :" }`  `r grp2$Bfabric$workunitID`.
+
+In this analysis the enriched dataset (phospho) is analyzed first separately as well as the pre-enriched sample (total). After individual statistical analysis the two datasets are combined. For all phospho peptides where the protein is also quantified and analyzed in the pre-enriched sample the protein statistics are added to the phospho peptide statistics. 
+
+# Numbers
+
+```{r nummms, eval=TRUE, fig.height=5, fig.width=8}
+totS <- length(unique(comboWithAdj$originalSite))
+totLocS <- length(unique(comboWithAdj$originalSite[comboWithAdj$AllLocalized]))
+totSingS <- length(unique(comboWithAdj$originalSite[comboWithAdj$SinglePhosLocalized_bool]))
+totProt <- length(unique(comboWithAdj$protein_Id))
+numdf <- data.frame(
+  w = c("Total number of identified phospho peptides: ", "Total number of phospho peptides with fully localized phosphorylations (sites):", "Total number of singly phosphorylated and localized phospho peptides: ", "Total number of phospho proteins: "), 
+numbers = c(totS, totLocS, totSingS, totProt)
+)
+knitr::kable(numdf, caption = "Overview on the numbers")
+
+```
+
+
+```{r phosLoc, eval=TRUE, fig.height=5, fig.width=8}
+myd <- comboWithAdj |> select(originalSite, AllLocalized) |> distinct() 
+tab <- table(myd$AllLocalized, dnn = c("Phosphorylations fully localized"))
+knitr::kable(tab, caption = "Fully identified phospho sites vs phospho peptides")
+```
+
+
+# Phosphorilations
+
+(ref:numPhosPerPep) Number of identified and localized phosphorylation per peptide
+
+```{r numPhosPerPep, eval=TRUE, fig.cap="(ref:numPhosPerPep)", fig.height=5, fig.width=8}
+barplot(table(comboWithAdj$NumPhos[comboWithAdj$AllLocalized]), main = "Number of identified Phosphorylations per Peptide")
+```
+
+
+Next we are focusing on singly and fully localized phospho peptides to visualize the acceptor amino acid.
+
+(ref:accAA) Number of identified and localized singly phosphorylated amino acids
+
+```{r accAA, eval=TRUE, fig.cap="(ref:accAA)", fig.height=5, fig.width=8}
+barplot(table(comboWithAdj$AA[comboWithAdj$SinglePhosLocalized_bool]), main = "Phosphorylated AA residues")
+```
+
+
+Here we show the abundance ranges of the different acceptor sites.
+
+(ref:AAabundances) Abundance of fully localized phospho-sites with respect to the acceptor site
+
+```{r AAabundances, eval=TRUE, fig.cap="(ref:AAabundances)", fig.height=5, fig.width=8}
+p <- ggplot2::ggplot(na.omit(comboWithAdj[comboWithAdj$SinglePhosLocalized_bool,]), ggplot2::aes(x=AA, y=avgAbd.x)) + 
+  ggplot2::geom_boxplot()
+p
+```
+
+
+If one peptide posesses more than one potential phospho acceptor site it is often difficult to really localize the phosphorilation as only very few fragment ions allow to make this decision. Often the identification scores are only marginally different if the phospho group is located on one or the other amino acid. Therefore there is a difference between a phospho peptide and and phospho site that is localized. In this dataset we have cases where not all phosphorylations are fully localized.
+
+# Joining Phospho peptides with Non-enriched Proteome
+
+
+```{r foundInGlobal, eval=TRUE}
+totProtFromSites <- comboWithAdj |> select(protein_Id, protein_Id.y) |> distinct() |> nrow()
+totProtWGlobalProt <-  comboWithAdj |> select(protein_Id, protein_Id.y) |> distinct() |> filter(!is.na(protein_Id.y)) |> nrow()
+totPepsWithGlobal <-  comboWithAdj |> select(protein_Id, originalSite, protein_Id.y) |> distinct() |> filter(!is.na(protein_Id.y)) |> nrow()
+percFoundInGlobal <- round(totProtWGlobalProt/totProtFromSites *100, 2)
+```
+
+When phospho peptides enrichment is done, usually also proteins are identified which are not identified in the proteome  measurement. Therefore, in some cases the information on the proteome level is missing. Here for `r percFoundInGlobal`% of all identified phospho proteins (`r totProtFromSites`) the protein is also quantified in the global proteome measurements.
+For `r totPepsWithGlobal` phospho peptides mapping to a total of `r totProtWGlobalProt` proteins we can expand and combine the tables. 
+
+
+# Integration with Non-enriched Proteome
+
+Next we do adapt the individual statistics to the changes of the proteins in the same way like described for MSstatsPTM (reference here). We refer to this as *MSstatsPTM adjustment*.
+In brief, the difference of the phospho peptide (phospho site) is adjusted by the difference of the protein change. By doing so, the difference of the proteins (if identified) are subtracted from the phospho peptides differences and the degrees of freedom as well as the T-statistics are further used to calculate the adjusted p-value for the adjusted difference.
+
+(ref:volcanoplot)  Volcano plot showing $-\log_{10}$ transformed FDR as function of the protein level adjusted difference between groups. The red line indicates the $-log_{10}(FDR)$ of FDR = `r grp2$pop$FDRthreshold`, while the green lines represent the the difference of minus and plus `r grp2$pop$Diffthreshold`. With orange dots differences and FDRs estimated using missing value imputation are shown.
+
+```{r tableAllProt, fig.cap="Differential expression analysis results of all phospho peptides (showing MSstatsPTM adjusted log2FCs and FDR)"}
+bb <- comboWithAdj |> dplyr::select(
+  all_of(c("site",
+           "originalSite",
+           "protein_Id",
+           "contrast",
+           "modelName.x",
+           "MSstatsPTMadj_log2fc",
+           "MSstatsPTMadj_FDR")))
+bb <- crosstalk::SharedData$new(bb, ~protein_Id, group = "BB")
+
+DT::datatable(bb, filter = "bottom",
+  extensions = "Scroller",
+  style = "auto",
+  class = "compact",
+  options = list(deferRender = TRUE,
+                 scrollY = 300,
+                 scrollX = 400,
+                 scroller = TRUE) ) |>
+  DT::formatRound(columns = c('MSstatsPTMadj_log2fc', 'MSstatsPTMadj_FDR'), digits = 3)
+
+```
+
+
+
+```{r volcanoplot, fig.cap = "(ref:volcanoplot)", fig.width=9, fig.height=7, include = TRUE, eval = TRUE}
+datax <- comboWithAdj |> dplyr::select(
+  all_of(c("site",
+           "originalSite",
+           "protein_Id",
+           "contrast",
+           "modelName.x",
+           "MSstatsPTMadj_log2fc",
+           "MSstatsPTMadj_FDR" )))
+palette <- c("black","orange")
+palette <- setNames(palette, c("Linear_Model_moderated", "Imputed_Mean_moderated"))  
+xd <- prolfqua::volcano_plotly( 
+  datax ,
+  proteinID = "originalSite",
+  effect = "MSstatsPTMadj_log2fc",
+  significance = "MSstatsPTMadj_FDR",
+  contrast = "contrast",
+  color = "modelName.x",
+  palette = palette,
+  xintercept =  c(-grp2$pop$Diffthreshold,grp2$pop$Diffthreshold),
+  yintercept = grp2$pop$FDRthreshold,
+  title_size = 14,
+  group = "BB")
+
+xd <- lapply(xd, plotly::highlight , off = "plotly_doubleclick")
+nrow <- ceiling(length(xd) / 4)
+plotly::subplot(xd, shareX = TRUE, shareY = TRUE, nrows = nrow)
+
+```
+
+
