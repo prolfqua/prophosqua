@@ -109,7 +109,7 @@ logger::log_info("run analysis")
 grp <- prolfquapp::generate_DEA_reports2(lfqdata, GRP2,
                                          xd$protein_annotation, annotation$contrasts)
 
-logger::log_info("write results and html reports")
+logger::log_info("write results and html reports") # keep in mind, results are written in a different place than before
 prolfquapp::write_DEA_all(grp[[1]], names(grp)[1], GRP2$zipdir , boxplot
                           = FALSE, markdown = "_Grp2Analysis_V2.Rmd")
 
