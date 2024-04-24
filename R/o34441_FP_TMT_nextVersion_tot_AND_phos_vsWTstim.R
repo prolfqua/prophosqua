@@ -49,6 +49,7 @@ dsf = file.path(path,"o34441_FPguiTMTphospho__Dataset_TotalNEnriched_better.tsv"
 # @jg: add raw.file to annotation
 #dsf <- readr::read_csv(dsf) # in BF it is csv
 
+# make minimal dsf
 dsf <- readr::read_tsv(dsf)
 dsf$condition <- NULL
 dsf$genotype <- NULL
@@ -301,20 +302,26 @@ GRP2_phos$pop$contrasts <- annotation$contrasts
 logger::log_info("GENERATING DEA REPORTS")
 logger::log_info("starting modelling")
 
-#grp <- prolfquapp::generate_DEA_reports(lfqdata, GRP2_phos, protAnnot)
-# grp <- prolfquapp::generate_DEA_reports(lfqdata, GRP2_phos, protAnnot)
-
 # fix for old grps
 GRP2_phos$pop$aggregate
 GRP2_phos$processing_options$transform <- "robscale"
 GRP2_phos$pop$transform <- GRP2_phos$processing_options$transform
-GRP2_phos$pop$DiffThreshold <- GRP2_phos$processing_options$diff_threshold
-GRP2_phos$pop$fdrTreshold <- GRP2_phos$processing_options$FDR_threshold
+GRP2_phos$pop$Diffthreshold <- GRP2_phos$processing_options$diff_threshold
+GRP2_phos$pop$FDRthreshold <- GRP2_phos$processing_options$FDR_threshold
 
-grp <- prolfquapp::generate_DEA_reports2(lfqdata, GRP2_phos, protAnnot, GRP2_phos$pop$contrasts)
+
+
+# something is  not processing properly
+#grp <- prolfquapp::generate_DEA_reports2(lfqdata, GRP2, xd$protein_annotation, annotation$contrasts)
+grp_phos <- prolfquapp::generate_DEA_reports2(lfqdata, GRP2_phos, prot_annot, GRP2_phos$pop$contrasts)
+
+# all fine?
+grp_phos$Groups_vs_Controls$RES$lfqData$to_wide()
+grp_phos$Groups_vs_Controls$RES$contrastsData_signif
+myResPlotter <- grp_phos$Groups_vs_Controls$RES$contrMerged$get_Plotter()
+myResPlotter$volcano()
 
 logger::log_info("DONE WITH DEA REPORTS")
-
 # result dir
 # now we prefer it to have it directly in the workingDir -> specified before for enriched
 dir.create(GRP2_phos$zipdir)
@@ -322,16 +329,23 @@ dir.create(GRP2_phos$zipdir)
 # need helper functions to properly write reports not on protein but peptide level
 source("FP_phosphoHelperFunctions_v3_202310.R")
 
-
+#GRP2_phos$pop$DiffThreshold
+#grp$Groups_vs_Controls$pop$DiffThreshold
 # write DEAs
-for (i in seq_along(grp)) {
+# mydebug
+#params = list(grp = grp_phos[[1]])
+# missing before render
+#grp2$pop$LocProbThresh <- 0.75
+
+#
+for (i in seq_along(grp_phos)) {
   #prolfquapp::write_DEA_all(grp[[i]], names(grp)[i], GRP2$zipdir, boxplot = FALSE)
-  write_phosphoDEA_all(grp[[i]], names(grp)[i], GRP2$zipdir, boxplot = FALSE)
+  write_phosphoDEA_all(grp_phos[[i]], names(grp_phos)[i], GRP2_phos$zipdir, boxplot = FALSE)
 }
 
-
-(imageFN <- paste(fgczProject, descri, "enriched",".RData", sep="_"))
-save.image(imageFN)
+# Save RData from enriched and total (only lfqdata is overwritten?) # keep lfqdata, grp, adata separate for phos and total!
+#(imageFN <- paste(fgczProject, descri, "enriched",".RData", sep="_"))
+#save.image(imageFN)
 
 
 
