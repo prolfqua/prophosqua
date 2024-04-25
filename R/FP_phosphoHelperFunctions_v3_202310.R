@@ -1,3 +1,20 @@
+#' read AA fasta file, identify decoy entries and return fw fasta object only
+#' @param FastaFileName filename of fasta file
+#' @param decoyPattern pattern for decoy accessions
+#' @return fastaObject without decoy sequences
+#' @export
+#' @importFrom stringr, seqinR
+#'
+readDecoyFastaNreturnFwOnly <- function(FastaFileName, decoyPattern = "REV_") {
+  myFasta_decoy <- seqinr::read.fasta(file = FastaFileName, seqtype = "AA", as.string = TRUE)
+  seqNames <- getName(myFasta_decoy)
+  idx_rev <- which(str_count(string = seqNames, pattern = decoyPattern)>0)
+  nodeoySeq <- myFasta_decoy[-idx_rev]
+  return(nodeoySeq)
+}
+
+
+
 #' prepare longformat from FragPipe Site Centric Phospho output called STY_79.9663.tsv
 #' @param poi protein of interest from FP-site centric output
 #' @param soi site of interest (parsed from index in FP-site centric output)
@@ -7,7 +24,6 @@
 #' @export
 #' @importFrom stringr, seqinR
 #'
-#' myFasta <- seqinr::read.fasta("../fgcz_9606_1spg_20230330.fasta", seqtype = "AA", as.string = TRUE) 
 getSequenceWindowForLogo <- function(poi, soi, fastaObject = myFasta, seqWindowOffset = 15) {
   # find poi in fasta -> here we do not handle cases where it might appear multiple times in the full accession
   f_id <- which(str_count(string = getName(fastaObject), pattern = poi)>0)
@@ -38,14 +54,14 @@ getSequenceWindowForLogo <- function(poi, soi, fastaObject = myFasta, seqWindowO
 #' @export
 #' @importFrom tidyr::pivot_longer, dplyr::mutate, dplyr::left_join, dplyr::select, dplyr::filter
 #'
-tidy_FragPipe_phospho_STYfile <- function (styphosphopeptideTable, as_list = FALSE, 
-                                           locPnames = c(" Localization Probability"), 
+tidy_FragPipe_phospho_STYfile <- function (styphosphopeptideTable, as_list = FALSE,
+                                           locPnames = c(" Localization Probability"),
                                            locProbThreshold = 0.75,
-                                           protIDcol = "Index", intnames = c(" Intensity"), 
-                                           maxlfqnames = c("MaxLFQ Intensity")) 
+                                           protIDcol = "Index", intnames = c(" Intensity"),
+                                           maxlfqnames = c("MaxLFQ Intensity"))
 {
   if (is.character(styphosphopeptideTable) && file.exists(styphosphopeptideTable)) {
-    Cprotein <- as_tibble(read.csv(styphosphopeptideTable, header = TRUE, 
+    Cprotein <- as_tibble(read.csv(styphosphopeptideTable, header = TRUE,
                                    sep = "\t", stringsAsFactors = FALSE, check.names = FALSE))
   }
   else if ("tbl_df" %in% class(styphosphopeptideTable)) {
@@ -54,27 +70,27 @@ tidy_FragPipe_phospho_STYfile <- function (styphosphopeptideTable, as_list = FAL
   else {
     stop(class(styphosphopeptideTable), " not supported.")
   }
-  #cnam <- gsub("Total Razor ", "Total ", gsub("Unique Razor ", 
-  #                                            "Unique ", gsub(" Intensity$", " Razor Intensity", gsub(" Spectral Count$", 
+  #cnam <- gsub("Total Razor ", "Total ", gsub("Unique Razor ",
+  #                                            "Unique ", gsub(" Intensity$", " Razor Intensity", gsub(" Spectral Count$",
   #                                                                                                    " Razor Spectral Count", colnames(Cprotein)))))
-  
-  
+
+
   # replace "MaxLFQ Intensity" ->"MaxLFQIntensity" for parsing
   maxlfqnames <- gsub(x = maxlfqnames, pattern = "MaxLFQ Intensity", replacement = "MaxLFQIntensity")
   cnam <- gsub(x = colnames(Cprotein), pattern = "MaxLFQ Intensity", replacement = "MaxLFQIntensity")
   colnames(Cprotein) <- cnam
-  
+
   # Filter here for Best Localization Probability and then leave it away completely
   Cprotein <- Cprotein |> dplyr::filter(Cprotein$`Best Localization Probability` > locProbThreshold)
   cnam <- cnam[1:which(cnam == "Best Localization Probability")]
   message("annotation columns : ", paste(cnam, collapse = "\n"))
   annot <- dplyr::select(Cprotein, all_of(cnam))
-  
+
   # jg: not clear why witold did it this way, issue with Best Loc Prob!
-  extractDataLong <- function(Cprotein, what = "Intensity", 
+  extractDataLong <- function(Cprotein, what = "Intensity",
                               butNot = NULL) {
     cols <- colnames(Cprotein)
-    cols <- setdiff(grep(paste0(what, "$"), cols, value = TRUE), 
+    cols <- setdiff(grep(paste0(what, "$"), cols, value = TRUE),
                     if (is.null(butNot)) {
                       NULL
                     }
@@ -82,10 +98,10 @@ tidy_FragPipe_phospho_STYfile <- function (styphosphopeptideTable, as_list = FAL
                       grep(butNot, cols, value = TRUE)
                     })
     gg <- dplyr::select(Cprotein, all_of(protIDcol), all_of(cols))
-    gg <- tidyr::pivot_longer(gg, cols = dplyr::ends_with(what), 
+    gg <- tidyr::pivot_longer(gg, cols = dplyr::ends_with(what),
                               names_to = "raw.file", values_to = what)
-    # gg <- dplyr::mutate(gg, raw.file = gsub(paste0(".", what, 
-    gg <- dplyr::mutate(gg, raw.file = gsub(paste0("", what, 
+    # gg <- dplyr::mutate(gg, raw.file = gsub(paste0(".", what,
+    gg <- dplyr::mutate(gg, raw.file = gsub(paste0("", what,
                                                    "$"), "", .data$raw.file))
     gg
   }
@@ -93,7 +109,7 @@ tidy_FragPipe_phospho_STYfile <- function (styphosphopeptideTable, as_list = FAL
   names(res) <- c(intnames)
   for (i in seq_along(c(intnames))) {
     message("DD: ", c(intnames)[i])
-    res[[c(intnames)[i]]] <- extractDataLong(Cprotein, 
+    res[[c(intnames)[i]]] <- extractDataLong(Cprotein,
                                                        what = c(intnames)[i], butNot = "maxlfq")
   }
   if (sum(grepl(".MaxLFQ.", colnames(Cprotein))) > 0) {
@@ -101,7 +117,7 @@ tidy_FragPipe_phospho_STYfile <- function (styphosphopeptideTable, as_list = FAL
     names(res_maxlfq) <- maxlfqnames
     for (i in seq_along(maxlfqnames)) {
       message("DD: ", maxlfqnames[i])
-      res_maxlfq[[maxlfqnames[i]]] <- extractDataLong(Cprotein, 
+      res_maxlfq[[maxlfqnames[i]]] <- extractDataLong(Cprotein,
                                                       what = maxlfqnames[i], butNot = NULL)
     }
     res <- c(res, res_maxlfq)
@@ -158,25 +174,25 @@ tidy_FragPipe_phospho_STYfile <- function (styphosphopeptideTable, as_list = FAL
   } else {
     segments(-100,0,-100, globalProtFC, col=protColor, lwd=protWtdh)
   }
-      
+
   # set the stage for the protein
   segments(0,0,maxX,0, col="black", lwd=1.5)
   points(-protNCoffset,0,pch="N")
   points(maxX+protNCoffset,0, pch="C")
-  
+
   # plot all peptides
   #make modAA as factor
   POI_tablePeptide$modAA <- as.factor(POI_tablePeptide$AA)
-  
+
   #make modelName a factor for lty -> strange error
   POI_tablePeptide$modelName.x <- as.factor(POI_tablePeptide$modelName.x)
-    
+
   for (i in 1:length(POI_tablePeptide$PositionsINproteins)) {
     # plot lines
     segments(POI_tablePeptide$PositionsINproteins[i]*scaleX, 0,
              POI_tablePeptide$PositionsINproteins[i]*scaleX, POI_tablePeptide$diff.x[i],
              col=as.numeric(POI_tablePeptide$modAA[i]), lwd=1, lty=abs(as.numeric(POI_tablePeptide$modelName.x[i])-2)+1) # quite a hack for lty to get 2 = 1
-    
+
     # decoration!
     # site is stringent significant
     if (POI_tablePeptide$FDR.x[i] < fdrStringentThreshold) {
@@ -195,7 +211,7 @@ tidy_FragPipe_phospho_STYfile <- function (styphosphopeptideTable, as_list = FAL
                                                   scaleX, POI_tablePeptide$diff.x[i]+pepSigStarOffset, pch="+",
                                                 cex=pepSigStarSize,
                                                 col=as.numeric(POI_tablePeptide$modAA[i]))
-      
+
       if(POI_tablePeptide$diff.x[i] < 0) points(POI_tablePeptide$PositionsINproteins[i] *
                                                   scaleX, POI_tablePeptide$diff.x[i]-pepSigStarOffset, pch="+",
                                                 cex=pepSigStarSize,
@@ -206,7 +222,7 @@ tidy_FragPipe_phospho_STYfile <- function (styphosphopeptideTable, as_list = FAL
                                                   scaleX, POI_tablePeptide$diff.x[i]+pepSigStarOffset, pch="x",
                                                 cex=pepSigStarSize/3,
                                                 col=as.numeric(POI_tablePeptide$modAA[i]))
-      
+
       if(POI_tablePeptide$diff.x[i] < 0) points(POI_tablePeptide$PositionsINproteins[i] *
                                                   scaleX, POI_tablePeptide$diff.x[i]-pepSigStarOffset, pch="x",
                                                 cex=pepSigStarSize/3,
@@ -258,7 +274,7 @@ generateNtoCProteinPDFsWithPhosphoPeptides_FragPipe <- function(globalNphosphoCo
       POI_protFC <- mean(POI_matrix$diff.y)
       MyProteinName_poi <- unique(POI_matrix$proteinid)
     }
- 
+
         # Do the plot
     # split matrix in protein part and peptide part
     idx_split <- grep(x = colnames(POI_matrix), pattern = "description.y")
@@ -301,7 +317,7 @@ generateNtoCProteinPDFsWithPhosphoPeptides_FragPipeTMT <- function(globalNphosph
       POI_protFC <- mean(POI_matrix$diff.y)
       MyProteinName_poi <- unique(POI_matrix$protein_Id)
     }
-    
+
     # Do the plot
     # split matrix in protein part and peptide part
     idx_split <- grep(x = colnames(POI_matrix), pattern = "description.y")
@@ -325,7 +341,7 @@ generateNtoCProteinPDFsWithPhosphoPeptides_FragPipeTMT <- function(globalNphosph
 #' @export
 #' @importFrom dplyr, prolfquapp
 #'
-write_phosphoDEA_all <- function (grp2, name, ZIPDIR, boxplot = TRUE) 
+write_phosphoDEA_all <- function (grp2, name, ZIPDIR, boxplot = TRUE)
 {
   fname <- paste0("DE_", name)
   qcname <- paste0("QC_", name)
@@ -333,16 +349,16 @@ write_phosphoDEA_all <- function (grp2, name, ZIPDIR, boxplot = TRUE)
   logger::log_info("writing into : ", outpath, " <<<<")
   # write result files ORA, GSEA, xlsx
   prolfquapp::write_DEA(grp2, outpath = outpath, xlsxname = fname)
-  
+
   prolfquapp::render_DEA(grp2, outpath = outpath, htmlname = fname, markdown = "_Grp2Analysis_Phospho.Rmd")
-  prolfquapp::render_DEA(grp2, outpath = outpath, htmlname = qcname, 
+  prolfquapp::render_DEA(grp2, outpath = outpath, htmlname = qcname,
                          markdown = "_DiffExpQC_Phospho.Rmd")
   bb <- grp2$RES$transformedlfqData
-  grsizes <- dplyr::pull(dplyr::summarize(dplyr::group_by(bb$factors(), 
-                                                          dplyr::across(bb$config$table$factor_keys_depth())), 
+  grsizes <- dplyr::pull(dplyr::summarize(dplyr::group_by(bb$factors(),
+                                                          dplyr::across(bb$config$table$factor_keys_depth())),
                                           n = n()), n)
   if (boxplot) {
-    if (sum(!grepl("^control", bb$config$table$factor_keys(), 
+    if (sum(!grepl("^control", bb$config$table$factor_keys(),
                    ignore.case = TRUE)) > 1 & all(grsizes == 1)) {
       prolfquapp::writeLinesPaired(bb, outpath)
     }
@@ -362,19 +378,19 @@ write_phosphoDEA_all <- function (grp2, name, ZIPDIR, boxplot = TRUE)
 #' @export resultCombo same dataframe as input with additional columns for MSstatsPTM like adjustment
 #' @importFrom dplyr, prolfquapp
 #'
-doMSstatsLikeSiteNormalizationUsingProteinStatsOnComboObject <- function (mycombo) 
+doMSstatsLikeSiteNormalizationUsingProteinStatsOnComboObject <- function (mycombo)
 {
   resultCombo <- data.frame(stringsAsFactors = TRUE)
   for (i in 1:length(unique(mycombo$contrast))) {
     OneC <- mycombo[mycombo$contrast == unique(mycombo$contrast)[i],]
     OneC$MSstatsPTMadj_log2fc <- OneC$diff.x - OneC$diff.y
-    OneC$MSstatsPTMadj_s2 <- OneC$std.error.x^2 
+    OneC$MSstatsPTMadj_s2 <- OneC$std.error.x^2
     OneC$MSstatsPTMadj_s2prot <- OneC$std.error.y^2
     OneC$MSstatsPTMadj_stderr <- sqrt(OneC$MSstatsPTMadj_s2 + OneC$MSstatsPTMadj_s2prot)
     OneC$MSstatsPTMadj_numer <- (OneC$MSstatsPTMadj_s2 + OneC$MSstatsPTMadj_s2prot)^2
     OneC$MSstatsPTMadj_denom <- (OneC$MSstatsPTMadj_s2^2 / OneC$df.x + OneC$MSstatsPTMadj_s2prot^2 / OneC$df.y)
     OneC$MSstatsPTMadj_df <- OneC$MSstatsPTMadj_numer / OneC$MSstatsPTMadj_denom
-    OneC$MSstatsPTMadj_tval <- OneC$MSstatsPTMadj_log2fc / OneC$MSstatsPTMadj_stderr 
+    OneC$MSstatsPTMadj_tval <- OneC$MSstatsPTMadj_log2fc / OneC$MSstatsPTMadj_stderr
     OneC$MSstatsPTMadj_pVals <- 2 * stats::pt(abs(OneC$MSstatsPTMadj_tval), OneC$MSstatsPTMadj_df, lower.tail = FALSE)
     #adjust pV for multiple testing
     OneC$MSstatsPTMadj_FDR <- p.adjust(OneC$MSstatsPTMadj_pVals)
@@ -399,7 +415,7 @@ write_DEA_all <- function(grp2, name, ZIPDIR, boxplot = TRUE){
   prolfquapp::write_DEA(grp2, outpath = outpath, xlsxname = fname)
   prolfquapp::render_DEA(grp2, outpath = outpath, htmlname = fname)
   prolfquapp::render_DEA(grp2, outpath = outpath, htmlname = qcname, markdown = "_DiffExpQC.Rmd")
-  
+
   bb <- grp2$RES$transformedlfqData
   grsizes <- bb$factors() |>
     dplyr::group_by(dplyr::across(bb$config$table$factor_keys_depth())) |>
@@ -437,10 +453,10 @@ write_DEA <- function(GRP2, outpath, xlsxname = "AnalysisResults"){
     formula = GRP2$RES$formula,
     contrast_name = names(GRP2$pop$Contrasts),
     contrast = GRP2$pop$Contrasts)
-  
+
   wideraw <- dplyr::inner_join(ra$row_annot, rd$to_wide()$data, multiple = "all")
   widetr <- dplyr::inner_join(ra$row_annot , tr$to_wide()$data, multiple = "all")
-  
+
   ctr <- dplyr::inner_join(ra$row_annot , GRP2$RES$contrMerged$get_contrasts(), multiple = "all")
   resultList <- list()
   resultList$annotation = tr$to_wide()$annot
@@ -451,30 +467,30 @@ write_DEA <- function(GRP2, outpath, xlsxname = "AnalysisResults"){
   resultList$formula = formula
   resultList$summary = GRP2$RES$Summary
   resultList$missing_information = prolfqua::UpSet_interaction_missing_stats(rd$data, rd$config, tr = 1)$data
-  
+
   # add protein statistics
   st <- GRP2$RES$transformedlfqData$get_Stats()
   resultList$protein_variances <- st$stats()
-  
+
   bkg <- GRP2$RES$rowAnnot$row_annot$IDcolumn
   ff <- file.path(outpath ,"ORA_background.txt")
   write.table(bkg,file = ff, col.names = FALSE,
               row.names = FALSE, quote = FALSE)
-  
+
   fg <- GRP2$RES$contrastsData_signif
   ora_sig <- split(fg$IDcolumn, fg$contrast)
-  
+
   for (i in names(ora_sig)) {
     ff <- file.path(outpath, paste0("Ora_",i,".txt" ))
     logger::log_info("Writing File ", ff)
     write.table(ora_sig[[i]],file = ff, col.names = FALSE,
                 row.names = FALSE, quote = FALSE)
   }
-  
+
   fg <- GRP2$RES$contrastsData
   gsea <- fg |> dplyr::select( contrast, IDcolumn, statistic) |> dplyr::arrange( statistic )
   gsea <- split(dplyr::select( gsea, IDcolumn, statistic ), gsea$contrast)
-  
+
   for (i in names(gsea)) {
     ff <- file.path(outpath, paste0("GSEA_",i,".rnk" ))
     logger::log_info("Writing File ", ff)
@@ -502,7 +518,7 @@ render_DEA <- function(GRP2,
                        word = FALSE,
                        markdown = "_Grp2Analysis.Rmd"){
   dir.create(outpath)
-  
+
   rmarkdown::render(
     markdown,
     params = list(grp = GRP2) ,
@@ -529,9 +545,9 @@ render_DEA <- function(GRP2,
   # issue: we do have some not localized sites in, filter these but keep original
   POI_pepOriginal <- POI_tablePeptide
   POI_tablePeptide <- POI_tablePeptide[POI_tablePeptide$SinglePhosLocalized_bool,]
-  
+
   # handle cases wher we only have non localized peptides
-  
+
   myYaxisLimiter <- max(ceiling(max(abs(POI_tablePeptide$diff.x))), ceiling(max(abs(POI_tableProtein$diff.y))), na.rm = TRUE)
   miny <- -myYaxisLimiter
   maxy <- myYaxisLimiter
@@ -542,13 +558,13 @@ render_DEA <- function(GRP2,
   }
   # careful here we do not want positions that are parsed from multiply phos
   scaleX <- 1/max(Phos_PositionsInProteins, na.rm = TRUE)*1200
-  
+
   # handle if no peptide is localized
   if (nrow(POI_tablePeptide) != 0)  POI_tablePeptide$PositionsINproteins <- Phos_PositionsInProteins
-  
+
   phosphoPlotTitle <- paste("Prot: ",protName,"\n Peptides from: ", POI_pepOriginal$protein_Id[1],"# phospho = ",
                             length(POI_pepOriginal$diff.x), sep=" ")
-  
+
   # Do the plot start with white
   plot(c(-100,0,1400, 0,0), c(globalProtFC,0,0,miny, maxy), pch=".", col="white", main=phosphoPlotTitle, ylab="log2FC",
        xlab="Full length protein", xaxt='n')
@@ -560,20 +576,20 @@ render_DEA <- function(GRP2,
   } else {
     segments(-100,0,-100, globalProtFC, col=protColor, lwd=protWtdh)
   }
-  
+
   # set the stage for the protein
   segments(0,0,maxX,0, col="black", lwd=1.5)
   points(-protNCoffset,0,pch="N")
   points(maxX+protNCoffset,0, pch="C")
-  
+
   # plot all peptides if we have something in peptide table
   if (nrow(POI_tablePeptide) != 0) {
     #make modAA as factor
     POI_tablePeptide$modAA <- as.factor(POI_tablePeptide$AA)
-    
+
     #make modelName a factor for lty -> strange error
     POI_tablePeptide$modelName.x <- as.factor(POI_tablePeptide$modelName.x)
-    
+
     for (i in 1:length(POI_tablePeptide$PositionsINproteins)) {
       if (!is.na(POI_tablePeptide$PositionsINproteins[i])) {
         # plot lines
@@ -588,8 +604,8 @@ render_DEA <- function(GRP2,
                    col=as.numeric(POI_tablePeptide$modAA[i]), lwd=1, lty=abs(as.numeric(POI_tablePeptide$modelName.x[i])-2)+1) # quite a hack for lty to get 2 = 1
         }
       }
-      
-      
+
+
       # decoration!
       # site is stringent significant
       if (POI_tablePeptide$FDR.x[i] < fdrStringentThreshold && !is.na(POI_tablePeptide$modAA[i])) {
@@ -597,7 +613,7 @@ render_DEA <- function(GRP2,
                                                     scaleX, POI_tablePeptide$diff.x[i]+pepSigStarOffset, pch="*",
                                                   cex=pepSigStarSize,
                                                   col=as.numeric(POI_tablePeptide$modAA[i]))
-        
+
         if(POI_tablePeptide$diff.x[i] < 0) points(POI_tablePeptide$PositionsINproteins[i] *
                                                     scaleX, POI_tablePeptide$diff.x[i]-pepSigStarOffset, pch="*",
                                                   cex=pepSigStarSize,
@@ -608,7 +624,7 @@ render_DEA <- function(GRP2,
                                                     scaleX, POI_tablePeptide$diff.x[i]+pepSigStarOffset, pch="+",
                                                   cex=pepSigStarSize,
                                                   col=as.numeric(POI_tablePeptide$modAA[i]))
-        
+
         if(POI_tablePeptide$diff.x[i] < 0) points(POI_tablePeptide$PositionsINproteins[i] *
                                                     scaleX, POI_tablePeptide$diff.x[i]-pepSigStarOffset, pch="+",
                                                   cex=pepSigStarSize,
@@ -619,7 +635,7 @@ render_DEA <- function(GRP2,
                                                     scaleX, POI_tablePeptide$diff.x[i]+pepSigStarOffset, pch="x",
                                                   cex=pepSigStarSize/3,
                                                   col=as.numeric(POI_tablePeptide$modAA[i]))
-        
+
         if(POI_tablePeptide$diff.x[i] < 0) points(POI_tablePeptide$PositionsINproteins[i] *
                                                     scaleX, POI_tablePeptide$diff.x[i]-pepSigStarOffset, pch="x",
                                                   cex=pepSigStarSize/3,
@@ -629,7 +645,7 @@ render_DEA <- function(GRP2,
                                                    cex=pepSigStarSize/3,
                                                    col=as.numeric(POI_tablePeptide$modAA[i]))
       }
-      
+
     }
   }
 
@@ -643,9 +659,8 @@ render_DEA <- function(GRP2,
     legend("topright", legend = c("dashed line -> imputed model", "below stringent FDR threshold", "below relaxed FDR threshold", "above FDR threshold"),
            col = c("orange", "black", "black", "black"), pch=c(" ","*", "+", "x"), cex = 0.7, text.col = c("orange", "black", "black", "black"))
   }
-  
+
   abline(h=greyLineLog2Threshold, col="grey", lty=2)
   abline(h=-greyLineLog2Threshold, col="grey", lty=2)
 }
 
-       
