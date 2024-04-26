@@ -63,17 +63,16 @@ dsf$channel <- dsf$sample
 
 # introduce a check? if all is there and correct?
 
-# now annotation contains 3 lists
-# full annotation table
+
 # all contrasts based on CONTROL column
-# atable for config
 annotation <- read_annotation(dsf, prefix = "Group_")
-# fix channel w/ sample names for joining with psm
 
 path = "../o34441_FP_tsvFiles/philosopher_prot/"
 dir(path)
+# get psm and fasta file
 files <- get_FP_PSM_files(path = path)
 
+# do config and preprocessing from psm for total
 xd <- prolfquapp::preprocess_FP_PSM(quant_data = files$data,
                                     fasta_file = files$fasta,
                                     annotation = annotation,
