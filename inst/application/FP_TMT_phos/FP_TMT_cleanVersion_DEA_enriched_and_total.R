@@ -79,6 +79,7 @@ xd <- prolfquapp::preprocess_FP_PSM(quant_data = files$data,
                                     column_before_quants = "Mapped Proteins")
 
 
+#
 lfqdata <- xd$lfqdata
 lfqdata$hierarchy_counts()
 lfqdata$config$table$hierarchyDepth <- 3
@@ -109,17 +110,17 @@ lfqdata$hierarchy_counts()
 
 
 logger::log_info("run analysis")
-grp <- prolfquapp::generate_DEA_reports2(lfqdata, GRP2,
+grp_total <- prolfquapp::generate_DEA_reports2(lfqdata, GRP2,
                                          xd$protein_annotation, annotation$contrasts)
 
 logger::log_info("write results and html reports")
-prolfquapp::write_DEA_all(grp[[1]], names(grp)[1], GRP2$zipdir , boxplot
+prolfquapp::write_DEA_all(grp_total[[1]], names(grp_total)[1], GRP2$zipdir , boxplot
                           = FALSE, markdown = "_Grp2Analysis_V2.Rmd")
 
 logger::log_info("write results and summarized experiment")
-SE <- prolfquapp::make_SummarizedExperiment(grp[[1]])
+SE <- prolfquapp::make_SummarizedExperiment(grp_total[[1]])
 saveRDS(SE, file = file.path(GRP2$zipdir,
-                             paste0("Results_DEA_WU", grp[[1]]$project_spec$workunitID) ,
+                             paste0("Results_DEA_WU", grp_total[[1]]$project_spec$workunitID) ,
                              paste0("SummarizedExperiment",".rds") ))
 
 # write out experimental design (annotation$annot)
