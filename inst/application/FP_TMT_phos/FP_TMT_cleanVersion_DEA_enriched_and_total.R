@@ -31,6 +31,7 @@ descri <- "FPguiTMTphospho_vsOneCondition"
 fracti <- "TotalProteome"
 WUID <- "WUID"
 
+
 # data from
 # # https://fgcz-bfabric.uzh.ch/bfabric/workunit/show.html?id=301538&tab=details
 
@@ -38,7 +39,7 @@ WUID <- "WUID"
 # v3
 prolfquapp::copy_DEA_DIANN()
 # also copy the phospho specific Rmd files from prophosqua
-# c("_DiffExpQC_Phospho.Rmd", "_Grp2Analysis_Phospho.Rmd", "_Overview_PhosphoAndIntegration.Rmd")
+# prophosqua::copy_phosphoDEA_FragPipe_TMT() # not yet working, package not built?
 #
 path = "."
 
@@ -50,10 +51,8 @@ path = "."
 GRP2 <- prolfquapp::make_DEA_config_R6(ZIPDIR = fN,PROJECTID = fgczProject,
                                        ORDERID = OIDfgcz)
 
-dsf = file.path(path,"o34441_FPguiTMTphospho__Dataset_TotalNEnriched_better.tsv")
-# @jg: add raw.file to annotation
-#dsf <- readr::read_csv(dsf) # in BF it is csv
-
+dsf = file.path(path,"../RscriptNReports_nextLevel/o34441_FPguiTMTphospho__Dataset_TotalNEnriched_better.tsv")
+#dsf <- readr::read_csv(dsf) # in BF it is csv -> make dsf from Bf
 # make minimal dsf
 dsf <- readr::read_tsv(dsf)
 dsf$condition <- NULL
