@@ -129,35 +129,6 @@ write_tsv(x = annotation$annot, file = file.path(GRP2$zipdir,dsFN))
 
 
 
-#
-# # work on annotation
-# # structure of a dataset fix this in a template?
-# # Relative Path,Name,Grouping Var,channel, CONTROL
-# # for full proteome channel encodes the sample name like relative path in the dataset
-# ds_file <- "../o34441_FP_tsvFiles/experiment_annotation.tsv"
-#
-# (annot <- read_tsv(ds_file))
-#
-# # drop some this is necessairy here because run via GUI and we need to generate DS from file names
-# annot <- annot |> select(sample, channel, condition)
-#
-# # since not structured in BF some work needed
-# annot$genotype <- c(rep("WT", 6), rep("cl2", 6), rep("cl20", 6))
-# annot$treatment <- c(rep(c("untr", "S"), 3),rep(c("untr", "S"), 3),rep(c("untr", "S"), 3))
-# annot$`Grouping Var` <- paste(annot$genotype, annot$treatment, sep = "_")
-# annot$SampleName <- annot$sample
-# #CONTROL column with WT_untr as C (all others as T)
-# annot$CONTROL <- "T"
-# #annot$CONTROL[annot$`Grouping Var` == "WT_untr"] <- "C"
-# unique(annot$`Grouping Var`)
-# annot$CONTROL[annot$`Grouping Var` == "WT_S"] <- "C"
-# table(annot$CONTROL)
-#
-# (dsFN <- paste(fgczProject, descri,"Dataset_TotalNEnriched_better.tsv", sep="_"))
-# write_tsv(x = annot, file = dsFN)
-#
-
-
 ################################################################################
 #
 #
@@ -182,7 +153,6 @@ multiSiteQuant <- xx[,c(1,quant_idx_start:ncol(xx))]
 # go long
 multiSite_long <- tidyr::pivot_longer(data = multiSiteQuant, cols = 2:ncol(multiSiteQuant), values_to = "abundance", names_to = "sample")
 multiSite_long <- dplyr::inner_join(x = multiSiteAnnot, y = multiSite_long)
-head(multiSite_long)
 
 # check
 table(annotation$annot$CONTROL, annotation$annot$Grouping.Var)
@@ -190,29 +160,20 @@ table(annotation$annot$sample)
 
 # in case of multi-site all the filtering has been done by FragPipe
 # since TMT annotation is the same maybe the join has to be adapted!
-#ds_file <- "../o32778_Anouk_FP-TMT-phospho/WU294902_phos_noNorm_correctAnnotation/dataset_from_combined_annotation_phospho_VS_16hpiNOGSK.tsv"
-#(annot <- read_tsv(ds_file))
-# zip specify here already
-#(resDir <- paste(fgczProject, descri, fracti, sep="_"))
 
 # already done!
-myPhosZip <- paste0(fgczProject,WUID,"_",fracti)
+(myPhosZip <- paste0(fgczProject,WUID,"_",fracti))
 GRP2_phos <- prolfquapp::make_DEA_config_R6(ZIPDIR = myPhosZip,PROJECTID = fgczProject,
                                        ORDERID = OIDfgcz)
 
-# join with anno again this should work now with Name
+# join with anno again this should work now with Name # if not all samples are used in the dataset they would be removed here (to be tested)
 multiSite_long <- dplyr::inner_join(x = annotation$annot, y = multiSite_long)
 
 
-# again filter things that are in the comparisons
-colnames(multiSite_long)
-#multiSite_long$`Grouping Var` <- multiSite_long$Group
-multiSite_long |> select(sample, `Grouping.Var`) |> distinct() |> group_by(`Grouping.Var`) |> summarise(n())
-
-# filter for all that are in the game
-multiSite_long |> filter(!is.na(CONTROL)) |> select(sample, `Grouping.Var`) |> distinct() |> group_by(`Grouping.Var`) |> summarise(n())
 # potentially filter out here files not  in the game (specified in CONTROL == NA)
 multiSite_long <- multiSite_long |> filter(!is.na(CONTROL))
+# show effect
+multiSite_long |> select(sample, `Grouping.Var`) |> distinct() |> group_by(`Grouping.Var`) |> summarise(n())
 
 
 # here we use Name to match annot and multiSite_long
@@ -221,13 +182,6 @@ logger::log_info("nr : ", nr, " files annotated")
 
 # add missing required parameters (qvalue)
 multiSite_long$qvalue <- 1 - multiSite_long$MaxPepProb
-
-
-# Do I really need this? Or it is already in the grp2
-#tmp <- prolfquapp::dataset_set_factors_deprecated(atable, multiSite_long)
-#atable <- tmp$atable
-#atable$factors
-#multiSite_long <- tmp$msdata
 
 
 # CREATE protein annotation. -> 2024-04-11: deprecated! use build_protein_annot
@@ -240,58 +194,55 @@ multiSite_long$qvalue <- 1 - multiSite_long$MaxPepProb
 # fasta and protein annotation part!
 fasta_annot <- get_annot_from_fasta(files$fasta)
 # reshape fasta_annot for matching protein
-# fasta_annot$proteinAcc <- sapply(strsplit(fasta_annot$fasta.id, split = "\\|"), function(x)x[2])
 colnames(multiSite_long)
 multiSite_long$nrPeptides <- 1
 multiSite_long <- dplyr::left_join(multiSite_long, fasta_annot, by = c(ProteinID = "proteinname"), multiple = "all")
 
-# Setup configuration
-#atable <- annotation$atable # this one is from total and has things in we dont want
-atable <- prolfqua::AnalysisTableAnnotation$new()
-atable$factors <- annotation$atable$factors
-atable$ident_Score = "MaxPepProb"
-atable$ident_qValue = "qValue"
-atable$fileName = "channel"
-atable$hierarchy[["protein_Id"]] <- c("ProteinID")
-atable$hierarchy[["site"]] <- c("Index", "Peptide")
-atable$set_response("abundance")
-atable$hierarchyDepth <- 2
-atable$get_response()
+# Setup configuration manually for peptide analysis (phospho)
+atable_phos <- prolfqua::AnalysisTableAnnotation$new()
+atable_phos$factors <- annotation$atable$factors
+atable_phos$ident_Score = "MaxPepProb"
+atable_phos$ident_qValue = "qValue"
+atable_phos$fileName = "channel"
+atable_phos$hierarchy[["protein_Id"]] <- c("ProteinID")
+atable_phos$hierarchy[["site"]] <- c("Index", "Peptide")
+atable_phos$set_response("abundance")
+atable_phos$hierarchyDepth <- 2
+atable_phos$get_response()
 
 # Preprocess data - aggregate proteins.
-config <- prolfqua::AnalysisConfiguration$new(atable)
+config_phos <- prolfqua::AnalysisConfiguration$new(atable_phos)
 #multiSite_long$Modified.Peptide <- NA
 #multiSite_long$Assigned.Modifications <- NA
 
-adata <- prolfqua::setup_analysis(multiSite_long, config)
-colnames(adata)
-nrow(adata)
+adata_phos <- prolfqua::setup_analysis(multiSite_long, config_phos)
+colnames(adata_phos)
+nrow(adata_phos)
 colnames(multiSite_long)
 
-lfqdata <- prolfqua::LFQData$new(adata, config)
-lfqdata$hierarchy_counts()
-lfqdata$remove_small_intensities(threshold = 1)
-lfqdata$hierarchy_counts()
+lfqdata_phos <- prolfqua::LFQData$new(adata_phos, config_phos)
+lfqdata_phos$hierarchy_counts()
+lfqdata_phos$remove_small_intensities(threshold = 1)
+lfqdata_phos$hierarchy_counts()
 
-lfqdata$config$table$hierarchyDepth <- 2
-lfqdata$config$table$hierarchy_keys_depth() # @Witold -> how to model this? set here hierarchy depth to peptide?
-lfqdata$config$table$hierarchyKeys() #checks if all is here
-lfqdata$config$table$ident_Score #checks if all is here
-lfqdata$config$table$ident_qValue #checks if all is here
+lfqdata_phos$config$table$hierarchyDepth <- 2
+lfqdata_phos$config$table$hierarchy_keys_depth() # @Witold -> how to model this? set here hierarchy depth to peptide?
+lfqdata_phos$config$table$hierarchyKeys() #checks if all is here
+lfqdata_phos$config$table$ident_Score #checks if all is here
+lfqdata_phos$config$table$ident_qValue #checks if all is here
 
-lfqdata$data #checks if all is here
-lfqdata$response() #checks if all is here
+lfqdata_phos$data #checks if all is here
+lfqdata_phos$response() #checks if all is here
 
 
 #logger::log_info("AGGREGATING PEPTIDE DATA!")
-lfqdata$config$table$hierarchy_keys()
+lfqdata_phos$config$table$hierarchy_keys()
 
 #prolfqua::ProteinAnnotation$debug("initialize")
 colnames(multiSite_long)
 head(multiSite_long)
 #prot_annot <- prolfquapp::dataset_protein_annot(multiSite_long, c(protein_Id = "ProteinID"), protein_annot = "fasta.header", more_columns = "nrPeptides")
-# protAnnot <- prolfqua::ProteinAnnotation$new(lfqdata , prot_annot)  # again here ;( Error in `sym()`: ! Can't convert a character vector to a symbol.
-prot_annot <- prolfquapp::build_protein_annot(lfqdata, multiSite_long,
+prot_annot_phos <- prolfquapp::build_protein_annot(lfqdata_phos, multiSite_long,
                                               idcol = c(protein_Id = "ProteinID"), cleaned_protein_id = "ProteinID",
                                               protein_description = "fasta.header", nr_children = "nrPeptides",
                                               more_columns = "fasta.id")
@@ -317,7 +268,7 @@ GRP2_phos$pop$FDRthreshold <- GRP2_phos$processing_options$FDR_threshold
 
 # something is  not processing properly
 #grp <- prolfquapp::generate_DEA_reports2(lfqdata, GRP2, xd$protein_annotation, annotation$contrasts)
-grp_phos <- prolfquapp::generate_DEA_reports2(lfqdata, GRP2_phos, prot_annot, GRP2_phos$pop$contrasts)
+grp_phos <- prolfquapp::generate_DEA_reports2(lfqdata_phos, GRP2_phos, prot_annot_phos, GRP2_phos$pop$contrasts)
 
 # all fine?
 grp_phos$Groups_vs_Controls$RES$lfqData$to_wide()
