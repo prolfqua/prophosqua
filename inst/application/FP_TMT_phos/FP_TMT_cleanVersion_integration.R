@@ -1,7 +1,7 @@
 message("prolfqua Version :", packageVersion("prolfqua"), "\n")
 message("prolfquaapp Version :", packageVersion("prolfquapp"), "\n")
 
-# annotation and comparison based on:
+# annotation and descrison based on:
 # https://fgcz-bfabric.uzh.ch/bfabric/dataset/show.html?id=47399&tab=details
 
 
@@ -19,27 +19,25 @@ source("FP_phosphoHelperFunctions_v3_202310.R")
 
 # parameters and thresholds
 # params ideally taken from yaml
-fgczProject <- "o34441"
-descri <- "TMTphospho_integration"
-compari <- "_vsWTuntr"
-(resDir <- paste0(fgczProject, "_",descri, compari))
+fracti <- "_integration"
+descri <- "_vsWTuntr"
+(resDir <- paste0(fgczProject, "_",fracti, descri))
 
 
 
 # read back in results
-totRes <- read.xlsx(xlsxFile = "o34441WU301538_TotalProteome_rr/Results_DEA_WU/DE_Groups_vs_Controls_WU.xlsx", sheet = "diff_exp_analysis")
-phosRes <- read.xlsx(xlsxFile = "o34441WU301538_PhosphoEnriched/DE_Groups_vs_Controls/DE_Groups_vs_Controls.xlsx", sheet = "diff_exp_analysis")
+(totXlsx  <-  paste0(GRP2$zipdir, "/Results_DEA_WU/DE_Groups_vs_Controls_WU.xlsx"))
+(phosXlsx  <-  paste0(GRP2_phos$zipdir, "/DE_Groups_vs_Controls/DE_Groups_vs_Controls.xlsx"))
+totRes <- read.xlsx(xlsxFile = totXlsx, sheet = "diff_exp_analysis")
+phosRes <- read.xlsx(xlsxFile = phosXlsx, sheet = "diff_exp_analysis")
 
-# here only non-decoy DBs otherwise we hit the accession twice! -> we shall make this better since fragPipe needs decoy DBs.. -> read in all and remove REV_ !
-# !!! ATTENTION !!!! ONLY NON-DECOY DBs
-myFasta <- seqinr::read.fasta("../o34441_FP_tsvFiles//fgcz_9606_reviewed_cnl_20230330.fasta", seqtype = "AA", as.string = TRUE)
-
+# now here we read in decoy and only return fw entries
+myFasta <- readDecoyFastaNreturnFwOnly(files$fasta)
 
 # Filter out FGCZContaminants -> problematic at sites
 phosRes <- phosRes |> filter(!grepl("FGCZCont", protein_Id))
 
-
-#
+# phospho specific parsing
 phosRes$originalSite <- phosRes$site
 phosRes$peptideSequence <- sapply(strsplit((phosRes$site), split = "~"), function(x)x[2])
 phosRes$site <- sapply(strsplit((phosRes$site), split = "~"), function(x)x[1])
@@ -53,16 +51,16 @@ phosRes$SinglePhos_bool <- phosRes$NumPhos == 1
 phosRes$AllLocalized <- phosRes$NumPhos == phosRes$LocalizedNumPhos
 phosRes$SinglePhosLocalized_bool <- phosRes$NumPhos == 1 & phosRes$LocalizedNumPhos == 1
 
-
-# work on phospho to
 # parse residue
 phosRes$AA <- gsub(x = phosRes$PhosSites, pattern = "\\d+", replacement = "")
 # parse position in protein
 phosRes$posInProtein <- as.numeric(gsub(x = phosRes$PhosSites, pattern = "[STY]", replacement = ""))
 
-# add info if found in more than one unique peptide
+# add info if found in more than one unique peptide for TMT-integrator this is not necessairy
 phosRes$SiteFoundInManyPeptides <- str_count(string = phosRes$peptide, pattern = ";") + 1
 
+# localized or not
+table(phosRes$SinglePhosLocalized_bool)
 table(phosRes$AA[phosRes$SinglePhosLocalized_bool])
 
 # find mapping for sequence window
@@ -71,17 +69,11 @@ phosRes |> filter(SinglePhosLocalized_bool == TRUE) |> select(protein_Id, peptid
 
 uniqueProtPepSeq <- phosRes |> filter(SinglePhosLocalized_bool == TRUE) |> select(protein_Id, peptideSequence, posInProtein) |> distinct()
 
-
-# looking up sequence window in fasta maybe only for singly phos and localized, ideally unique sequences
-#
-#       !!! ATTENTION .. should be non-decoy!!
-#
-#
-
+# parse sequence window from fasta givn position
 for (i in 1:nrow(uniqueProtPepSeq)) {
+  #print(i)
   uniqueProtPepSeq$SequenceWindows[i] <- getSequenceWindowForLogo(poi = uniqueProtPepSeq$protein_Id[i], soi = uniqueProtPepSeq$posInProtein[i], fastaObject = myFasta)
 }
-
 tail(uniqueProtPepSeq)
 
 # join sequence windows back!
@@ -140,7 +132,7 @@ uniqueProtPepSeqSite$originalSite[which(uniqueProtPepSeqSite$protein_Id == myPho
 
 # render integration html
 resultPath <- resDir
-(htmlFN <- paste0("Integration",compari))
+(htmlFN <- paste0("Integration",descri))
 prolfquapp::render_DEA(GRP2 = comboWithAdj, outpath = resultPath, htmlname = htmlFN, word = FALSE, markdown = "_Overview_PhosphoAndIntegration.Rmd")
 
 # separate for each constrast

@@ -197,6 +197,7 @@ fasta_annot <- get_annot_from_fasta(files$fasta)
 colnames(multiSite_long)
 multiSite_long$nrPeptides <- 1
 multiSite_long <- dplyr::left_join(multiSite_long, fasta_annot, by = c(ProteinID = "proteinname"), multiple = "all")
+colnames(multiSite_long)
 
 # Setup configuration manually for peptide analysis (phospho)
 atable_phos <- prolfqua::AnalysisTableAnnotation$new()
@@ -266,7 +267,7 @@ GRP2_phos$pop$FDRthreshold <- GRP2_phos$processing_options$FDR_threshold
 
 
 
-# something is  not processing properly
+# all fine 2024-04-30:: till here
 #grp <- prolfquapp::generate_DEA_reports2(lfqdata, GRP2, xd$protein_annotation, annotation$contrasts)
 grp_phos <- prolfquapp::generate_DEA_reports2(lfqdata_phos, GRP2_phos, prot_annot_phos, GRP2_phos$pop$contrasts)
 
@@ -278,20 +279,11 @@ myResPlotter$volcano()
 
 logger::log_info("DONE WITH DEA REPORTS")
 # result dir
-# now we prefer it to have it directly in the workingDir -> specified before for enriched
+GRP2_phos$zipdir
 dir.create(GRP2_phos$zipdir)
 
 # need helper functions to properly write reports not on protein but peptide level
 source("FP_phosphoHelperFunctions_v3_202310.R")
-
-#GRP2_phos$pop$DiffThreshold
-#grp$Groups_vs_Controls$pop$DiffThreshold
-# write DEAs
-# mydebug
-#params = list(grp = grp_phos[[1]])
-# missing before render
-#grp2$pop$LocProbThresh <- 0.75
-
 #
 for (i in seq_along(grp_phos)) {
   #prolfquapp::write_DEA_all(grp[[i]], names(grp)[i], GRP2$zipdir, boxplot = FALSE)
@@ -301,6 +293,3 @@ for (i in seq_along(grp_phos)) {
 # Save RData from enriched and total (only lfqdata is overwritten?) # keep lfqdata, grp, adata separate for phos and total!
 (imageFN <- paste(fgczProject, descri, "total_and_enriched",".RData", sep="_"))
 save.image(imageFN)
-
-
-
