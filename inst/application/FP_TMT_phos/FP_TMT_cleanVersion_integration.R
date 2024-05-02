@@ -19,8 +19,8 @@ source("FP_phosphoHelperFunctions_v3_202310.R")
 
 # parameters and thresholds
 # params ideally taken from yaml
-fracti <- "_integration"
-descri <- "_vsWTuntr"
+fracti <- "Integration"
+descri <- "_vsCond1"
 (resDir <- paste0(fgczProject, "_",fracti, descri))
 
 
@@ -94,14 +94,10 @@ comboWithAdj <- doMSstatsLikeSiteNormalizationUsingProteinStatsOnComboObject(com
 colnames(comboWithAdj)
 head(comboWithAdj)
 
-# save.image("Integration_o33038_allIn.RData")
-# load("Integration_vs5hpiNoGSK.RData")
-
 # for RMD report
 GRP2 <- prolfquapp::make_DEA_config(PROJECTID = fgczProject, ORDERID = fgczProject, WORKUNITID = "WUxxx")
 
 # Idea for reporting and downstream processing
-
 # number of proteins
 uniqueProtPepSeqSite <- comboWithAdj |> select(protein_Id, peptideSequence, site, originalSite) |> distinct()
 length(unique(uniqueProtPepSeqSite$protein_Id))
@@ -156,7 +152,7 @@ for (i in 1:length(unique(comboWithAdj$contrast))) {
 }
 
 # move N-to-C plots to Integration result Dir
-myNtoCplotsFiles <- list.files(pattern = "SignificantProtein_.*\\.pdf")
+(myNtoCplotsFiles <- list.files(pattern = "SignificantProtein_.*\\.pdf"))
 file.copy(myNtoCplotsFiles, to = resultPath)
 file.remove(myNtoCplotsFiles)
 
