@@ -13,3 +13,7 @@ devtools::install_github(c('prolfqua/prophosqua'))
 ```
 Some more information should be given here what this package is all about and what we are using it for.
 
+## Reltated
+
+- [MSstatsPTM](https://www.sciencedirect.com/science/article/pii/S1535947622002857)
+- [msqrob2PTM](https://www.sciencedirect.com/science/article/pii/S1535947623002190)
