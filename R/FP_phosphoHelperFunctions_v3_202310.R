@@ -3,7 +3,6 @@
 #' @param decoyPattern pattern for decoy accessions
 #' @return fastaObject without decoy sequences
 #' @export
-#' @importFrom stringr, seqinR
 #'
 readDecoyFastaNreturnFwOnly <- function(FastaFileName, decoyPattern = "REV_") {
   myFasta_decoy <- seqinr::read.fasta(file = FastaFileName, seqtype = "AA", as.string = TRUE)
@@ -22,7 +21,6 @@ readDecoyFastaNreturnFwOnly <- function(FastaFileName, decoyPattern = "REV_") {
 #' @param seqWindowOffset Sequence window offset plus minus from site
 #' @return string of X characters with p-Site in the middle
 #' @export
-#' @importFrom stringr, seqinR
 #'
 getSequenceWindowForLogo <- function(poi, soi, fastaObject = myFasta, seqWindowOffset = 15) {
   # find poi in fasta -> here we do not handle cases where it might appear multiple times in the full accession
@@ -52,7 +50,6 @@ getSequenceWindowForLogo <- function(poi, soi, fastaObject = myFasta, seqWindowO
 #' @param maxlfqnames tag to identify MaxLFQ intensity columns
 #' @return data.frame in lonng  format
 #' @export
-#' @importFrom tidyr::pivot_longer, dplyr::mutate, dplyr::left_join, dplyr::select, dplyr::filter
 #'
 tidy_FragPipe_phospho_STYfile <- function (styphosphopeptideTable, as_list = FALSE,
                                            locPnames = c(" Localization Probability"),
@@ -339,7 +336,6 @@ generateNtoCProteinPDFsWithPhosphoPeptides_FragPipeTMT <- function(globalNphosph
 #' @param ZIPDIR directory name to write results in
 #' @param boxplot boolean to either do all boxplots or not
 #' @export
-#' @importFrom dplyr, prolfquapp
 #'
 write_phosphoDEA_all <- function (grp2, name, ZIPDIR, boxplot = TRUE)
 {
@@ -375,8 +371,6 @@ write_phosphoDEA_all <- function (grp2, name, ZIPDIR, boxplot = TRUE)
 
 #' Apply MSstatsPTM like site normalization (adjustment) for the protein fold-change and pvalues
 #' @param mycombo dataframe from PTMsite and protein prolfqua statistics
-#' @export resultCombo same dataframe as input with additional columns for MSstatsPTM like adjustment
-#' @importFrom dplyr, prolfquapp
 #'
 doMSstatsLikeSiteNormalizationUsingProteinStatsOnComboObject <- function (mycombo)
 {

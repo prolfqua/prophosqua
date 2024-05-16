@@ -5,9 +5,9 @@ Version: 0.1.0
 Author: Jonas Grossmann and Witold Wolski
 Maintainer: Jonas Grossmann <jonas.grossmann@fgcz.uzh.ch>
 Description: Prophosqua implements a workflow for e.g. TMT-labeled samples where two datasets are acquired and individually searched with FragPipe-MS-Fragger for example. 
-The abundances are individually statistically evaluated for both datasets as a first step. 
-While for the total proteome the abundance data is rolled-up to protein level the phospho-enriched dataset is kept phospho-site centric 
-and statistically evaluated at this level. 
+    The abundances are individually statistically evaluated for both datasets as a first step. 
+  While for the total proteome the abundance data is rolled-up to protein level the phospho-enriched dataset is kept phospho-site centric 
+  and statistically evaluated at this level. 
   For differential expression calling we use the prolfqua R-package which handles all important steps 
   starting from normalising and transforming quantitative channels, to aggregating site-centric phospho-enriched dataset, 
   to rolling-up peptide quantities to protein level as well as using linear models and contrasting different conditions also with multiple factors. Doing this for both datasets in the same way we can join these together. 
