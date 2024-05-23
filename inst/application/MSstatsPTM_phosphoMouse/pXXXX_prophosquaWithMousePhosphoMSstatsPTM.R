@@ -5,6 +5,9 @@
 #
 #
 
+# global data from here:
+# https://www.dropbox.com/scl/fi/xm5779z007qmhjycd2kxj/global_ADD-MASSIVE-REANALYSIS-e9ceea92-display_quant_results-main.tsv?rlkey=1djm8yajrxizj87qbnzv9e9b8&dl=0
+
 # here we want to try prophosqua with published data MSstatsPTM paper
 # https://www.sciencedirect.com/science/article/pii/S1535947622002857#tbl1
 # https://github.com/devonjkohler/MSstatsPTM_simulations/tree/main/data
