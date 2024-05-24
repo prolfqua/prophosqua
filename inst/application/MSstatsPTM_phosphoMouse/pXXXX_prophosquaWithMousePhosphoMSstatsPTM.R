@@ -22,6 +22,7 @@
 library(tidyverse)
 library(prolfqua)
 library(prolfquapp)
+library(prophosqua)
 
 # params ideally taken from yaml
 fgczProject <- "pIDxx"
@@ -32,9 +33,7 @@ WUID <- "WUID"
 
 # v3
 prolfquapp::copy_DEA_DIANN()
-
-# also copy the phospho specific Rmd files from prophosqua
-# prophosqua::copy_phosphoDEA_FragPipe_TMT() # not yet working, package not built?
+prophosqua::copy_phosphoDEA_FragPipe_TMT()
 #
 path = "."
 
