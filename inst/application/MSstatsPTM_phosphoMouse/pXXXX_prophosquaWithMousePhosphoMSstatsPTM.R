@@ -115,7 +115,7 @@ lfqdata$remove_small_intensities(threshold = 1)
 
 pa <- data.frame(protein_Id = unique(lfqdata$data$protein_Id))
 pa <- tidyr::separate(pa, protein_Id , c(NA, "IDcolumn"), sep = "\\|",remove = FALSE)
-
+pa$description <- "description needed"
 
 protAnnot <- prolfquapp::ProteinAnnotation$new(lfqdata, pa, cleaned_ids = "IDcolumn")
 protAnnot$row_annot
@@ -131,17 +131,6 @@ grp <- prolfquapp::generate_DEA_reports2(lfqdata, GRP2, protAnnot, Contrasts = a
 
 debug(write_DEA_all)
 prolfquapp::write_DEA_all(grp2 = grp, boxplot = FALSE, markdown = "_Grp2Analysis_V2.Rmd")
-
-
-
-
-
-
-
-
-
-
-
 
 
 #
