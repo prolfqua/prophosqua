@@ -38,15 +38,12 @@ prolfquapp::copy_DEA_DIANN()
 #
 path = "."
 
-
 # work on GRP for having better folder name
-(fN <- paste0(fgczProject,"_", descri, "_", WUID,"_",fracti))
-GRP2 <- prolfquapp::make_DEA_config_R6(ZIPDIR = fN,PROJECTID = fgczProject,
+GRP2 <- prolfquapp::make_DEA_config_R6(ZIPDIR = "fN",PROJECTID = fgczProject,
                                        ORDERID = OIDfgcz)
 
 
-fromTSV <- read_tsv("global_ProteoSAFe-ADD-MASSIVE-REANALYSIS-e9ceea92-display_quant_results/global_ADD-MASSIVE-REANALYSIS-e9ceea92-display_quant_results-main.tsv")
-head(fromTSV)
+fromTSV <- read_tsv("global_ADD-MASSIVE-REANALYSIS-e9ceea92-display_quant_results-main.tsv")
 colnames(fromTSV) <- c("id", "ProteinName", "PeptideSequence", "z", "pepSeqNcharge", "plex", "TechRep", "Run", "channel", "Condition", "BiolRep", "Intensity")
 
 # idea: filter here for only 2 or 4 conditions to slim it down
@@ -55,99 +52,85 @@ psm <- as.data.frame(fromTSV)
 
 # get an overview
 (annotable <- psm |> select(BiolRep, Condition, Run, TechRep, channel, plex) |> distinct())
-unique(psm$Condition)
-table(annotable$Condition)
-table(annotable$Condition, annotable$BiolRep)
+
+annotable$BiolRep |> table() |> table()
+
+
+annotable <- annotable |> rename(group = Condition)
+annotable$CONTROL <- "T"
+annotable$CONTROL[annotable$group == "WT_Uninfect"] <- "C"
+
+annotable$plex <- NULL
+annotable$channel <- NULL
+annotable$TechRep <- NULL
+annotable$Batch <- paste0("B",annotable$Run)
+annotable$Run <- NULL
+annotable$raw <- annotable$BiolRep
+annotable <- annotable |> rename(Name = BiolRep)
+annot <- prolfquapp::read_annotation(annotable)
+
+
 
 # add missing stuff
-psm$PeptideProphet.Probability <- 1
-psm$qValue <- 0.001
-psm$GroupingVariable <- psm$Condition
-psm$CONTROL <- "T"
-psm$CONTROL[psm$Condition == "WT_Uninfect"] <- "C"
-psm$channel <- paste(psm$channel, psm$plex, sep = "_")
-psm$sampleName <- psm$BiolRep
+psm <- psm |> rename(raw = BiolRep)
+psm[["Condition"]] <- NULL
+psm[["Run"]] <- NULL
+psm[["TechRep"]] <- NULL
+psm[["plex"]] <- NULL
+psm[["channel"]] <- NULL
+psm$id <- NULL
+psm$z <- NULL
+head(psm)
+psmX <- psm |> group_by(ProteinName,PeptideSequence,pepSeqNcharge,raw) |> summarize(n = n(), Intensity = sum(Intensity)) |> ungroup()
+psmX$n |> table() ## WTF?
+
+
+psmX$PeptideProphet.Probability <- 1
+psmX$qValue <- 0.001
 
 
 # Setup configuration
-atable <- prolfqua::AnalysisTableAnnotation$new()
+atable <- annot$atable
 atable$ident_Score = "PeptideProphet.Probability"
 atable$ident_qValue = "qValue"
-atable$fileName = "BiolRep"
+atable$fileName <- "raw"
 atable$hierarchy[["protein_Id"]] <- c("ProteinName")
 atable$hierarchy[["peptide_Id"]] <- c("PeptideSequence")
-atable$hierarchy[["Spectrum"]] <- c("id")
+atable$hierarchy[["precursor"]] <- c("pepSeqNcharge")
+atable$hierarchyDepth <- 1
+
 atable$set_response("Intensity")
 
-#
-#debug(dataset_set_factors_deprecated)
-tmp <- prolfquapp::dataset_set_factors_deprecated(atable, psm)
-atable <- tmp$atable
-atable$factors
-psm <- tmp$msdata
-psm$desc <- "myDescription"
-psm$nrPeps <- 1
 
 # Preprocess data - aggregate proteins.
 config <- prolfqua::AnalysisConfiguration$new(atable)
-colnames(psm)
-adata <- prolfqua::setup_analysis(psm, config)
-colnames(adata)
+psm2 <- dplyr::inner_join(annot$annot, psmX, multiple = "all")
+colnames(psm2)
+adata <- prolfqua::setup_analysis(psm2, config)
 
 lfqdata <- prolfqua::LFQData$new(adata, config)
 lfqdata$hierarchy_counts()
 lfqdata$remove_small_intensities(threshold = 1)
 
 
+pa <- data.frame(protein_Id = unique(lfqdata$data$protein_Id))
+pa <- tidyr::separate(pa, protein_Id , c(NA, "IDcolumn"), sep = "\\|",remove = FALSE)
 
 
-#logger::log_info("AGGREGATING PEPTIDE DATA!")
+protAnnot <- prolfquapp::ProteinAnnotation$new(lfqdata, pa, cleaned_ids = "IDcolumn")
+protAnnot$row_annot
+
 lfqdata$config$table$hkeysDepth()
-lfqdata$config$table$hierarchyDepth <- 1
-
 GRP2$processing_options$aggregate
-
-# GRP2$pop$aggregate <- ""
 lfqdata <- prolfquapp::aggregate_data(lfqdata, agg_method = GRP2$processing_options$aggregate)
 
 #logger::log_info("data aggregated: {GRP2$pop$aggregate}.")
 lfqdata$factors()
-
 lfqdata$to_wide()
+grp <- prolfquapp::generate_DEA_reports2(lfqdata, GRP2, protAnnot, Contrasts = annot$contrasts)
 
-
-# Build protein annot w/ new function
-colnames(psm)
-psm$Acc <-sapply(strsplit((psm$ProteinName), split = "\\|"), function(x)x[2])
-psm$desc <- "desc"
-head(psm)
-
-protAnnot <- build_protein_annot(
-  lfqdata,
-  psm,
-  c("protein_Id" = "ProteinName"),
-  cleaned_protein_id = "Acc",
-  protein_description = "desc",
-  nr_children = "nrPeps",
-  more_columns = NULL)
-
-
-GRP2$processing_options$transform <- "robscale"
-#Error in `mutate()`:
-# In argument: `CON = case_when(...)`.
-lfqdata$to_wide()
-head(lfqdata$data)
-
-grp <- prolfquapp::generate_DEA_reports(lfqdata, GRP2, protAnnot) # this is taking quite a while
-# we get errors here LHS..
-
-prolfquapp::copy_DEA_DIANN()
-dir.create(GRP2$zipdir)
-
-
-for (i in seq_along(grp)) {
-  prolfquapp::write_DEA_all(grp2 = grp[[i]], name = names(grp)[i], ZIPDIR = GRP2$zipdir, boxplot = FALSE)
-}
+debug(write_DEA_all)
+prolfquapp::write_DEA_all(grp2 = grp, boxplot = FALSE, markdown = "_Grp2Analysis_V2.Rmd")
 
 
 
