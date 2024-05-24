@@ -42,11 +42,11 @@ GRP2 <- prolfquapp::make_DEA_config_R6(ZIPDIR = "fN",PROJECTID = fgczProject,
                                        ORDERID = OIDfgcz)
 
 
-fromTSV <- read_tsv("global_ADD-MASSIVE-REANALYSIS-e9ceea92-display_quant_results-main.tsv")
+#fromTSV <- read_tsv("global_ADD-MASSIVE-REANALYSIS-e9ceea92-display_quant_results-main.tsv")
+fromTSV <- read_tsv("global_ProteoSAFe-ADD-MASSIVE-REANALYSIS-e9ceea92-display_quant_results/global_ADD-MASSIVE-REANALYSIS-e9ceea92-display_quant_results-main.tsv")
 colnames(fromTSV) <- c("id", "ProteinName", "PeptideSequence", "z", "pepSeqNcharge", "plex", "TechRep", "Run", "channel", "Condition", "BiolRep", "Intensity")
 
 # idea: filter here for only 2 or 4 conditions to slim it down
-
 psm <- as.data.frame(fromTSV)
 
 # get an overview
@@ -54,7 +54,7 @@ psm <- as.data.frame(fromTSV)
 
 annotable$BiolRep |> table() |> table()
 
-
+# prepare anno table
 annotable <- annotable |> rename(group = Condition)
 annotable$CONTROL <- "T"
 annotable$CONTROL[annotable$group == "WT_Uninfect"] <- "C"
@@ -70,7 +70,7 @@ annot <- prolfquapp::read_annotation(annotable)
 
 
 
-# add missing stuff
+# dropping bs and add missing stuff
 psm <- psm |> rename(raw = BiolRep)
 psm[["Condition"]] <- NULL
 psm[["Run"]] <- NULL
@@ -110,13 +110,17 @@ adata <- prolfqua::setup_analysis(psm2, config)
 lfqdata <- prolfqua::LFQData$new(adata, config)
 lfqdata$hierarchy_counts()
 lfqdata$remove_small_intensities(threshold = 1)
+lfqdata$hierarchy_counts()
 
 
 pa <- data.frame(protein_Id = unique(lfqdata$data$protein_Id))
 pa <- tidyr::separate(pa, protein_Id , c(NA, "IDcolumn"), sep = "\\|",remove = FALSE)
 pa$description <- "description needed"
 
-protAnnot <- prolfquapp::ProteinAnnotation$new(lfqdata, pa, cleaned_ids = "IDcolumn")
+# problem
+#protAnnot <- prolfquapp::ProteinAnnotation$new(lfqdata, pa, cleaned_ids = "IDcolumn")
+protAnnot <- ProteinAnnotation$new(lfqdata, pa, ids = "IDcolumn")
+
 protAnnot$row_annot
 
 lfqdata$config$table$hkeysDepth()
@@ -128,7 +132,7 @@ lfqdata$factors()
 lfqdata$to_wide()
 grp <- prolfquapp::generate_DEA_reports2(lfqdata, GRP2, protAnnot, Contrasts = annot$contrasts)
 
-debug(write_DEA_all)
+#debug(write_DEA_all)
 prolfquapp::write_DEA_all(grp2 = grp, boxplot = FALSE, markdown = "_Grp2Analysis_V2.Rmd")
 
 
