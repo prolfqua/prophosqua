@@ -33,7 +33,7 @@ WUID <- "WUID"
 
 # v3
 prolfquapp::copy_DEA_DIANN()
-prophosqua::copy_phosphoDEA_FragPipe_TMT()
+
 #
 path = "."
 
@@ -142,15 +142,15 @@ prolfquapp::write_DEA_all(grp2 = grp, boxplot = FALSE, markdown = "_Grp2Analysis
 
 
 # params ideally taken from yaml
-fgczProject <- "pIDxx"
-OIDfgcz <- "oxxx"
-descri <- "MSstatsPTM_phosphoMouse"
+#fgczProject <- "pIDxx"
+#OIDfgcz <- "oxxx"
+#descri <- "MSstatsPTM_phosphoMouse"
 fracti <- "PhosphoEnriched"
-WUID <- "WUID"
+#WUID <- "WUID"
 
 
 # also copy the phospho specific Rmd files from prophosqua
-# prophosqua::copy_phosphoDEA_FragPipe_TMT() # not yet working, package not built?
+prophosqua::copy_phosphoDEA_FragPipe_TMT()
 #
 path = "."
 
