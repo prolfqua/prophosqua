@@ -1,17 +1,3 @@
-#!/usr/local/bin/Rscript
-#
-# Jonas Grossmann <jg@fgcz.ethz.ch>
-# 2024
-#
-#
-
-# global data from here:
-# https://www.dropbox.com/scl/fi/xm5779z007qmhjycd2kxj/global_ADD-MASSIVE-REANALYSIS-e9ceea92-display_quant_results-main.tsv?rlkey=1djm8yajrxizj87qbnzv9e9b8&dl=0
-
-# here we want to try prophosqua with published data MSstatsPTM paper
-# https://www.sciencedirect.com/science/article/pii/S1535947622002857#tbl1
-# https://github.com/devonjkohler/MSstatsPTM_simulations/tree/main/data
-
 ################################################################################
 #
 #
@@ -42,8 +28,8 @@ GRP2 <- prolfquapp::make_DEA_config_R6(ZIPDIR = "fN",PROJECTID = fgczProject,
                                        ORDERID = OIDfgcz)
 
 
-#fromTSV <- read_tsv("global_ADD-MASSIVE-REANALYSIS-e9ceea92-display_quant_results-main.tsv")
-fromTSV <- read_tsv("global_ProteoSAFe-ADD-MASSIVE-REANALYSIS-e9ceea92-display_quant_results/global_ADD-MASSIVE-REANALYSIS-e9ceea92-display_quant_results-main.tsv")
+fromTSV <- read_tsv("global_ADD-MASSIVE-REANALYSIS-e9ceea92-display_quant_results-main.tsv")
+#fromTSV <- read_tsv("global_ProteoSAFe-ADD-MASSIVE-REANALYSIS-e9ceea92-display_quant_results/global_ADD-MASSIVE-REANALYSIS-e9ceea92-display_quant_results-main.tsv")
 colnames(fromTSV) <- c("id", "ProteinName", "PeptideSequence", "z", "pepSeqNcharge", "plex", "TechRep", "Run", "channel", "Condition", "BiolRep", "Intensity")
 
 # idea: filter here for only 2 or 4 conditions to slim it down
@@ -66,6 +52,8 @@ annotable$Batch <- paste0("B",annotable$Run)
 annotable$Run <- NULL
 annotable$raw <- annotable$BiolRep
 annotable <- annotable |> rename(Name = BiolRep)
+write_tsv(annotable, file = "annotation.tsv")
+
 annot <- prolfquapp::read_annotation(annotable)
 
 
@@ -119,7 +107,7 @@ pa$description <- "description needed"
 
 # problem
 #protAnnot <- prolfquapp::ProteinAnnotation$new(lfqdata, pa, cleaned_ids = "IDcolumn")
-protAnnot <- ProteinAnnotation$new(lfqdata, pa, ids = "IDcolumn")
+protAnnot <- ProteinAnnotation$new(lfqdata, pa, cleaned_ids =  "IDcolumn")
 
 protAnnot$row_annot
 
@@ -136,6 +124,7 @@ grp <- prolfquapp::generate_DEA_reports2(lfqdata, GRP2, protAnnot, Contrasts = a
 prolfquapp::write_DEA_all(grp2 = grp, boxplot = FALSE, markdown = "_Grp2Analysis_V2.Rmd")
 
 
+<<<<<<< HEAD
 #
 # PTM (ST and Y enriched)
 #
@@ -359,3 +348,5 @@ lfqdata_phos$to_wide()
 grp <- prolfquapp::generate_DEA_reports(lfqdata_phos, GRP2, protAnnot) # this is taking quite a while
 
 
+=======
+>>>>>>> 2c70fa31b89440d072f5f81e2bfbfdfa811e8197
