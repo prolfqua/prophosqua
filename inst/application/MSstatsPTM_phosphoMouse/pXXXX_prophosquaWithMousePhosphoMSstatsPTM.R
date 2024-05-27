@@ -234,14 +234,23 @@ lfqdata_phos$hierarchy_counts()
 lfqdata_phos$remove_small_intensities(threshold = 1)
 lfqdata_phos$hierarchy_counts()
 
+colnames(lfqdata_phos$data)
+head(lfqdata_phos$data)
+
 # here we need more parsing w/ site!
 pa_phos <- data.frame(protein_Id = unique(lfqdata_phos$data$protein_Id))
-pa_phos <- tidyr::separate(pa_phos, protein_Id , c(NA, "IDcolumn"), sep = "\\|",remove = FALSE)
+#pa_phos <- tidyr::separate(pa_phos, protein_Id , c(NA, "IDcolumn"), sep = "_",remove = FALSE) # done before
 pa_phos$description <- "description needed"
 
 # problem
 #protAnnot <- prolfquapp::ProteinAnnotation$new(lfqdata, pa, cleaned_ids = "IDcolumn")
-protAnnot_phos <- ProteinAnnotation$new(lfqdata_phos, pa_phos, ids = "IDcolumn")
+head(lfqdata_phos$data)
+head(pa_phos)
+
+#protAnnot <- ProteinAnnotation$new(lfqdata, pa, ids = "IDcolumn")
+#undebug(ProteinAnnotation$new)
+ProteinAnnotation$debug("initialize")
+protAnnot_phos <- ProteinAnnotation$new(lfqdata_phos, pa_phos, ids = "protein_Id")
 
 protAnnot_phos$row_annot
 
