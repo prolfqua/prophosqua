@@ -241,6 +241,7 @@ head(lfqdata_phos$data)
 pa_phos <- data.frame(protein_Id = unique(lfqdata_phos$data$protein_Id))
 #pa_phos <- tidyr::separate(pa_phos, protein_Id , c(NA, "IDcolumn"), sep = "_",remove = FALSE) # done before
 pa_phos$description <- "description needed"
+str(pa_phos)
 
 # problem
 #protAnnot <- prolfquapp::ProteinAnnotation$new(lfqdata, pa, cleaned_ids = "IDcolumn")
