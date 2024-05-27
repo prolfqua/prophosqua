@@ -51,7 +51,7 @@ path = "."
 GRP2 <- prolfquapp::make_DEA_config_R6(ZIPDIR = fN,PROJECTID = fgczProject,
                                        ORDERID = OIDfgcz)
 
-dsf = file.path(path,"../RscriptNReports_nextLevel/o34441_FPguiTMTphospho__Dataset_TotalNEnriched_better.tsv")
+dsf = file.path(path,"o34441_FP_tsvFiles/o34441_FPguiTMTphospho_vsCl2Untr_Dataset_TotalNEnriched_better.tsv")
 #dsf <- readr::read_csv(dsf) # in BF it is csv -> make dsf from Bf
 # make minimal dsf
 dsf <- readr::read_tsv(dsf)
@@ -62,12 +62,10 @@ dsf$SampleName <- NULL
 dsf$channel <- dsf$sample
 
 # introduce a check? if all is there and correct?
-
-
 # all contrasts based on CONTROL column
 annotation <- read_annotation(dsf, prefix = "Group_")
 
-path = "../o34441_FP_tsvFiles/philosopher_prot/"
+path = "o34441_FP_tsvFiles/philosopher_prot/"
 dir(path)
 # get psm and fasta file
 files <- get_FP_PSM_files(path = path)
@@ -114,13 +112,14 @@ grp_total <- prolfquapp::generate_DEA_reports2(lfqdata, GRP2,
                                          xd$protein_annotation, annotation$contrasts)
 
 logger::log_info("write results and html reports")
-prolfquapp::write_DEA_all(grp_total[[1]], names(grp_total)[1], GRP2$zipdir , boxplot
+
+undebug(prolfquapp::write_DEA_all)
+outpath <- prolfquapp::write_DEA_all(grp_total,  GRP2$zipdir , boxplot
                           = FALSE, markdown = "_Grp2Analysis_V2.Rmd")
 
 logger::log_info("write results and summarized experiment")
-SE <- prolfquapp::make_SummarizedExperiment(grp_total[[1]])
-saveRDS(SE, file = file.path(GRP2$zipdir,
-                             paste0("Results_DEA_WU", grp_total[[1]]$project_spec$workunitID) ,
+SE <- prolfquapp::make_SummarizedExperiment(grp_total)
+saveRDS(SE, file = file.path(outpath ,
                              paste0("SummarizedExperiment",".rds") ))
 
 # write out experimental design (annotation$annot)
@@ -139,9 +138,9 @@ write_tsv(x = annotation$annot, file = file.path(GRP2$zipdir,dsFN))
 
 
 fracti <- "PhosphoEnriched"
-source("FP_phosphoHelperFunctions_v3_202310.R")
+# source("FP_phosphoHelperFunctions_v3_202310.R")
 
-multiSite_file <- dir(path = "../o34441_FP_tsvFiles/tmt-report_phos//", pattern = "abundance_multi-site_None.tsv", recursive = TRUE, full.names = TRUE)
+multiSite_file <- dir(path = "o34441_FP_tsvFiles/tmt-report_phos//", pattern = "abundance_multi-site_None.tsv", recursive = TRUE, full.names = TRUE)
 xx <- readr::read_tsv(multiSite_file)
 
 # assuming that ReferenceIntensity is ALWAYS the first column before the individual quant channels are reported
