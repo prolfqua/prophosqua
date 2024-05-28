@@ -5,48 +5,74 @@ message("prolfquaapp Version :", packageVersion("prolfquapp"), "\n")
 # https://fgcz-bfabric.uzh.ch/bfabric/dataset/show.html?id=47399&tab=details
 
 
+# for developping:
+# setwd("~/FGCZ/Interdisziplinar/pXXXX_Prophosqua/mouse_phospho")
+
 # libs
 library(prolfqua)
 library(prolfquapp)
+library(prophosqua)
 library(dplyr)
 library(stringr)
 library(openxlsx)
 library(seqinr)
 
-# helperfunctions
-source("FP_phosphoHelperFunctions_v3_202310.R")
-
 
 # parameters and thresholds
 # params ideally taken from yaml
+fgczProject <- "pXXX"
 fracti <- "Integration"
-descri <- "_vsCond1"
+descri <- "_phosphoMouse"
 (resDir <- paste0(fgczProject, "_",fracti, descri))
 
 
 
 # read back in results
-(totXlsx  <-  paste0(GRP2$zipdir, "/Results_DEA_WU/DE_Groups_vs_Controls_WU.xlsx"))
-(phosXlsx  <-  paste0(GRP2_phos$zipdir, "/DE_Groups_vs_Controls/DE_Groups_vs_Controls.xlsx"))
+(totXlsx  <-  paste0("FIRST_TOTAL_fN_OI_oxxx_WU_/Results_DEA_WU/DE_Groups_vs_Controls_WU.xlsx"))
+(phosXlsx  <-  paste0("FIRST_PHOSPHO_pIDxx_MSstatsPTM_phosphoMouse_WUID_PhosphoEnriched_PI_pIDxx_OI_oxxx_WU__none/Results_DEA_WU/DE_Groups_vs_Controls_WU.xlsx"))
 totRes <- read.xlsx(xlsxFile = totXlsx, sheet = "diff_exp_analysis")
 phosRes <- read.xlsx(xlsxFile = phosXlsx, sheet = "diff_exp_analysis")
 
+# some little adaptations is necessairy
+colnames(phosRes)[4] <- "site"
+
+
 # now here we read in decoy and only return fw entries
-myFasta <- readDecoyFastaNreturnFwOnly(files$fasta)
+myFasta <- readDecoyFastaNreturnFwOnly("fgcz_10090_1spg_d_20230405.fasta")
 
 # Filter out FGCZContaminants -> problematic at sites
 phosRes <- phosRes |> filter(!grepl("FGCZCont", protein_Id))
 
-# phospho specific parsing
+
+# # chatgpt:
+# # Example strings
+# strings <- c("A2AUK8_S437_S441", "A2AR50_S311", "A2AUK8_S437_S441")
+# # Use sub() to extract the part after the first underscore
+# parsed_strings <- sub("^[^_]*_", "", strings)
+# # Print the result
+# print(parsed_strings)
+#
+# # or
+# # Example strings
+# strings <- c("A2AUK8_S437_S441", "A2AR50_S311", "A2AUK8_S437_S441")
+# # Use strsplit() to split the strings at the first underscore and then sapply() to extract the second part
+# parsed_strings <- sapply(strsplit(strings, "_", fixed = TRUE), function(x) paste(x[-1], collapse = "_"))
+# # Print the result
+# print(parsed_strings)
+#
+
+
+# phospho specific parsing some adaptions necessairy for phosphoMouse
 phosRes$originalSite <- phosRes$site
-phosRes$peptideSequence <- sapply(strsplit((phosRes$site), split = "~"), function(x)x[2])
-phosRes$site <- sapply(strsplit((phosRes$site), split = "~"), function(x)x[1])
-phosRes$AccFromSite <- sapply(strsplit((phosRes$site), split = "_"), function(x)x[1])
-phosRes$startModSite <- as.numeric(sapply(strsplit((phosRes$site), split = "_"), function(x)x[2]))
-phosRes$endModSite <- as.numeric(sapply(strsplit((phosRes$site), split = "_"), function(x)x[3]))
-phosRes$NumPhos <- as.numeric(sapply(strsplit((phosRes$site), split = "_"), function(x)x[4]))
-phosRes$LocalizedNumPhos <- as.numeric(sapply(strsplit((phosRes$site), split = "_"), function(x)x[5]))
-phosRes$PhosSites <- sapply(strsplit((phosRes$site), split = "_"), function(x)x[6])
+phosRes$peptideSequence <- "PEPTIDEK"
+phosRes$site <- sapply(strsplit(phosRes$originalSite, "_", fixed = TRUE), function(x) paste(x[-1], collapse = "_"))
+phosRes$AccFromSite <- sapply(strsplit((phosRes$originalSite), split = "_"), function(x)x[1])
+phosRes$FirstSite <- sapply(strsplit((phosRes$site), split = "_"), function(x)x[1])
+phosRes$startModSite <- 100
+phosRes$endModSite <- 110
+phosRes$NumPhos <- as.numeric(str_count(string = phosRes$site, pattern = "_")+1)
+phosRes$LocalizedNumPhos <- phosRes$NumPhos
+phosRes$PhosSites <- phosRes$FirstSite
 phosRes$SinglePhos_bool <- phosRes$NumPhos == 1
 phosRes$AllLocalized <- phosRes$NumPhos == phosRes$LocalizedNumPhos
 phosRes$SinglePhosLocalized_bool <- phosRes$NumPhos == 1 & phosRes$LocalizedNumPhos == 1
@@ -63,71 +89,51 @@ phosRes$SiteFoundInManyPeptides <- str_count(string = phosRes$peptide, pattern =
 table(phosRes$SinglePhosLocalized_bool)
 table(phosRes$AA[phosRes$SinglePhosLocalized_bool])
 
-# find mapping for sequence window
-phosRes |> select(protein_Id, peptideSequence, posInProtein) |> distinct() |> dim_desc()
-phosRes |> filter(SinglePhosLocalized_bool == TRUE) |> select(protein_Id, peptideSequence, posInProtein) |> distinct() |> dim_desc()
-
-uniqueProtPepSeq <- phosRes |> filter(SinglePhosLocalized_bool == TRUE) |> select(protein_Id, peptideSequence, posInProtein) |> distinct()
-
-# parse sequence window from fasta givn position
-for (i in 1:nrow(uniqueProtPepSeq)) {
-  #print(i)
-  uniqueProtPepSeq$SequenceWindows[i] <- getSequenceWindowForLogo(poi = uniqueProtPepSeq$protein_Id[i], soi = uniqueProtPepSeq$posInProtein[i], fastaObject = myFasta)
-}
-tail(uniqueProtPepSeq)
+colnames(phosRes)
+# # find mapping for sequence window
+# phosRes |> select(protein_Id, peptideSequence, posInProtein) |> distinct() |> dim_desc()
+# phosRes |> filter(SinglePhosLocalized_bool == TRUE) |> select(protein_Id, peptideSequence, posInProtein) |> distinct() |> dim_desc()
+#
+# uniqueProtPepSeq <- phosRes |> filter(SinglePhosLocalized_bool == TRUE) |> select(protein_Id, peptideSequence, posInProtein) |> distinct()
+#
+# # parse sequence window from fasta givn position
+# for (i in 1:nrow(uniqueProtPepSeq)) {
+#   #print(i)
+#   uniqueProtPepSeq$SequenceWindows[i] <- getSequenceWindowForLogo(poi = uniqueProtPepSeq$protein_Id[i], soi = uniqueProtPepSeq$posInProtein[i], fastaObject = myFasta)
+# }
+# tail(uniqueProtPepSeq)
 
 # join sequence windows back!
-phosRes <- left_join(x = phosRes, y = uniqueProtPepSeq)
+# phosRes <- left_join(x = phosRes, y = uniqueProtPepSeq)
+phosRes$SequenceWindows <- "ARBITRARARYWINDOWTHATDOESNOTMAKESENSE"
+
 
 # join sheets
 # get rid  of decoys
 phosRes  <- phosRes |> filter(!grepl("REV_", protein_Id))
 totRes  <- totRes |> filter(!grepl("REV_", protein_Id))
 
+head(totRes)
+head(phosRes)
 # parse  middle part from totRes$proteinID -> sp|A0A0D9S1R0|APOE_CHLSB
-totRes$protAcc <- sapply(strsplit((totRes$protein_Id), split = "\\|"), function(x)x[2])
-combo <- left_join(x = phosRes, y = totRes, join_by("protein_Id" == "protAcc", "contrast" == "contrast"))
+combo <- left_join(x = phosRes, y = totRes, join_by("IDcolumn" == "IDcolumn", "contrast" == "contrast"))
 
 
 # MS stats like adjustment for protein change
-comboWithAdj <- doMSstatsLikeSiteNormalizationUsingProteinStatsOnComboObject(combo)
+comboWithAdj <- prophosqua::doMSstatsLikeSiteNormalizationUsingProteinStatsOnComboObject(combo)
 colnames(comboWithAdj)
 head(comboWithAdj)
 
+# some
+comboWithAdj$protein_Id <- comboWithAdj$protein_Id.x
+comboWithAdj$protein_Id.x <- NULL
 # for RMD report
 GRP2 <- prolfquapp::make_DEA_config(PROJECTID = fgczProject, ORDERID = fgczProject, WORKUNITID = "WUxxx")
 
 # Idea for reporting and downstream processing
-# number of proteins
-uniqueProtPepSeqSite <- comboWithAdj |> select(protein_Id, peptideSequence, site, originalSite) |> distinct()
-length(unique(uniqueProtPepSeqSite$protein_Id))
-myPhosphoProts <- rle(sort(uniqueProtPepSeqSite$protein_Id))
-
-table(myPhosphoProts$lengths)
-hist(myPhosphoProts$lengths, breaks=1000)
-
-myPhosphoProts$values[which(myPhosphoProts$lengths == max(myPhosphoProts$lengths))]
-
-uniqueProtPepSeqSite$originalSite[which(uniqueProtPepSeqSite$protein_Id == myPhosphoProts$values[which(myPhosphoProts$lengths == max(myPhosphoProts$lengths))])]
-
-# Number crunching
-# number of sites split STY
-# all of them
-#barplot(table(comboWithAdj$NumPhos[comboWithAdj$AllLocalized]), main = "Number of identified Phosphorylations per Peptide")
-
-# only single phos-localized -> in RMD
-# table(comboWithAdj$AA[comboWithAdj$SinglePhosLocalized_bool])
-#barplot(table(comboWithAdj$AA[comboWithAdj$SinglePhosLocalized_bool]))
-
-
-# Abundances and STY -> in RMD
-# p <- ggplot2::ggplot(na.omit(comboWithAdj[comboWithAdj$SinglePhosLocalized_bool,]), ggplot2::aes(x=AA, y=avgAbd.x)) +
-#   ggplot2::geom_boxplot()
-# p
-
 
 # render integration html
-resultPath <- resDir
+(resultPath <- resDir)
 (htmlFN <- paste0("Integration",descri))
 prolfquapp::render_DEA(GRP2 = comboWithAdj, outpath = resultPath, htmlname = htmlFN, word = FALSE, markdown = "_Overview_PhosphoAndIntegration.Rmd")
 
@@ -162,5 +168,4 @@ file.remove(myNtoCplotsFiles)
 excelResultList <- list()
 excelResultList$combinedStats <- comboWithAdj
 writexl::write_xlsx(excelResultList, path = paste0(resultPath, "/",htmlFN,".xlsx"))
-#
-save.image(paste0(htmlFN, ".RData"))
+
