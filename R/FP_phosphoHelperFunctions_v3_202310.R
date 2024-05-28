@@ -371,6 +371,7 @@ write_phosphoDEA_all <- function (grp2, name, ZIPDIR, boxplot = TRUE)
 
 #' Apply MSstatsPTM like site normalization (adjustment) for the protein fold-change and pvalues
 #' @param mycombo dataframe from PTMsite and protein prolfqua statistics
+#' @export
 #'
 doMSstatsLikeSiteNormalizationUsingProteinStatsOnComboObject <- function (mycombo)
 {
