@@ -28,8 +28,8 @@ GRP2 <- prolfquapp::make_DEA_config_R6(ZIPDIR = "fN",PROJECTID = fgczProject,
                                        ORDERID = OIDfgcz)
 
 
-fromTSV <- read_tsv("global_ADD-MASSIVE-REANALYSIS-e9ceea92-display_quant_results-main.tsv")
-#fromTSV <- read_tsv("global_ProteoSAFe-ADD-MASSIVE-REANALYSIS-e9ceea92-display_quant_results/global_ADD-MASSIVE-REANALYSIS-e9ceea92-display_quant_results-main.tsv")
+# fromTSV <- read_tsv("global_ADD-MASSIVE-REANALYSIS-e9ceea92-display_quant_results-main.tsv")
+fromTSV <- read_tsv("global_ProteoSAFe-ADD-MASSIVE-REANALYSIS-e9ceea92-display_quant_results/global_ADD-MASSIVE-REANALYSIS-e9ceea92-display_quant_results-main.tsv")
 colnames(fromTSV) <- c("id", "ProteinName", "PeptideSequence", "z", "pepSeqNcharge", "plex", "TechRep", "Run", "channel", "Condition", "BiolRep", "Intensity")
 
 # idea: filter here for only 2 or 4 conditions to slim it down
@@ -82,7 +82,8 @@ atable$ident_Score = "PeptideProphet.Probability"
 atable$ident_qValue = "qValue"
 atable$fileName <- "raw"
 atable$hierarchy[["protein_Id"]] <- c("ProteinName")
-atable$hierarchy[["peptide_Id"]] <- c("PeptideSequence")
+#atable$hierarchy[["peptide_Id"]] <- c("PeptideSequence")
+atable$hierarchy[["site"]] <- c("PeptideSequence")
 atable$hierarchy[["precursor"]] <- c("pepSeqNcharge")
 atable$hierarchyDepth <- 1
 
@@ -124,7 +125,7 @@ grp <- prolfquapp::generate_DEA_reports2(lfqdata, GRP2, protAnnot, Contrasts = a
 prolfquapp::write_DEA_all(grp2 = grp, boxplot = FALSE, markdown = "_Grp2Analysis_V2.Rmd")
 
 
-<<<<<<< HEAD
+
 #
 # PTM (ST and Y enriched)
 #
@@ -148,7 +149,7 @@ path = "."
 (fN <- paste0(fgczProject,"_", descri, "_", WUID,"_",fracti))
 GRP2_phos <- prolfquapp::make_DEA_config_R6(ZIPDIR = fN,PROJECTID = fgczProject,
                                        ORDERID = OIDfgcz)
-GRP2_phos$processing_options$aggregate <- "sum_topN"
+GRP2_phos$processing_options$aggregate <- "topN"
 
 
 # read in ST and Y results
@@ -228,125 +229,41 @@ head(lfqdata_phos$data)
 
 # here we need more parsing w/ site!
 pa_phos <- data.frame(protein_Id = unique(lfqdata_phos$data$protein_Id))
-#pa_phos <- tidyr::separate(pa_phos, protein_Id , c(NA, "IDcolumn"), sep = "_",remove = FALSE) # done before
 pa_phos$description <- "description needed"
-str(pa_phos)
-
-# problem
-#protAnnot <- prolfquapp::ProteinAnnotation$new(lfqdata, pa, cleaned_ids = "IDcolumn")
-head(lfqdata_phos$data)
-head(pa_phos)
-
-#protAnnot <- ProteinAnnotation$new(lfqdata, pa, ids = "IDcolumn")
-#undebug(ProteinAnnotation$new)
-ProteinAnnotation$debug("initialize")
-protAnnot_phos <- ProteinAnnotation$new(lfqdata_phos, pa_phos, ids = "protein_Id")
-
+pa_phos$IDcolumn <- pa_phos$protein_Id
+#protAnnot_phos <- ProteinAnnotation$new(lfqdata_phos, pa_phos, ids = "protein_Id")
+# still issue here!
+protAnnot_phos <- prolfquapp::ProteinAnnotation$new(lfqdata_phos, pa_phos, cleaned_ids = "IDcolumn")
 protAnnot_phos$row_annot
 
-lfqdata_phos$config$table$hkeysDepth()
-GRP2$processing_options$aggregate
-lfqdata <- prolfquapp::aggregate_data(lfqdata, agg_method = GRP2$processing_options$aggregate)
-
-#logger::log_info("data aggregated: {GRP2$pop$aggregate}.")
-lfqdata$factors()
-lfqdata$to_wide()
-grp <- prolfquapp::generate_DEA_reports2(lfqdata, GRP2, protAnnot, Contrasts = annot$contrasts)
-
-#debug(write_DEA_all)
-prolfquapp::write_DEA_all(grp2 = grp, boxplot = FALSE, markdown = "_Grp2Analysis_V2.Rmd")
-
-
-
-
-
-
-
-
-
-
-
-
-
-##
-
-
-head(stypsm)
-table(stypsm$sampleName)
-table(stypsm$Channel)
-
-# Setup configuration
-atable_phos <- prolfqua::AnalysisTableAnnotation$new()
-atable_phos$ident_Score = "PeptideProphet.Probability"
-atable_phos$ident_qValue = "qValue"
-atable_phos$fileName = "sampleName"
-atable_phos$hierarchy[["protein_Id"]] <- c("Acc")
-#atable_phos$hierarchy[["peptide_Id"]] <- c("ProtNpepSeq")
-atable_phos$hierarchy[["site"]] <- c("ProtNsite")
-atable_phos$hierarchy[["Spectrum"]] <- c("PSM")
-
-atable_phos$hierarchyDepth <- 2
-atable_phos$set_response("SumIntensity")
-atable_phos$factors
-
-#
-#debug(dataset_set_factors_deprecated)
-tmp_phos <- prolfquapp::dataset_set_factors_deprecated(atable_phos, stypsm)
-atable_phos <- tmp_phos$atable
-atable_phos$factors
-atable_phos$hierarchy
-stypsm <- tmp_phos$msdata
-str(stypsm)
-
-# Preprocess data - aggregate proteins.
-config_phos <- prolfqua::AnalysisConfiguration$new(atable_phos)
-colnames(stypsm)
-adata_phos <- prolfqua::setup_analysis(stypsm, config_phos)
-colnames(adata_phos)
-
-lfqdata_phos <- prolfqua::LFQData$new(adata_phos, config_phos)
-lfqdata_phos$hierarchy_counts()
-lfqdata_phos$remove_small_intensities(threshold = 1)
-
-
-#logger::log_info("AGGREGATING PEPTIDE DATA!")
-lfqdata_phos$config$table$hkeysDepth()
-lfqdata_phos$config$table$hierarchyDepth <- 2
-lfqdata_phos$to_wide()
-lfqdata_phos$hierarchy_counts()
-
-lfqdata_phos$response()
-GRP2_phos$pop$aggregate
 lfqdata_phos <- prolfquapp::aggregate_data(lfqdata_phos, agg_method = GRP2_phos$processing_options$aggregate)
-#LFQDataAggregator$debug("medpolish")
-#agg <- lfqdata_phos$get_Aggregator()
-#agg$medpolish()
-
-#
-
-lfqdata_phos$to_wide() # strange.. many NAs
-#logger::log_info("data aggregated: {GRP2$pop$aggregate}.")
-#lfqdata$factors()
-
-logger::log_info("END OF DATA TRANSFORMATION.")
-
-# Build protein annot w/ new function
-colnames(stypsm)
-
-protAnnot <- build_protein_annot(
-  lfqdata_phos,
-  stypsm,
-  c("protein_Id" = "ProteinName"),
-  cleaned_protein_id = "Acc",
-  protein_description = "desc",
-  nr_children = "nrPeps",
-  more_columns = NULL)
+grp_phos <- prolfquapp::generate_DEA_reports2(lfqdata_phos, GRP2_phos, protAnnot_phos, Contrasts = annot$contrasts)
 
 lfqdata_phos$to_wide()
+lfqdata$to_wide()
 
-# we get errors here
-grp <- prolfquapp::generate_DEA_reports(lfqdata_phos, GRP2, protAnnot) # this is taking quite a while
+# all fine?
+grp_phos$RES$lfqData$to_wide()
+grp_phos$RES$contrastsData_signif
+myResPlotter <- grp_phos$RES$contrMerged$get_Plotter()
+myResPlotter$volcano()
 
+logger::log_info("DONE WITH DEA REPORTS")
+# result dir
+GRP2_phos$zipdir
+dir.create(GRP2_phos$zipdir)
 
-=======
->>>>>>> 2c70fa31b89440d072f5f81e2bfbfdfa811e8197
+# need helper functions to properly write reports not on protein but peptide level
+# source("FP_phosphoHelperFunctions_v3_202310.R")
+
+colnames(grp_phos$RES$contrastsData)[4] <- "site"
+
+# witold:
+prolfquapp::write_DEA_all(grp2 = grp_phos, boxplot = FALSE, markdown = "_Grp2Analysis_Phospho_V2.Rmd")
+
+# # jg
+# for (i in seq_along(grp_phos)) {
+#   #prolfquapp::write_DEA_all(grp[[i]], names(grp)[i], GRP2$zipdir, boxplot = FALSE)
+#   write_phosphoDEA_all(grp2 = grp_phos, name = "myNameOfGrp", GRP2_phos$zipdir, boxplot = FALSE)
+# }
+
