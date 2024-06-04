@@ -8,14 +8,12 @@ message("prolfquaapp Version :", packageVersion("prolfquapp"), "\n")
 # libs
 library(prolfqua)
 library(prolfquapp)
+library(prophosqua)
 library(readr)
 library(dplyr)
 library(stringr)
 library(openxlsx)
 library(seqinr)
-
-# helperfunctions
-source("FP_phosphoHelperFunctions_v3_202310.R")
 
 
 # parameters and thresholds
@@ -27,14 +25,13 @@ WUID <- "WUxx"
 
 # read back in results
 #paste0(resDir,"Results_DEA_WU",WUID,"/DE_Groups_vs_Controls.xlsx" )
-totRes <- read.xlsx(xlsxFile = "pXXXX_SimulationTMTphospho__TotalProteome/Results_DEA_WUWUxx/DE_Groups_vs_Controls_WUWUxx.xlsx", sheet = "diff_exp_analysis")
-phosRes <- read.xlsx(xlsxFile = "pXXXX_SimulationTMTphospho__PhosphoEnriched/DE_Groups_vs_Controls/DE_Groups_vs_Controls.xlsx", sheet = "diff_exp_analysis")
+totRes <- read.xlsx(xlsxFile = "SimulationONETMTphospho_TotalProteome_PI_pXXXX_OI_oYYYY_WU__none/Results_DEA_WU/DE_Groups_vs_Controls_WU.xlsx", sheet = "diff_exp_analysis")
+phosRes <- read.xlsx(xlsxFile = "SimulationONETMTphospho_PhosphoEnriched_WU__none/Results_DEA_WU/DE_Groups_vs_Controls_WU.xlsx", sheet = "diff_exp_analysis")
 
 (resDir <- paste0(fgczProject, "_",descri, compari))
 
 # there is no fasta for simlulated data
 # myFasta <- seqinr::read.fasta("../fgcz_9606_reviewed_cnl_20230330.fasta", seqtype = "AA", as.string = TRUE)
-
 
 # work on phosRes
 head(phosRes$site)
@@ -93,14 +90,23 @@ phosRes <- left_join(x = phosRes, y = uniqueProtPepSeq)
 phosRes  <- phosRes |> filter(!grepl("REV_", protein_Id))
 totRes  <- totRes |> filter(!grepl("REV_", protein_Id))
 
-# parse  middle part from totRes$proteinID -> sp|A0A0D9S1R0|APOE_CHLSB
-#totRes$protAcc <- sapply(strsplit((totRes$protein_Id), split = "\\|"), function(x)x[2])
-totRes$protAcc <- sapply(strsplit((totRes$protein_Id), split = "\\|"), function(x)x[1])
-phosRes$pNr <- sapply(strsplit((phosRes$protein_Id), split = "_"), function(x)x[2])
-phosRes$pNam <- sapply(strsplit((phosRes$protein_Id), split = "_"), function(x)x[1])
-phosRes$cleanPhosProtein <- paste(phosRes$pNam, phosRes$pNr, sep = "_")
+# parse  phosRes from "Protein_128|NoChange1_S_1" back to totRes$protein_Id[2] -> "Protein_1|NoChange1"
+
+phosRes$fProt <- sapply(strsplit((phosRes$protein_Id), split = "\\|"), function(x)x[1])
+# cut away after _.* -> "Protein_1"
+# q: how can I do gsub with back reference in R? -> \\1
+phosRes$fProt <- gsub(x = phosRes$fProt, pattern = "(Protein_\\d+).*", replacement = "\\1")
+phosRes$Accpart <- sapply(strsplit((phosRes$protein_Id), split = "\\|"), function(x)x[2])
+# replace NA with ""
+phosRes$Accpart[is.na(phosRes$Accpart)] <- ""
+phosRes$Accpart <- gsub(x = phosRes$Accpart, pattern = "(NoChange\\d+).*", replacement = "\\1")
+
+phosRes$cleanPhosProtein <- paste(phosRes$fProt, phosRes$Accpart, sep = "|")
+#problematic Protein_1| for no Accpart
+phosRes$cleanPhosProtein <- gsub(x = phosRes$cleanPhosProtein[phosRes$Accpart == ""], pattern = "\\|", replacement = "")
+
 # combine
-combo <- left_join(x = phosRes, y = totRes, join_by("cleanPhosProtein" == "protAcc", "contrast" == "contrast"))
+combo <- left_join(x = phosRes, y = totRes, join_by("cleanPhosProtein" == "protein_Id", "contrast" == "contrast"))
 
 
 # MS stats like adjustment for protein change
@@ -148,11 +154,11 @@ GRP2 <- prolfquapp::make_DEA_config(PROJECTID = fgczProject, ORDERID = fgczProje
 # }
 
 
-# render integration html
-(resultPath <- resDir)
-(htmlFN <- paste0("Integration",compari))
-comboWithAdj$protein_Id <- comboWithAdj$protein_Id.x
-prolfquapp::render_DEA(GRP2 = comboWithAdj, outpath = resultPath, htmlname = htmlFN, word = FALSE, markdown = "_Overview_PhosphoAndIntegration.Rmd")
+# # render integration html
+# (resultPath <- resDir)
+# (htmlFN <- paste0("Integration",compari))
+# comboWithAdj$protein_Id <- comboWithAdj$protein_Id.x
+# prolfquapp::render_DEA(GRP2 = comboWithAdj, outpath = resultPath, htmlname = htmlFN, word = FALSE, markdown = "_Overview_PhosphoAndIntegration.Rmd")
 
 # write to excel
 #prolfquapp::write_DEA(GRP2 = comboWithAdj, outpath = "IntegrationResults", xlsxname = "IntegrationPhosphoCentric", write = TRUE)
