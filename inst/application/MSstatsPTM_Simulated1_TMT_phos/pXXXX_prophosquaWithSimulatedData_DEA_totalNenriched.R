@@ -242,9 +242,7 @@ atable_phos$ident_Score = "PeptideProphet.Probability"
 atable_phos$ident_qValue = "qValue"
 atable_phos$fileName <- "raw"
 atable_phos$hierarchy[["protein_Id"]] <- c("ProteinName")
-atable_phos$hierarchy[["peptide_Id"]] <- c("PeptideSequence")
-atable_phos$hierarchy[["site"]] <- c("protNsite")
-
+atable_phos$hierarchy[["site"]] <- c("ProteinName","PeptideSequence","protNsite")
 
 atable_phos$hierarchyDepth <- 2
 atable_phos$set_response("Intensity")
@@ -259,6 +257,7 @@ adata_phos <- prolfqua::setup_analysis(psm2, config_phos)
 # lfq data object
 lfqdata_phos <- prolfqua::LFQData$new(adata_phos, config_phos)
 lfqdata_phos$hierarchy_counts()
+lfqdata_phos$data
 lfqdata_phos$remove_small_intensities(threshold = 1)
 lfqdata_phos$hierarchy_counts()
 
