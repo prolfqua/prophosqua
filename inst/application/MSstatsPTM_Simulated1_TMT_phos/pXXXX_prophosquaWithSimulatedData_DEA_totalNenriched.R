@@ -279,7 +279,7 @@ lfqdata_phos$config$table$hkeysDepth()
 
 
 
-GRP2_phos$processing_options$aggregate <- "none"
+GRP2_phos$processing_options$aggregate <- "sum_topN"
 
 # aggregate from psm to protein level here
 lfqdata_phos <- prolfquapp::aggregate_data(lfqdata_phos, agg_method = GRP2$processing_options$aggregate) # LHS error
