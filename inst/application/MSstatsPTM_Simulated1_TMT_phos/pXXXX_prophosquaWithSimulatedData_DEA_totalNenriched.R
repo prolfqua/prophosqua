@@ -21,12 +21,13 @@ load(file = "simulation1_data.rda") # downloaded from github page
 # params ideally taken from yaml
 fgczProject <- "pXXXX"
 OIDfgcz <- "oYYYY"
-descri <- "SimulationTMTphospho_"
+descri <- "SimulationONETMTphospho_"
 fracti <- "TotalProteome"
 WUID <- "WUxx"
 
 # work on GRP for having better folder name
-GRP2 <- prolfquapp::make_DEA_config_R6(ZIPDIR = "fN",PROJECTID = fgczProject,
+(fN <- paste0(descri,fracti))
+GRP2 <- prolfquapp::make_DEA_config_R6(ZIPDIR = fN,PROJECTID = fgczProject,
                                        ORDERID = OIDfgcz)
 
 # look into structure
@@ -85,7 +86,7 @@ psmX$n |> table()
 psmX$PeptideProphet.Probability <- 1
 psmX$qValue <- 0.001
 psmX$oldID <- psmX$ProteinName
-psmX$ProteinName <- gsub(x = psmX$ProteinName, pattern = "\\|.*", replacement = "")
+#psmX$ProteinName <- gsub(x = psmX$ProteinName, pattern = "\\|.*", replacement = "") # we need to keep all separate
 
 # Setup configuration
 atable <- annot$atable
@@ -112,9 +113,6 @@ lfqdata$hierarchy_counts()
 
 # protein annotation
 pa <- data.frame(protein_Id = unique(lfqdata$data$protein_Id))
-#pa <- data.frame(protein_Id = unique(gsub(x = psmX$ProteinName, pattern = "\\|.*", replacement = "")))
-#pa <- tidyr::separate(pa, protein_Id , c(NA, "IDcolumn"), sep = "\\|",remove = FALSE)
-#pa$IDcolumn <- pa$protein_Id
 pa$description <- "description needed"
 pa$IDcolumn <- pa$protein_Id
 
