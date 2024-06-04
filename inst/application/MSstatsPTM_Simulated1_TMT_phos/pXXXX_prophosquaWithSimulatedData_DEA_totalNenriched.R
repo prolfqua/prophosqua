@@ -175,7 +175,7 @@ multiSite_long |> group_by(Condition, BioReplicate) |> summarise(n = n())
 # prepare annot table
 annotable_phos <- annotable_phos |> rename(group = Condition)
 annotable_phos$CONTROL <- "T"
-annotable_phos$CONTROL[annotable$group == "G_1"] <- "C"
+annotable_phos$CONTROL[annotable_phos$group == "G_1"] <- "C"
 
 annotable_phos$raw <- annotable_phos$BioReplicate
 annotable_phos <- annotable_phos |> rename(Name = BioReplicate)
