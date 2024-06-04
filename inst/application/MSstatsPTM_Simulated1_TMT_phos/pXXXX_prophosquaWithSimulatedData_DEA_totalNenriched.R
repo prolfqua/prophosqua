@@ -153,6 +153,8 @@ fracti <- "PhosphoEnriched"
 #WUID <- "WUxx"
 
 multiSite_long <- data.frame(simulation1_data[[1]]$PTM)
+str(multiSite_long)
+tail(multiSite_long$site, n=100)
 
 # work on GRP for having better folder name
 GRP2_phos <- prolfquapp::make_DEA_config_R6(ZIPDIR = "fN",PROJECTID = fgczProject,
@@ -194,19 +196,21 @@ multiSite_long <- multiSite_long |> rename(raw = BioReplicate)
 multiSite_long[["Condition"]] <- NULL
 multiSite_long[["Run"]] <- NULL
 
+
+head(unique(multiSite_long$ProteinName))
+tail(unique(multiSite_long$ProteinName))
+
 # reshaping
 #(multiSite_longx <- multiSite_long |> group_by(ProteinName,PeptideSequence,raw) |> summarize(n = n(), Intensity = sum(Intensity)) |> ungroup())
 #multiSite_longx$n |> table()
 
-dim(multiSite_longx)
-dim(multiSite_long)
 
 # adding things
 multiSite_long$PeptideProphet.Probability <- 1
 multiSite_long$qValue <- 0.001
 multiSite_long$oldID <- multiSite_long$ProteinName
-multiSite_long$protNsite <- gsub(x = multiSite_long$ProteinName, pattern = "\\|.*", replacement = "")
-multiSite_long$ProteinName <- gsub(x = multiSite_long$protNsite, pattern = "_S.*", replacement = "")
+#multiSite_long$protNsite <- gsub(x = multiSite_long$ProteinName, pattern = "\\|.*", replacement = "")
+multiSite_long$protNsite <- multiSite_long$ProteinName
 
 # Setup configuration
 atable_phos <- annot_phos$atable
@@ -240,10 +244,10 @@ pa_phos <- data.frame(protein_Id = unique(lfqdata_phos$data$protein_Id))
 #pa <- tidyr::separate(pa, protein_Id , c(NA, "IDcolumn"), sep = "\\|",remove = FALSE)
 #pa$IDcolumn <- pa$protein_Id
 pa_phos$description <- "description needed"
-pa_phos$IDcolumn <- pa$protein_Id
+pa_phos$IDcolumn <- pa_phos$protein_Id
 
-protAnnot <- ProteinAnnotation$new(lfqdata_phos, pa, cleaned_ids =  "IDcolumn")
-protAnnot$row_annot
+protAnnot_phos <- ProteinAnnotation$new(lfqdata_phos, pa_phos, cleaned_ids =  "IDcolumn")
+protAnnot_phos$row_annot
 
 # roll up to site level
 lfqdata_phos$config$table$hierarchyDepth <- 2
@@ -261,7 +265,7 @@ lfqdata_phos$factors()
 lfqdata_phos$to_wide()
 
 # grp object
-grp_phos <- prolfquapp::generate_DEA_reports2(lfqdata_phos, GRP2, protAnnot, Contrasts = annot_phos$contrasts)
+grp_phos <- prolfquapp::generate_DEA_reports2(lfqdata_phos, GRP2, protAnnot_phos, Contrasts = annot_phos$contrasts)
 
 # here we need more parsing w/ site!
 # pa_phos <- data.frame(protein_Id = unique(lfqdata_phos$data$protein_Id))
