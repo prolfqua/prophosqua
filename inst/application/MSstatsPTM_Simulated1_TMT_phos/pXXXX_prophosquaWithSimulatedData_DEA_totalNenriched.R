@@ -152,6 +152,30 @@ fracti <- "PhosphoEnriched"
 #descri <- "SimulationTMTphospho_"
 #WUID <- "WUxx"
 
+## Sim -> from: https://github.com/devonjkohler/MSstatsPTM_simulations/blob/main/code/simulate_model_data.R
+# 250 proteins where site is changed but not protein!
+# 250 proteins where site is changed and protein is changed in identical way
+# 500 proteins sehre site is not changed but protein is also not changed
+# sim <- PTMsimulateExperiment(
+#   nGroup=param_combos[row, 3], nRep=param_combos[row, 2], nProtein=250, nSite=1, nFeature=2, nFeature_prot = 10,
+#   logAbundance=list(
+#     PTM=list(mu=25, delta = del_arr, sRep=param_combos[row, 1], sPeak=.25),
+#     PROTEIN=list(mu=25, delta = del_arr_no_change, sRep=param_combos[row, 1], sPeak=0.25))
+# )
+# sim_no_change1 <- PTMsimulateExperiment(
+#   nGroup=param_combos[row, 3], nRep=param_combos[row, 2], nProtein=250, nSite=1, nFeature=2, nFeature_prot = 10,
+#   logAbundance=list(
+#     PTM=list(mu=25, delta = del_arr, sRep=param_combos[row, 1], sPeak=0.25),
+#     PROTEIN=list(mu=25, delta = del_arr, sRep=param_combos[row, 1], sPeak=0.25))
+# )
+# sim_no_change2 <- PTMsimulateExperiment(
+#   nGroup=param_combos[row, 3], nRep=param_combos[row, 2], nProtein=500, nSite=1, nFeature=2, nFeature_prot = 10,
+#   logAbundance=list(
+#     PTM=list(mu=25, delta = del_arr_no_change, sRep=param_combos[row, 1], sPeak=0.25),
+#     PROTEIN=list(mu=25, delta = del_arr_no_change, sRep=param_combos[row, 1], sPeak=0.25))
+#
+
+
 multiSite_long <- data.frame(simulation1_data[[1]]$PTM)
 str(multiSite_long)
 tail(multiSite_long$site, n=100)
