@@ -143,8 +143,15 @@ prolfquapp::write_DEA_all(grp2 = grp, boxplot = FALSE, markdown = "_Grp2Analysis
 
 
 # now we go for the phospho enriched data
+#
+#
+#
+#       PTM
+#
+#
+#
+#
 
-# PTM
 # load(file = "simulation1_data.rda") # downloaded from github page
 fracti <- "PhosphoEnriched"
 #fgczProject <- "pXXXX"
@@ -153,9 +160,9 @@ fracti <- "PhosphoEnriched"
 #WUID <- "WUxx"
 
 ## Sim -> from: https://github.com/devonjkohler/MSstatsPTM_simulations/blob/main/code/simulate_model_data.R
-# 250 proteins where site is changed but not protein!
-# 250 proteins where site is changed and protein is changed in identical way
-# 500 proteins sehre site is not changed but protein is also not changed
+# 250 proteins where site is changed but not protein! no pipe in protein_id
+# 250 proteins where site is changed and protein is changed in identical way -> no_change1 these should not be differentially expressed
+# 500 proteins where nothing is changed -> no_change2
 # sim <- PTMsimulateExperiment(
 #   nGroup=param_combos[row, 3], nRep=param_combos[row, 2], nProtein=250, nSite=1, nFeature=2, nFeature_prot = 10,
 #   logAbundance=list(
@@ -278,30 +285,17 @@ lfqdata_phos$config$table$hkeysDepth()
 
 
 
-GRP2_phos$processing_options$aggregate <- "sum_topN"
+GRP2_phos$processing_options$aggregate <- "medpolish" # anyway we do not aggregate here
 
 # aggregate from psm to protein level here
-lfqdata_phos <- prolfquapp::aggregate_data(lfqdata_phos, agg_method = GRP2$processing_options$aggregate) # LHS error
+#lfqdata_phos <- prolfquapp::aggregate_data(lfqdata_phos, agg_method = GRP2_phos$processing_options$aggregate) # LHS error
 
 # what is in the game
 lfqdata_phos$factors()
 lfqdata_phos$to_wide()
 
 # grp object
-grp_phos <- prolfquapp::generate_DEA_reports2(lfqdata_phos, GRP2, protAnnot_phos, Contrasts = annot_phos$contrasts)
-
-# here we need more parsing w/ site!
-# pa_phos <- data.frame(protein_Id = unique(lfqdata_phos$data$protein_Id))
-# pa_phos$description <- "description needed"
-# pa_phos$IDcolumn <- pa_phos$protein_Id
-# protAnnot_phos <- prolfquapp::ProteinAnnotation$new(lfqdata_phos, pa_phos, cleaned_ids = "IDcolumn")
-# protAnnot_phos$row_annot
-
-# aggregating
-lfqdata_phos <- prolfquapp::aggregate_data(lfqdata_phos, agg_method = GRP2_phos$processing_options$aggregate) # LHS error
-
-# modelling
-grp_phos <- prolfquapp::generate_DEA_reports2(lfqdata_phos, GRP2_phos, protAnnot, Contrasts = annot$contrasts)
+grp_phos <- prolfquapp::generate_DEA_reports2(lfqdata_phos, GRP2_phos, protAnnot_phos, Contrasts = annot_phos$contrasts)
 
 # all fine? some checks
 grp_phos$RES$lfqData$to_wide()
@@ -312,144 +306,18 @@ myResPlotter$volcano()
 logger::log_info("DONE WITH DEA REPORTS")
 
 # result dir
-GRP2_phos$zipdir
+(GRP2_phos$zipdir)
 dir.create(GRP2_phos$zipdir)
 
 # need helper functions to properly write reports not on protein but peptide level
-# source("FP_phosphoHelperFunctions_v3_202310.R")
+copy_DEA_DIANN()
+library(prophosqua)
+copy_phosphoDEA_FragPipe_TMT()
 
 # writing reports
+GRP2 <- GRP2_phos
 prolfquapp::write_DEA_all(grp2 = grp_phos, boxplot = FALSE, markdown = "_Grp2Analysis_Phospho_V2.Rmd")
 prolfquapp::write_DEA_all(grp2 = grp_phos, boxplot = FALSE, markdown = "_DiffExpQC_Phospho_V2.Rmd")
-
-
-
-
-# important for phospho
-GRP2_phos$proup$nr_peptdes <- 1
-GRP2$pop$aggregate <- "none"
-
-logger::log_info("GENERATING DEA REPORTS")
-logger::log_info("starting modelling")
-
-source("FP_phosphoHelperFunctions_v3_202310.R")
-
-# generate result folders
-dir.create(GRP2$zipdir)
-
-# write DEAs
-for (i in seq_along(grp)) {
-  #prolfquapp::write_DEA_all(grp[[i]], names(grp)[i], GRP2$zipdir, boxplot = FALSE)
-  write_phosphoDEA_all(grp[[i]], names(grp)[i], GRP2$zipdir, boxplot = FALSE)
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# zip specify here already
-(resDir <- paste(fgczProject, descri, fracti, sep="_"))
-
-GRP2 <- prolfquapp::make_DEA_config(ZIPDIR = resDir, Normalization = "none", PROJECTID = fgczProject, ORDERID = fgczProject, WORKUNITID = "WUxxx_Phospho")
-# GRP2 <- prolfquapp::dataset_extract_contrasts(annot, GRP2) # we do not have proper annot file here
-
-# parse annotation from input directly
-# add missing things
-multiSite_long$"PeptideProphet.Probability" <- 1
-multiSite_long$qValue <- 0.001
-multiSite_long$rawfile <- multiSite_long$BioReplicate
-multiSite_long$GroupingVar <- multiSite_long$Condition
-multiSite_long$BioReplicate <- NULL
-
-# C or T
-multiSite_long$CONTROL <- NA
-multiSite_long$CONTROL[multiSite_long$Condition == "G_1"] <- "C"
-multiSite_long$CONTROL[multiSite_long$Condition == "G_2"] <- "T"
-
-# check
-multiSite_long |> select(rawfile, GroupingVar) |> distinct() |> group_by(GroupingVar) |> summarise(n())
-
-# Setup configuration
-atable <- prolfqua::AnalysisTableAnnotation$new()
-atable$ident_Score = "PeptideProphet.Probability"
-atable$ident_qValue = "qValue"
-atable$fileName = "rawfile"
-atable$hierarchy[["protein_Id"]] <- c("ProteinName")
-atable$hierarchy[["site"]] <- c("site", "PeptideSequence")
-atable$set_response("Intensity")
-
-atable$hierarchyDepth <- 2
-
-tmp <- prolfquapp::dataset_set_factors_deprecated(atable, multiSite_long)
-atable <- tmp$atable
-atable$factors
-multiSite_long <- tmp$msdata
-multiSite_long$desc <- "myDescription"
-multiSite_long$nrPeps <- 1
-
-# Configuration
-config <- prolfqua::AnalysisConfiguration$new(atable)
-
-adata <- prolfqua::setup_analysis(multiSite_long, config)
-
-lfqdata <- prolfqua::LFQData$new(adata, config)
-lfqdata$hierarchy_counts()
-lfqdata$remove_small_intensities(threshold = 1)
-lfqdata$hierarchy_counts()
-
-lfqdata$config$table$hierarchyDepth <- 2
-# some checks
-lfqdata$to_wide()
-lfqdata$response()
-lfqdata$hierarchy_counts()
-
-
-#logger::log_info("AGGREGATING PEPTIDE DATA!")
-lfqdata$config$table$hierarchy_keys()
-
-# Build protein annot w/ new function
-protAnnot <- build_protein_annot(
-  lfqdata,
-  multiSite_long,
-  c("protein_Id" = "ProteinName"),
-  cleaned_protein_id = "ProteinName",
-  protein_description = "desc",
-  nr_children = "nrPeps",
-  more_columns = NULL)
-
-# important for phospho
-GRP2$pop$nr_peptdes <- 1
-GRP2$pop$aggregate <- "none"
-
-logger::log_info("GENERATING DEA REPORTS")
-logger::log_info("starting modelling")
-
-grp <- prolfquapp::generate_DEA_reports(lfqdata, GRP2, protAnnot)
-
-logger::log_info("DONE WITH DEA REPORTS")
-
-source("FP_phosphoHelperFunctions_v3_202310.R")
-
-# generate result folders
-dir.create(GRP2$zipdir)
-
-# write DEAs
-for (i in seq_along(grp)) {
-  #prolfquapp::write_DEA_all(grp[[i]], names(grp)[i], GRP2$zipdir, boxplot = FALSE)
-  write_phosphoDEA_all(grp[[i]], names(grp)[i], GRP2$zipdir, boxplot = FALSE)
-}
 
 
 
