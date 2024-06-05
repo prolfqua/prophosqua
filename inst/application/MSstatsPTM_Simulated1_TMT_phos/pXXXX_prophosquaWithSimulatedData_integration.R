@@ -171,20 +171,67 @@ writexl::write_xlsx(excelResultList, path = paste0(resultPath, "/",htmlFN,".xlsx
 
 
 # look into ms-stats pmt results --> wtf these results are not feature centric!
-
 load("adj_limma_models_sim1.rda")
 # look into adj_limma_models_sim1
 adj_limma_sim1[[1]] |> dim()
-
 load("ptm_models_sim1.rda")
 # look into ptm_models_sim1
 ptm_models_sim1[[1]] |> dim()
-
 adj_limma_sim1[[1]]
 
 
 # look into prophosqua results to see differences in TP and FP
-res_prophosqua <-
+res_prophosqua <- read.xlsx(xlsxFile = "pXXXX_TMTphospho_integration_SimulatedOne/Integration_SimulatedOne.xlsx", sheet = "combinedStats")
+
+sigThreshold <- 0.05
+
+res_prophosqua$potentialTP_bool <- str_count(res_prophosqua$site ,"NoChange") == 0
+res_prophosqua$is_sig <- res_prophosqua$MSstatsPTMadj_FDR < sigThreshold
+res_prophosqua$sureFP <- str_count(res_prophosqua$site ,"NoChange") > 0 & res_prophosqua$MSstatsPTMadj_FDR < sigThreshold
+res_prophosqua$likelyTP <- res_prophosqua$potentialTP_bool &  res_prophosqua$is_sig
+
+# q: draw two histogram for res_prophosqua$avgAbd.x where likelyTP and sureFPlibrary(ggplot2)
+library(ggplot2)
+# Filter the data based on conditions
+likelyTP_hist <- res_prophosqua[res_prophosqua$likelyTP == TRUE, ]
+sureFP_hist <- res_prophosqua[res_prophosqua$sureFP == TRUE, ]
+
+# Create histograms
+ggplot() +
+  # Histogram for likelyTP
+  geom_histogram(data = likelyTP_hist, aes(x = avgAbd.x), fill = "blue", alpha = 0.5, binwidth = 0.5) +
+  # Histogram for sureFP
+  geom_histogram(data = sureFP_hist, aes(x = avgAbd.x), fill = "red", alpha = 0.5, binwidth = 0.5) +
+  # Axis and plot labels
+  labs(x = "avgAbd.x", y = "Frequency", title = "Histograms for likelyTP sureFP") +
+  # Legend
+  scale_fill_manual(values = c("blue", "red"), labels = c("likelyTP", "sureFP"))
 
 
+# q: how can I have more granularity on my histogram (more breaks)?
+ggplot() +
+  # Histogram for likelyTP
+  geom_histogram(data = likelyTP_hist, aes(x = avgAbd.x), fill = "blue", alpha = 0.5, binwidth = 0.05) +
+  # Histogram for sureFP
+  geom_histogram(data = sureFP_hist, aes(x = avgAbd.x), fill = "red", alpha = 0.5, binwidth = 0.05) +
+  # Axis and plot labels
+  labs(x = "avgAbd.x", y = "Frequency", title = "Histograms for likelyTP sureFP") +
+  # Legend
+  scale_fill_manual(values = c("blue", "red"), labels = c("likelyTP", "sureFP")) +
+  # More breaks
+  scale_x_continuous(breaks = seq(0, 10, by = 0.01))
+
+
+# now I want the same but look at the diff.x values
+ggplot() +
+  # Histogram for likelyTP
+  geom_histogram(data = likelyTP_hist, aes(x = diff.x), fill = "blue", alpha = 0.5, binwidth = 0.05) +
+  # Histogram for sureFP
+  geom_histogram(data = sureFP_hist, aes(x = diff.x), fill = "red", alpha = 0.5, binwidth = 0.05) +
+  # Axis and plot labels
+  labs(x = "diff.x", y = "Frequency", title = "Histograms for likelyTP sureFP") +
+  # Legend
+  scale_fill_manual(values = c("blue", "red"), labels = c("likelyTP", "sureFP")) +
+  # More breaks
+  scale_x_continuous(breaks = seq(-10, 10, by = 0.5))
 
