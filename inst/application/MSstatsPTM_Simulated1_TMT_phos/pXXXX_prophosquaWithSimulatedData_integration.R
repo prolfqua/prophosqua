@@ -165,3 +165,26 @@ GRP2 <- prolfquapp::make_DEA_config(PROJECTID = fgczProject, ORDERID = fgczProje
 excelResultList <- list()
 excelResultList$combinedStats <- comboWithAdj
 writexl::write_xlsx(excelResultList, path = paste0(resultPath, "/",htmlFN,".xlsx"))
+
+
+
+
+
+# look into ms-stats pmt results --> wtf these results are not feature centric!
+
+load("adj_limma_models_sim1.rda")
+# look into adj_limma_models_sim1
+adj_limma_sim1[[1]] |> dim()
+
+load("ptm_models_sim1.rda")
+# look into ptm_models_sim1
+ptm_models_sim1[[1]] |> dim()
+
+adj_limma_sim1[[1]]
+
+
+# look into prophosqua results to see differences in TP and FP
+res_prophosqua <-
+
+
+
