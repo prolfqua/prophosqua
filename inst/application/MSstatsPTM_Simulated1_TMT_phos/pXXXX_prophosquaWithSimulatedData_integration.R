@@ -235,3 +235,50 @@ ggplot() +
   # More breaks
   scale_x_continuous(breaks = seq(-10, 10, by = 0.5))
 
+# q: I want to draw xy-plot in ggplot2 where x-axis is diff.x and y-axis is diff.y
+# q: how can I use continous color of -log10(MSstatsPTMadj_FDR) for the points in the scatter plot?
+# q: how can I also use -log10(MSstatsPTMadj_FDR) size for the dots in the scatter plot?
+# q: how can I add alpha blending to the points in the scatter plot or make them transparent or invert the color scale?
+
+# q: how can I change color range for the points in the scatter plot?
+# q: how can I invert the color range for the points in the scatter plot?
+# q: how can I change the shape of the points in the scatter plot?  https://ggplot2.tidyverse.org/reference/geom_point.html
+
+ggplot() +
+  # Scatter plot
+  geom_point(alpha = 1/0.1, data = res_prophosqua, aes(x = diff.x, y = diff.y, color = -log10(MSstatsPTMadj_FDR), size = -log10(MSstatsPTMadj_FDR))) +
+  scale_colour_gradient2() +
+  # Axis and plot labels
+  labs(x = "diff.x", y = "diff.y", title = "Scatter plot for diff.x and diff.y")
+
+
+ggplot() +
+  # Scatter plot
+  geom_point(alpha = 1/10, data = res_prophosqua, aes(x = diff.x, y = diff.y, color = -log10(MSstatsPTMadj_FDR), size = 0.01)) +
+  scale_colour_gradient2() +
+  # Axis and plot labels
+  labs(x = "diff.x", y = "diff.y", title = "Scatter plot for diff.x and diff.y")
+
+
+ggplot() +
+  # Scatter plot
+  geom_point(alpha = 1/0.1, data = res_prophosqua, aes(x = diff.x, y = diff.y, color = -log10(MSstatsPTMadj_FDR), size = -log10(MSstatsPTMadj_FDR))) +
+  scale_colour_gradient(low = "lightblue", high = "black") +
+  # Axis and plot labels
+  labs(x = "diff.x", y = "diff.y", title = "Scatter plot for diff.x and diff.y")
+
+ggplot() +
+  # Scatter plot
+  geom_point(data = res_prophosqua, aes(x = diff.x, y = diff.y, color = -log10(MSstatsPTMadj_FDR))) +
+  # Axis and plot labels
+  labs(x = "diff.x", y = "diff.y", title = "Scatter plot for diff.x and diff.y")
+
+ggplot() +
+  # Scatter plot
+  geom_point(data = res_prophosqua, aes(x = diff.x, y = diff.y), color = "blue") +
+  # Axis and plot labels
+  labs(x = "diff.x", y = "diff.y", title = "Scatter plot for diff.x and diff.y")
+
+
+
+
