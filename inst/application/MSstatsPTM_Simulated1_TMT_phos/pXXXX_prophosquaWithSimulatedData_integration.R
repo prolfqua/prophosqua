@@ -243,10 +243,15 @@ ggplot() +
 # q: how can I change color range for the points in the scatter plot?
 # q: how can I invert the color range for the points in the scatter plot?
 # q: how can I change the shape of the points in the scatter plot?  https://ggplot2.tidyverse.org/reference/geom_point.html
+# q: how can I add a red circle around plots where MSstatsPTMadj_FDR < 0.05?
+# a: https://ggplot2.tidyverse.org/reference/geom_point.html
 
 ggplot() +
   # Scatter plot
-  geom_point(alpha = 1/0.1, data = res_prophosqua, aes(x = diff.x, y = diff.y, color = -log10(MSstatsPTMadj_FDR), size = -log10(MSstatsPTMadj_FDR))) +
+  geom_point(alpha = 1/0.1, data = res_prophosqua, aes(x = diff.x, y = diff.y,
+                                                        color = -log10(MSstatsPTMadj_FDR),
+                                                       size = -log10(MSstatsPTMadj_FDR),
+                                                       shape = factor(is_sig))) +
   scale_colour_gradient2() +
   # Axis and plot labels
   labs(x = "diff.x", y = "diff.y", title = "Scatter plot for diff.x and diff.y")
