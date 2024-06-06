@@ -174,6 +174,7 @@ writexl::write_xlsx(excelResultList, path = paste0(resultPath, "/",htmlFN,".xlsx
 load("adj_limma_models_sim1.rda")
 # look into adj_limma_models_sim1
 adj_limma_sim1[[1]] |> dim()
+tt <-  adj_limma_sim1[[1]]
 load("ptm_models_sim1.rda")
 # look into ptm_models_sim1
 ptm_models_sim1[[1]] |> dim()
