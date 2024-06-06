@@ -20,13 +20,15 @@ library(seqinr)
 # params ideally taken from yaml
 fgczProject <- "pXXXX"
 descri <- "TMTphospho_integration"
-compari <- "_SimulatedOne"
+compari <- "_ownWeWSimulatedOne"
 WUID <- "WUxx"
 
 # read back in results
 #paste0(resDir,"Results_DEA_WU",WUID,"/DE_Groups_vs_Controls.xlsx" )
-totRes <- read.xlsx(xlsxFile = "SimulationONETMTphospho_TotalProteome_PI_pXXXX_OI_oYYYY_WU__none/Results_DEA_WU/DE_Groups_vs_Controls_WU.xlsx", sheet = "diff_exp_analysis")
-phosRes <- read.xlsx(xlsxFile = "SimulationONETMTphospho_PhosphoEnriched_WU__none/Results_DEA_WU/DE_Groups_vs_Controls_WU.xlsx", sheet = "diff_exp_analysis")
+totRes <- read.xlsx(xlsxFile = "Simulation_redone_ONETMTphospho_TotalProteome_PI_pXXXX_OI_oYYYY_WU__none/Results_DEA_WU/DE_Groups_vs_Controls_WU.xlsx", sheet = "diff_exp_analysis")
+phosRes <- read.xlsx(xlsxFile = "Simulation_redone_ONETMTphospho_PhosphoEnriched_2024-06-06/Results_DEA_WU/DE_Groups_vs_Controls_WU.xlsx", sheet = "diff_exp_analysis")
+# site missing since we rolled up to protein
+phosRes$site <- phosRes$protein_Id
 
 (resDir <- paste0(fgczProject, "_",descri, compari))
 
@@ -34,7 +36,7 @@ phosRes <- read.xlsx(xlsxFile = "SimulationONETMTphospho_PhosphoEnriched_WU__non
 # myFasta <- seqinr::read.fasta("../fgcz_9606_reviewed_cnl_20230330.fasta", seqtype = "AA", as.string = TRUE)
 
 # work on phosRes
-head(phosRes$site)
+colnames(phosRes)
 
 # Filter out FGCZContaminants -> problematic at sites
 phosRes <- phosRes |> filter(!grepl("FGCZCont", protein_Id))
@@ -155,8 +157,8 @@ GRP2 <- prolfquapp::make_DEA_config(PROJECTID = fgczProject, ORDERID = fgczProje
 
 
 # # render integration html
-# (resultPath <- resDir)
-# (htmlFN <- paste0("Integration",compari))
+(resultPath <- resDir)
+(htmlFN <- paste0("Integration",compari))
 # comboWithAdj$protein_Id <- comboWithAdj$protein_Id.x
 # prolfquapp::render_DEA(GRP2 = comboWithAdj, outpath = resultPath, htmlname = htmlFN, word = FALSE, markdown = "_Overview_PhosphoAndIntegration.Rmd")
 
@@ -165,7 +167,7 @@ GRP2 <- prolfquapp::make_DEA_config(PROJECTID = fgczProject, ORDERID = fgczProje
 excelResultList <- list()
 excelResultList$combinedStats <- comboWithAdj
 writexl::write_xlsx(excelResultList, path = paste0(resultPath, "/",htmlFN,".xlsx"))
-
+write_tsv(file = paste0(htmlFN,".tsv"), comboWithAdj)
 
 
 
