@@ -15,13 +15,14 @@ library(prolfquapp)
 library(readr)
 
 
-load(file = "simulation1_data.rda") # downloaded from github page
+#load(file = "simulation1_data.rda") # downloaded from github page -> this one is flawed .. 10 features also in the PTM data
+load(file="simulation1_data_newByWeW.rda") # this one is fixed")
 # we can generate them ourselves with the provided code at least!
 
 # params ideally taken from yaml
 fgczProject <- "pXXXX"
 OIDfgcz <- "oYYYY"
-descri <- "SimulationONETMTphospho_"
+descri <- "Simulation_redone_ONETMTphospho_"
 fracti <- "TotalProteome"
 WUID <- "WUxx"
 
@@ -154,7 +155,7 @@ prolfquapp::write_DEA_all(grp2 = grp, boxplot = FALSE, markdown = "_Grp2Analysis
 fracti <- "PhosphoEnriched"
 #fgczProject <- "pXXXX"
 #OIDfgcz <- "oYYYY"
-#descri <- "SimulationTMTphospho_"
+#descri <- "Simulation_redone_ONETMTphospho_"
 #WUID <- "WUxx"
 
 ## Sim -> from: https://github.com/devonjkohler/MSstatsPTM_simulations/blob/main/code/simulate_model_data.R
@@ -229,11 +230,6 @@ multiSite_long[["Run"]] <- NULL
 head(unique(multiSite_long$ProteinName))
 tail(unique(multiSite_long$ProteinName))
 
-# reshaping
-#(multiSite_longx <- multiSite_long |> group_by(ProteinName,PeptideSequence,raw) |> summarize(n = n(), Intensity = sum(Intensity)) |> ungroup())
-#multiSite_longx$n |> table()
-
-
 # adding things
 multiSite_long$PeptideProphet.Probability <- 1
 multiSite_long$qValue <- 0.001
@@ -249,7 +245,7 @@ atable_phos$fileName <- "raw"
 atable_phos$hierarchy[["protein_Id"]] <- c("ProteinName")
 atable_phos$hierarchy[["site"]] <- c("ProteinName","PeptideSequence","protNsite")
 
-atable_phos$hierarchyDepth <- 2
+atable_phos$hierarchyDepth <- 1
 atable_phos$set_response("Intensity")
 
 
@@ -278,15 +274,15 @@ protAnnot_phos <- ProteinAnnotation$new(lfqdata_phos, pa_phos, cleaned_ids =  "I
 protAnnot_phos$row_annot
 
 # roll up to site level
-lfqdata_phos$config$table$hierarchyDepth <- 2
+lfqdata_phos$config$table$hierarchyDepth <- 1
 lfqdata_phos$config$table$hkeysDepth()
 
 
 
 GRP2_phos$processing_options$aggregate <- "medpolish" # anyway we do not aggregate here
-
 # aggregate from psm to protein level here
-#lfqdata_phos <- prolfquapp::aggregate_data(lfqdata_phos, agg_method = GRP2_phos$processing_options$aggregate) # LHS error
+# now we also aggregate since it is the same feature in the same protein
+lfqdata_phos <- prolfquapp::aggregate_data(lfqdata_phos, agg_method = GRP2_phos$processing_options$aggregate) # LHS error
 
 # what is in the game
 lfqdata_phos$factors()
@@ -304,7 +300,7 @@ myResPlotter$volcano()
 logger::log_info("DONE WITH DEA REPORTS")
 
 # result dir
-(GRP2_phos$zipdir)
+(GRP2_phos$zipdir <- paste0(descri,fracti,"_", Sys.Date()))
 dir.create(GRP2_phos$zipdir)
 
 # need helper functions to properly write reports not on protein but peptide level
@@ -313,6 +309,11 @@ library(prophosqua)
 copy_phosphoDEA_FragPipe_TMT()
 
 # writing reports
+GRP2_phos$RES$lfqData$data$site <- GRP2_phos$RES$lfqData$data$protein_Id
+colnames(GRP2_phos$RES$contrastsData)
+GRP2_phos$RES$contrastsData$site <- GRP2_phos$RES$contrastsData$protein_Id
+GRP2_phos$RES$contrastsData_signif$site <- GRP2_phos$RES$contrastsData_signif$protein_Id
+
 GRP2 <- GRP2_phos
 prolfquapp::write_DEA_all(grp2 = grp_phos, boxplot = FALSE, markdown = "_Grp2Analysis_Phospho_V2.Rmd")
 prolfquapp::write_DEA_all(grp2 = grp_phos, boxplot = FALSE, markdown = "_DiffExpQC_Phospho_V2.Rmd")
