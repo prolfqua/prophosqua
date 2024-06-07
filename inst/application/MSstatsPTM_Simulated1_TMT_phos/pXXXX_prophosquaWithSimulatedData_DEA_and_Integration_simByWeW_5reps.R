@@ -291,3 +291,107 @@ GRP2 <- GRP2_phos
 prolfquapp::write_DEA_all(grp2 = grp_phos, boxplot = FALSE, markdown = "_Grp2Analysis_Phospho_V2.Rmd")
 prolfquapp::write_DEA_all(grp2 = grp_phos, boxplot = FALSE, markdown = "_DiffExpQC_Phospho_V2.Rmd")
 
+# integration starting here
+
+
+rm(list=ls())
+# parameters and thresholds
+# params ideally taken from yaml
+fgczProject <- "pXXXX"
+descri <- "integration"
+compari <- "_5reps"
+WUID <- "WUxx"
+
+# read back in results
+totRes <- read.xlsx(xlsxFile = "simTwoGrps5RepsTotalProteome_PI_pXXXX_OI_oYYYY_WU__none/Results_DEA_WU/DE_Groups_vs_Controls_WU.xlsx", sheet = "diff_exp_analysis")
+phosRes <- read.xlsx(xlsxFile = "simTwoGrps5RepsPhosphoEnriched_2024-06-07/Results_DEA_WU/DE_Groups_vs_Controls_WU.xlsx", sheet = "diff_exp_analysis")
+
+# site missing since we rolled up to protein
+phosRes$site <- phosRes$protein_Id
+
+(resDir <- paste0(fgczProject, "_",descri, compari))
+
+# some parsing .. here often not useful but necessairy to not run into errors
+phosRes$originalSite <- phosRes$site
+phosRes$site <- sapply(strsplit((phosRes$site), split = "~"), function(x)x[1])
+phosRes$AccFromSite <- sapply(strsplit((phosRes$site), split = "_"), function(x)x[1])
+phosRes$startModSite <- as.numeric(sapply(strsplit((phosRes$site), split = "_"), function(x)x[2]))
+phosRes$endModSite <- as.numeric(sapply(strsplit((phosRes$site), split = "_"), function(x)x[3]))
+phosRes$NumPhos <- 1
+phosRes$LocalizedNumPhos <- 1
+phosRes$PhosSites <- gsub(x = phosRes$site, pattern = "_",replacement = "")
+phosRes$SinglePhos_bool <- phosRes$NumPhos == 1
+phosRes$AllLocalized <- phosRes$NumPhos == phosRes$LocalizedNumPhos
+phosRes$SinglePhosLocalized_bool <- phosRes$NumPhos == 1 & phosRes$LocalizedNumPhos == 1
+phosRes$peptideSequence <- "PEPTIDEK"
+
+# work on phospho to
+phosRes$AA <- gsub(x = phosRes$PhosSites, pattern = "\\d+", replacement = "")
+# parse position in protein
+phosRes$posInProtein <- as.numeric(gsub(x = phosRes$PhosSites, pattern = "[STY]", replacement = ""))
+
+# # add info if found in more than one unique peptide
+# phosRes$SiteFoundInManyPeptides <- 1
+#
+# table(phosRes$AA[phosRes$SinglePhosLocalized_bool])
+#
+# uniqueProtPepSeq <- phosRes |> filter(SinglePhosLocalized_bool == TRUE) |> select(protein_Id, peptideSequence, posInProtein) |> distinct()
+#
+# # we do not have a fasta
+# # for (i in 1:nrow(uniqueProtPepSeq)) {
+# #   uniqueProtPepSeq$SequenceWindows[i] <- getSequenceWindowForLogo(poi = uniqueProtPepSeq$protein_Id[i], soi = uniqueProtPepSeq$posInProtein[i], fastaObject = myFasta)
+# # }
+#
+# uniqueProtPepSeq$SequenceWindows <- "MYPEPTIDEKWINDWWFAKE"
+# tail(uniqueProtPepSeq)
+#
+# # join sequence windows back!
+# phosRes <- left_join(x = phosRes, y = uniqueProtPepSeq)
+
+
+# this is important for the integration of the simulated data
+# parse  phosRes from "Protein_128|NoChange1_S_1" back to totRes$protein_Id[2] -> "Protein_1|NoChange1"
+phosRes$fProt <- sapply(strsplit((phosRes$protein_Id), split = "\\|"), function(x)x[1])
+# cut away after _.* -> "Protein_1"
+# q: how can I do gsub with back reference in R? -> \\1
+phosRes$fProt <- gsub(x = phosRes$fProt, pattern = "(Protein_\\d+).*", replacement = "\\1")
+phosRes$Accpart <- sapply(strsplit((phosRes$protein_Id), split = "\\|"), function(x)x[2])
+# replace NA with ""
+phosRes$Accpart[is.na(phosRes$Accpart)] <- ""
+phosRes$Accpart <- gsub(x = phosRes$Accpart, pattern = "(NoChange\\d+).*", replacement = "\\1")
+
+phosRes$cleanPhosProtein <- paste(phosRes$fProt, phosRes$Accpart, sep = "|")
+
+#problematic Protein_1| for no Accpart
+phosRes$cleanPhosProtein3 <- gsub(x = phosRes$cleanPhosProtein, pattern = "\\|$", replacement = "")
+
+# combine
+combo <- left_join(x = phosRes, y = totRes, join_by("cleanPhosProtein3" == "protein_Id", "contrast" == "contrast"))
+
+
+# MS stats like adjustment for protein change
+comboWithAdj <- doMSstatsLikeSiteNormalizationUsingProteinStatsOnComboObject(combo)
+
+# for RMD report
+GRP2 <- prolfquapp::make_DEA_config(PROJECTID = fgczProject, ORDERID = fgczProject, WORKUNITID = "WUxxx")
+
+
+# # render integration html
+(resultPath <- resDir)
+(htmlFN <- paste0("Integration",compari))
+comboWithAdj$protein_Id <- comboWithAdj$IDcolumn.x
+comboWithAdj$protein_Id.y <- comboWithAdj$IDcolumn.x
+
+prolfquapp::render_DEA(GRP2 = comboWithAdj, outpath = resultPath, htmlname = htmlFN, word = FALSE, markdown = "_Overview_PhosphoAndIntegration.Rmd")
+
+# write to excel
+#rm(GRP2)
+#prolfquapp::write_DEA(GRP2 = comboWithAdj, outpath = "IntegrationResults", xlsxname = "IntegrationPhosphoCentric", write = TRUE)
+
+excelResultList <- list()
+excelResultList$combinedStats <- comboWithAdj
+writexl::write_xlsx(excelResultList, path = paste0(resultPath, "/",htmlFN,".xlsx"))
+
+
+
+
