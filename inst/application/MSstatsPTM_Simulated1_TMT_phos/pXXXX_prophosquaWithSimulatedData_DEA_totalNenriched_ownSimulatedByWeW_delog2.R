@@ -183,6 +183,8 @@ fracti <- "PhosphoEnriched"
 
 
 multiSite_long <- data.frame(simulation1_data[[1]]$PTM)
+head(multiSite_long)
+log2(multiSite_long$Intensity)
 str(multiSite_long)
 tail(multiSite_long$site, n=100)
 
