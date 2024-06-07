@@ -104,11 +104,15 @@ phosRes$Accpart[is.na(phosRes$Accpart)] <- ""
 phosRes$Accpart <- gsub(x = phosRes$Accpart, pattern = "(NoChange\\d+).*", replacement = "\\1")
 
 phosRes$cleanPhosProtein <- paste(phosRes$fProt, phosRes$Accpart, sep = "|")
-#problematic Protein_1| for no Accpart
-phosRes$cleanPhosProtein <- gsub(x = phosRes$cleanPhosProtein[phosRes$Accpart == ""], pattern = "\\|", replacement = "")
 
+#problematic Protein_1| for no Accpart
+#phosRes$cleanPhosProtein <- gsub(x = phosRes$cleanPhosProtein[phosRes$Accpart == ""], pattern = "\\|", replacement = "")
+phosRes$cleanPhosProtein2 <- gsub(x = phosRes$cleanPhosProtein[phosRes$Accpart == ""], pattern = "\\|", replacement = "")
+phosRes$cleanPhosProtein3 <- gsub(x = phosRes$cleanPhosProtein, pattern = "\\|$", replacement = "")
+head(phosRes)
+head(totRes)
 # combine
-combo <- left_join(x = phosRes, y = totRes, join_by("cleanPhosProtein" == "protein_Id", "contrast" == "contrast"))
+combo <- left_join(x = phosRes, y = totRes, join_by("cleanPhosProtein3" == "protein_Id", "contrast" == "contrast"))
 
 
 # MS stats like adjustment for protein change
@@ -159,11 +163,13 @@ GRP2 <- prolfquapp::make_DEA_config(PROJECTID = fgczProject, ORDERID = fgczProje
 # # render integration html
 (resultPath <- resDir)
 (htmlFN <- paste0("Integration",compari))
-# comboWithAdj$protein_Id <- comboWithAdj$protein_Id.x
-# prolfquapp::render_DEA(GRP2 = comboWithAdj, outpath = resultPath, htmlname = htmlFN, word = FALSE, markdown = "_Overview_PhosphoAndIntegration.Rmd")
+comboWithAdj$protein_Id <- comboWithAdj$protein_Id.x
+prolfquapp::render_DEA(GRP2 = comboWithAdj, outpath = resultPath, htmlname = htmlFN, word = FALSE, markdown = "_Overview_PhosphoAndIntegration.Rmd")
 
 # write to excel
+#rm(GRP2)
 #prolfquapp::write_DEA(GRP2 = comboWithAdj, outpath = "IntegrationResults", xlsxname = "IntegrationPhosphoCentric", write = TRUE)
+
 excelResultList <- list()
 excelResultList$combinedStats <- comboWithAdj
 writexl::write_xlsx(excelResultList, path = paste0(resultPath, "/",htmlFN,".xlsx"))
