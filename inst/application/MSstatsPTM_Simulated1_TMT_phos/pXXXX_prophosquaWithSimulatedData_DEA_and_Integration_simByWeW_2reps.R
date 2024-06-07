@@ -292,9 +292,7 @@ prolfquapp::write_DEA_all(grp2 = grp_phos, boxplot = FALSE, markdown = "_Grp2Ana
 prolfquapp::write_DEA_all(grp2 = grp_phos, boxplot = FALSE, markdown = "_DiffExpQC_Phospho_V2.Rmd")
 
 # integration starting here
-
-
-rm(list=ls())
+#rm(list=ls())
 # parameters and thresholds
 # params ideally taken from yaml
 fgczProject <- "pXXXX"
@@ -393,5 +391,25 @@ excelResultList$combinedStats <- comboWithAdj
 writexl::write_xlsx(excelResultList, path = paste0(resultPath, "/",htmlFN,".xlsx"))
 
 
+# read in msstatsPTM results
+load("adj_limma_models_sim1.rda")
+res_MSstatsPTM <- adj_limma_sim1[[1]]
+head(res_MSstatsPTM)
+res_MSstatsPTM$adj.P.Val <- p.adjust(res_MSstatsPTM$pvalue, method = "BH")
 
+
+sigThreshold <- 0.05
+# get the significant results
+sig_prophosqua <- comboWithAdj[comboWithAdj$MSstatsPTMadj_FDR < sigThreshold,]
+sig_MSstatsPTM <- res_MSstatsPTM[res_MSstatsPTM$adj.P.Val < sigThreshold,]
+
+get_spezificity_sensitivity(objectWithProteinIDs = sig_MSstatsPTM$PTM)
+get_spezificity_sensitivity(objectWithProteinIDs = sig_prophosqua$IDcolumn.x)
+
+round(get_empirical_FDR(objectWithProteinIDs = sig_MSstatsPTM$PTM),2)
+round(get_empirical_FDR(objectWithProteinIDs = sig_prophosqua$IDcolumn.x),2)
+
+# get the overlap
+overlap <- intersect(sig_prophosqua$IDcolumn.x, sig_MSstatsPTM$PTM)
+length(overlap)
 
