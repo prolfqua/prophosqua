@@ -32,14 +32,14 @@ simulation1_data[[3]]$PTM$Condition |> table()
 simulation1_data[[5]]$PTM$Run |> table() # quintuplicates
 simulation1_data[[5]]$PTM$Condition |> table()
 
-idxOfInterest <- 5
+idxOfInterest <- 1
 
 # we can generate them ourselves with the provided code at least!
 
 # params ideally taken from yaml
 fgczProject <- "pXXXX"
 OIDfgcz <- "oYYYY"
-descri <- "simTwoGrps5Reps"
+descri <- "simTwoGrps2Reps_idOne"
 fracti <- "TotalProteome"
 WUID <- "WUxx"
 
@@ -299,7 +299,7 @@ rm(list=ls())
 # params ideally taken from yaml
 fgczProject <- "pXXXX"
 descri <- "integration"
-compari <- "_5reps"
+compari <- "_2repsRedone"
 WUID <- "WUxx"
 
 # read back in results
