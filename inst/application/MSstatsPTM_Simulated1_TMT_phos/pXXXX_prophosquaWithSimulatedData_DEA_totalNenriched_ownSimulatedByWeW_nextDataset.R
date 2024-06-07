@@ -17,12 +17,29 @@ library(readr)
 
 #load(file = "simulation1_data.rda") # downloaded from github page -> this one is flawed .. 10 features also in the PTM data
 load(file="simulation1_data_newByWeW.rda") # this one is fixed")
+
+simulation1_data[[1]]$PTM$Run |> table() # 1 is the one with 4 Runs -> 2 reps
+simulation1_data[[1]]$PTM$Condition |> table() # 1 has 2 conditions
+
+
+# check which idx to use from simulated_data
+simulation1_data[[20]]$PTM$Run |> table() # 12 files
+simulation1_data[[20]]$PTM$Condition |> table() # 4 conditions
+
+simulation1_data[[3]]$PTM$Run |> table()  # triplicates
+simulation1_data[[3]]$PTM$Condition |> table()
+
+simulation1_data[[5]]$PTM$Run |> table() # quintuplicates
+simulation1_data[[5]]$PTM$Condition |> table()
+
+idxOfInterest <- 5
+
 # we can generate them ourselves with the provided code at least!
 
 # params ideally taken from yaml
 fgczProject <- "pXXXX"
 OIDfgcz <- "oYYYY"
-descri <- "Simulation_redone_ONETMTphospho_"
+descri <- "simTwoGrps5Reps"
 fracti <- "TotalProteome"
 WUID <- "WUxx"
 
@@ -30,29 +47,10 @@ WUID <- "WUxx"
 (fN <- paste0(descri,fracti))
 GRP2 <- prolfquapp::make_DEA_config_R6(ZIPDIR = fN,PROJECTID = fgczProject,
                                        ORDERID = OIDfgcz)
-
-# look into structure
-# 1000 proteins with 10 peptides each are simluated in 4 files
-# 2 conditions G_1 and G_2 with 2 reps each ->  no missing data
-tail(simulation1_data[[1]]$PROTEIN, n=100)
-
-
-
-#simulate annotation file
-head(simulation1_data[[1]]$PROTEIN)
-simulation1_data[[1]]$PROTEIN |> select(Condition, Run, feature, BioReplicate) |> distinct()
-simulation1_data[[1]]$PROTEIN |> select(Condition, Run, feature, BioReplicate, PeptideSequence) |> distinct()
-simulation1_data[[1]]$PROTEIN |> select(Condition, Run, BioReplicate, PeptideSequence) |> distinct()
-
-unique(simulation1_data[[1]]$PROTEIN$ProteinName) |> length()
-unique(simulation1_data[[1]]$PROTEIN$ProteinName)
-
-psm <- data.frame(simulation1_data[[1]]$PROTEIN)
-colnames(psm)
+psm <- data.frame(simulation1_data[[idxOfInterest]]$PROTEIN)
 
 # get an overview
 (annotable <- psm |> select(BioReplicate, Condition, Run) |> distinct())
-# 4 files, 2 conditions
 psm |> group_by(Condition, BioReplicate) |> summarise(n = n())
 
 
@@ -62,8 +60,8 @@ annotable$CONTROL <- "T"
 annotable$CONTROL[annotable$group == "G_1"] <- "C"
 
 annotable$raw <- annotable$BioReplicate
-annotable <- annotable |> rename(Name = BioReplicate)
-write_tsv(annotable, file = "annotation_forSimulatedData.tsv")
+(annotable <- annotable |> rename(Name = BioReplicate))
+write_tsv(annotable, file = "annotation_forSimulatedData_5reps.tsv")
 
 # final annotation table
 annot <- prolfquapp::read_annotation(annotable)
@@ -126,13 +124,10 @@ GRP2$processing_options$aggregate
 # aggregate from psm to protein level here
 lfqdata <- prolfquapp::aggregate_data(lfqdata, agg_method = GRP2$processing_options$aggregate)
 
-# what is in the game
-lfqdata$factors()
-lfqdata$to_wide()
-
 # grp object
 grp <- prolfquapp::generate_DEA_reports2(lfqdata, GRP2, protAnnot, Contrasts = annot$contrasts)
 
+copy_DEA_DIANN()
 # write reports
 prolfquapp::write_DEA_all(grp2 = grp, boxplot = FALSE, markdown = "_Grp2Analysis_V2.Rmd")
 
@@ -182,21 +177,11 @@ fracti <- "PhosphoEnriched"
 #
 
 
-multiSite_long <- data.frame(simulation1_data[[1]]$PTM)
-str(multiSite_long)
-tail(multiSite_long$site, n=100)
+multiSite_long <- data.frame(simulation1_data[[idxOfInterest]]$PTM)
 
 # work on GRP for having better folder name
 GRP2_phos <- prolfquapp::make_DEA_config_R6(ZIPDIR = "fN",PROJECTID = fgczProject,
                                        ORDERID = fracti)
-
-# look into structure
-# 1000 proteins with 10 peptides each are simluated in 4 files
-# 2 conditions G_1 and G_2 with 2 reps each ->  no missing data
-
-
-multiSite_long |> select(Condition, Run, feature, BioReplicate) |> distinct()
-multiSite_long |> select(Condition, Run, feature, BioReplicate, PeptideSequence) |> distinct()
 
 # get an overview
 (annotable_phos <- multiSite_long |> select(BioReplicate, Condition, Run) |> distinct())
@@ -210,8 +195,8 @@ annotable_phos$CONTROL <- "T"
 annotable_phos$CONTROL[annotable_phos$group == "G_1"] <- "C"
 
 annotable_phos$raw <- annotable_phos$BioReplicate
-annotable_phos <- annotable_phos |> rename(Name = BioReplicate)
-write_tsv(annotable_phos, file = "annotation_PTM_forSimulatedData.tsv")
+(annotable_phos <- annotable_phos |> rename(Name = BioReplicate))
+write_tsv(annotable_phos, file = "annotation_PTM_forSimulatedData_5reps.tsv")
 
 # final annotation table
 annot_phos <- prolfquapp::read_annotation(annotable_phos)
@@ -277,25 +262,13 @@ protAnnot_phos$row_annot
 lfqdata_phos$config$table$hierarchyDepth <- 1
 lfqdata_phos$config$table$hkeysDepth()
 
-
-
 GRP2_phos$processing_options$aggregate <- "medpolish" # anyway we do not aggregate here
 # aggregate from psm to protein level here
 # now we also aggregate since it is the same feature in the same protein
 lfqdata_phos <- prolfquapp::aggregate_data(lfqdata_phos, agg_method = GRP2_phos$processing_options$aggregate) # LHS error
 
-# what is in the game
-lfqdata_phos$factors()
-lfqdata_phos$to_wide()
-
 # grp object
 grp_phos <- prolfquapp::generate_DEA_reports2(lfqdata_phos, GRP2_phos, protAnnot_phos, Contrasts = annot_phos$contrasts)
-
-# all fine? some checks
-grp_phos$RES$lfqData$to_wide()
-grp_phos$RES$contrastsData_signif
-myResPlotter <- grp_phos$RES$contrMerged$get_Plotter()
-myResPlotter$volcano()
 
 logger::log_info("DONE WITH DEA REPORTS")
 
