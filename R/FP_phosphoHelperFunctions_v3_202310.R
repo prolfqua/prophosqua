@@ -388,7 +388,7 @@ doMSstatsLikeSiteNormalizationUsingProteinStatsOnComboObject <- function (mycomb
     OneC$MSstatsPTMadj_tval <- OneC$MSstatsPTMadj_log2fc / OneC$MSstatsPTMadj_stderr
     OneC$MSstatsPTMadj_pVals <- 2 * stats::pt(abs(OneC$MSstatsPTMadj_tval), OneC$MSstatsPTMadj_df, lower.tail = FALSE)
     #adjust pV for multiple testing
-    OneC$MSstatsPTMadj_FDR <- p.adjust(OneC$MSstatsPTMadj_pVals)
+    OneC$MSstatsPTMadj_FDR <- p.adjust(OneC$MSstatsPTMadj_pVals, method = "BH")
     resultCombo <- rbind(resultCombo, OneC)
   }
   return(resultCombo)
