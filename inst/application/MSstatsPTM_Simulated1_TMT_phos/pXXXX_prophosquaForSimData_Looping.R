@@ -40,7 +40,7 @@ load(file="simulation1_data_newByWeW.rda") # this one is fixed")
 
 for (j in 1:8) {
   idxOfInterest <- j
-  source("pXXXX_prophosquaForSimData_4sourcing_DEA_and_Integration.R")
+  source("sourc")
 }
 
 
@@ -75,7 +75,7 @@ for (j in 1:8) {
   sigProteins <- resultProphosqua[[j]] %>% filter(MSstatsPTMadj_FDR < sigThreshold) %>% pull(protein_Id)
   eFDR_prophosqua[[j]] <- get_empirical_FDR(sigProteins)
 }
-eFDR_prophosqua
+eFDR_msStats
 
 
 # MSstatsPTM
@@ -85,31 +85,6 @@ for (j in 1:8) {
   eFDR_msStats[[j]] <- get_empirical_FDR(sigProteins)
 }
 
-# compare performance of eFDRs from msStats and Prophosqua
 
-
-# create a data frame with the columns eFDR, method, simulation
-msSts <- as.data.frame(matrix(unlist(eFDR_msStats), nrow = 8, byrow = TRUE))
-msSts$method <- "MSstatsPTM"
-msSts$GrpSize <- c(rep(2, 2), rep(3, 2), rep(5, 2), rep(10, 2))
-
-prophosqua_df <- as.data.frame(matrix(unlist(eFDR_prophosqua), nrow = 8, byrow = TRUE))
-prophosqua_df$method <- "Prophosqua"
-prophosqua_df$GrpSize <- c(rep(2, 2), rep(3, 2), rep(5, 2), rep(10, 2))
-
-# combine the data frames
-df <- rbind(msSts, prophosqua_df)
-colnames(df) <- c("eFDR", "TP", "FP", "len", "method", "GrpSize")
-
-# plot using ggplot2
-ggplot(df, aes(x = GrpSize, y = eFDR, color = method)) +
-  geom_point() +
-  geom_line() +
-  labs(title = "Comparison of eFDRs from MSstatsPTM and Prophosqua",
-       x = "Group Size",
-       y = "eFDR") +
-  theme_minimal()
-
-# show a boxplot for each grpsize of the len for each method with respect to the group size
 
 
