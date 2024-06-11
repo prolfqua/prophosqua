@@ -18,19 +18,19 @@ library(readr)
 #load(file = "simulation1_data.rda") # downloaded from github page -> this one is flawed .. 10 features also in the PTM data
 load(file="simulation1_data_newByWeW.rda") # this one is fixed")
 
-simulation1_data[[1]]$PTM$Run |> table() # 1 is the one with 4 Runs -> 2 reps
-simulation1_data[[1]]$PTM$Condition |> table() # 1 has 2 conditions
-
-
-# check which idx to use from simulated_data
-simulation1_data[[20]]$PTM$Run |> table() # 12 files
-simulation1_data[[20]]$PTM$Condition |> table() # 4 conditions
-
-simulation1_data[[3]]$PTM$Run |> table()  # triplicates
-simulation1_data[[3]]$PTM$Condition |> table()
-
-simulation1_data[[5]]$PTM$Run |> table() # quintuplicates
-simulation1_data[[5]]$PTM$Condition |> table()
+# simulation1_data[[1]]$PTM$Run |> table() # 1 is the one with 4 Runs -> 2 reps
+# simulation1_data[[1]]$PTM$Condition |> table() # 1 has 2 conditions
+#
+#
+# # check which idx to use from simulated_data
+# simulation1_data[[20]]$PTM$Run |> table() # 12 files
+# simulation1_data[[20]]$PTM$Condition |> table() # 4 conditions
+#
+# simulation1_data[[3]]$PTM$Run |> table()  # triplicates
+# simulation1_data[[3]]$PTM$Condition |> table()
+#
+# simulation1_data[[5]]$PTM$Run |> table() # quintuplicates
+# simulation1_data[[5]]$PTM$Condition |> table()
 
 idxOfInterest <- 1
 
@@ -61,7 +61,7 @@ annotable$CONTROL[annotable$group == "G_1"] <- "C"
 
 annotable$raw <- annotable$BioReplicate
 (annotable <- annotable |> rename(Name = BioReplicate))
-write_tsv(annotable, file = "annotation_forSimulatedData_5reps.tsv")
+write_tsv(annotable, file = "annotation_forSimulatedData_2reps_rr.tsv")
 
 # final annotation table
 annot <- prolfquapp::read_annotation(annotable)
