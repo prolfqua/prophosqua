@@ -9,6 +9,8 @@
 # https://www.sciencedirect.com/science/article/pii/S1535947622002857#tbl1
 # https://github.com/devonjkohler/MSstatsPTM_simulations/tree/main/data
 
+rm(list=ls())
+
 library(tidyverse)
 library(prolfqua)
 library(prolfquapp)
@@ -19,28 +21,30 @@ library(openxlsx)
 #load(file = "simulation1_data.rda") # downloaded from github page -> this one is flawed .. 10 features also in the PTM data
 load(file="simulation1_data_newByWeW.rda") # this one is fixed")
 
-simulation1_data[[1]]$PTM$Run |> table() # 1 is the one with 4 Runs -> 2 reps
-simulation1_data[[1]]$PTM$Condition |> table() # 1 has 2 conditions
+idxOfInterest <- 3
+
+# simulation1_data[[1]]$PTM$Run |> table() # 1 is the one with 4 Runs -> 2 reps
+# simulation1_data[[1]]$PTM$Condition |> table() # 1 has 2 conditions
 #
 #
 # # check which idx to use from simulated_data
 # simulation1_data[[20]]$PTM$Run |> table() # 12 files
 # simulation1_data[[20]]$PTM$Condition |> table() # 4 conditions
 #
-# simulation1_data[[3]]$PTM$Run |> table()  # triplicates
-# simulation1_data[[3]]$PTM$Condition |> table()
+simulation1_data[[idxOfInterest]]$PTM$Run |> table()  # triplicates
+simulation1_data[[idxOfInterest]]$PTM$Condition |> table() # two conditions
 #
 # simulation1_data[[5]]$PTM$Run |> table() # quintuplicates
 # simulation1_data[[5]]$PTM$Condition |> table()
 
-idxOfInterest <- 1
+
 
 # we can generate them ourselves with the provided code at least!
 
 # params ideally taken from yaml
 fgczProject <- "pXXXX"
 OIDfgcz <- "oYYYY"
-descri <- "simTwoGrps2Reps_idOne"
+descri <- "simTwoGrpsTHREEReps_idThree"
 fracti <- "TotalProteome"
 WUID <- "WUxx"
 
@@ -62,7 +66,7 @@ annotable$CONTROL[annotable$group == "G_1"] <- "C"
 
 annotable$raw <- annotable$BioReplicate
 (annotable <- annotable |> rename(Name = BioReplicate))
-write_tsv(annotable, file = "annotation_forSimulatedData_2reps_rr.tsv")
+write_tsv(annotable, file = "annotation_forSimulatedData_3reps_rr.tsv")
 
 # final annotation table
 annot <- prolfquapp::read_annotation(annotable)
@@ -130,6 +134,7 @@ grp <- prolfquapp::generate_DEA_reports2(lfqdata, GRP2, protAnnot, Contrasts = a
 
 copy_DEA_DIANN()
 # write reports
+grp$zipdir
 dir.create(grp$zipdir)
 prolfquapp::write_DEA_all(grp2 = grp, boxplot = FALSE, markdown = "_Grp2Analysis_V2.Rmd")
 
@@ -198,7 +203,7 @@ annotable_phos$CONTROL[annotable_phos$group == "G_1"] <- "C"
 
 annotable_phos$raw <- annotable_phos$BioReplicate
 (annotable_phos <- annotable_phos |> rename(Name = BioReplicate))
-write_tsv(annotable_phos, file = "annotation_PTM_forSimulatedData_2reps.tsv")
+write_tsv(annotable_phos, file = "annotation_PTM_forSimulatedData_3reps.tsv")
 
 # final annotation table
 annot_phos <- prolfquapp::read_annotation(annotable_phos)
@@ -299,12 +304,12 @@ prolfquapp::write_DEA_all(grp2 = grp_phos, boxplot = FALSE, markdown = "_DiffExp
 # params ideally taken from yaml
 fgczProject <- "pXXXX"
 descri <- "integration"
-compari <- "_2repsReRedone"
+compari <- "_3reps"
 WUID <- "WUxx"
 
 # read back in results
-totRes <- read.xlsx(xlsxFile = "simTwoGrps2Reps_idOneTotalProteome_PI_pXXXX_OI_oYYYY_WU__none/Results_DEA_WU/DE_Groups_vs_Controls_WU.xlsx", sheet = "diff_exp_analysis")
-phosRes <- read.xlsx(xlsxFile = "simTwoGrps2Reps_idOnePhosphoEnriched_2024-06-11//Results_DEA_WU/DE_Groups_vs_Controls_WU.xlsx", sheet = "diff_exp_analysis")
+totRes <- read.xlsx(xlsxFile = "simTwoGrps2ss_idOneTotalProteome_PI_pXXXX_OI_oYYYY_WU__none/Results_DEA_WU/DE_Groups_vs_Controls_WU.xlsx", sheet = "diff_exp_analysis")
+phosRes <- read.xlsx(xlsxFile = "simTwoGrps2ss_idOnePhosphoEnriched_2024-06-11//Results_DEA_WU/DE_Groups_vs_Controls_WU.xlsx", sheet = "diff_exp_analysis")
 
 # site missing since we rolled up to protein
 phosRes$site <- phosRes$protein_Id
