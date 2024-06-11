@@ -13,13 +13,14 @@ library(tidyverse)
 library(prolfqua)
 library(prolfquapp)
 library(readr)
+library(openxlsx)
 
 
 #load(file = "simulation1_data.rda") # downloaded from github page -> this one is flawed .. 10 features also in the PTM data
 load(file="simulation1_data_newByWeW.rda") # this one is fixed")
 
-# simulation1_data[[1]]$PTM$Run |> table() # 1 is the one with 4 Runs -> 2 reps
-# simulation1_data[[1]]$PTM$Condition |> table() # 1 has 2 conditions
+simulation1_data[[1]]$PTM$Run |> table() # 1 is the one with 4 Runs -> 2 reps
+simulation1_data[[1]]$PTM$Condition |> table() # 1 has 2 conditions
 #
 #
 # # check which idx to use from simulated_data
@@ -129,6 +130,7 @@ grp <- prolfquapp::generate_DEA_reports2(lfqdata, GRP2, protAnnot, Contrasts = a
 
 copy_DEA_DIANN()
 # write reports
+dir.create(grp$zipdir)
 prolfquapp::write_DEA_all(grp2 = grp, boxplot = FALSE, markdown = "_Grp2Analysis_V2.Rmd")
 
 
@@ -196,7 +198,7 @@ annotable_phos$CONTROL[annotable_phos$group == "G_1"] <- "C"
 
 annotable_phos$raw <- annotable_phos$BioReplicate
 (annotable_phos <- annotable_phos |> rename(Name = BioReplicate))
-write_tsv(annotable_phos, file = "annotation_PTM_forSimulatedData_5reps.tsv")
+write_tsv(annotable_phos, file = "annotation_PTM_forSimulatedData_2reps.tsv")
 
 # final annotation table
 annot_phos <- prolfquapp::read_annotation(annotable_phos)
@@ -297,12 +299,12 @@ prolfquapp::write_DEA_all(grp2 = grp_phos, boxplot = FALSE, markdown = "_DiffExp
 # params ideally taken from yaml
 fgczProject <- "pXXXX"
 descri <- "integration"
-compari <- "_2repsRedone"
+compari <- "_2repsReRedone"
 WUID <- "WUxx"
 
 # read back in results
-totRes <- read.xlsx(xlsxFile = "simTwoGrps5RepsTotalProteome_PI_pXXXX_OI_oYYYY_WU__none/Results_DEA_WU/DE_Groups_vs_Controls_WU.xlsx", sheet = "diff_exp_analysis")
-phosRes <- read.xlsx(xlsxFile = "simTwoGrps5RepsPhosphoEnriched_2024-06-07/Results_DEA_WU/DE_Groups_vs_Controls_WU.xlsx", sheet = "diff_exp_analysis")
+totRes <- read.xlsx(xlsxFile = "simTwoGrps2Reps_idOneTotalProteome_PI_pXXXX_OI_oYYYY_WU__none/Results_DEA_WU/DE_Groups_vs_Controls_WU.xlsx", sheet = "diff_exp_analysis")
+phosRes <- read.xlsx(xlsxFile = "simTwoGrps2Reps_idOnePhosphoEnriched_2024-06-11//Results_DEA_WU/DE_Groups_vs_Controls_WU.xlsx", sheet = "diff_exp_analysis")
 
 # site missing since we rolled up to protein
 phosRes$site <- phosRes$protein_Id
@@ -391,9 +393,56 @@ excelResultList$combinedStats <- comboWithAdj
 writexl::write_xlsx(excelResultList, path = paste0(resultPath, "/",htmlFN,".xlsx"))
 
 
+#
+#
+#  Evaluation of results to MSstatsPTM results
+#
+#
+
+# functions
+# some functions
+# write function to get spezificity and sensitivity
+# get_spezificity_sensitivity <- function(objectWithProteinIDs){
+#   # get the true positives
+#   TP <- sum(str_count(string = objectWithProteinIDs, pattern = "NoChange")==0)
+#   # get the false positives
+#   FP <- sum(str_count(string = objectWithProteinIDs, pattern = "NoChange")>0)
+#   # get the false negatives
+#   FN <- TP - 250
+#   # get the true negatives
+#   TN <- 750 - FP
+#   # length
+#   len <- length(objectWithProteinIDs)
+#   # get the spezificity
+#   spezificity <- TN / (TN + FP)
+#   # get the sensitivity
+#   sensitivity <- TP / (TP + FN)
+#   # get precision
+#   precision <- TP / (TP + FP)
+#   # get recall
+#   recall <- TP / (TP + FN)
+#   return(c(spezificity, sensitivity, precision, recall, len))
+# }
+
+# write function to get spezificity and sensitivity
+get_empirical_FDR <- function(objectWithProteinIDs){
+  # get the true positives
+  TP <- sum(str_count(string = objectWithProteinIDs, pattern = "NoChange")==0)
+  # get the false positives
+  FP <- sum(str_count(string = objectWithProteinIDs, pattern = "NoChange")>0)
+  # length
+  len <- length(objectWithProteinIDs)
+  # get eFDR
+  eFDR <- FP / (TP + FP)
+  return(c(eFDR, TP, FP, len))
+}
+
+
+
+
 # read in msstatsPTM results
 load("adj_limma_models_sim1.rda")
-res_MSstatsPTM <- adj_limma_sim1[[1]]
+res_MSstatsPTM <- adj_limma_sim1[[idxOfInterest]]
 head(res_MSstatsPTM)
 res_MSstatsPTM$adj.P.Val <- p.adjust(res_MSstatsPTM$pvalue, method = "BH")
 
@@ -403,13 +452,14 @@ sigThreshold <- 0.05
 sig_prophosqua <- comboWithAdj[comboWithAdj$MSstatsPTMadj_FDR < sigThreshold,]
 sig_MSstatsPTM <- res_MSstatsPTM[res_MSstatsPTM$adj.P.Val < sigThreshold,]
 
-get_spezificity_sensitivity(objectWithProteinIDs = sig_MSstatsPTM$PTM)
-get_spezificity_sensitivity(objectWithProteinIDs = sig_prophosqua$IDcolumn.x)
-
+# get the empirical FDR
 round(get_empirical_FDR(objectWithProteinIDs = sig_MSstatsPTM$PTM),2)
 round(get_empirical_FDR(objectWithProteinIDs = sig_prophosqua$IDcolumn.x),2)
 
 # get the overlap
 overlap <- intersect(sig_prophosqua$IDcolumn.x, sig_MSstatsPTM$PTM)
 length(overlap)
+
+
+
 
