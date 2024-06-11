@@ -30,7 +30,7 @@ get_spezificity_sensitivity <- function(objectWithProteinIDs){
   return(c(spezificity, sensitivity, precision, recall, len))
 }
 
-# write function to get spezificity and sensitivity
+# write function to get eFDR
 get_empirical_FDR <- function(objectWithProteinIDs){
   # get the true positives
   TP <- sum(str_count(string = objectWithProteinIDs, pattern = "NoChange")==0)
