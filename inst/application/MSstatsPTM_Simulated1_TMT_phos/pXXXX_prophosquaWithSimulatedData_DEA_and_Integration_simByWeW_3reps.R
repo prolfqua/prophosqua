@@ -187,7 +187,7 @@ fracti <- "PhosphoEnriched"
 multiSite_long <- data.frame(simulation1_data[[idxOfInterest]]$PTM)
 
 # work on GRP for having better folder name
-GRP2_phos <- prolfquapp::make_DEA_config_R6(ZIPDIR = "fN",PROJECTID = fgczProject,
+GRP2_phos <- prolfquapp::make_DEA_config_R6(ZIPDIR = "placeholder",PROJECTID = fgczProject,
                                        ORDERID = fracti)
 
 # get an overview
@@ -288,7 +288,7 @@ copy_DEA_DIANN()
 library(prophosqua)
 copy_phosphoDEA_FragPipe_TMT()
 
-# writing reports
+# writing reports add stuff that markdown is still running without issues although here we have simulated data
 GRP2_phos$RES$lfqData$data$site <- GRP2_phos$RES$lfqData$data$protein_Id
 colnames(GRP2_phos$RES$contrastsData)
 GRP2_phos$RES$contrastsData$site <- GRP2_phos$RES$contrastsData$protein_Id
@@ -308,8 +308,8 @@ compari <- "_3reps"
 WUID <- "WUxx"
 
 # read back in results
-totRes <- read.xlsx(xlsxFile = "simTwoGrps2ss_idOneTotalProteome_PI_pXXXX_OI_oYYYY_WU__none/Results_DEA_WU/DE_Groups_vs_Controls_WU.xlsx", sheet = "diff_exp_analysis")
-phosRes <- read.xlsx(xlsxFile = "simTwoGrps2ss_idOnePhosphoEnriched_2024-06-11//Results_DEA_WU/DE_Groups_vs_Controls_WU.xlsx", sheet = "diff_exp_analysis")
+totRes <- read.xlsx(xlsxFile = "simTwoGrpsTHREEReps_idThreeTotalProteome_PI_pXXXX_OI_oYYYY_WU__none/Results_DEA_WU/DE_Groups_vs_Controls_WU.xlsx", sheet = "diff_exp_analysis")
+phosRes <- read.xlsx(xlsxFile = "simTwoGrpsTHREEReps_idThreePhosphoEnriched_2024-06-11/Results_DEA_WU/DE_Groups_vs_Controls_WU.xlsx", sheet = "diff_exp_analysis")
 
 # site missing since we rolled up to protein
 phosRes$site <- phosRes$protein_Id
