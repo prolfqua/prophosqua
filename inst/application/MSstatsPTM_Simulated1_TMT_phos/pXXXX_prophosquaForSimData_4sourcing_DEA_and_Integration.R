@@ -9,23 +9,6 @@
 # https://www.sciencedirect.com/science/article/pii/S1535947622002857#tbl1
 # https://github.com/devonjkohler/MSstatsPTM_simulations/tree/main/data
 
-library(tidyverse)
-library(prolfqua)
-library(prolfquapp)
-library(readr)
-library(openxlsx)
-
-
-#load(file = "simulation1_data.rda") # downloaded from github page -> this one is flawed .. 10 features also in the PTM data
-load(file="simulation1_data_newByWeW.rda") # this one is fixed")
-
-#idxOfInterest <- 1
-idxOfInterest <- 2
-
-
-simulation1_data[[idxOfInterest]]$PTM$Run |> table()  # triplicates
-simulation1_data[[idxOfInterest]]$PTM$Condition |> table() # two conditions
-
 # params ideally taken from yaml
 fgczProject <- "pX"
 OIDfgcz <- "o"
@@ -277,8 +260,13 @@ compari <- paste0("_id_",idxOfInterest)
 WUID <- "WUxx"
 
 # read back in results
-totRes <- read.xlsx(xlsxFile = "simTwoGrp_id_2_Total//Results_DEA_WU/DE_Groups_vs_Controls_WU.xlsx", sheet = "diff_exp_analysis")
-phosRes <- read.xlsx(xlsxFile = "simTwoGrp_id_2_PhosphoEnriched//Results_DEA_WU/DE_Groups_vs_Controls_WU.xlsx", sheet = "diff_exp_analysis")
+# simTwoGrp_id_1_PhosphoEnriched
+# simTwoGrp_id_1_Total
+pathTotRes <- paste0("simTwoGrp_id_",idxOfInterest,"_Total//Results_DEA_WU/DE_Groups_vs_Controls_WU.xlsx")
+pathPhosRes <- paste0("simTwoGrp_id_",idxOfInterest,"_PhosphoEnriched//Results_DEA_WU/DE_Groups_vs_Controls_WU.xlsx")
+
+totRes <- read.xlsx(xlsxFile = pathTotRes, sheet = "diff_exp_analysis")
+phosRes <- read.xlsx(xlsxFile = pathPhosRes, sheet = "diff_exp_analysis")
 
 # site missing since we rolled up to protein
 phosRes$site <- phosRes$protein_Id
