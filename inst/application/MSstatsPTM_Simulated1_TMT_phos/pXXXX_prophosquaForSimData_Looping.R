@@ -40,7 +40,7 @@ load(file="simulation1_data_newByWeW.rda") # this one is fixed")
 
 for (j in 1:8) {
   idxOfInterest <- j
-  source("sourc")
+  source("pXXXX_prophosquaForSimData_4sourcing_DEA_and_Integration.R")
 }
 
 
@@ -75,7 +75,7 @@ for (j in 1:8) {
   sigProteins <- resultProphosqua[[j]] %>% filter(MSstatsPTMadj_FDR < sigThreshold) %>% pull(protein_Id)
   eFDR_prophosqua[[j]] <- get_empirical_FDR(sigProteins)
 }
-eFDR_msStats
+eFDR_prophosqua
 
 
 # MSstatsPTM
@@ -85,6 +85,49 @@ for (j in 1:8) {
   eFDR_msStats[[j]] <- get_empirical_FDR(sigProteins)
 }
 
+# compare performance of eFDRs from msStats and Prophosqua
 
 
+# create a data frame with the columns eFDR, method, simulation
+msSts <- as.data.frame(matrix(unlist(eFDR_msStats), nrow = 8, byrow = TRUE))
+msSts$method <- "MSstatsPTM"
+msSts$GrpSize <- c(rep(2, 2), rep(3, 2), rep(5, 2), rep(10, 2))
 
+prophosqua_df <- as.data.frame(matrix(unlist(eFDR_prophosqua), nrow = 8, byrow = TRUE))
+prophosqua_df$method <- "Prophosqua"
+prophosqua_df$GrpSize <- c(rep(2, 2), rep(3, 2), rep(5, 2), rep(10, 2))
+
+# combine the data frames
+df <- rbind(msSts, prophosqua_df)
+colnames(df) <- c("eFDR", "TP", "FP", "len", "method", "GrpSize")
+
+# plot using ggplot2
+ggplot(df, aes(x = GrpSize, y = eFDR, color = method)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Comparison of eFDRs from MSstatsPTM and Prophosqua",
+       x = "Group Size",
+       y = "eFDR") +
+  theme_minimal()
+
+# show a barplot for each grpsize of the len for each method with respect to the group size with error bars for the len
+ggplot(df, aes(x = GrpSize, y = len, fill = method)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_errorbar(aes(ymin = len - sqrt(len), ymax = len + sqrt(len)), position = position_dodge(width = 0.9), width = 0.25) +
+  labs(title = "Comparison of the number of significant proteins from MSstatsPTM and Prophosqua",
+       x = "Group Size",
+       y = "Number of significant proteins") +
+  theme_minimal()
+
+# show a multiple boxplot for each grpsize of the len for each method with respect to the group size
+ggplot(df, aes(x = GrpSize, y = len, fill = method)) +
+  geom_boxplot() +
+  labs(title = "Comparison of the number of significant proteins from MSstatsPTM and Prophosqua",
+       x = "Group Size",
+       y = "Number of significant proteins") +
+  theme_minimal()
+
+
+library(lattice)
+# show a multiple boxplot for each grpsize of the len for each method with respect to the group size
+bwplot(len ~ GrpSize | method, data = df, layout = c(1, 2), scales = list(x = list(relation = "free")))
