@@ -55,7 +55,7 @@ for (j in 1:8) {
   # folder
   fo <- paste0("SimData2_integration_id_",j)
   # IntegrationSim2_id_4.xlsx
-  fi <- paste0("IIntegrationSim2_id_", j, ".xlsx")
+  fi <- paste0("IntegrationSim2_id_", j, ".xlsx")
   f <- paste0(fo, "/", fi)
   print(f)
   resultProphosqua[[j]] <- readxl::read_xlsx(f)
@@ -66,7 +66,7 @@ load("adjusted_models_sim2.rda")
 
 res_MSstatsPTM <- list()
 for (j in 1:8) {
-  res_MSstatsPTM[[j]] <- adj_limma_sim2[[j]]
+  res_MSstatsPTM[[j]] <- adjusted_models_sim2[[j]]
   res_MSstatsPTM[[j]]$adj.P.Val <- p.adjust(res_MSstatsPTM[[j]]$pvalue, method = "BH")
 }
 
@@ -85,14 +85,17 @@ eFDR_prophosqua
 
 
 # MSstatsPTM
+res_MSstatsPTM[[1]] %>% filter(adj.pvalue < sigThreshold)  %>% pull(Protein)
+
+
 for (j in 1:8) {
   # get the significant results
-  sigProteins <- res_MSstatsPTM[[j]] %>% filter(adj.P.Val < sigThreshold) %>% pull(PTM)
+  sigProteins <- res_MSstatsPTM[[j]] %>% filter(adj.pvalue < sigThreshold) %>% pull(Protein)
   eFDR_msStats[[j]] <- get_empirical_FDR(sigProteins)
 }
 
+eFDR_msStats
 # compare performance of eFDRs from msStats and Prophosqua
-
 
 # create a data frame with the columns eFDR, method, simulation
 msSts <- as.data.frame(matrix(unlist(eFDR_msStats), nrow = 8, byrow = TRUE))
