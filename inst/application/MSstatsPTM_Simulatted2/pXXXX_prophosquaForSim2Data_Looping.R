@@ -49,22 +49,24 @@ for (j in 1:8) {
 
 
 # read back results
+# SimData2_integration_id_4
 resultProphosqua <- list()
 for (j in 1:8) {
   # folder
-  fo <- paste0("Simulation_integration_id_",j)
-  fi <- paste0("Integration_id_", j, ".xlsx")
+  fo <- paste0("SimData2_integration_id_",j)
+  # IntegrationSim2_id_4.xlsx
+  fi <- paste0("IIntegrationSim2_id_", j, ".xlsx")
   f <- paste0(fo, "/", fi)
   print(f)
   resultProphosqua[[j]] <- readxl::read_xlsx(f)
 }
 
 # get MSstatsPTM results
-load("adj_limma_models_sim1.rda")
+load("adjusted_models_sim2.rda")
 
 res_MSstatsPTM <- list()
 for (j in 1:8) {
-  res_MSstatsPTM[[j]] <- adj_limma_sim1[[j]]
+  res_MSstatsPTM[[j]] <- adj_limma_sim2[[j]]
   res_MSstatsPTM[[j]]$adj.P.Val <- p.adjust(res_MSstatsPTM[[j]]$pvalue, method = "BH")
 }
 
