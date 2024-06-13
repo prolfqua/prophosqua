@@ -49,7 +49,8 @@ res_prophosqua_3biolreps <- read.xlsx(xlsxFile = "pXXXX_integration_3reps/Integr
 res_prophosqua_5biolreps <- read.xlsx(xlsxFile = "pXXXX_integration_5reps/Integration_5reps.xlsx", sheet = "combinedStats")
 
 
-
+# plot the results
+plot(res_prophosqua_3biolreps$MSstatsPTMadj_FDR, res_prophosqua_5biolreps$MSstatsPTMadj_FDR, xlab = "3 biological replicates", ylab = "5 biological replicates")
 
 
 
