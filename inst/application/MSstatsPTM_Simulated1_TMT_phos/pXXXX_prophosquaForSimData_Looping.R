@@ -38,10 +38,11 @@ load(file="simulation1_data_newByWeW.rda") # this one is fixed")
 # source script for different idx 1:8 -> all with 2 grps only but different number of files
 # rep(4, 2) rep(6, 2) rep(10, 2) rep(20, 2)
 
-for (j in 1:8) {
-  idxOfInterest <- j
-  source("pXXXX_prophosquaForSimData_4sourcing_DEA_and_Integration.R")
-}
+# this takes a while
+# for (j in 1:8) {
+#   idxOfInterest <- j
+#   source("pXXXX_prophosquaForSimData_4sourcing_DEA_and_Integration.R")
+# }
 
 
 # read back results
@@ -86,8 +87,6 @@ for (j in 1:8) {
 }
 
 # compare performance of eFDRs from msStats and Prophosqua
-
-
 # create a data frame with the columns eFDR, method, simulation
 msSts <- as.data.frame(matrix(unlist(eFDR_msStats), nrow = 8, byrow = TRUE))
 msSts$method <- "MSstatsPTM"
@@ -174,5 +173,32 @@ ggplot(df, aes(x = GrpSize, y = len, fill = method)) +
   theme_minimal()
 
 
-write_tsv(df, "sim2_results.tsv")
+write_tsv(df, "sim_x_results.tsv")
+
+# preprocess ala witold
+# Convert data to long format for plotting
+# here instead of  2 cols w TP and FP  we add a column for Type and take counts appart
+data_long <- df %>%
+  gather(key = "Type", value = "Count", TP, FP)
+
+# ad id per type n method
+data_long <- data_long |>
+  group_by(method, Type) |>
+  mutate(ID = row_number()) |> ungroup()
+
+
+# visualize w/ stacked barplots
+# Plot
+pdf("StackedBars_comparison_sim1.pdf",3,3)
+ggplot(data_long, aes(x = factor(ID), y = Count, fill = Type)) +
+  geom_bar(stat = "identity", position = "stack") +
+  labs(x = "Group Size", y = "Count", fill = "Type") +
+  scale_x_discrete(labels = data_long$GrpSize) +
+  theme_minimal() +
+  facet_wrap(~method, ncol = 1)
+dev.off()
+
+
+
+
 
