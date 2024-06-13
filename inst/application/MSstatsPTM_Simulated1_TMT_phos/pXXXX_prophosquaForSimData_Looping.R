@@ -131,3 +131,48 @@ ggplot(df, aes(x = GrpSize, y = len, fill = method)) +
 library(lattice)
 # show a multiple boxplot for each grpsize of the len for each method with respect to the group size
 bwplot(len ~ GrpSize | method, data = df, layout = c(1, 2), scales = list(x = list(relation = "free")))
+
+
+# compare overlap of significant proteins for prolfqua and msStatsPTM
+
+sp <- resultProphosqua[[8]] %>% filter(MSstatsPTMadj_FDR < sigThreshold) %>% pull(protein_Id)
+sm <- res_MSstatsPTM[[8]] %>% filter(adj.P.Val < sigThreshold) %>% pull(Protein)
+length(intersect(sp, sm))
+
+
+# get the significant proteins in lists
+sigList_prolfqua <- list()
+sigList_msStatsPTM <- list()
+
+# prolfqua
+for (j in 1:8) {
+  # get the significant results
+  sigList_prolfqua[[j]] <- resultProphosqua[[j]] %>% filter(MSstatsPTMadj_FDR < sigThreshold) %>% pull(protein_Id)
+  sigList_msStatsPTM[[j]] <- res_MSstatsPTM[[j]] %>% filter(adj.P.Val < sigThreshold) %>% pull(Protein)
+}
+
+# get intersection of both significant proteins
+intersection <- list()
+for (j in 1:8) {
+  intersection[[j]] <- intersect(sigList_prolfqua[[j]], sigList_msStatsPTM[[j]])
+}
+
+# get the length of the intersection
+lengths <- sapply(intersection, length)
+myIntersection <- rep(lengths, 2)
+
+df <- cbind(df, myIntersection)
+
+# plot using ggplot2
+# stacked barplots for each group size with respect to the number of TP, FP and intersection
+ggplot(df, aes(x = GrpSize, y = len, fill = method)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_errorbar(aes(ymin = len - sqrt(len), ymax = len + sqrt(len)), position = position_dodge(width = 0.9), width = 0.25) +
+  labs(title = "Comparison of the number of significant proteins from MSstatsPTM and Prophosqua",
+       x = "Group Size",
+       y = "Number of significant proteins") +
+  theme_minimal()
+
+
+write_tsv(df, "sim2_results.tsv")
+
