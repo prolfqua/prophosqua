@@ -1,8 +1,10 @@
 message("prolfqua Version :", packageVersion("prolfqua"), "\n")
 message("prolfquaapp Version :", packageVersion("prolfquapp"), "\n")
 
-# annotation and comparison based on:
-# https://fgcz-bfabric.uzh.ch/bfabric/dataset/show.html?id=47399&tab=details
+rm(list=ls())
+
+# libs
+library(openxlsx)
 
 # some functions
 # write function to get spezificity and sensitivity
@@ -28,7 +30,7 @@ get_spezificity_sensitivity <- function(objectWithProteinIDs){
   return(c(spezificity, sensitivity, precision, recall, len))
 }
 
-# write function to get spezificity and sensitivity
+# write function to get eFDR
 get_empirical_FDR <- function(objectWithProteinIDs){
   # get the true positives
   TP <- sum(str_count(string = objectWithProteinIDs, pattern = "NoChange")==0)
@@ -43,7 +45,13 @@ get_empirical_FDR <- function(objectWithProteinIDs){
 
 
 # look into prophosqua results to see differences in TP and FP
-res_prophosqua <- read.xlsx(xlsxFile = "pXXXX_TMTphospho_integration_ownWeWSimulatedOne/Integration_ownWeWSimulatedOne.xlsx", sheet = "combinedStats")
+res_prophosqua_3biolreps <- read.xlsx(xlsxFile = "pXXXX_integration_3reps/Integration_3reps.xlsx", sheet = "combinedStats")
+res_prophosqua_5biolreps <- read.xlsx(xlsxFile = "pXXXX_integration_5reps/Integration_5reps.xlsx", sheet = "combinedStats")
+
+
+
+
+
 
 # read in msstatsPTM results
 load("adj_limma_models_sim1.rda")
@@ -52,7 +60,7 @@ head(res_MSstatsPTM)
 res_MSstatsPTM$adj.P.Val <- p.adjust(res_MSstatsPTM$pvalue, method = "BH")
 
 
-sigThreshold <- 0.1
+sigThreshold <- 0.05
 # get the significant results
 sig_prophosqua <- res_prophosqua[res_prophosqua$MSstatsPTMadj_FDR < sigThreshold,]
 sig_MSstatsPTM <- res_MSstatsPTM[res_MSstatsPTM$adj.P.Val < sigThreshold,]
