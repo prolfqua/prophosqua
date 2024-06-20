@@ -135,7 +135,7 @@ bwplot(len ~ GrpSize | method, data = df, layout = c(1, 2), scales = list(x = li
 # compare overlap of significant proteins for prolfqua and msStatsPTM
 
 sp <- resultProphosqua[[8]] %>% filter(MSstatsPTMadj_FDR < sigThreshold) %>% pull(protein_Id)
-sm <- res_MSstatsPTM[[8]] %>% filter(adj.P.Val < sigThreshold) %>% pull(Protein)
+sm <- res_MSstatsPTM[[8]] %>% filter(adj.P.Val < sigThreshold) %>% pull(PTM)
 length(intersect(sp, sm))
 
 
@@ -147,7 +147,7 @@ sigList_msStatsPTM <- list()
 for (j in 1:8) {
   # get the significant results
   sigList_prolfqua[[j]] <- resultProphosqua[[j]] %>% filter(MSstatsPTMadj_FDR < sigThreshold) %>% pull(protein_Id)
-  sigList_msStatsPTM[[j]] <- res_MSstatsPTM[[j]] %>% filter(adj.P.Val < sigThreshold) %>% pull(Protein)
+  sigList_msStatsPTM[[j]] <- res_MSstatsPTM[[j]] %>% filter(adj.P.Val < sigThreshold) %>% pull(PTM)
 }
 
 # get intersection of both significant proteins
@@ -173,7 +173,7 @@ ggplot(df, aes(x = GrpSize, y = len, fill = method)) +
   theme_minimal()
 
 
-write_tsv(df, "sim_x_results.tsv")
+write_tsv(df, "sim_ONE_nomissing_wIntersect_results.tsv")
 
 # preprocess ala witold
 # Convert data to long format for plotting
