@@ -6,8 +6,10 @@
 # data and annotation based  on: https://fgcz-bfabric.uzh.ch/bfabric/dataset/show.html?id=47399&tab=details
 
 
-# This script starts from psm.tsv for TotalProteome
-# does basic filtering using purity.
+# This script
+# 1) starts from psm.tsv for TotalProteome
+# 2) from multisite_abundance_none.tsv (from TMT-integrator) for the phospho-enriched part
+#
 #
 # remotes::install_github('wolski/prolfquapp', dependencies = TRUE, force = FALSE)
 # remotes::install_github('fgcz/prolfqua', dependencies = TRUE)
@@ -298,7 +300,7 @@ myResPlotter$volcano()
 logger::log_info("DONE WITH DEA REPORTS")
 # result dir
 #GRP2_phos$zipdir_name <- paste0("DEA_",myPhosPath)
-dir.create(GRP2_phos$path) 
+dir.create(GRP2_phos$path)
 dir.create(GRP2_phos$get_zipdir())
 
 
