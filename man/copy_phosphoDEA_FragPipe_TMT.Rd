@@ -4,7 +4,7 @@
 \alias{copy_phosphoDEA_FragPipe_TMT}
 \title{copy Markdown and runscript for FragPipe combined_protein.tsv}
 \usage{
-copy_phosphoDEA_FragPipe_TMT(workdir = getwd(), run_script = FALSE)
+copy_phosphoDEA_FragPipe_TMT(workdir = getwd())
 }
 \arguments{
 \item{workdir}{directory where to copy file - default is current working directory.}

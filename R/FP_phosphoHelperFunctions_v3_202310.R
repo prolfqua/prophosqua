@@ -4,11 +4,10 @@
 #' @return fastaObject without decoy sequences
 #' @export
 #'
-readDecoyFastaNreturnFwOnly <- function(FastaFileName, decoyPattern = "REV_") {
+read_fasta <- function(FastaFileName, decoy_pattern = "^REV_") {
   myFasta_decoy <- seqinr::read.fasta(file = FastaFileName, seqtype = "AA", as.string = TRUE)
-  seqNames <- getName(myFasta_decoy)
-  idx_rev <- which(str_count(string = seqNames, pattern = decoyPattern)>0)
-  nodeoySeq <- myFasta_decoy[-idx_rev]
+  seqNames <- seqinr::getName(myFasta_decoy)
+  nodeoySeq <- myFasta_decoy[!grepl( decoy_pattern , seqNames )]
   return(nodeoySeq)
 }
 
@@ -25,7 +24,7 @@ readDecoyFastaNreturnFwOnly <- function(FastaFileName, decoyPattern = "REV_") {
 getSequenceWindowForLogo <- function(poi, soi, fastaObject = myFasta, seqWindowOffset = 15) {
   # find poi in fasta -> here we do not handle cases where it might appear multiple times in the full accession
   f_id <- which(str_count(string = getName(fastaObject), pattern = poi)>0)
-  if((soi-seqWindowOffset) < 0) {
+  if ((soi - seqWindowOffset) < 0) {
     soiStart <- 0
     } else {
     soiStart <- soi-seqWindowOffset
@@ -394,6 +393,41 @@ doMSstatsLikeSiteNormalizationUsingProteinStatsOnComboObject <- function (mycomb
   return(resultCombo)
 }
 
+#' Test if differences of differences are significant
+#' @export
+test_diff_diff <- function(dfA, dfB,
+                           by,
+                           diff = c("diff"),
+                           std.err = c("std.error"),
+                           df = c("df")
+                           ){
+  df <- dplyr::inner_join(dfA, dfB, by = by, suffix = c(".A",".B"))
+  f_SE <- function(stdeA, stdeB){
+    sqrt(stdeA ^ 2 + stdeB ^ 2 )
+  }
+  f_df <- function(stdeA, stdeB, dfA, dfB){
+    (stdeA ^ 2 + stdeB ^ 2 )^2 / ((stdeA^4/dfA + stdeB^4/dfB ))
+  }
+
+  diff.A = paste0(diff, ".A")
+  diff.B = paste0(diff, ".B")
+  std.error.A = paste0(std.err, ".A")
+  std.error.B = paste0(std.err, ".B")
+  df.A = paste0(df, ".A")
+  df.B = paste0(df, ".B")
+
+
+  df <- df |> mutate(
+    diffA_diffB = {{diff.A}} - {{diff.B}},
+    SE_I = f_SE({{std.error.A}}, {{std.error.B}}),
+    df_I = f_df({{std.error.A}},{{std.error.B}},{{df.A}},{{df.B}}) )
+
+  df <- df |> mutate(tstatistic_I = diffA_diffB / SE_I)
+  df <- df |> mutate(pValue_I = 2*pt(q = abs(tstatistic_I), df = df_I, lower.tail = FALSE))
+  df <- df |> group_by(contrast) |> mutate(FDR = p.adjust(pValue_I, method = "BH")) |> ungroup()
+  return(df)
+
+}
 
 # ////////// to work on
 
