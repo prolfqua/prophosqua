@@ -300,7 +300,7 @@ generateNtoCProteinPDFsWithPhosphoPeptides_FragPipeTMT <- function(globalNphosph
   # Do open pdf here
   pdf(pdfFileName,10,10)
   for (j in 1:length(mySigProteinHits$values)) {
-    rm(POI_matrix)
+    #rm(POI_matrix)
     POI <- mySigProteinHits$values[j]
     # Extract Relevant Lines from Full table again
     POI_matrix <- globalNphosphoCombinedNResultMatrix[which(globalNphosphoCombinedNResultMatrix$protein_Id == POI), ]
@@ -394,6 +394,7 @@ doMSstatsLikeSiteNormalizationUsingProteinStatsOnComboObject <- function (mycomb
 }
 
 #' Test if differences of differences are significant
+#'
 #' @export
 test_diff_diff <- function(dfA, dfB,
                            by,
@@ -401,7 +402,7 @@ test_diff_diff <- function(dfA, dfB,
                            std.err = c("std.error"),
                            df = c("df")
                            ){
-  df <- dplyr::inner_join(dfA, dfB, by = by, suffix = c(".A",".B"))
+  dataf <- dplyr::inner_join(dfA, dfB, by = by, suffix = c(".A",".B"))
   f_SE <- function(stdeA, stdeB){
     sqrt(stdeA ^ 2 + stdeB ^ 2 )
   }
@@ -409,23 +410,23 @@ test_diff_diff <- function(dfA, dfB,
     (stdeA ^ 2 + stdeB ^ 2 )^2 / ((stdeA^4/dfA + stdeB^4/dfB ))
   }
 
-  diff.A = paste0(diff, ".A")
-  diff.B = paste0(diff, ".B")
-  std.error.A = paste0(std.err, ".A")
-  std.error.B = paste0(std.err, ".B")
-  df.A = paste0(df, ".A")
-  df.B = paste0(df, ".B")
+  diff.A = sym(paste0(diff, ".A"))
+  diff.B = sym(paste0(diff, ".B"))
+  std.error.A = sym(paste0(std.err, ".A"))
+  std.error.B = sym(paste0(std.err, ".B"))
+  df.A = sym(paste0(df, ".A"))
+  df.B = sym(paste0(df, ".B"))
 
 
-  df <- df |> mutate(
-    diffA_diffB = {{diff.A}} - {{diff.B}},
-    SE_I = f_SE({{std.error.A}}, {{std.error.B}}),
-    df_I = f_df({{std.error.A}},{{std.error.B}},{{df.A}},{{df.B}}) )
+  dataf <- dataf |> dplyr::mutate(
+    diffA_diffB = !!diff.A - !!diff.B,
+    SE_I = f_SE(!!std.error.A, !!std.error.B),
+    df_I = f_df(!!std.error.A,!!std.error.B,!!df.A,!!df.B ))
 
-  df <- df |> mutate(tstatistic_I = diffA_diffB / SE_I)
-  df <- df |> mutate(pValue_I = 2*pt(q = abs(tstatistic_I), df = df_I, lower.tail = FALSE))
-  df <- df |> group_by(contrast) |> mutate(FDR = p.adjust(pValue_I, method = "BH")) |> ungroup()
-  return(df)
+  dataf <- dataf |> dplyr::mutate(tstatistic_I = diffA_diffB / SE_I)
+  dataf <- dataf |> dplyr::mutate(pValue_I = 2*pt(q = abs(tstatistic_I), df = df_I, lower.tail = FALSE))
+  dataf <- dataf |> dplyr::group_by(contrast) |> mutate(FDR = p.adjust(pValue_I, method = "BH")) |> ungroup()
+  return(dataf)
 
 }
 
@@ -561,6 +562,9 @@ render_DEA <- function(GRP2,
     file.remove(fname)
   }
 }
+
+
+
 
 
 # Do the NtoCplot
