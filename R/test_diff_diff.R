@@ -30,13 +30,16 @@ doMSstatsLikeSiteNormalizationUsingProteinStatsOnComboObject <- function (mycomb
 #' Test if differences of differences are significant
 #'
 #' @export
+#'
 test_diff_diff <- function(dfA, dfB,
                            by,
                            diff = c("diff"),
                            std.err = c("std.error"),
-                           df = c("df")
+                           df = c("df"),
+                           suffixA = ".site",
+                           suffixB = ".protein"
 ){
-  dataf <- dplyr::inner_join(dfA, dfB, by = by, suffix = c(".A",".B"))
+  dataf <- dplyr::inner_join(dfA, dfB, by = by, suffix = c(suffixA,suffixB))
   f_SE <- function(stdeA, stdeB){
     sqrt(stdeA ^ 2 + stdeB ^ 2 )
   }
@@ -44,12 +47,12 @@ test_diff_diff <- function(dfA, dfB,
     (stdeA ^ 2 + stdeB ^ 2 )^2 / ((stdeA^4/dfA + stdeB^4/dfB ))
   }
 
-  diff.A = sym(paste0(diff, ".A"))
-  diff.B = sym(paste0(diff, ".B"))
-  std.error.A = sym(paste0(std.err, ".A"))
-  std.error.B = sym(paste0(std.err, ".B"))
-  df.A = sym(paste0(df, ".A"))
-  df.B = sym(paste0(df, ".B"))
+  diff.A = sym(paste0(diff,suffixA))
+  diff.B = sym(paste0(diff,suffixB))
+  std.error.A = sym(paste0(std.err, suffixA))
+  std.error.B = sym(paste0(std.err, suffixB))
+  df.A = sym(paste0(df, suffixA))
+  df.B = sym(paste0(df, suffixB))
 
 
   dataf <- dataf |> dplyr::mutate(
