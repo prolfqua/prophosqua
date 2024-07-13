@@ -37,7 +37,7 @@ N_to_C_plot <- function(POI_matrixMin, protein_name, protLength, contrast,thrA =
     # annotate("rect", xmin = 0, xmax = protLength, ymin = 0, ymax = mean_diff_prot, alpha = 0.3, fill = "yellow") +
     annotate("text", x = 0 , y = mean_diff_prot, label = "N", vjust = 0, hjust = 0) +
     annotate("text", x = protLength, y = mean_diff_prot, label = "C", vjust = 0, hjust = 0) +
-    geom_text(aes(x = posInProtein, y = diff.site, label = significance), vjust = 0 , size = 7, color = "red") +
+    geom_text(aes(x = posInProtein, y = diff.site, label = significance), vjust = 0.4 , size = 7, color = "red") +
     labs(y = paste0("diff : ",contrast),title = plot_title) +
     theme_minimal()
 
