@@ -17,10 +17,10 @@ N_to_C_plot <- function(POI_matrixMin, protein_name, protLength, contrast,thrA =
   class(POI_matrixMin[["startModSite"]])  <- "numeric"
   class(POI_matrixMin[["endModSite"]])  <- "numeric"
 
-  POI_matrixMin <- POI_matrixMin |> mutate(posInProtein = ifelse(AllLocalized, posInProtein, as.integer(startModSite + endModSite)/2))
-  POI_matrixMin <- POI_matrixMin |> mutate(modAA = ifelse(AllLocalized, modAA, "NotLoc"))
+  POI_matrixMin <- POI_matrixMin |> dplyr::mutate(posInProtein = ifelse(AllLocalized, posInProtein, as.integer(startModSite + endModSite)/2))
+  POI_matrixMin <- POI_matrixMin |> dplyr::mutate(modAA = ifelse(AllLocalized, modAA, "NotLoc"))
 
-  mean_diff_prot <- mean(POI_matrixMin$diff.prot, na.rm = TRUE)
+  mean_diff_prot <- mean(POI_matrixMin$diff.protein, na.rm = TRUE)
   POI_matrixMin$significance <- sapply(POI_matrixMin$FDR.site, get_significance, thrA ,thrB)
 
   plot_title <- paste0("Prot : ",protein_name, "; length: ", protLength ,"; # sites:", nrow(POI_matrixMin), "; # not localized sites:", sum(!POI_matrixMin$AllLocalized))

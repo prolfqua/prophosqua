@@ -47,22 +47,21 @@ test_diff_diff <- function(dfA, dfB,
     (stdeA ^ 2 + stdeB ^ 2 )^2 / ((stdeA^4/dfA + stdeB^4/dfB ))
   }
 
-  diff.A = sym(paste0(diff,suffixA))
-  diff.B = sym(paste0(diff,suffixB))
-  std.error.A = sym(paste0(std.err, suffixA))
-  std.error.B = sym(paste0(std.err, suffixB))
-  df.A = sym(paste0(df, suffixA))
-  df.B = sym(paste0(df, suffixB))
-
+  diff.A = rlang::sym(paste0(diff,suffixA))
+  diff.B = rlang::sym(paste0(diff,suffixB))
+  std.error.A = rlang::sym(paste0(std.err, suffixA))
+  std.error.B = rlang::sym(paste0(std.err, suffixB))
+  df.A = rlang::sym(paste0(df, suffixA))
+  df.B = rlang::sym(paste0(df, suffixB))
 
   dataf <- dataf |> dplyr::mutate(
-    diffA_diffB = !!diff.A - !!diff.B,
+    diff_diff = !!diff.A - !!diff.B,
     SE_I = f_SE(!!std.error.A, !!std.error.B),
     df_I = f_df(!!std.error.A,!!std.error.B,!!df.A,!!df.B ))
 
-  dataf <- dataf |> dplyr::mutate(tstatistic_I = diffA_diffB / SE_I)
+  dataf <- dataf |> dplyr::mutate(tstatistic_I = diff_diff / SE_I)
   dataf <- dataf |> dplyr::mutate(pValue_I = 2*pt(q = abs(tstatistic_I), df = df_I, lower.tail = FALSE))
-  dataf <- dataf |> dplyr::group_by(contrast) |> mutate(FDR = p.adjust(pValue_I, method = "BH")) |> ungroup()
+  dataf <- dataf |> dplyr::group_by(contrast) |> dplyr::mutate(FDR_I = p.adjust(pValue_I, method = "BH")) |> dplyr::ungroup()
   return(dataf)
 
 }
