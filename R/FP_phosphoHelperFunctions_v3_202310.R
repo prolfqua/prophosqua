@@ -4,11 +4,10 @@
 #' @return fastaObject without decoy sequences
 #' @export
 #'
-readDecoyFastaNreturnFwOnly <- function(FastaFileName, decoyPattern = "REV_") {
+read_fasta <- function(FastaFileName, decoy_pattern = "^REV_") {
   myFasta_decoy <- seqinr::read.fasta(file = FastaFileName, seqtype = "AA", as.string = TRUE)
-  seqNames <- getName(myFasta_decoy)
-  idx_rev <- which(str_count(string = seqNames, pattern = decoyPattern)>0)
-  nodeoySeq <- myFasta_decoy[-idx_rev]
+  seqNames <- seqinr::getName(myFasta_decoy)
+  nodeoySeq <- myFasta_decoy[!grepl( decoy_pattern , seqNames )]
   return(nodeoySeq)
 }
 
@@ -25,7 +24,7 @@ readDecoyFastaNreturnFwOnly <- function(FastaFileName, decoyPattern = "REV_") {
 getSequenceWindowForLogo <- function(poi, soi, fastaObject = myFasta, seqWindowOffset = 15) {
   # find poi in fasta -> here we do not handle cases where it might appear multiple times in the full accession
   f_id <- which(str_count(string = getName(fastaObject), pattern = poi)>0)
-  if((soi-seqWindowOffset) < 0) {
+  if ((soi - seqWindowOffset) < 0) {
     soiStart <- 0
     } else {
     soiStart <- soi-seqWindowOffset
@@ -301,7 +300,7 @@ generateNtoCProteinPDFsWithPhosphoPeptides_FragPipeTMT <- function(globalNphosph
   # Do open pdf here
   pdf(pdfFileName,10,10)
   for (j in 1:length(mySigProteinHits$values)) {
-    rm(POI_matrix)
+    #rm(POI_matrix)
     POI <- mySigProteinHits$values[j]
     # Extract Relevant Lines from Full table again
     POI_matrix <- globalNphosphoCombinedNResultMatrix[which(globalNphosphoCombinedNResultMatrix$protein_Id == POI), ]
@@ -365,168 +364,7 @@ write_phosphoDEA_all <- function (grp2, name, ZIPDIR, boxplot = TRUE)
   }
 }
 
-# MS-stats like normalization for protein change
-# https://bioc.ism.ac.jp/packages/3.12/bioc/vignettes/MSstatsTMTPTM/inst/doc/MSstatsTMTPTM.Workflow.html
-# look for: how to adjust PTMs
 
-#' Apply MSstatsPTM like site normalization (adjustment) for the protein fold-change and pvalues
-#' @param mycombo dataframe from PTMsite and protein prolfqua statistics
-#' @export
-#'
-doMSstatsLikeSiteNormalizationUsingProteinStatsOnComboObject <- function (mycombo)
-{
-  resultCombo <- data.frame(stringsAsFactors = TRUE)
-  for (i in 1:length(unique(mycombo$contrast))) {
-    OneC <- mycombo[mycombo$contrast == unique(mycombo$contrast)[i],]
-    OneC$MSstatsPTMadj_log2fc <- OneC$diff.x - OneC$diff.y
-    OneC$MSstatsPTMadj_s2 <- OneC$std.error.x^2
-    OneC$MSstatsPTMadj_s2prot <- OneC$std.error.y^2
-    OneC$MSstatsPTMadj_stderr <- sqrt(OneC$MSstatsPTMadj_s2 + OneC$MSstatsPTMadj_s2prot)
-    OneC$MSstatsPTMadj_numer <- (OneC$MSstatsPTMadj_s2 + OneC$MSstatsPTMadj_s2prot)^2
-    OneC$MSstatsPTMadj_denom <- (OneC$MSstatsPTMadj_s2^2 / OneC$df.x + OneC$MSstatsPTMadj_s2prot^2 / OneC$df.y)
-    OneC$MSstatsPTMadj_df <- OneC$MSstatsPTMadj_numer / OneC$MSstatsPTMadj_denom
-    OneC$MSstatsPTMadj_tval <- OneC$MSstatsPTMadj_log2fc / OneC$MSstatsPTMadj_stderr
-    OneC$MSstatsPTMadj_pVals <- 2 * stats::pt(abs(OneC$MSstatsPTMadj_tval), OneC$MSstatsPTMadj_df, lower.tail = FALSE)
-    #adjust pV for multiple testing
-    OneC$MSstatsPTMadj_FDR <- p.adjust(OneC$MSstatsPTMadj_pVals, method = "BH")
-    resultCombo <- rbind(resultCombo, OneC)
-  }
-  return(resultCombo)
-}
-
-
-# ////////// to work on
-
-#' Generate differential expression analysis reports
-#'
-#' Writes results of DEA see \code{\link{generate_DEA_reports}}
-#' @export
-#'
-write_DEA_all <- function(grp2, name, ZIPDIR, boxplot = TRUE){
-  fname <- paste0("DE_", name)
-  qcname <- paste0("QC_", name)
-  outpath <- file.path( ZIPDIR, fname)
-  logger::log_info("writing into : ", outpath, " <<<<")
-  prolfquapp::write_DEA(grp2, outpath = outpath, xlsxname = fname)
-  prolfquapp::render_DEA(grp2, outpath = outpath, htmlname = fname)
-  prolfquapp::render_DEA(grp2, outpath = outpath, htmlname = qcname, markdown = "_DiffExpQC.Rmd")
-
-  bb <- grp2$RES$transformedlfqData
-  grsizes <- bb$factors() |>
-    dplyr::group_by(dplyr::across(bb$config$table$factor_keys_depth())) |>
-    dplyr::summarize(n = n()) |>
-    dplyr::pull(n)
-  if (boxplot) {
-    if (sum(!grepl("^control",bb$config$table$factor_keys(), ignore.case = TRUE))  > 1 &
-        all(grsizes == 1)
-    ) {
-      prolfquapp::writeLinesPaired(bb, outpath)
-    } else {
-      pl <- bb$get_Plotter()
-      pl$write_boxplots(outpath)
-    }
-  }
-}
-
-
-
-#' Write differential expression analysis results
-#'
-#' @rdname make_DEA_report
-#' @param GRP2 return value of \code{\link{make_DEA_report}}
-#' @param outpath path to place output
-#' @param xlsxname file name for xlsx
-#' @export
-#' @family workflow
-#'
-write_DEA <- function(GRP2, outpath, xlsxname = "AnalysisResults"){
-  dir.create(outpath)
-  rd <- GRP2$RES$lfqData
-  tr <- GRP2$RES$transformedlfqData
-  ra <- GRP2$RES$rowAnnot
-  formula <- data.frame(
-    formula = GRP2$RES$formula,
-    contrast_name = names(GRP2$pop$Contrasts),
-    contrast = GRP2$pop$Contrasts)
-
-  wideraw <- dplyr::inner_join(ra$row_annot, rd$to_wide()$data, multiple = "all")
-  widetr <- dplyr::inner_join(ra$row_annot , tr$to_wide()$data, multiple = "all")
-
-  ctr <- dplyr::inner_join(ra$row_annot , GRP2$RES$contrMerged$get_contrasts(), multiple = "all")
-  resultList <- list()
-  resultList$annotation = tr$to_wide()$annot
-  resultList$normalized_abundances = dplyr::inner_join(ra$row_annot, tr$data,multiple = "all")
-  resultList$raw_abundances_matrix = wideraw
-  resultList$normalized_abundances_matrix = widetr
-  resultList$diff_exp_analysis = ctr
-  resultList$formula = formula
-  resultList$summary = GRP2$RES$Summary
-  resultList$missing_information = prolfqua::UpSet_interaction_missing_stats(rd$data, rd$config, tr = 1)$data
-
-  # add protein statistics
-  st <- GRP2$RES$transformedlfqData$get_Stats()
-  resultList$protein_variances <- st$stats()
-
-  bkg <- GRP2$RES$rowAnnot$row_annot$IDcolumn
-  ff <- file.path(outpath ,"ORA_background.txt")
-  write.table(bkg,file = ff, col.names = FALSE,
-              row.names = FALSE, quote = FALSE)
-
-  fg <- GRP2$RES$contrastsData_signif
-  ora_sig <- split(fg$IDcolumn, fg$contrast)
-
-  for (i in names(ora_sig)) {
-    ff <- file.path(outpath, paste0("Ora_",i,".txt" ))
-    logger::log_info("Writing File ", ff)
-    write.table(ora_sig[[i]],file = ff, col.names = FALSE,
-                row.names = FALSE, quote = FALSE)
-  }
-
-  fg <- GRP2$RES$contrastsData
-  gsea <- fg |> dplyr::select( contrast, IDcolumn, statistic) |> dplyr::arrange( statistic )
-  gsea <- split(dplyr::select( gsea, IDcolumn, statistic ), gsea$contrast)
-
-  for (i in names(gsea)) {
-    ff <- file.path(outpath, paste0("GSEA_",i,".rnk" ))
-    logger::log_info("Writing File ", ff)
-    write.table(na.omit(gsea[[i]]),file = ff, col.names = FALSE,
-                row.names = FALSE, quote = FALSE, sep = "\t")
-  }
-  if (nrow(resultList$normalized_abundances) > 1048575) {
-    resultList$normalized_abundances <- NULL
-  }
-  writexl::write_xlsx(resultList, path = file.path(outpath, paste0(xlsxname, ".xlsx")))
-}
-
-#' Render DEA analysis report
-#' @rdname make_DEA_report
-#' @param GRP2 return value of \code{\link{make_DEA_report}}
-#' @param outpath path to place output
-#' @param htmlname name for html file
-#' @param word default FALSE, if true create word document.s
-#' @param markdown which file to render
-#' @export
-#' @family workflow
-render_DEA <- function(GRP2,
-                       outpath,
-                       htmlname="Result2Grp",
-                       word = FALSE,
-                       markdown = "_Grp2Analysis.Rmd"){
-  dir.create(outpath)
-
-  rmarkdown::render(
-    markdown,
-    params = list(grp = GRP2) ,
-    output_format = if (word) {
-      bookdown::word_document2(toc = TRUE, toc_float = TRUE) } else {
-        bookdown::html_document2(toc = TRUE, toc_float = TRUE)
-      }
-  )
-  fname <- paste0(tools::file_path_sans_ext(markdown), if (word) {".docx"} else {".html"})
-  if (file.copy(fname, file.path(outpath, paste0(htmlname,if (word) {".docx"} else {".html"})), overwrite = TRUE)) {
-    file.remove(fname)
-  }
-}
 
 
 # Do the NtoCplot
