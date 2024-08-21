@@ -1,7 +1,11 @@
 #' N to C plot using ggplot2
 #' @export
 #'
-N_to_C_plot <- function(POI_matrixMin, protein_name, protLength, contrast,thrA = 0.05, thrB = 0.2) {
+N_to_C_plot <- function(POI_matrixMin,
+                        protein_name,
+                        protLength,
+                        contrast,
+                        thrA = 0.05, thrB = 0.2) {
   get_significance <- function(fdr, thrA = 0.05, thrB = 0.2) {
     if (fdr < thrA) {
       return("**")
