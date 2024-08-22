@@ -1,8 +1,10 @@
 message("prolfqua Version :", packageVersion("prolfqua"), "\n")
 message("prolfquaapp Version :", packageVersion("prolfquapp"), "\n")
 
-# annotation and descrison based on:
-# https://fgcz-bfabric.uzh.ch/bfabric/dataset/show.html?id=47399&tab=details
+
+# This script will work only with DEA outputs generated using the prolfquapp package
+# ./CMD_DEA.sh p35593_uniprot_paired/WholeProtUniprot.yaml --indir o35593_prot_ionquant/ --dataset p35593_uniprot_paired/dataset.xlsx
+# ./CMD_DEA.sh p35593_uniprot_paired/MultisiteUniprot.yaml --indir o35593_phos_siteLocFiltered_ionquant/ --dataset p35593_uniprot_paired/dataset.xlsx
 
 
 resDir <- "p35593_uniprot_paired/"
