@@ -14,17 +14,17 @@ library(prophosqua)
 library(readr)
 library(dplyr)
 library(openxlsx)
-# source FP phospho helper Functions to et preprocess multiplex
+
+# source FP phospho helper Functions to use with preprocess multiplex
 # source("prophosqua/R/FP_phospho_helper_functions_v3_202310.R")
 
-# o35920 - integration of 2-plex phospho-TMT data
+# Integration of 2-plex phospho-TMT data
 # how does the multi-site export look like -> for two plexes?
 
 # variables
-fgczProject <- "p35540"
-WUID  <- "Control_10min"
-fracti <- "enriched"
-OIDfgcz <- "o35920"
+fgczProject <- "pxxxx"
+WUID  <- "vs_oneCondition"
+OIDfgcz <- "oyyy"
 
 
 path <- "."
@@ -34,11 +34,8 @@ prolfquapp::copy_DEA_Files()
 prophosqua::copy_phosphoDEA_FragPipe_TMT()
 
 
-# For Both relevant
-
+# Look at annotation file provided and adapt it to the needs of prolfquapp
 dsf <- "SampleAnnotation_2plex.txt"
-#myAnno <- read_annotation(datasetFile)
-#myAnno <- read_tsv(file = dsf)
 
 # make minimal dsf
 dsf <- readr::read_tsv(dsf)
@@ -71,9 +68,10 @@ annotation <- read_annotation(dsf, prefix = "Group_")
 (fN <- paste0(fgczProject,"_",WUID,"_annotationTable.txt"))
 write_tsv(x = annotation$annot, file = fN)
 
-# also write to xlsx
+# also write to xlsx for generating yaml file afterwards
 (fNxls <- paste0(fgczProject,"_vs_",WUID,"_annotationTable.xlsx"))
 openxlsx::write.xlsx(annotation$annot[,-grep(x = colnames(annotation$annot),pattern = "idx")], file = fNxls)
+
 
 ################################################################################
 #
@@ -82,6 +80,7 @@ openxlsx::write.xlsx(annotation$annot[,-grep(x = colnames(annotation$annot),patt
 #
 #
 ################################################################################
+# starting here with total (psm.tsv) -> if multiple plexes are present there are multiple tsvs
 
 fracti <- "total"
 # work on GRP for having better folder name
@@ -111,23 +110,20 @@ uNrProtein_with_maxPep <- bind_rows(nrPep_tibble_list) %>%
   ungroup()
 
 psm_all <- list(data = rbind(psm1$data, psm2$data), nrPeptides_exp = uNrProtein_with_maxPep)
-#psm <- prolfquapp::tidy_FragPipe_psm(quant_data, column_before_quants = column_before_quants)
 
 nrPeptides_exp <- psm_all$nrPeptides
-#psm_all <- psm_all$data
 psm_all$data$qValue <- 1 - psm_all$data$Probability
 
 # fasta file
-fastaf <- "../Fragpipe_o35920_phospho/2024-08-20-decoys-reviewed-contam-UP000005640.fasta"
+fastaf <- "../Fragpipe_phospho/myUP000005640.fasta"
 
+# how does it look
 unique(psm_all$data$channel)
 annotation$annot$channel
 annotation$atable$fileName
 
 # do preprocessing and go long
 xd <- preprocess_FP_multiplexPSM(psm = psm_all, fasta_file = fastaf, annotation = annotation, column_before_quants = "ReferenceIntensity", pattern_decoys = "rev_")
-str(xd)
-
 
 # hand over to prolfqua and do config by hand
 lfqdata <- xd$lfqdata
@@ -182,11 +178,6 @@ saveRDS(SE, file = file.path(outpath ,
 write_tsv(x = annotation$annot, file = file.path(outpath,dsFN))
 
 
-
-
-
-
-
 ################################################################################
 #
 #
@@ -210,42 +201,36 @@ fracti <- "PhosphoEnriched"
 # get help for CMD_MAKE_YAML.R --help
 # generate yaml file
 # mkdir PhosphoDEA_viaSH # not necessairy
-# bash CMD_MAKE_YAML.sh --trans robscale --outdir PhosphoDEA_viaSH --workunit WU313409 -p 35920 -o 35920 -s FP_multisite --yaml minimalPhosphoAnalysis.yaml
+# bash CMD_MAKE_YAML.sh --trans robscale --outdir PhosphoDEA_outDir --workunit WUxxx -p xxx -o yyy -s FP_multisite --yaml minimalPhosphoAnalysis.yaml
 
 # dataset
+# we do this dataset before but this would also be a good starting point
 # bash CMD_MAKE_DATASET.sh --help
 
 
 # generate output directory
-#paste0(fracti,"_",fgczProject)
-# date only year n day as string
-# q: how to get 20240830
-# a: format(Sys.Date(), "%Y%m%d")
 mydate <- format(Sys.Date(), "%Y%m%d")
 (outdir <- paste0("DEA_", mydate,"_",fracti, "_",fgczProject, "_WU_",WUID))
-# fix date to yesterday ;)
-outdir <- "DEA_20240902_PhosphoEnriched_p35540_WU_Control_10min"
 
 
 # generate yaml script line
-#bash CMD_MAKE_YAML.sh --norm robscale --outdir PhosphoDEA_viaSH --workunit WUID -p 35920 -O 35920 -s FP_multisite --yaml minimalPhosphoAnalysis22.yaml
+#bash CMD_MAKE_YAML.sh --norm robscale --outdir PhosphoDEA_outDir --workunit WUID -p xxx -O yyy -s FP_multisite --yaml minimalPhosphoAnalysis22.yaml
 (ymlF <- paste0("minimalYaml_vs",WUID,".yaml"))
 (ymlCMD <- paste0("bash CMD_MAKE_YAML.sh --norm robscale --outdir ",outdir," --workunit ", WUID," -p ",fgczProject," -O ",OIDfgcz," -s FP_multisite --yaml ",ymlF))
 
 # run yaml script
 system(ymlCMD)
 
-# issue here:
+# Potential issue here:
 #    pattern_decoys: ^REV_ ->  pattern_decoys: ^rev_ # pattern to identify decoy proteins cannot be changed?
 #    do this manually in yaml file -> otherwise in protein annotation fasta.id contains rev_
 
 
 # run DEA
 # run shell script
-#bash CMD_DEA.sh -i ../Fragpipe_o35920_phospho/ -d "p35540_WU313409_annotationTableXLSX.xlsx" -s FP_multisite -o PhosphoDEA_viaSH -y PhosphoDEA_viaSH/minimalPhosphoAnalysis.yaml
+#bash CMD_DEA.sh -i ../Fragpipe_phospho/ -d "pxxx_WUxxx_annotationTableXLSX.xlsx" -s FP_multisite -o PhosphoDEA_outDir -y PhosphoDEA_outDir/minimalPhosphoAnalysis.yaml
 # build up shell script in R
-firstPartStable <- "bash CMD_DEA.sh -i ../Fragpipe_o35920_phospho/ -d "
-#(fNxls <- paste0(fgczProject,"_vs_",WUID,"_annotationTable.xlsx")) # defined above
+firstPartStable <- "bash CMD_DEA.sh -i ../Fragpipe_phospho/ -d "
 middlePart <- " -s FP_multisite -o "
 (deaCMD <- paste0(firstPartStable, fNxls, middlePart, outdir, " -y ", outdir,"/",ymlF))
 
