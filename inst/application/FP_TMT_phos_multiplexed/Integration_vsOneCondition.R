@@ -18,19 +18,17 @@ library(stringr)
 library(openxlsx)
 library(seqinr)
 
-# o35920 - integration of 2-plex phospho-TMT data
-# how does the multi-site export look like -> for two plexes?
-
+# integration of 2-plex phospho-TMT data
 message("prolfqua Version :", packageVersion("prolfqua"), "\n")
 message("prolfquaapp Version :", packageVersion("prolfquapp"), "\n")
 
 
 # parameters and thresholds
 # variables
-fgczProject <- "p35540"
-OIDfgcz <- "o35920"
+fgczProject <- "pXXXX"
+OIDfgcz <- "oYYYY"
 fracti <- "Integration"
-descri <- WUID # "Control_10min"
+descri <- WUID # "OneCondition"
 (resDir <- paste0(fgczProject, "_",OIDfgcz,"_",fracti,"_", descri))
 
 path <- "."
@@ -38,15 +36,15 @@ path <- "."
 
 # find path manually
 # read back in results
-(totXlsx  <-  paste0("DEA_20240902_PI_total_p35540_OI__WU_Control_10min_none/Results_DEA_WUControl_10min/DE_DEA_20240902_PI_total_p35540_OI__WU_Control_10min_none_WUControl_10min.xlsx"))
-(phosXlsx <- paste0("DEA_20240902_PhosphoEnriched_p35540_WU_Control_10min/DEA_20240902_PI_p35540_OI_o35920_WU_Control_10min_robscale/Results_DEA_WUControl_10min/DE_Groups_vs_Controls_WUControl_10min.xlsx"))
+(totXlsx  <-  paste0("DEA_xxx/Results_xxx/DE_DEA_total_vsOneCondition.xlsx"))
+(phosXlsx <- paste0("DEA_xxx_PhosphoEnriched/DEA_robscale/Results_DEA_WUControl_vsOneCondition/DE_Groups_vs_Controls.xlsx"))
 
 
 totRes <- readxl::read_xlsx(path = totXlsx, sheet = "diff_exp_analysis")
 totRes$protein_length |> is.na() |> mean() # check how many proteins have no length @ WeW how can this happen? these are all the fw proteins.. only rev proteins are properly parsed?
 totRes |> dplyr::filter(is.na(protein_length)) |> dplyr::pull(protein_Id) # these are the protein IDs without length!
 
-#protein_Id do not have the same look n feel -> still we keep it, the join handles it!
+# if smaller case rev_ are used and not fixed in yaml file before running DEA this here helps to still get the integration done
 # totRes$protein_Id <- sapply(strsplit((totRes$protein_Id), split = "\\|"), function(x)x[2])
 
 rev_pattern = "^rev_"
@@ -72,7 +70,7 @@ phosRes <- phosRes |> dplyr::mutate(
 )
 phosRes$AllLocalized |> mean()
 
-fasta_file = "../Fragpipe_o35920_phospho/2024-08-20-decoys-reviewed-contam-UP000005640.fasta"
+fasta_file = "../Fragpipe_phospho/myUP000005640.fasta"
 
 # thats freakingly faster than before
 seq_window <- get_sequence_windows(phosRes, fasta_file, rev_pattern)
@@ -87,8 +85,8 @@ phosRes <- phosRes |> dplyr::mutate(AA = substr(PhosSites, 1, 1))
 # write out html
 dir.create(resDir)
 drumm <- prolfquapp::make_DEA_config_R6(
-  PROJECTID = "p35920",
-  ORDERID = "p35920",
+  PROJECTID = "pXXXX",
+  ORDERID = "oYYYY",
   WORKUNITID = "VS_10minControl")
 rmarkdown::render("_Overview_PhosphoAndIntegration_WEW.Rmd", params = list(data = combined_test_diff, grp = drumm, phosres = phosRes), output_format = bookdown::html_document2(toc = TRUE, toc_float = TRUE))
 file.copy(from = "_Overview_PhosphoAndIntegration_WEW.html", to = file.path(resDir, "PhosphoAndIntegration.html"))
@@ -149,29 +147,6 @@ length(unique(phosRes$protein_Id))
 
 # check how many pages are plotted
 length(unique(comboMat_min$protein_Id))
-
-# # each contrast individually
-# for (j in 1:length(unique(comboMat_min$contrast))) {
-#   print(j)
-#   oneC_comboMat <- comboMat_min[comboMat_min$contrast == unique(comboMat_min$contrast)[j],]
-#   pdfFN <- paste0("SignificantProteins_",unique(comboMat_min$contrast)[j],"_NtoCplots.pdf")
-#   pdf(file.path(resDir, pdfFN))
-#   for (i in 1:nrow(oneC_comboMat)) {
-#     #print(i)
-#     oneC_comboMat$plot[[i]] <- prophosqua::N_to_C_plot(oneC_comboMat$data[[i]],
-#                                                        oneC_comboMat$protein_Id[[i]],
-#                                                        oneC_comboMat$protein_length[[i]],
-#                                                        oneC_comboMat$contrast[[i]])
-#     print(oneC_comboMat$plot[[i]])
-#     grid::grid.newpage()
-#     table <- oneC_comboMat$data[[i]]
-#     table <- table |> select(-all_of(c( "startModSite", "endModSite", "AllLocalized")))
-#     table_grob <- gridExtra::tableGrob(table, theme = gridExtra::ttheme_default(base_size=6))
-#     grid::grid.draw(table_grob)
-#   }
-#   dev.off()
-# }
-
 
 # fill all slots with plots
 for (i in 1:nrow(comboMat_min)) {
