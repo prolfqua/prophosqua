@@ -20,5 +20,5 @@ Some more information should be given here what this package is all about and wh
 - [msqrob2PTM](https://www.sciencedirect.com/science/article/pii/S1535947623002190)
 
 ## Poster
-<img src="img/SIBDays24_Poster_Prophosqua_Grossmann.pdf" width="400"> 
+[Prophosqua Poster from SIBDays 2024](img/SIBDays24_Poster_Prophosqua_Grossmann.pdf)
 
