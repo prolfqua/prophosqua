@@ -18,3 +18,7 @@ Some more information should be given here what this package is all about and wh
 
 - [MSstatsPTM](https://www.sciencedirect.com/science/article/pii/S1535947622002857)
 - [msqrob2PTM](https://www.sciencedirect.com/science/article/pii/S1535947623002190)
+
+## Poster
+<img src="img/SIBDays24_Poster_Prophosqua_Grossmann.pdf" width="400"> 
+
