@@ -147,7 +147,8 @@ lfqdata <- prolfqua::LFQData$new(adata, config)
 
 fasta_file <- files$fasta
 
-fasta_annot <- get_annot_from_fasta(fasta_file, pattern_decoys = pattern_decoys)
+#fasta_annot <- get_annot_from_fasta(fasta_file, pattern_decoys = pattern_decoys)
+fasta_annot <- get_annot_from_fasta(fasta_file, rev = pattern_decoys)
 head(fasta_annot)
 
 nrPeptides_exp$FirstProteinAccession <- sapply(nrPeptides_exp$PG.ProteinAccessions, function(x){ unlist(strsplit(x, "[ ;]"))[1]} )
@@ -163,26 +164,11 @@ fasta_annot <- dplyr::rename(fasta_annot, description = fasta.header)
 colnames(fasta_annot)
 colnames(lfqdata$data)
 
-# prot_annot_phos <- prolfquapp::build_protein_annot(lfqdata = lfqdata_phos, multiSite_long,
-#                                                    idcol = c(protein_Id = "ProteinID"), cleaned_protein_id = "ProteinID",
-#                                                    protein_description = "fasta.header", exp_nr_children = "nrPeptides",
-#                                                    more_columns = "fasta.id")
 
-# prot_annot <- prolfquapp::ProteinAnnotation$new(lfqdata,
-#                                                 fasta_annot, description = "description", cleaned_ids = "fasta.id",
-#                                                 full_id = "protein_Id", exp_nr_children = "nr_children",
-#                                                 pattern_contaminants = pattern_contaminants, pattern_decoys = pattern_decoys)
-
-# protAnnot_phos <- prolfquapp::ProteinAnnotation$new(lfqdata_phos, pa_phos, cleaned_ids = "IDcolumn")
-colnames(fasta_annot)
-colnames(lfqdata$data)
-
-# function (lfqdata, msdata, idcol = c(protein_Id = "Protein.Group"),
-#           cleaned_protein_id = "Protein.Group.2", protein_description = "fasta.header",
-#           exp_nr_children = "nrPeptides", full_id = "fasta.id", more_columns = c("fasta.id"),
-#           pattern_contaminants = "^zz|^CON", pattern_decoys = "REV_")
+# for protein annotation it is important to have Depth 1 (protein level)
 lfqdata$config$table$hierarchyDepth <- 1
-ProteinAnnotation$undebug("initialize")
+#ProteinAnnotation$undebug("initialize")
+
 prot_annot <- prolfquapp::ProteinAnnotation$new(
   lfqdata , fasta_annot,
   description = "description",
@@ -255,9 +241,13 @@ myResPlotter$volcano()
 logger::log_info("DONE WITH DEA REPORTS")
 # result dir
 #GRP2_ubi$zipdir_name <- paste0("DEA_",myPhosPath)
+(GRP2_ubi$path)
 dir.create(GRP2_ubi$path)
 dir.create(GRP2_ubi$get_zipdir())
 
+# get markdown files here
+# also copy the phospho specific Rmd files from prophosqua
+prophosqua::copy_phosphoDEA_FragPipe_TMT()
 
 outpath <- prolfquapp::write_DEA_all(grp_ubi, boxplot = FALSE, markdown = "_Grp2Analysis_phos.Rmd")
 
