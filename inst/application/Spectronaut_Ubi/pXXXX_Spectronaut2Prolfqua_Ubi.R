@@ -102,7 +102,7 @@ psm_relevant$peptidoFormModSeq <- gsub(x = psm_relevant$EG.ModifiedPeptide, patt
 
 nrPeptides_exp <- dplyr::summarize(dplyr::group_by(dplyr::distinct(dplyr::select(psm_relevant,
                                                                                  PG.ProteinAccessions, EG.ProteinPTMLocations,  peptidoFormModSeq)), PG.ProteinAccessions), nrPeptides = dplyr::n())
-psm_relevant$site <- paste(psm_relevant$PG.ProteinAccessions, psm_relevant$peptidoFormModSeq, psm_relevant$EG.ProteinPTMLocations, sep = "_")
+#psm_relevant$site <- paste(psm_relevant$PG.ProteinAccessions, psm_relevant$peptidoFormModSeq, psm_relevant$EG.ProteinPTMLocations, sep = "_")
 (colnames(psm_relevant) <- make.names(colnames(psm_relevant)))
 
 # 4) peptidoform summarization
@@ -110,10 +110,11 @@ aggregate <- TRUE
 colnames(psm_relevant)
 
 if (aggregate) {
-  peptidoForm <- psm_relevant |> select(R.FileName, site, PG.ProteinAccessions, EG.ProteinPTMLocations,peptidoFormModSeq, EG.TotalQuantity..Settings.) |>
-    dplyr::group_by(R.FileName, PG.ProteinAccessions,site, peptidoFormModSeq) |>
+  peptidoForm <- psm_relevant |> select(R.FileName,  PG.ProteinAccessions, EG.ProteinPTMLocations,peptidoFormModSeq, EG.TotalQuantity..Settings.) |>
+    dplyr::group_by(R.FileName, PG.ProteinAccessions, peptidoFormModSeq,EG.ProteinPTMLocations) |>
     dplyr::summarize(nr_psm = n(), abundance = sum(EG.TotalQuantity..Settings., na.rm = TRUE))
 }
+
 head(peptidoForm)
 
 #psm <- peptidoForm
@@ -131,9 +132,7 @@ atable$ident_qValue = "qValue"
 #atable_phos$hierarchy[["protein_Id"]] <- c("ProteinID")
 #atable_phos$hierarchy[["site"]] <- c("Index", "Peptide")
 atable$hierarchy[["protein_Id"]] <- c("PG.ProteinAccessions")
-atable$hierarchy[["site"]] <- c("site")
-#atable$hierarchy[["mod_peptide_Id"]] <- c("Modified.Peptide",
-#                                          "Assigned.Modifications")
+atable$hierarchy[["site"]] <- c("PG.ProteinAccessions","EG.ProteinPTMLocations")
 atable$hierarchy[["mod_peptide_Id"]] <- c("peptidoFormModSeq")
 atable$set_response("abundance")
 atable$hierarchyDepth <- 2
@@ -141,15 +140,20 @@ atable$get_response()
 
 # join
 psma <- dplyr::inner_join(annot, peptidoForm, join_by("raw.file" == "R.FileName"))
+
 config <- prolfqua::AnalysisConfiguration$new(atable)
 adata <- prolfqua::setup_analysis(psma, config)
 lfqdata <- prolfqua::LFQData$new(adata, config)
 
 fasta_file <- files$fasta
-fasta_annot <- get_annot_from_fasta(fasta_file, rev = pattern_decoys)
+
+fasta_annot <- get_annot_from_fasta(fasta_file, pattern_decoys = pattern_decoys)
 head(fasta_annot)
+
+nrPeptides_exp$FirstProteinAccession <- sapply(nrPeptides_exp$PG.ProteinAccessions, function(x){ unlist(strsplit(x, "[ ;]"))[1]} )
+
 fasta_annot <- dplyr::left_join(nrPeptides_exp, fasta_annot,
-                                by = c(PG.ProteinAccessions = "proteinname"))
+                                by = c(FirstProteinAccession = "proteinname"))
 
 
 fasta_annot <- dplyr::rename(fasta_annot, `:=`(!!lfqdata$config$table$hierarchy_keys_depth()[1],
@@ -177,9 +181,18 @@ colnames(lfqdata$data)
 #           cleaned_protein_id = "Protein.Group.2", protein_description = "fasta.header",
 #           exp_nr_children = "nrPeptides", full_id = "fasta.id", more_columns = c("fasta.id"),
 #           pattern_contaminants = "^zz|^CON", pattern_decoys = "REV_")
+lfqdata$config$table$hierarchyDepth <- 1
+ProteinAnnotation$undebug("initialize")
+prot_annot <- prolfquapp::ProteinAnnotation$new(
+  lfqdata , fasta_annot,
+  description = "description",
+  cleaned_ids = "FirstProteinAccession",
+  full_id = "fasta.id",
+  exp_nr_children = "nrPeptides",
+  pattern_contaminants = pattern_contaminants,
+  pattern_decoys = pattern_decoys
+)
 
-colnames(psma)
-prot_annot_ubi <- prolfquapp::build_protein_annot(lfqdata = lfqdata, psma, idcol = "protein_Id", cleaned_protein_id = "PG.ProteinAccessions")
 
 
 lfqdata$remove_small_intensities()
@@ -188,6 +201,7 @@ lfqdata$remove_small_intensities()
 lfqdata$data #checks if all is here
 lfqdata$response() #checks if all is here
 
+lfqdata$config$table$hierarchyDepth <- 2
 
 #logger::log_info("AGGREGATING PEPTIDE DATA!")
 lfqdata$config$table$hierarchy_keys()
@@ -220,7 +234,7 @@ GRP2_ubi$pop$FDRthreshold <- GRP2_ubi$processing_options$FDR_threshold
 
 logger::log_info("AGGREGATING PEPTIDE DATA!")
 lfqdata <- prolfquapp::aggregate_data(lfqdata, agg_method =
-                                        GRP2_ubi$processing_options$aggregate)
+                                        GRP2_ubi$processing_options$aggregate,N = 1000)
 logger::log_info("data aggregated: {GRP2_ubi$processing_options$aggregate}.")
 logger::log_info("END OF PROTEIN AGGREGATION")
 
@@ -233,9 +247,9 @@ lfqdata$hierarchy_counts()
 grp_ubi <- prolfquapp::generate_DEA_reports2(lfqdata, GRP2_ubi, prot_annot, GRP2_ubi$pop$contrasts)
 
 # all fine?
-grp_ubi$Groups_vs_Controls$RES$lfqData$to_wide()
-grp_ubi$Groups_vs_Controls$RES$contrastsData_signif
-myResPlotter <- grp_ubi$Groups_vs_Controls$RES$contrMerged$get_Plotter()
+grp_ubi$RES$lfqData$to_wide()
+grp_ubi$RES$contrastsData_signif
+myResPlotter <- grp_ubi$RES$contrMerged$get_Plotter()
 myResPlotter$volcano()
 
 logger::log_info("DONE WITH DEA REPORTS")
