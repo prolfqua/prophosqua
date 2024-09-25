@@ -6,6 +6,13 @@
 #
 
 
+# from https://fgcz-bfabric.uzh.ch/bfabric/order/show.html?id=36131&tab=comments
+# Falls es für dich aber eifacher isch chömmer gern au das mache:
+#   Alles vs WT
+# Alles vs LIG1
+# Alles vs RAD18
+# Alles vs LIG1_RAD18
+
 library(prolfqua)
 library(prolfquapp)
 library(prophosqua)
@@ -14,10 +21,9 @@ library(dplyr)
 library(openxlsx)
 
 # source FP ubi helper Functions to use with preprocess multiplex
-# source("prophosqua/R/FP_ubi_helper_functions_v3_202310.R")
 
-# Integration of 2-plex ubi-TMT data
-# how does the multi-site export look like -> for two plexes?
+# here we use Spectronaut "peptide centric" export
+# Rmd are customized for UBI. We use the same Rmd as for Phos
 
 # variables
 fgczProject <- "p36131"
@@ -38,6 +44,7 @@ fullBGSreport <- read_tsv("o36131_Spectronaut_precursor_peptide/20240923_precurs
 unique(fullBGSreport$R.FileName)
 allCond <- unique(fullBGSreport$R.Condition)
 (controlCondition <- allCond[6])
+(descri <- paste0("vs_",controlCondition))
 
 # create Dataset as before to run DEA
 dsf <- fullBGSreport |> select(R.FileName, R.Condition) |> distinct()
@@ -87,7 +94,7 @@ psmStart <- fullBGSreport |> filter(grepl("GlyGly",x = EG.ModifiedPeptide))
 psm_long <- psmStart |> filter(`EG.PTMProbabilities [GlyGly (K)]` > best_loc_prob_threshold | `EG.PTMProbabilities [LeuArgGlyGly]` > best_loc_prob_threshold)
 
 # look at enrichment
-enrichtmentRatio <- psm_long |> nrow() / fullBGSreport |> nrow()
+enrichment_ratio <- psm_long |> nrow() / fullBGSreport |> nrow()
 
 # 3) prepare for peptidoform summarization
 #colnames(psm_long)
@@ -236,23 +243,38 @@ grp_ubi <- prolfquapp::generate_DEA_reports2(lfqdata, GRP2_ubi, prot_annot, GRP2
 grp_ubi$RES$lfqData$to_wide()
 grp_ubi$RES$contrastsData_signif
 myResPlotter <- grp_ubi$RES$contrMerged$get_Plotter()
+pdf("myPDF.pdf")
 myResPlotter$volcano()
+dev.off()
 
 logger::log_info("DONE WITH DEA REPORTS")
 # result dir
 #GRP2_ubi$zipdir_name <- paste0("DEA_",myPhosPath)
-(GRP2_ubi$path)
-dir.create(GRP2_ubi$path)
+#(GRP2_ubi$path)
+#dir.create(GRP2_ubi$path)
+GRP2_ubi$get_zipdir()
 dir.create(GRP2_ubi$get_zipdir())
 
 # get markdown files here
 # also copy the phospho specific Rmd files from prophosqua
+prolfquapp::copy_DEA_Files() # for bib file
 prophosqua::copy_phosphoDEA_FragPipe_TMT()
 
-outpath <- prolfquapp::write_DEA_all(grp_ubi, boxplot = FALSE, markdown = "_Grp2Analysis_phos.Rmd")
+# make sure some info in the reports is correct
+grp_ubi$software <- "Spectronaut-GUI"
+grp_ubi$software_version <- "19.x"
+
+GRP2 <- grp_ubi
+# writing reports
+#outpath <- prolfquapp::write_DEA_all(grp_ubi, boxplot = FALSE, markdown = "_Grp2Analysis_Phospho_V2.Rmd")
+#outp2 <- prolfquapp::write_DEA_all(grp2 = grp_ubi, boxplot = FALSE, markdown = "_DiffExpQC_Phospho_V2.Rmd")
+
+outpath <- prolfquapp::write_DEA_all(grp_ubi, boxplot = FALSE, markdown = "_Grp2Analysis_Ubi.Rmd")
+outp2 <- prolfquapp::write_DEA_all(grp2 = grp_ubi, boxplot = FALSE, markdown = "_DiffExpQC_Ubi.Rmd")
+
 
 # Save RData from enriched and total (only lfqdata is overwritten?) # keep lfqdata, grp, adata separate for phos and total!
-(imageFN <- paste(fgczProject, descri, "total_and_enriched",".RData", sep="_"))
+(imageFN <- paste(fgczProject, descri, "_ubi",".RData", sep="_"))
 save.image(imageFN)
 
 
