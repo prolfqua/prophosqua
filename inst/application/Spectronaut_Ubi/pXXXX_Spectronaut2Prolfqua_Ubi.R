@@ -262,7 +262,6 @@ prophosqua::copy_phosphoDEA_FragPipe_TMT()
 
 # make sure some info in the reports is correct
 grp_ubi$software <- "Spectronaut-GUI"
-grp_ubi$software_version <- "19.x"
 
 GRP2 <- grp_ubi
 # writing reports
