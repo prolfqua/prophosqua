@@ -271,8 +271,11 @@ GRP2 <- grp_ubi
 #outpath <- prolfquapp::write_DEA_all(grp_ubi, boxplot = FALSE, markdown = "_Grp2Analysis_Phospho_V2.Rmd")
 #outp2 <- prolfquapp::write_DEA_all(grp2 = grp_ubi, boxplot = FALSE, markdown = "_DiffExpQC_Phospho_V2.Rmd")
 
-outpath <- prolfquapp::write_DEA_all(grp_ubi, boxplot = FALSE, markdown = "_Grp2Analysis_Ubi.Rmd")
+print(descri)
+unique(grp_ubi$RES$contrastsData$contrast)
+
 outp2 <- prolfquapp::write_DEA_all(grp2 = grp_ubi, boxplot = FALSE, markdown = "_DiffExpQC_Ubi.Rmd")
+outpath <- prolfquapp::write_DEA_all(grp_ubi, boxplot = FALSE, markdown = "_Grp2Analysis_Ubi.Rmd")
 
 
 # Save RData from enriched and total (only lfqdata is overwritten?) # keep lfqdata, grp, adata separate for phos and total!
