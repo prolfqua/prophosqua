@@ -5,8 +5,8 @@
 #
 #
 
-#remotes::install_github('wolski/prolfquapp', dependencies = TRUE)
 #remotes::install_github('fgcz/prolfqua', dependencies = TRUE)
+#remotes::install_github('wolski/prolfquapp', dependencies = TRUE)
 
 library(prolfqua)
 library(prolfquapp)
