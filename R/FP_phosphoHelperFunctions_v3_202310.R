@@ -508,7 +508,7 @@ write_phosphoDEA_all <- function (grp2, name, ZIPDIR, boxplot = TRUE)
 preprocess_FP_multiplexPSM <- function (psm, fasta_file, annotation,
                                         purity_threshold = 0.5, PeptideProphetProb = 0.9,
                                         column_before_quants = c("Quan Usage","Mapped Proteins"),
-                                        pattern_contaminants = "^zz|^CON",  pattern_decoys = "REV_"){
+                                        pattern_contaminants = "^zz|^CON",  pattern_decoys = "rev_"){
   annot <- annotation$annot
   atable <- annotation$atable
   annot <- dplyr::mutate(annot, raw.file = gsub("^x|.d.zip$|.raw$",
@@ -541,7 +541,7 @@ preprocess_FP_multiplexPSM <- function (psm, fasta_file, annotation,
   config <- prolfqua::AnalysisConfiguration$new(atable)
   adata <- prolfqua::setup_analysis(psma, config)
   lfqdata <- prolfqua::LFQData$new(adata, config)
-  fasta_annot <- get_annot_from_fasta(fasta_file, rev = pattern_decoys)
+  fasta_annot <- get_annot_from_fasta(fasta_file, pattern_decoys = pattern_decoys)
   fasta_annot <- dplyr::left_join(nrPeptides_exp, fasta_annot,
                                   by = c(Protein = "fasta.id"))
   fasta_annot <- dplyr::rename(fasta_annot, `:=`(!!lfqdata$config$table$hierarchy_keys_depth()[1],
@@ -557,6 +557,7 @@ preprocess_FP_multiplexPSM <- function (psm, fasta_file, annotation,
 
 
 # what for?
+# To do: write docu to get this function exported
 reverse_join_column <- function(join_column){
   reverse_join_column <- vector(mode = "character", length(join_column))
   for (i in seq_along(join_column)) {
@@ -567,6 +568,7 @@ reverse_join_column <- function(join_column){
 }
 
 #what for?
+# To do: write docu to get this function exported
 test_diff <- function(phosRes, totRes, join_column = c("protein_Id", "contrast","description", "protein_length", "nr_tryptic_peptides")){
   test_diff <- prophosqua::test_diff_diff(phosRes,totRes, by = join_column)
   test_diff$measured_In <- "both"
@@ -588,7 +590,7 @@ test_diff <- function(phosRes, totRes, join_column = c("protein_Id", "contrast",
 }
 
 
-
+# To do: write docu to get this function exported
 get_sequence_windows <- function(phosRes, fasta_file, rev_pattern = "rev_", window_size = 15) {
   uniqueProtPepSeq <- phosRes |> dplyr::filter(AllLocalized == TRUE) |>
     dplyr::select(protein_Id, site, PhosSites) |> dplyr::distinct()
