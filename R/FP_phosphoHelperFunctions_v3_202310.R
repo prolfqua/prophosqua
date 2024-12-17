@@ -600,7 +600,7 @@ get_sequence_windows <- function(phosRes, fasta_file, rev_pattern = "rev_", wind
   uniqueProtPepSeq <- uniqueProtPepSeq |> dplyr::mutate(AA = stringr::str_remove(PhosSites, "\\d+"))
 
 
-  fasta <- prolfquapp::get_annot_from_fasta(fasta_file, rev = rev_pattern, include_seq = TRUE)
+  fasta <- prolfquapp::get_annot_from_fasta(fasta_file, pattern_decoys = rev_pattern, include_seq = TRUE)
 
   uniqueProtPepSeq <- dplyr::inner_join(uniqueProtPepSeq, fasta, by = c(protein_Id = "proteinname") )
   uniqueProtPepSeq <- uniqueProtPepSeq |>
