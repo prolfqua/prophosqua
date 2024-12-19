@@ -25,7 +25,7 @@ message("prolfquaapp Version :", packageVersion("prolfquapp"), "\n")
 
 # parameters and thresholds
 # variables
-WUID <- "EffectOfCytokinesOnWTCells"
+WUID <- "EffectOfCytokinesOnKOCells"
 fgczProject <- "p36946"
 OIDfgcz <- "o36946"
 fracti <- "Integration"
@@ -37,8 +37,8 @@ path <- "."
 
 # find path manually
 # read back in results
-(totXlsx  <-  paste0("EffectOfCytokinesOnWTCells/DEA_20241218_PItotal_p36946_WU_CytokinesOnWTCells_none/Results_WU__CytokinesOnWTCells/DE_DEA_20241218_PItotal_p36946_WU_CytokinesOnWTCells_none_WU_CytokinesOnWTCells.xlsx"))
-(phosXlsx <- paste0("EffectOfCytokinesOnWTCells/DEA_20241218_PhosphoEnriched_p36946_WU__CytokinesOnWTCells/DEA_20241218_PIp36946_Oo36946_WUDEA_20241213_PhosphoEnriched_selfSpecifiedContr_robscale/Results_WU_DEA_20241213_PhosphoEnriched_selfSpecifiedContr/DE_WUDEA_20241213_PhosphoEnriched_selfSpecifiedContr.xlsx"))
+(totXlsx  <-  paste0("DEA_20241219_PItotal_p36946_WU_CytokinesOnKocells_none/Results_WU__CytokinesOnKocells/DE_DEA_20241219_PItotal_p36946_WU_CytokinesOnKocells_none_WU_CytokinesOnKocells.xlsx"))
+(phosXlsx <- paste0("DEA_20241219_PhosphoEnriched_p36946_CytokinesOnKocells/DEA_20241219_PIp36946_Oo36946_WUDEA_20241219_PhosphoEnriched_p36946_CytokinesOnKocells_robscale/Results_WU_DEA_20241219_PhosphoEnriched_p36946_CytokinesOnKocells/DE_WUDEA_20241219_PhosphoEnriched_p36946_CytokinesOnKocells.xlsx"))
 
 
 totRes <- readxl::read_xlsx(path = totXlsx, sheet = "diff_exp_analysis")
@@ -73,7 +73,7 @@ phosRes$AllLocalized |> mean()
 
 fasta_file = "../o36946_FP_TMTi_enriched/2024-12-02-decoys-contam-UP000000589.fasta"
 
-# thats freakingly faster than before
+# thats much faster than before thanks @ witold
 # source helper functions
 source("/Users/jonasgrossmann/GitHub/prophosqua/R/FP_phosphoHelperFunctions_v3_202310.R")
 seq_window <- get_sequence_windows(phosRes, fasta_file, rev_pattern)
@@ -104,7 +104,7 @@ writexl::write_xlsx(excelResultList, path = file.path(resDir,"PhosphoAndIntegrat
 
 
 # Function to determine the significance for plotting NtoC
-fdrThreshold = 0.001
+fdrThreshold = 0.0000001
 
 
 candidateMat <- combined_test_diff[!is.na(combined_test_diff$FDR.site), ]
@@ -165,19 +165,19 @@ for (i in 1:nrow(comboMat_min)) {
 
 # Do the plotting only for each contrast individually
 for (j in 1:length(unique(comboMat_min$contrast))) {
-    print(j)
-    oneC_comboMat <- comboMat_min[comboMat_min$contrast == unique(comboMat_min$contrast)[j],]
-    pdfFN <- paste0("SignificantProteins_",unique(comboMat_min$contrast)[j],"_NtoCplots.pdf")
-    pdf(file.path(resDir, pdfFN))
-    for (i in 1:nrow(oneC_comboMat)) {
-      print(oneC_comboMat$plot[[i]])
-      grid::grid.newpage()
-      table <- oneC_comboMat$data[[i]]
-      table <- table |> select(-all_of(c( "startModSite", "endModSite", "AllLocalized")))
-      table_grob <- gridExtra::tableGrob(table, theme = gridExtra::ttheme_default(base_size=6))
-      grid::grid.draw(table_grob)
-    }
-    dev.off()
+  print(j)
+  oneC_comboMat <- comboMat_min[comboMat_min$contrast == unique(comboMat_min$contrast)[j],]
+  pdfFN <- paste0("SignificantProteins_",unique(comboMat_min$contrast)[j],"_NtoCplots.pdf")
+  pdf(file.path(resDir, pdfFN))
+  for (i in 1:nrow(oneC_comboMat)) {
+    print(oneC_comboMat$plot[[i]])
+    grid::grid.newpage()
+    table <- oneC_comboMat$data[[i]]
+    table <- table |> select(-all_of(c( "startModSite", "endModSite", "AllLocalized")))
+    table_grob <- gridExtra::tableGrob(table, theme = gridExtra::ttheme_default(base_size=6))
+    grid::grid.draw(table_grob)
+  }
+  dev.off()
 }
 
 
