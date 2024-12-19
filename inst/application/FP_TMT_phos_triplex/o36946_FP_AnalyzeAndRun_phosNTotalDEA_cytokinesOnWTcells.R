@@ -21,12 +21,12 @@ source("~/GitHub/prophosqua/R/FP_phosphoHelperFunctions_v3_202310.R")
 
 # variables
 fgczProject <- "p36946"
-WUID  <- "_CytokinesOnWTCells"
+WUID  <- "_CytokinesOnKocells"
 OIDfgcz <- "o36946"
 
 
 path <- "."
-# v3
+# v3 this only needs to run the first time!
 # prolfquapp::copy_DEA_Files()
 # also copy the phospho specific Rmd files from prophosqua
 # prophosqua::copy_phosphoDEA_FragPipe_TMT() # also the _wew is needed
@@ -68,14 +68,14 @@ path <- "."
 # dsf$GroupingVar <- NULL
 # table(dsf$`Grouping Var`)
 #
-# # Control
+# # Control -> this is only relevant for non-selfspecified contrasts
 # dsf$CONTROL <- "T"
 # table(dsf$`Grouping Var`)
 # dsf$CONTROL[dsf$`Grouping Var` == "WT_ctrl"] <- "C"
 # table(dsf$CONTROL, dsf$`Grouping Var`)
 
 # inject here the xls file that is modified with self specified contrasts
-myFNxlsx <- "p36946_selfspecifiedContrasts_annotationTable_cytokinesEffect.xlsx"
+myFNxlsx <- "p36946_selfspecifiedContrasts_annotationTable_cytokinesEffectOnKOCells.xlsx"
 mydsf <- openxlsx::read.xlsx(xlsxFile = myFNxlsx, sheet = 1)
 str(mydsf)
 
@@ -90,7 +90,6 @@ write_tsv(x = annotation$annot, file = fN)
 
 # also write to xlsx for generating yaml file afterwards
 (fNxls <- paste0(fgczProject,WUID,"_annotationTable_rr.xlsx"))
-#openxlsx::write.xlsx(annotation$annot[,-grep(x = colnames(annotation$annot),pattern = "idx")], file = fNxls)
 openxlsx::write.xlsx(annotation$annot, file = fNxls)
 
 
@@ -105,7 +104,7 @@ openxlsx::write.xlsx(annotation$annot, file = fNxls)
 
 fracti <- "total"
 # work on GRP for having better folder name
-(fN <- paste0(fgczProject,"_",WUID,"_",fracti))
+(fN <- paste0(fgczProject,WUID,"_",fracti))
 GRP2 <- prolfquapp::make_DEA_config_R6(PATH = path,WORKUNITID = WUID, PROJECTID = paste0(fracti,"_",fgczProject),
                                        ORDERID = "")
 # check result folder
@@ -185,7 +184,6 @@ grp_total <- prolfquapp::generate_DEA_reports2(lfqdata, GRP2,
 grp_total$RES$contrastsData$contrast |> unique()
 
 # check results before rendering
-# totRes |> dplyr::filter(is.na(protein_length)) |> dplyr::pull(protein_Id)
 dim(grp_total$RES$contrastsData)
 grp_total$RES$contrastsData |> dplyr::filter(is.na(protein_length)) |> dplyr::pull(protein_Id) # this should only be decoy proteins
 
@@ -237,7 +235,7 @@ fracti <- "PhosphoEnriched"
 
 # generate output directory
 mydate <- format(Sys.Date(), "%Y%m%d")
-(outdir <- paste0("DEA_", mydate,"_",fracti, "_",fgczProject, "_WU_",WUID))
+(outdir <- paste0("DEA_", mydate,"_",fracti, "_",fgczProject,WUID))
 
 
 # generate yaml script line
@@ -269,10 +267,7 @@ middlePart <- paste0(" -s ",softwareHere," -o ")
 # system(deaCMD)
 # At this point we have to switch to the CMD_DEA and customize slightly in order to have the correct RMD report
 
-#
-#
-#
-#
+# CMD_DEA is shipped with prolfquapp and can be found in the prolfquapp directory
 #
 #
 
@@ -359,13 +354,22 @@ if (FALSE) {
 # jg (2024-12-17)
 # here set processing options
 #bash prolfqua_dea.sh -i ../o36946_FP_TMTi_enriched/ -d p36946_vs_vs_WTctrlv2_annotationTable.xlsx -s FP_multisite -o DEA_20241213_PhosphoEnriched_p36946_WU_vs_WTctrlv2 -y DEA_20241213_PhosphoEnriched_p36946_WU_vs_WTctrlv2/minimalYaml_vsvs_WTctrlv2.yaml"
+# Trick here is to set the processing options in the yaml file and extend external reader list with
+# described in: https://github.com/prolfqua/prolfquappPTMreaders
+# ext_reader:
+#   extra_args: list()
+# preprocess: prolfquappPTMreaders::preprocess_FP_multi_site
+# get_files: prolfquappPTMreaders::get_FP_multi_site_files
+
 if (TRUE) {
-  ymlfile <- "DEA_20241213_PhosphoEnriched_p36946_WU_vs_WTctrlv2/minimalYaml_vsvs_WTctrlv2.yaml"
+  #ymlfile <- "DEA_20241213_PhosphoEnriched_p36946_WU_vs_WTctrlv2/minimalYaml_vsvs_WTctrlv2.yaml"
+  # here the yaml file should be extended by the external reader options (see: https://github.com/prolfqua/prolfquappPTMreaders)
+  ymlfile <- "DEA_yamlWithExternalReaders/minimalYaml_withExternalReaders.yaml"
   opt$indir <- "../o36946_FP_TMTi_enriched/"
   opt$software <- "BGS_DEFAULT_PROTEIN" # wouldnt matter at this point
   #opt$dataset <- "p36946_vs_vs_WTctrlv2_annotationTable.xlsx"
   opt$dataset <- myFNxlsx
-  opt$workunit <- "DEA_20241218_PhosphoEnriched_CytokineEffectsOnWT"
+  opt$workunit <- outdir
   opt$outdir <- opt$workunit
 }
 if (FALSE) {
@@ -420,7 +424,8 @@ logger::log_info("Software: ", opt$software)
 
 
 #debug(prolfquappPTMreaders::preprocess_FP_multi_site)
-#undebug(prolfquappPTMreaders::preprocess_FP_multi_site)
+# undebug(prolfquappPTMreaders::preprocess_FP_multi_site)
+# in order to properly use PTMreader::preprocess_FP_multi_site we need to extend the yaml file
 
 result <- tryCatch({
   # Attempt to run the function
@@ -481,17 +486,18 @@ logger::log_info("Writing results to: " ,  GRP2$get_zipdir())
 
 
 sr <- lfqdata$get_Summariser()
-sr$plot_missingness_per_group_cumsum()
+#sr$plot_missingness_per_group_cumsum()
 sr$plot_hierarchy_counts_sample()
 
-# for sure here we should have a different markdown? _Grp2Analysis_Phospho_V2
+# Here we use: _Grp2Analysis_Phospho_V2
 # let's try
 outdir <- prolfquapp::write_DEA_all(
   grp, name = "", boxplot = FALSE, markdown = "_Grp2Analysis_Phospho_V2.Rmd")
 
-lfqdataIB <- xd$lfqdata$get_subset(xd$protein_annotation$clean(
-  contaminants = GRP2$processing_options$remove_cont,
-  decoys = GRP2$processing_options$remove_decoys))
+# for iBAQ
+#lfqdataIB <- xd$lfqdata$get_subset(xd$protein_annotation$clean(
+#  contaminants = GRP2$processing_options$remove_cont,
+#  decoys = GRP2$processing_options$remove_decoys))
 
 # do not write when peptide level analysis --> also for phospho analysis this generates errors and does not make sense
 # if (length(xd$protein_annotation$pID) == 1) {
@@ -522,6 +528,8 @@ yaml::write_yaml(prolfquapp::R6_extract_values(GRP2), file = file.path(GRP2$get_
 
 
 
+# done
+# 2024-12-19
 
 
 
