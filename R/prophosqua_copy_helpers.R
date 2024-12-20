@@ -10,7 +10,7 @@ copy_phosphoDEA_FragPipe_TMT <- function(workdir = getwd()) {
 }
 
 
-copy_ubiDEA_FragPipe_TMT <- function(workdir = getwd()) {
+copy_ubiDEA_Spectronaut <- function(workdir = getwd()) {
   runscripts <- c(
     "inst/application/_Overview_Ubi_Integration_WEW.Rmd",
     "inst/application/_Grp2Analysis_Ubi.Rmd",
