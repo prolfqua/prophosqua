@@ -1,5 +1,5 @@
 ---
-title: "Ubiquitination Differential Expression Analysis Overview and Integration"
+title: "Differential Expression Analysis Overview and Integration for Ubiquitination Data"
 author: "Functional Genomics Center Zurich"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
@@ -49,7 +49,7 @@ phosres <- params$phosres
 This report is stored in the LIMS system [_bfabric_](https://fgcz-bfabric.uzh.ch) [@Trker2010] in
 __project__: `r grp2$Bfabric$projectID`, __order__: `r grp2$project_spec$orderID`, `r if(!is.null(grp2$project_spec$workunitID)){ "with the workunit name :" }`  `r grp2$project_spec$workunitID`.
 
-In this analysis the enriched dataset (GlyGly enrichment) is analyzed first separately as well as the pre-enriched sample (total). After individual statistical analysis the two datasets are combined. For all ubiquitinilated peptides where the protein is also quantified and analyzed in the pre-enriched sample the protein statistics are added to the ubiquitination peptide statistics. 
+In this analysis the enriched dataset (GlyGly enrichment) is analyzed first separately as well as the pre-enriched sample (total). After individual statistical analysis the two datasets are combined. For all ubiquitinated peptides where the protein is also quantified and analyzed in the pre-enriched sample the protein statistics are added to the ubiquitination peptide statistics. 
 
 # Numbers
 
@@ -135,4 +135,4 @@ plotly::subplot(xd, shareX = TRUE, shareY = TRUE, nrows = nrow)
 
 ```
 
-
+# References
