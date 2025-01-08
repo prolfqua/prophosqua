@@ -14,7 +14,7 @@ rm(list=ls())
 library(tidyverse)
 library(prolfqua)
 library(prolfquapp)
-library(proubiqua)
+library(prophosqua)
 library(dplyr)
 library(stringr)
 library(openxlsx)
@@ -27,7 +27,7 @@ message("prolfquaapp Version :", packageVersion("prolfquapp"), "\n")
 
 # parameters and thresholds
 # variables
-WUID <- "Ubi"
+WUID <- "EnrichedNTotal"
 fgczProject <- "p37127"
 OIDfgcz <- "o37127"
 fracti <- "Integration"
@@ -97,98 +97,106 @@ excelResultList$combinedStats <- combined_test_diff
 writexl::write_xlsx(excelResultList, path = file.path(resDir,"Result_UbiAndTotalIntegration.xlsx"))
 #
 
-#  N-to-C plotting is not yet working
-# # Function to determine the significance for plotting NtoC
-# fdrThreshold = 0.00001
-#
-#
-# candidateMat <- combined_test_diff[!is.na(combined_test_diff$FDR.site), ]
-# cand <- candidateMat[candidateMat$FDR.site < fdrThreshold ,]
-# nrow(cand)
-#
-# # proteins with sites regulated in any of the contrasts.
-# mySigProteinHits <- unique(cand$protein_Id)
-# length(mySigProteinHits)
-#
-# # look at one of the contrasts
-# comboMat <- candidateMat
-# comboMat <- comboMat |> dplyr::filter(protein_Id %in% mySigProteinHits)
-#
-# # parse the position in protein
-# comboMat$posInProtein <- as.numeric(gsub(x = gsub(x = sapply(strsplit((comboMat$site), split = "~"), function(x)x[2]), pattern = "\\(K", replacement = ""), pattern = "\\)", replacement = ""))
-# table(!is.na(comboMat$posInProtein))
-#
-# # select columns necessary for plotting
-# comboMat_min <- dplyr::select(
-#   comboMat,
-#   c("protein_Id",
-#     "contrast",
-#     "protein_length",
-#     "site",
-#     "diff.protein",
-#     "diff.site",
-#     "FDR.site",
-#     "posInProtein",
-#     model_site = "modelName.site"
-#   ))
-#
-#
-# comboMat_min <- comboMat_min |> dplyr::group_by(protein_Id, contrast, protein_length) |> tidyr::nest()
-# comboMat_min$plot <- vector(mode = "list", nrow(comboMat_min))
-#
-# # how many ubi proteins at the beginning?
-# length(unique(ubiRes$protein_Id))
-#
-#
-# # check how many pages are plotted
-# length(unique(comboMat_min$protein_Id))
-#
-# # fill all slots with plots
+
+# N-to-C plotting is not yet working
+# Function to determine the significance for plotting NtoC
+fdrThreshold = 0.00001
+
+
+candidateMat <- combined_test_diff[!is.na(combined_test_diff$FDR.site), ]
+cand <- candidateMat[candidateMat$FDR.site < fdrThreshold ,]
+nrow(cand)
+
+# proteins with sites regulated in any of the contrasts.
+mySigProteinHits <- unique(cand$protein_Id)
+length(mySigProteinHits)
+
+# look at one of the contrasts
+comboMat <- candidateMat
+comboMat <- comboMat |> dplyr::filter(protein_Id %in% mySigProteinHits)
+
+# parse the position in protein
+comboMat$posInProtein <- as.numeric(gsub(x = gsub(x = sapply(strsplit((comboMat$site), split = "~"), function(x)x[2]), pattern = "\\(K", replacement = ""), pattern = "\\)", replacement = ""))
+# how many true are ok -> position parsed properly
+table(!is.na(comboMat$posInProtein))
+
+# select columns necessary for plotting
+comboMat_min <- dplyr::select(
+  comboMat,
+  c("protein_Id",
+    "contrast",
+    "protein_length",
+    "site",
+    "diff.protein",
+    "diff.site",
+    "FDR.site",
+    "posInProtein",
+    model_site = "modelName.site"
+  ))
+
+# some columns are still missing for downstream plotting
+comboMat_min$AllLocalized <- TRUE
+comboMat_min$startModSite <- comboMat_min$posInProtein - 1
+comboMat_min$endModSite <- comboMat_min$posInProtein + 1
+comboMat_min$modAA <- "K"
+
+comboMat_min <- comboMat_min |> dplyr::group_by(protein_Id, contrast, protein_length) |> tidyr::nest()
+comboMat_min$plot <- vector(mode = "list", nrow(comboMat_min))
+
+# how many ubi proteins at the beginning?
+length(unique(ubiRes$protein_Id))
+
+
+# check how many pages are plotted
+length(unique(comboMat_min$protein_Id))
+
+# fill all slots with plots
+for (i in 1:nrow(comboMat_min)) {
+  print(i)
+  comboMat_min$plot[[i]] <- prophosqua::N_to_C_plot(comboMat_min$data[[i]],
+                                                    comboMat_min$protein_Id[[i]],
+                                                    comboMat_min$protein_length[[i]],
+                                                    comboMat_min$contrast[[i]])
+}
+
+
+
+# Do the plotting only for each contrast individually
+for (j in 1:length(unique(comboMat_min$contrast))) {
+  print(j)
+  oneC_comboMat <- comboMat_min[comboMat_min$contrast == unique(comboMat_min$contrast)[j],]
+  pdfFN <- paste0("SignificantProteins_",unique(comboMat_min$contrast)[j],"_NtoCplots.pdf")
+  pdf(file.path(resDir, pdfFN))
+  for (i in 1:nrow(oneC_comboMat)) {
+    print(oneC_comboMat$plot[[i]])
+    grid::grid.newpage()
+    table <- oneC_comboMat$data[[i]]
+    table <- table |> select(-all_of(c( "startModSite", "endModSite", "AllLocalized")))
+    table_grob <- gridExtra::tableGrob(table, theme = gridExtra::ttheme_default(base_size=6))
+    grid::grid.draw(table_grob)
+  }
+  dev.off()
+}
+
+
+# all in one pdf
+# pdf(file.path(resDir, "NtoCplots2.pdf"))
 # for (i in 1:nrow(comboMat_min)) {
-#   print(i)
-#   comboMat_min$plot[[i]] <- prophosqua::N_to_C_plot(comboMat_min$data[[i]],
-#                                                     comboMat_min$protein_Id[[i]],
-#                                                     comboMat_min$protein_length[[i]],
-#                                                     comboMat_min$contrast[[i]])
+#   print(comboMat_min$plot[[i]])
+#   grid::grid.newpage()
+#   table <- comboMat_min$data[[i]]
+#   table <- table |> select(-all_of(c( "startModSite", "endModSite", "AllLocalized")))
+#   table_grob <- gridExtra::tableGrob(table, theme = gridExtra::ttheme_default(base_size=6))
+#   grid::grid.draw(table_grob)
 # }
+# dev.off()
+
+
+
+
 #
-#
-# # Do the plotting only for each contrast individually
-# for (j in 1:length(unique(comboMat_min$contrast))) {
-#   print(j)
-#   oneC_comboMat <- comboMat_min[comboMat_min$contrast == unique(comboMat_min$contrast)[j],]
-#   pdfFN <- paste0("SignificantProteins_",unique(comboMat_min$contrast)[j],"_NtoCplots.pdf")
-#   pdf(file.path(resDir, pdfFN))
-#   for (i in 1:nrow(oneC_comboMat)) {
-#     print(oneC_comboMat$plot[[i]])
-#     grid::grid.newpage()
-#     table <- oneC_comboMat$data[[i]]
-#     table <- table |> select(-all_of(c( "startModSite", "endModSite", "AllLocalized")))
-#     table_grob <- gridExtra::tableGrob(table, theme = gridExtra::ttheme_default(base_size=6))
-#     grid::grid.draw(table_grob)
-#   }
-#   dev.off()
-# }
-#
-#
-# # all in one pdf
-# # pdf(file.path(resDir, "NtoCplots2.pdf"))
-# # for (i in 1:nrow(comboMat_min)) {
-# #   print(comboMat_min$plot[[i]])
-# #   grid::grid.newpage()
-# #   table <- comboMat_min$data[[i]]
-# #   table <- table |> select(-all_of(c( "startModSite", "endModSite", "AllLocalized")))
-# #   table_grob <- gridExtra::tableGrob(table, theme = gridExtra::ttheme_default(base_size=6))
-# #   grid::grid.draw(table_grob)
-# # }
-# # dev.off()
-#
-#
-#
-#
-# #
-# #rFN <- paste0(",")
-# save.image(paste0(resDir, ".RData"))
-#
+#rFN <- paste0(",")
+save.image(paste0(resDir, ".RData"))
+
 
 
