@@ -49,7 +49,7 @@ phosres <- params$phosres
 This report is stored in the LIMS system [_bfabric_](https://fgcz-bfabric.uzh.ch) [@Trker2010] in
 __project__: `r grp2$Bfabric$projectID`, __order__: `r grp2$project_spec$orderID`, `r if(!is.null(grp2$project_spec$workunitID)){ "with the workunit name :" }`  `r grp2$project_spec$workunitID`.
 
-In this analysis the enriched dataset (GlyGly enrichment) is analyzed first separately as well as the pre-enriched sample (total). After individual statistical analysis the two datasets are combined. For all ubiquitinated peptides where the protein is also quantified and analyzed in the pre-enriched sample the protein statistics are added to the ubiquitination peptide statistics. 
+In this analysis, the enriched (GlyGly enrichment) as well as the pre-enriched datasets (total input) are first analyzed separately. After individual statistical analysis the two datasets are combined. For all ubiquitinated peptides where the protein is also quantified in the pre-enriched sample the protein statistics are linked to the ubiquitination peptide statistics. 
 
 # Numbers
 
@@ -75,7 +75,7 @@ sitesM <- data_diff_diff |>  dplyr::select(protein_Id, site, measured_In) |> dpl
 
 ```
 
-When ubi peptide enrichment is done, usually also peptides are identified which are not identified in the proteome measurement.
+When GlyGly peptide enrichment is done, usually also peptides are identified for which there is no corresponding identification in the total proteome measurement.
 Therefore, in some cases the information on the proteome level is missing. Here for `r percFoundInGlobal`% of all identified ubi proteins (`r totProtFromSites`)
 the protein is also quantified in the global proteome measurements.
 For `r sitesM["both"]` ubi peptides mapping to a total of `r tt["both"]` proteins we can expand and combine the tables. 
@@ -83,8 +83,8 @@ For `r sitesM["both"]` ubi peptides mapping to a total of `r tt["both"]` protein
 
 # Integration with Non-enriched Proteome
 
-Next we do adapt the individual statistics to the changes of the proteins in the same way like described for MSstatsPTM (reference here). We refer to this as *MSstatsPTM adjustment*.
-In brief, the difference of the ubi peptide (ubi site) is adjusted by the difference of the protein change. By doing so, the difference of the proteins (if identified) are subtracted from the ubi peptides differences and the degrees of freedom as well as the T-statistics are further used to calculate the adjusted p-value for the adjusted difference.
+Next, we integrate the modified peptide statistics with the changes on protein level in the same way as described for MSstatsPTM (reference here). We refer to this as *MSstatsPTM adjustment*.
+In brief, the difference in the levels of a ubi peptide (ubi site) between two conditions is normalized by the difference in the protein levels for that same comparison. By doing so, the difference of the proteins (if identified) are subtracted from the ubi peptides differences and the degrees of freedom as well as the T-statistics are further used to calculate the adjusted p-value for the adjusted difference.
 
 
 ```{r tableAllProt, fig.cap="Differential expression analysis results of all ubi peptides (showing MSstatsPTM adjusted log2FCs and FDR)"}
@@ -104,7 +104,7 @@ DT::datatable(bb, filter = "bottom",
 ```
 
 
-(ref:volcanoplot)  Volcano plot showing $-\log_{10}$ transformed FDR as function of the protein level adjusted difference between groups. The red line indicates the $-log_{10}(FDR)$ of FDR = `r grp2$processing_options$FDR_threshold`, while the green lines represent the the difference of minus and plus `r grp2$processing_options$diff_threshold`. With orange dots differences and FDRs estimated using missing value imputation are shown.
+(ref:volcanoplot)  Volcano plot showing $-\log_{10}$ transformed FDR as function of the protein level adjusted difference between groups. The red line indicates the $-log_{10}(FDR)$ of FDR = `r grp2$processing_options$FDR_threshold`, while the green lines represent the the difference of minus and plus `r grp2$processing_options$diff_threshold`. Orange dots differences and FDRs were estimated using missing value imputation.
 
 
 ```{r volcanoplot, fig.cap = "(ref:volcanoplot)", fig.width=9, fig.height=7, include = TRUE, eval = TRUE}
