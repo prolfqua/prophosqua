@@ -46,10 +46,10 @@ phosres <- params$phosres
 
 # Overview
 
-This report is stored in the LIMS system [_bfabric_](https://fgcz-bfabric.uzh.ch) [@Trker2010] in
-__project__: `r grp2$Bfabric$projectID`, __order__: `r grp2$project_spec$orderID`, `r if(!is.null(grp2$project_spec$workunitID)){ "with the workunit name :" }`  `r grp2$project_spec$workunitID`.
+This report will be stored at a later point in the LIMS system [_bfabric_](https://fgcz-bfabric.uzh.ch) [@Trker2010] in the 
+__project__: `r grp2$Bfabric$projectID`, __order__: `r grp2$project_spec$orderID`, `r if(!is.null(grp2$project_spec$workunitID)){ "with the workunit ID :" }`  `r grp2$project_spec$workunitID`. Currently it is only uploaded as generic zip resource and attached to the result of the order.
 
-In this analysis, the enriched (GlyGly enrichment) as well as the pre-enriched datasets (total input) are first analyzed separately. After individual statistical analysis the two datasets are combined. For all ubiquitinated peptides where the protein is also quantified in the pre-enriched sample the protein statistics are linked to the ubiquitination peptide statistics. 
+In this analysis, the enriched (GlyGly enrichment) as well as the pre-enriched datasets (total input) are first analyzed separately. While for the total input (protein level), the roll-up is done from precursor level to protein level (here using med-polish approach) the enriched dataset is rolled-up to the modified peptide sequence level. Each of these datasets are statistically evaluated individually and reports are generated for both. After this the two datasets are joined together. For all GlyGly peptides where the protein is also quantified in the pre-enriched sample the protein statistics and the ubiquitination peptide statistics are used to normalize the observed change of the GlyGly site with respect to the observed fold-change for the protein. This is done in the same way as described for MSstatsPTM [@Kohler2023yo]. The adjusted statistics are then used to generate a combined report. 
 
 # Numbers
 
@@ -84,7 +84,7 @@ For `r sitesM["both"]` ubi peptides mapping to a total of `r tt["both"]` protein
 # Integration with Non-enriched Proteome
 
 Next, we integrate the modified peptide statistics with the changes on protein level in the same way as described for MSstatsPTM [@Kohler2023yo]. We refer to this as *MSstatsPTM adjustment*.
-In brief, the difference in the levels of a ubi peptide (ubi site) between two conditions is normalized by the difference in the protein levels for that same comparison. By doing so, the difference of the proteins (if identified) are subtracted from the ubi peptides differences and the degrees of freedom as well as the T-statistics are further used to calculate the adjusted p-value for the adjusted difference.
+In brief, the difference in the levels of a GlyGly peptide (ubi site) between two conditions is normalized by the difference in the protein levels for that same comparison. By doing so, the difference of the proteins (if identified) are subtracted from the GlyGly peptides differences and the degrees of freedom as well as the T-statistics are further used to calculate the adjusted p-value for the adjusted difference.
 
 
 ```{r tableAllProt, fig.cap="Differential expression analysis results of all ubi peptides (showing MSstatsPTM adjusted log2FCs and FDR)"}
