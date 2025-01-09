@@ -83,7 +83,7 @@ For `r sitesM["both"]` ubi peptides mapping to a total of `r tt["both"]` protein
 
 # Integration with Non-enriched Proteome
 
-Next, we integrate the modified peptide statistics with the changes on protein level in the same way as described for MSstatsPTM (reference here). We refer to this as *MSstatsPTM adjustment*.
+Next, we integrate the modified peptide statistics with the changes on protein level in the same way as described for MSstatsPTM [@Kohler2023yo]. We refer to this as *MSstatsPTM adjustment*.
 In brief, the difference in the levels of a ubi peptide (ubi site) between two conditions is normalized by the difference in the protein levels for that same comparison. By doing so, the difference of the proteins (if identified) are subtracted from the ubi peptides differences and the degrees of freedom as well as the T-statistics are further used to calculate the adjusted p-value for the adjusted difference.
 
 
