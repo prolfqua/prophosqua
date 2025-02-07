@@ -67,12 +67,10 @@ knitr::kable(numdf, caption = "Overview on identified ubi peptides")
 # Joining ubi peptides with Non-enriched Proteome
 
 ```{r foundInGlobal, eval=TRUE}
-
 tt <- data_diff_diff |> dplyr::select(protein_Id, measured_In) |> dplyr::distinct() |> dplyr::pull(measured_In) |> table()
 percFoundInGlobal <- tt["both"] / (tt["both"] + tt["site"]) * 100
 totProtFromSites <- (tt["both"] + tt["site"])
 sitesM <- data_diff_diff |>  dplyr::select(protein_Id, site, measured_In) |> dplyr::distinct() |> dplyr::pull(measured_In) |> table()
-
 ```
 
 When GlyGly peptide enrichment is done, usually also peptides are identified for which there is no corresponding identification in the total proteome measurement.
