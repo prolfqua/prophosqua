@@ -14,7 +14,8 @@ copy_ubiDEA_Spectronaut <- function(workdir = getwd()) {
   runscripts <- c(
     "inst/application/_Overview_Ubi_Integration_WEW.Rmd",
     "inst/application/_Grp2Analysis_Ubi.Rmd",
-    "inst/application/_DiffExpQC_Ubi.Rmd"
+    "inst/application/_DiffExpQC_Ubi.Rmd",
+    "inst/application/bibliography.blib"
   )
   prolfqua::scriptCopyHelperVec(runscripts, workdir = workdir, packagename = "prophosqua")
 }
