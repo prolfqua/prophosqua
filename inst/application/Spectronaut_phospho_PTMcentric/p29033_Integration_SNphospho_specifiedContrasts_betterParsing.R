@@ -105,8 +105,8 @@ drumm <- prolfquapp::make_DEA_config_R6(
 
 
 # render html
-rmarkdown::render("_Overview_Ubi_Integration_WEW.Rmd", params = list(data = combined_test_diff, grp = drumm, phosres = phosphoRes), output_format = bookdown::html_document2(toc = TRUE, toc_float = TRUE))
-file.copy(from = "_Overview_Ubi_Integration_WEW.html", to = file.path(resDir, "Result_phosphoAndIntegration.html"))
+rmarkdown::render("_Overview_PhosphoAndIntegration_site.Rmd", params = list(data = combined_test_diff, grp = drumm, phosres = phosphoRes), output_format = bookdown::html_document2(toc = TRUE, toc_float = TRUE))
+file.copy(from = "_Overview_PhosphoAndIntegration_site.html", to = file.path(resDir, "Result_phosphoAndIntegration.html"))
 
 
 # write to excel
