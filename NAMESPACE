@@ -2,6 +2,7 @@
 
 export(N_to_C_plot)
 export(copy_phosphoDEA_FragPipe_TMT)
+export(copy_phosphoDEA_Spectronaut)
 export(copy_ubiDEA_Spectronaut)
 export(doMSstatsLikeSiteNormalizationUsingProteinStatsOnComboObject)
 export(generateNtoCProteinPDFsWithPhosphoPeptides_FragPipe)
