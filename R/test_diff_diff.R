@@ -1,37 +1,6 @@
-# MS-stats like normalization for protein change
-# https://bioc.ism.ac.jp/packages/3.12/bioc/vignettes/MSstatsTMTPTM/inst/doc/MSstatsTMTPTM.Workflow.html
-# look for: how to adjust PTMs
-
-#' Apply MSstatsPTM like site normalization (adjustment) for the protein fold-change and pvalues
-#' @param mycombo dataframe from PTMsite and protein prolfqua statistics
-#' @export
-#'
-doMSstatsLikeSiteNormalizationUsingProteinStatsOnComboObject <- function (mycombo)
-{
-  resultCombo <- data.frame(stringsAsFactors = TRUE)
-  for (i in 1:length(unique(mycombo$contrast))) {
-    OneC <- mycombo[mycombo$contrast == unique(mycombo$contrast)[i],]
-    OneC$MSstatsPTMadj_log2fc <- OneC$diff.x - OneC$diff.y
-    OneC$MSstatsPTMadj_s2 <- OneC$std.error.x^2
-    OneC$MSstatsPTMadj_s2prot <- OneC$std.error.y^2
-    OneC$MSstatsPTMadj_stderr <- sqrt(OneC$MSstatsPTMadj_s2 + OneC$MSstatsPTMadj_s2prot)
-    OneC$MSstatsPTMadj_numer <- (OneC$MSstatsPTMadj_s2 + OneC$MSstatsPTMadj_s2prot)^2
-    OneC$MSstatsPTMadj_denom <- (OneC$MSstatsPTMadj_s2^2 / OneC$df.x + OneC$MSstatsPTMadj_s2prot^2 / OneC$df.y)
-    OneC$MSstatsPTMadj_df <- OneC$MSstatsPTMadj_numer / OneC$MSstatsPTMadj_denom
-    OneC$MSstatsPTMadj_tval <- OneC$MSstatsPTMadj_log2fc / OneC$MSstatsPTMadj_stderr
-    OneC$MSstatsPTMadj_pVals <- 2 * stats::pt(abs(OneC$MSstatsPTMadj_tval), OneC$MSstatsPTMadj_df, lower.tail = FALSE)
-    #adjust pV for multiple testing
-    OneC$MSstatsPTMadj_FDR <- p.adjust(OneC$MSstatsPTMadj_pVals, method = "BH")
-    resultCombo <- rbind(resultCombo, OneC)
-  }
-  return(resultCombo)
-}
-
 #' Test if differences of differences are significant
 #'
-#' @export
-#'
-test_diff_diff <- function(dfA, dfB,
+.test_diff_diff <- function(dfA, dfB,
                            by,
                            diff = c("diff"),
                            std.err = c("std.error"),
@@ -64,6 +33,31 @@ test_diff_diff <- function(dfA, dfB,
   dataf <- dataf |> dplyr::group_by(contrast) |> dplyr::mutate(FDR_I = p.adjust(pValue_I, method = "BH")) |> dplyr::ungroup()
   return(dataf)
 
+}
+
+
+
+#' compute MSstats like test statsitics
+#' @export
+#'
+test_diff <- function(phosRes, totRes, join_column = c("protein_Id", "contrast","description", "protein_length", "nr_tryptic_peptides")){
+  test_diff <- .test_diff_diff(phosRes,totRes, by = join_column)
+  test_diff$measured_In <- "both"
+
+  removed_from_site <- dplyr::anti_join(phosRes, totRes, by = join_column )
+  removed_from_site$measured_In <- "site"
+
+  removed_from_prot <- dplyr::anti_join(totRes, phosRes, by = .reverse_join_column(join_column))
+  removed_from_prot$measured_In <- "prot"
+
+  common_columns <- setdiff(intersect(colnames(removed_from_site), colnames(removed_from_prot)),c(join_column, "measured_In"))
+  removed_from_site_renamed <- removed_from_site |>
+    dplyr::rename_with(~ paste0(., ".site"), tidyselect::all_of(common_columns))
+  removed_from_prot_renamed <- removed_from_prot |>
+    dplyr::rename_with(~ paste0(., ".protein"), dplyr::all_of(common_columns))
+
+  combined_test_diff <- dplyr::bind_rows(test_diff , removed_from_site_renamed , removed_from_prot_renamed)
+  return(combined_test_diff)
 }
 
 

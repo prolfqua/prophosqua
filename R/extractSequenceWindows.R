@@ -8,28 +8,6 @@
 }
 
 
-#' compute MSstats like test statsitics
-#' @export
-#'
-test_diff <- function(phosRes, totRes, join_column = c("protein_Id", "contrast","description", "protein_length", "nr_tryptic_peptides")){
-  test_diff <- prophosqua::test_diff_diff(phosRes,totRes, by = join_column)
-  test_diff$measured_In <- "both"
-
-  removed_from_site <- dplyr::anti_join(phosRes, totRes, by = join_column )
-  removed_from_site$measured_In <- "site"
-
-  removed_from_prot <- dplyr::anti_join(totRes, phosRes, by = .reverse_join_column(join_column))
-  removed_from_prot$measured_In <- "prot"
-
-  common_columns <- setdiff(intersect(colnames(removed_from_site), colnames(removed_from_prot)),c(join_column, "measured_In"))
-  removed_from_site_renamed <- removed_from_site |>
-    dplyr::rename_with(~ paste0(., ".site"), tidyselect::all_of(common_columns))
-  removed_from_prot_renamed <- removed_from_prot |>
-    dplyr::rename_with(~ paste0(., ".protein"), dplyr::all_of(common_columns))
-
-  combined_test_diff <- dplyr::bind_rows(test_diff , removed_from_site_renamed , removed_from_prot_renamed)
-  return(combined_test_diff)
-}
 
 
 
