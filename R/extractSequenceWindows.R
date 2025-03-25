@@ -7,8 +7,10 @@
   return(reverse_join_column)
 }
 
-#what for?
-# To do: write docu to get this function exported
+
+#' compute MSstats like test statsitics
+#' @export
+#'
 test_diff <- function(phosRes, totRes, join_column = c("protein_Id", "contrast","description", "protein_length", "nr_tryptic_peptides")){
   test_diff <- prophosqua::test_diff_diff(phosRes,totRes, by = join_column)
   test_diff$measured_In <- "both"
@@ -32,7 +34,8 @@ test_diff <- function(phosRes, totRes, join_column = c("protein_Id", "contrast",
 
 
 
-# To do: write docu to get this function exported
+#' extract sequence window from fasta files for plotting.
+#' @export
 get_sequence_windows <- function(phosRes, fasta_file, rev_pattern = "rev_", window_size = 15) {
   uniqueProtPepSeq <- phosRes |> dplyr::filter(AllLocalized == TRUE) |>
     dplyr::select(protein_Id, site, PhosSites) |> dplyr::distinct()
