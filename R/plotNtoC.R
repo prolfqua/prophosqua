@@ -7,7 +7,9 @@
 #' @param thrB significance threshold small large default 0.20
 #'
 #' @export
-#'
+#' @examples
+#' data(exampleN_C_dat)
+#' N_to_C_plot(exampleN_C_dat,"A0A1I9LPZ1",2160,"H1FC")
 N_to_C_plot <- function(
     POI_matrixMin,
     protein_name,
@@ -26,8 +28,6 @@ N_to_C_plot <- function(
       return("")
     }
   }
-
-
   POI_matrixMin$linetype <- ifelse(grepl("imputed",POI_matrixMin$model_site), "imputed", "observed")
   class(POI_matrixMin[["startModSite"]])  <- "numeric"
   class(POI_matrixMin[["endModSite"]])  <- "numeric"
@@ -76,4 +76,55 @@ N_to_C_plot <- function(
   }
   return(p)
 }
+
+
+#' N to C for integrated results
+#' @param POI_matrixMin
+#' @export
+#' @examples
+#' data(n_c_integrated_df)
+#' N_to_C_plot_integrated(n_c_integrated_df,"A0A1I9LT44",539,"WTFC")
+N_to_C_plot_integrated <- function(
+    POI_matrixMin,
+    protein_name,
+    protLength,
+    contrast,
+    thrA = 0.05,
+    thrB = 0.2,
+    color_protein = "yellow"
+) {
+  get_significance <- function(fdr, thrA = 0.05, thrB = 0.2) {
+    if (fdr < thrA) {
+      return("**")
+    } else if (fdr < thrB) {
+      return("*")
+    } else {
+      return("")
+    }
+  }
+  POI_matrixMin$significance <- sapply(POI_matrixMin$FDR_I, get_significance, thrA ,thrB)
+
+  plot_title <- paste0("Prot : ",protein_name, "; length: ", protLength ,"; # sites:", nrow(POI_matrixMin))
+  mean_diff_prot <- 0
+  p <- ggplot(data = POI_matrixMin) +
+    geom_segment(aes(x = posInProtein, xend = posInProtein, y = 0, yend = diff_diff, color = modAA)) +
+    annotate("segment", x = 0, xend = protLength, y = 0, yend = 0, color = "black") +
+    scale_color_manual(values = c("S" = "blue", "T" = "green", Y = "brown", NotLoc = "pink")) +
+    scale_x_continuous(limits = c(0, protLength)) +
+    annotate("text", x = 0 , y = mean_diff_prot, label = "N", vjust = 0, hjust = 0) +
+    annotate("text", x = protLength, y = mean_diff_prot, label = "C", vjust = 0, hjust = 0) +
+    geom_text(aes(x = posInProtein, y = diff_diff, label = significance), vjust = 0.4 , size = 7, color = "red") +
+    labs(y = paste0("diff : ",contrast),title = plot_title) +
+    theme_minimal()
+
+  legend_data <- data.frame(
+    xmin = 0,
+    xmax = protLength,
+    ymin = 0,
+    ymax = ifelse(is.na(mean_diff_prot), 0, mean_diff_prot),
+    fill = ifelse(is.na(mean_diff_prot), NA, "diff of protein")
+  )
+  return(p)
+}
+
 

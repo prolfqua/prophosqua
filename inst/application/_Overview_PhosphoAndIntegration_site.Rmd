@@ -120,11 +120,10 @@ datax <- data_diff_diff |> dplyr::select(
            "diff.protein",
            "diff.site",
            "modelName.site", "modelName.protein")))
-colnames(data_diff_diff)
 
 #datax <- datax |> tidyr::unite("modelName", c("modelName.site", "modelName.protein"), sep = "~")
 #datax$modelName |> table()
-palette <- c("black","grey")
+palette <- c("black","orange")
 palette <- setNames(palette, c("Linear_Model_moderated", "Imputed_Mean_moderated"))  
 
 
