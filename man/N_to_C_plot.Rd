@@ -23,9 +23,9 @@ N_to_C_plot(
 
 \item{contrast}{name of contrast}
 
-\item{thrA}{significance threshold small default 5%}
+\item{thrA}{significance threshold small default 0.05}
 
-\item{thrB}{significance threshold small large default 20%}
+\item{thrB}{significance threshold small large default 0.20}
 }
 \description{
 N to C plot using ggplot2
