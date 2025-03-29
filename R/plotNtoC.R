@@ -1,11 +1,12 @@
 #' N to C plot using ggplot2
-#' @export
 #' @param POI_matrixMin data.frame
 #' @param protein_name name of protein
 #' @param protLength protein length
 #' @param contrast name of contrast
-#' @param thrA significance threshold small default 5%
-#' @param thrB significance threshold small large default 20%
+#' @param thrA significance threshold small default 0.05
+#' @param thrB significance threshold small large default 0.20
+#'
+#' @export
 #'
 N_to_C_plot <- function(
     POI_matrixMin,
@@ -15,8 +16,6 @@ N_to_C_plot <- function(
     thrA = 0.05,
     thrB = 0.2,
     color_protein = "yellow"
-
-
 ) {
   get_significance <- function(fdr, thrA = 0.05, thrB = 0.2) {
     if (fdr < thrA) {
