@@ -54,17 +54,6 @@ In this analysis, the enriched (phospho peptide enrichment) as well as the pre-e
 # Numbers
 
 ```{r nummms, eval=TRUE, fig.height=5, fig.width=8}
-# totS <- length(unique(data_diff_diff$site))
-# totLocS <- length(unique(data_diff_diff$site[data_diff_diff$AllLocalized]))
-# totSingS <- length(unique(data_diff_diff$site[data_diff_diff$SinglePhosLocalized_bool]))
-# totProt <- length(unique(data_diff_diff$protein_Id))
-# numdf <- data.frame(
-#   w = c("Total number of identified phospho peptides: ", "Total number of phospho peptides with fully localized phosphorylations (sites):", "Total number of singly phosphorylated and localized phospho peptides: ", "Total number of phospho proteins: "), 
-# numbers = c(totS, totLocS, totSingS, totProt)
-# )
-# knitr::kable(numdf, caption = "Overview on the numbers")
-
-# only go for one contrast to not inflate numbers, take the first it does not matter
 coi <- unique(data_diff_diff$contrast)[1]
 data_diffOneC <- data_diff_diff[data_diff_diff$contrast == coi,]
 totAll <- length(unique(data_diffOneC$site))
@@ -122,7 +111,7 @@ DT::datatable(bb, filter = "bottom",
 ```
 
 
-(ref:scatterplot)
+(ref:scatterplot) PTM site differences (Y axis) as a function of protein differences (X axis).
 
 ```{r scatterplot, fig.cap="(ref:scatterplot)", fig.width=9, fig.height=7, include = TRUE, eval = TRUE}
 datax <- data_diff_diff |> dplyr::select(
@@ -137,8 +126,6 @@ palette <- setNames(palette, c("Linear_Model_moderated", "Imputed_Mean_moderated
 
 
 View(datax)
-#palette <- setNames(palette, c("Linear_Model_moderated", "Imputed_Mean_moderated"))  
-
 xd <- prolfqua::scatter_plotly( 
   datax ,
   proteinID = "site",
