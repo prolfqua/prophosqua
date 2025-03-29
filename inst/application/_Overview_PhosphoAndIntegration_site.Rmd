@@ -122,6 +122,40 @@ DT::datatable(bb, filter = "bottom",
 ```
 
 
+(ref:scatterplot)
+
+```{r scatterplot, fig.cap="(ref:scatterplot)", fig.width=9, fig.height=7, include = TRUE, eval = TRUE}
+datax <- data_diff_diff |> dplyr::select(
+  all_of(c("site", "contrast", "protein_Id",
+           "diff.protein",
+           "diff.site",
+           "modelName.site", "modelName.protein")))
+datax <- datax |> tidyr::unite("modelName", c("modelName.site", "modelName.protein"))
+datax$modelName |> table()
+palette <- c("black","orange")
+palette <- setNames(palette, c("Linear_Model_moderated", "Imputed_Mean_moderated"))  
+
+
+View(datax)
+#palette <- setNames(palette, c("Linear_Model_moderated", "Imputed_Mean_moderated"))  
+
+xd <- prolfqua::scatter_plotly( 
+  datax ,
+  proteinID = "site",
+  dx = "diff.protein",
+  dy = "diff.site",
+  contrast = "contrast",
+  color = "modelName.site",
+  palette = palette,
+  title_size = 14,
+  group = "BB")
+
+xd <- lapply(xd, plotly::highlight , off = "plotly_doubleclick")
+nrow <- ceiling(length(xd) / 4)
+plotly::subplot(xd, shareX = TRUE, shareY = TRUE, nrows = nrow)
+
+```
+
 (ref:volcanoplot)  Volcano plot showing $-\log_{10}$ transformed FDR as function of the protein level adjusted difference between groups. The red line indicates the $-log_{10}(FDR)$ of FDR = `r grp2$processing_options$FDR_threshold`, while the green lines represent the the difference of minus and plus `r grp2$processing_options$diff_threshold`. Orange dots differences and FDRs were estimated using missing value imputation.
 
 
