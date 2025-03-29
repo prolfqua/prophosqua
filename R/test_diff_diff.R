@@ -9,6 +9,7 @@
                            suffixB = ".protein"
 ){
   dataf <- dplyr::inner_join(dfA, dfB, by = by, suffix = c(suffixA,suffixB))
+
   f_SE <- function(stdeA, stdeB){
     sqrt(stdeA ^ 2 + stdeB ^ 2 )
   }
@@ -40,7 +41,9 @@
 #' compute MSstats like test statsitics
 #' @export
 #'
-test_diff <- function(phosRes, totRes, join_column = c("protein_Id", "contrast","description", "protein_length", "nr_tryptic_peptides")){
+test_diff <- function(phosRes,
+                      totRes,
+                      join_column = c("protein_Id", "contrast","description", "protein_length", "nr_tryptic_peptides")){
   test_diff <- .test_diff_diff(phosRes,totRes, by = join_column)
   test_diff$measured_In <- "both"
 
