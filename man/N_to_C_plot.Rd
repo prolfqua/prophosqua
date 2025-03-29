@@ -10,8 +10,22 @@ N_to_C_plot(
   protLength,
   contrast,
   thrA = 0.05,
-  thrB = 0.2
+  thrB = 0.2,
+  color_protein = "yellow"
 )
+}
+\arguments{
+\item{POI_matrixMin}{data.frame}
+
+\item{protein_name}{name of protein}
+
+\item{protLength}{protein length}
+
+\item{contrast}{name of contrast}
+
+\item{thrA}{significance threshold small default 5%}
+
+\item{thrB}{significance threshold small large default 20%}
 }
 \description{
 N to C plot using ggplot2
