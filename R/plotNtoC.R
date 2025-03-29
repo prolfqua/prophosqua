@@ -1,11 +1,23 @@
 #' N to C plot using ggplot2
 #' @export
+#' @param POI_matrixMin data.frame
+#' @param protein_name name of protein
+#' @param protLength protein length
+#' @param contrast name of contrast
+#' @param thrA significance threshold small default 5%
+#' @param thrB significance threshold small large default 20%
 #'
-N_to_C_plot <- function(POI_matrixMin,
-                        protein_name,
-                        protLength,
-                        contrast,
-                        thrA = 0.05, thrB = 0.2) {
+N_to_C_plot <- function(
+    POI_matrixMin,
+    protein_name,
+    protLength,
+    contrast,
+    thrA = 0.05,
+    thrB = 0.2,
+    color_protein = "yellow"
+
+
+) {
   get_significance <- function(fdr, thrA = 0.05, thrB = 0.2) {
     if (fdr < thrA) {
       return("**")
@@ -56,7 +68,7 @@ N_to_C_plot <- function(POI_matrixMin,
   if (!is.na(mean_diff_prot)) {
     #p <- p + annotate("rect", xmin = 0, xmax = protLength, ymin = 0, ymax = mean_diff_prot, alpha = 0.3, fill = "yellow")
     p <- p + geom_rect(data = legend_data, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, fill = fill), alpha = 0.3) +
-      scale_fill_manual(values = c("diff of protein" = "yellow")) +
+      scale_fill_manual(values = c("diff of protein" = color_protein)) +
       guides(fill = guide_legend(title = "Rectangle"))
   } else {
     yext <- max(POI_matrixMin$diff.site, na.rm = TRUE)
