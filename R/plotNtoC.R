@@ -10,6 +10,7 @@
 #' @examples
 #' data(exampleN_C_dat)
 #' N_to_C_plot(exampleN_C_dat,"A0A1I9LPZ1",2160,"H1FC")
+#' N_to_C_plot(exampleN_C_dat_no_prot, "A0A178US29",806,"H1FC")
 N_to_C_plot <- function(
     POI_matrixMin,
     protein_name,
@@ -48,27 +49,26 @@ N_to_C_plot <- function(
     annotate("segment", x = 0, xend = protLength, y = 0, yend = 0, color = "black") +
     scale_color_manual(values = c("S" = "blue", "T" = "green", Y = "brown", NotLoc = "pink")) +
     scale_x_continuous(limits = c(0, protLength)) +
-    # protein box
-    # annotate("rect", xmin = 0, xmax = protLength, ymin = 0, ymax = mean_diff_prot, alpha = 0.3, fill = "yellow") +
-    annotate("text", x = 0 , y = mean_diff_prot, label = "N", vjust = 0, hjust = 0) +
-    annotate("text", x = protLength, y = mean_diff_prot, label = "C", vjust = 0, hjust = 0) +
     geom_text(aes(x = posInProtein, y = diff.site, label = significance), vjust = 0.4 , size = 7, color = "red") +
     labs(y = paste0("diff : ",contrast),title = plot_title) +
     theme_minimal()
 
-  legend_data <- data.frame(
-    xmin = 0,
-    xmax = protLength,
-    ymin = 0,
-    ymax = ifelse(is.na(mean_diff_prot), 0, mean_diff_prot),
-    fill = ifelse(is.na(mean_diff_prot), NA, "diff of protein")
-  )
+
 
   if (!is.na(mean_diff_prot)) {
-    #p <- p + annotate("rect", xmin = 0, xmax = protLength, ymin = 0, ymax = mean_diff_prot, alpha = 0.3, fill = "yellow")
-    p <- p + geom_rect(data = legend_data, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, fill = fill), alpha = 0.3) +
-      scale_fill_manual(values = c("diff of protein" = color_protein)) +
-      guides(fill = guide_legend(title = "Rectangle"))
+    p <- p + annotate("text", x = 0 , y = mean_diff_prot, label = "N", vjust = 0, hjust = 0) +
+      annotate("text", x = protLength, y = mean_diff_prot, label = "C", vjust = 0, hjust = 0)
+
+    legend_data <- data.frame(
+      xmin = 0,
+      xmax = protLength,
+      ymin = 0,
+      ymax = ifelse(is.na(mean_diff_prot), 0, mean_diff_prot),
+      fill = ifelse(is.na(mean_diff_prot), NA, "diff of protein"))
+
+      p <- p + geom_rect(data = legend_data, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, fill = fill), alpha = 0.3) +
+        scale_fill_manual(values = c("diff of protein" = color_protein)) +
+        guides(fill = guide_legend(title = "Rectangle"))
   } else {
     yext <- max(POI_matrixMin$diff.site, na.rm = TRUE)
     p <- p + annotate("rect", xmin = 0, xmax = protLength, ymin = -yext/2, ymax = +yext/2, alpha = 0.3, fill = "white", color = "red", linetype = "dashed") +
