@@ -33,4 +33,5 @@ N to C plot using ggplot2
 \examples{
 data(exampleN_C_dat)
 N_to_C_plot(exampleN_C_dat,"A0A1I9LPZ1",2160,"H1FC")
+N_to_C_plot(exampleN_C_dat_no_prot, "A0A178US29",806,"H1FC")
 }
