@@ -325,3 +325,11 @@ outpath <- prolfquapp::write_DEA_all(grp_phos, boxplot = FALSE, markdown = "_Grp
 # Save RData from enriched and total (only lfqdata is overwritten?) # keep lfqdata, grp, adata separate for phos and total!
 (imageFN <- paste(fgczProject, descri, "full",".RData", sep="_"))
 save.image(imageFN)
+
+
+
+logger::log_info("write results and summarized experiment")
+SEphos <- prolfquapp::make_SummarizedExperiment(grp_phos)
+saveRDS(SEphos, file = file.path(outpath , paste0("SummarizedExperiment_phospho",".rds") ))
+
+
