@@ -1,4 +1,6 @@
-#' @importFrom ggplot2 ggplot geom_segment aes scale_linetype_manual annotate scale_color_manual scale_x_continuous geom_text labs theme_minimal geom_rect scale_fill_manual guides guide_legend
+#' @importFrom ggplot2 ggplot geom_segment aes scale_linetype_manual
+#' @importFrom ggplot2 annotate scale_color_manual scale_x_continuous
+#' @importFrom ggplot2 geom_text labs theme_minimal geom_rect scale_fill_manual guides guide_legend
 NULL
 
 #' Example dataset exampleN_C_dat

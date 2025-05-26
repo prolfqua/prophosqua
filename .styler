@@ -1,0 +1,7 @@
+styler::style_transformer(
+  indent_by = 2,
+  math_token_spacing = styler::specify_math_token_spacing(
+    zero = c("+", "-", "=", "<", ">", "~"),
+    one = c("*", "/", "^")
+  )
+) 
