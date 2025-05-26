@@ -1,11 +1,25 @@
 {
     "[r]": {
-        "editor.tabSize": 4,
-        "editor.insertSpaces": true
+        "editor.tabSize": 2,
+        "editor.insertSpaces": true,
+        "editor.detectIndentation": false,
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "REditorSupport.r"
     },
     "r.lsp.enabled": true,
     "r.linting.enable": true,
     "r.linting.lintr.options": {
-        "indentation_linter": 4
+        "indentation_linter": 2
+    },
+    "r.formatter": "styler",
+    "r.formatter.args": [
+        "--style=tidyverse",
+        "--indent_by=2"
+    ],
+    "files.associations": {
+        "*.R": "r",
+        "*.r": "r",
+        "**/inst/application/*.R": "r",
+        "**/inst/application/*.r": "r"
     }
-} 
+}
