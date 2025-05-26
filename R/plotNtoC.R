@@ -1,3 +1,6 @@
+#' @importFrom rlang .data
+NULL
+
 #' N to C plot using ggplot2
 #' @param POI_matrixMin data.frame
 #' @param protein_name name of protein
@@ -9,122 +12,141 @@
 #' @export
 #' @examples
 #' data(exampleN_C_dat)
-#' N_to_C_plot(exampleN_C_dat,"A0A1I9LPZ1",2160,"H1FC")
-#' N_to_C_plot(exampleN_C_dat_no_prot, "A0A178US29",806,"H1FC")
-N_to_C_plot <- function(
-    POI_matrixMin,
+#' n_to_c_plot(exampleN_C_dat, "A0A1I9LPZ1", 2160, "H1FC")
+#' n_to_c_plot(exampleN_C_dat_no_prot, "A0A178US29", 806, "H1FC")
+n_to_c_plot <- function(
+    poi_matrix_min,
     protein_name,
-    protLength,
+    prot_length,
     contrast,
-    thrA = 0.05,
-    thrB = 0.2,
-    color_protein = "yellow"
-) {
-  get_significance <- function(fdr, thrA = 0.05, thrB = 0.2) {
-    if (fdr < thrA) {
+    thr_a = 0.05,
+    thr_b = 0.2,
+    color_protein = "yellow") {
+  get_significance <- function(fdr, thr_a = 0.05, thr_b = 0.2) {
+    if (fdr < thr_a) {
       return("**")
-    } else if (fdr < thrB) {
+    } else if (fdr < thr_b) {
       return("*")
     } else {
       return("")
     }
   }
-  POI_matrixMin$linetype <- ifelse(grepl("imputed",POI_matrixMin$model_site), "imputed", "observed")
-  class(POI_matrixMin[["startModSite"]])  <- "numeric"
-  class(POI_matrixMin[["endModSite"]])  <- "numeric"
+  poi_matrix_min$linetype <- ifelse(grepl("imputed", poi_matrix_min$model_site), "imputed", "observed")
+  class(poi_matrix_min[["startModSite"]]) <- "numeric"
+  class(poi_matrix_min[["endModSite"]]) <- "numeric"
 
-  POI_matrixMin <- POI_matrixMin |> dplyr::mutate(posInProtein = ifelse(AllLocalized, posInProtein, as.integer(startModSite + endModSite)/2))
-  POI_matrixMin <- POI_matrixMin |> dplyr::mutate(modAA = ifelse(AllLocalized, modAA, "NotLoc"))
+  poi_matrix_min <- poi_matrix_min |>
+    dplyr::mutate(
+      posInProtein =
+        ifelse(.data$AllLocalized, .data$posInProtein, as.integer(.data$startModSite + .data$endModSite) / 2)
+    )
+  poi_matrix_min <- poi_matrix_min |> dplyr::mutate(modAA = ifelse(.data$AllLocalized, .data$modAA, "NotLoc"))
 
-  mean_diff_prot <- mean(POI_matrixMin$diff.protein, na.rm = TRUE)
-  POI_matrixMin$significance <- sapply(POI_matrixMin$FDR.site, get_significance, thrA ,thrB)
+  mean_diff_prot <- mean(poi_matrix_min$diff.protein, na.rm = TRUE)
+  poi_matrix_min$significance <- sapply(poi_matrix_min$FDR.site, get_significance, thr_a, thr_b)
 
-  plot_title <- paste0("Prot : ",protein_name, "; length: ", protLength ,"; # sites:", nrow(POI_matrixMin), "; # not localized sites:", sum(!POI_matrixMin$AllLocalized))
+  plot_title <- paste0(
+    "Prot : ", protein_name,
+    "; length: ", prot_length, "; # sites:",
+    nrow(poi_matrix_min), "; # not localized sites:", sum(!poi_matrix_min$AllLocalized)
+  )
 
 
-  p <- ggplot(data = POI_matrixMin) +
-    geom_segment(aes(x = posInProtein, xend = posInProtein, y = 0, yend = diff.site, color = modAA,
-                     linetype = linetype)) +
+  p <- ggplot(data = poi_matrix_min) +
+    geom_segment(aes(
+      x = .data$posInProtein, xend = .data$posInProtein, y = 0, yend = .data$diff.site, color = .data$modAA,
+      linetype = .data$linetype
+    )) +
     scale_linetype_manual(values = c("imputed" = "dashed", "observed" = "solid")) +
-    annotate("segment", x = 0, xend = protLength, y = 0, yend = 0, color = "black") +
+    annotate("segment", x = 0, xend = prot_length, y = 0, yend = 0, color = "black") +
     scale_color_manual(values = c("S" = "blue", "T" = "green", Y = "brown", NotLoc = "pink")) +
-    scale_x_continuous(limits = c(0, protLength)) +
-    geom_text(aes(x = posInProtein, y = diff.site, label = significance), vjust = 0.4 , size = 7, color = "red") +
-    labs(y = paste0("diff : ",contrast),title = plot_title) +
+    scale_x_continuous(limits = c(0, prot_length)) +
+    geom_text(aes(x = .data$posInProtein, y = .data$diff.site, label = .data$significance),
+      vjust = 0.4, size = 7, color = "red"
+    ) +
+    labs(y = paste0("diff : ", contrast), title = plot_title) +
     theme_minimal()
 
 
 
   if (!is.na(mean_diff_prot)) {
-    p <- p + annotate("text", x = 0 , y = mean_diff_prot, label = "N", vjust = 0, hjust = 0) +
-      annotate("text", x = protLength, y = mean_diff_prot, label = "C", vjust = 0, hjust = 0)
+    p <- p + annotate("text", x = 0, y = mean_diff_prot, label = "N", vjust = 0, hjust = 0) +
+      annotate("text", x = prot_length, y = mean_diff_prot, label = "C", vjust = 0, hjust = 0)
 
     legend_data <- data.frame(
       xmin = 0,
-      xmax = protLength,
+      xmax = prot_length,
       ymin = 0,
       ymax = ifelse(is.na(mean_diff_prot), 0, mean_diff_prot),
-      fill = ifelse(is.na(mean_diff_prot), NA, "diff of protein"))
+      fill = ifelse(is.na(mean_diff_prot), NA, "diff of protein")
+    )
 
-      p <- p + geom_rect(data = legend_data, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, fill = fill), alpha = 0.3) +
-        scale_fill_manual(values = c("diff of protein" = color_protein)) +
-        guides(fill = guide_legend(title = "Rectangle"))
+    p <- p + geom_rect(data = legend_data, aes(
+      xmin = .data$xmin,
+      xmax = .data$ xmax, ymin = .data$ymin,
+      ymax = .data$ymax, fill = .data$fill
+    ), alpha = 0.3) +
+      scale_fill_manual(values = c("diff of protein" = color_protein)) +
+      guides(fill = guide_legend(title = "Rectangle"))
   } else {
-    yext <- max(POI_matrixMin$diff.site, na.rm = TRUE)
-    p <- p + annotate("rect", xmin = 0, xmax = protLength, ymin = -yext/2, ymax = +yext/2, alpha = 0.3, fill = "white", color = "red", linetype = "dashed") +
-      annotate("text", x = protLength / 2, y = 0, label = "No estimate for diff of protein", color = "red", angle = 45, size = 6)
+    yext <- max(poi_matrix_min$diff.site, na.rm = TRUE)
+    p <- p + annotate("rect",
+      xmin = 0, xmax = prot_length,
+      ymin = -yext / 2, ymax = +yext / 2, alpha = 0.3,
+      fill = "white", color = "red", linetype = "dashed"
+    ) +
+      annotate("text",
+        x = prot_length / 2,
+        y = 0, label = "No estimate for diff of protein", color = "red", angle = 45, size = 6
+      )
   }
   return(p)
 }
 
 
 #' N to C for integrated results
-#' @param POI_matrixMin
+#' @param POI_matrixMin data.frame
 #' @export
 #' @examples
 #' data(n_c_integrated_df)
-#' N_to_C_plot_integrated(n_c_integrated_df,"A0A1I9LT44",539,"WTFC")
-N_to_C_plot_integrated <- function(
-    POI_matrixMin,
+#' n_to_c_plot_integrated(n_c_integrated_df, "A0A1I9LT44", 539, "WTFC")
+n_to_c_plot_integrated <- function(
+    poi_matrix_min,
     protein_name,
-    protLength,
+    prot_length,
     contrast,
-    thrA = 0.05,
-    thrB = 0.2,
-    color_protein = "yellow"
-) {
-  get_significance <- function(fdr, thrA = 0.05, thrB = 0.2) {
-    if (fdr < thrA) {
+    thr_a = 0.05,
+    thr_b = 0.2,
+    color_protein = "yellow") {
+  get_significance <- function(fdr, thr_a = 0.05, thr_b = 0.2) {
+    if (fdr < thr_a) {
       return("**")
-    } else if (fdr < thrB) {
+    } else if (fdr < thr_b) {
       return("*")
     } else {
       return("")
     }
   }
-  POI_matrixMin$significance <- sapply(POI_matrixMin$FDR_I, get_significance, thrA ,thrB)
+  poi_matrix_min$significance <- sapply(poi_matrix_min$FDR_I, get_significance, thr_a, thr_b)
 
-  plot_title <- paste0("Prot : ",protein_name, "; length: ", protLength ,"; # sites:", nrow(POI_matrixMin))
+  plot_title <- paste0("Prot : ", protein_name, "; length: ", prot_length, "; # sites:", nrow(poi_matrix_min))
   mean_diff_prot <- 0
-  p <- ggplot(data = POI_matrixMin) +
-    geom_segment(aes(x = posInProtein, xend = posInProtein, y = 0, yend = diff_diff, color = modAA)) +
-    annotate("segment", x = 0, xend = protLength, y = 0, yend = 0, color = "black") +
+  p <- ggplot(data = poi_matrix_min) +
+    geom_segment(aes(
+      x = .data$posInProtein,
+      xend = .data$posInProtein, y = 0, yend = .data$diff_diff,
+      color = .data$modAA
+    )) +
+    annotate("segment", x = 0, xend = prot_length, y = 0, yend = 0, color = "black") +
     scale_color_manual(values = c("S" = "blue", "T" = "green", Y = "brown", NotLoc = "pink")) +
-    scale_x_continuous(limits = c(0, protLength)) +
-    annotate("text", x = 0 , y = mean_diff_prot, label = "N", vjust = 0, hjust = 0) +
-    annotate("text", x = protLength, y = mean_diff_prot, label = "C", vjust = 0, hjust = 0) +
-    geom_text(aes(x = posInProtein, y = diff_diff, label = significance), vjust = 0.4 , size = 7, color = "red") +
-    labs(y = paste0("diff : ",contrast),title = plot_title) +
+    scale_x_continuous(limits = c(0, prot_length)) +
+    annotate("text", x = 0, y = mean_diff_prot, label = "N", vjust = 0, hjust = 0) +
+    annotate("text", x = prot_length, y = mean_diff_prot, label = "C", vjust = 0, hjust = 0) +
+    geom_text(aes(x = .data$posInProtein, y = .data$diff_diff, label = .data$significance),
+      vjust = 0.4, size = 7, color = "red"
+    ) +
+    labs(y = paste0("diff : ", contrast), title = plot_title) +
     theme_minimal()
 
-  legend_data <- data.frame(
-    xmin = 0,
-    xmax = protLength,
-    ymin = 0,
-    ymax = ifelse(is.na(mean_diff_prot), 0, mean_diff_prot),
-    fill = ifelse(is.na(mean_diff_prot), NA, "diff of protein")
-  )
   return(p)
 }
-
-

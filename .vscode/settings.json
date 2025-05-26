@@ -1,0 +1,11 @@
+{
+    "[r]": {
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true
+    },
+    "r.lsp.enabled": true,
+    "r.linting.enable": true,
+    "r.linting.lintr.options": {
+        "indentation_linter": 4
+    }
+} 

@@ -5,8 +5,8 @@
 \title{compute MSstats like test statsitics}
 \usage{
 test_diff(
-  phosRes,
-  totRes,
+  phos_res,
+  tot_res,
   join_column = c("protein_Id", "contrast", "description", "protein_length",
     "nr_tryptic_peptides")
 )

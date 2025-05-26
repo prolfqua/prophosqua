@@ -5,7 +5,7 @@
 \title{extract sequence window from fasta files for plotting.}
 \usage{
 get_sequence_windows(
-  phosRes,
+  phos_res,
   fasta_file,
   rev_pattern = "rev_",
   window_size = 15

@@ -5,14 +5,14 @@
 \title{Test if differences of differences are significant}
 \usage{
 .test_diff_diff(
-  dfA,
-  dfB,
+  dataframe_a,
+  dataframe_b,
   by,
   diff = c("diff"),
-  std.err = c("std.error"),
+  std_err = c("std.error"),
   df = c("df"),
-  suffixA = ".site",
-  suffixB = ".protein"
+  suffix_a = ".site",
+  suffix_b = ".protein"
 )
 }
 \description{
