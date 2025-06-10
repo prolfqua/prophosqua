@@ -1,0 +1,63 @@
+@startuml PSMMatchIonPeptidoformMultisite
+entity "PSM" as PM {
+  * psm_id         : PK
+  --
+  fk_ion_id       : FK
+}
+
+entity "ElutionGroup" as EG {
+  * eg_id          : PK
+  --
+  fk_ion_id       : FK
+}
+
+entity "Ion" as I {
+  * ion_id         : PK
+  --
+  fk_peptidoform_id : FK
+}
+
+entity "Peptidoform" as PF {
+  * peptidoform_id : PK
+  --
+  fk_multisite_id : FK
+}
+
+
+entity "Multisite" as MS {
+  * multisite_id   : PK
+  }
+
+entity "Site" as ModSite {
+  * site_id          : PK
+  --
+  protein_id         : FK
+  site_position      : INT
+  site_residue       : CHAR
+}
+
+entity "Protein" as P {
+  * protein_id     : PK
+}
+
+
+' DDA: many PSMMatches → one Ion
+PM }o--|| I : matches to
+
+' DIA: many ElutionGroups → one Ion
+EG ||--|| I : matches to
+
+' many Ions → one Peptidoform
+I  }o--|| PF : ions of
+
+' many Peptidoforms → one Multisite
+PF }o--|| MS : grouped into if same PTMs
+
+PF    }o--o{ ModSite : "includes site"
+
+MS    }o--o{ ModSite : "includes site"
+
+
+
+@enduml
+
