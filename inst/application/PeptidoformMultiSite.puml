@@ -1,44 +1,49 @@
-@startuml PSMMatchIonPeptidoformMultisite
-entity "PSM" as PM {
+skinparam dpi 600
+@startuml
+left to right direction
+
+entity "PSM (DDA)" as PM {
   * psm_id         : PK
   --
   fk_ion_id       : FK
 }
 
-entity "ElutionGroup" as EG {
+entity "elution group (DIA)" as EG {
   * eg_id          : PK
   --
   fk_ion_id       : FK
 }
 
-entity "Ion" as I {
+entity "ion" as I {
   * ion_id         : PK
   --
   fk_peptidoform_id : FK
 }
 
-entity "Peptidoform" as PF {
+entity "peptidoform" as PF {
   * peptidoform_id : PK
   --
   fk_multisite_id : FK
+  fk_site_id      : FK[]
 }
 
 
-entity "Multisite" as MS {
+entity "multisite" as MS {
   * multisite_id   : PK
+  --
+  * site_ids       : FK[]
   }
 
-entity "Site" as ModSite {
+entity "site" as ModSite {
   * site_id          : PK
   --
-  protein_id         : FK
+  fk_multisite_id    : FK[]
+  fk_peptidoform_id  : FK[]
   site_position      : INT
   site_residue       : CHAR
+  **multiplicity**       : INT
 }
 
-entity "Protein" as P {
-  * protein_id     : PK
-}
 
 
 ' DDA: many PSMMatches → one Ion
@@ -51,12 +56,25 @@ EG ||--|| I : matches to
 I  }o--|| PF : ions of
 
 ' many Peptidoforms → one Multisite
-PF }o--|| MS : grouped into if same PTMs
+PF }o--|| MS
+note on link
+  <b>Grouping rule</b>:  
+  all peptidoforms
+  whose set of localized 
+  and unlocalized 
+  sites is identical 
+  get collapsed
+end note
 
-PF    }o--o{ ModSite : "includes site"
+PF    }o--o{ ModSite
+note on link
+  <b>Grouping rule</b>:  
+  all peptidoforms
+  with the same 
+  localized **site**
+end note
 
-MS    }o--o{ ModSite : "includes site"
-
+MS    }o--o{ ModSite 
 
 
 @enduml

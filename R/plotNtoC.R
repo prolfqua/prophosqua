@@ -1,6 +1,50 @@
 #' @importFrom rlang .data
 NULL
 
+get_significance <- function(fdr, thr_a = 0.05, thr_b = 0.2) {
+  if (fdr < thr_a) {
+    return("**")
+  } else if (fdr < thr_b) {
+    return("*")
+  } else {
+    return("")
+  }
+}
+
+#' Prepare data for N-to-C plotting
+#' @param poi_matrix_min data.frame with phosphorylation data
+#' @export
+#' @return data.frame with prepared data for plotting
+#' @keywords internal
+#' @examples
+#' # example code
+#' data(exampleN_C_dat)
+#' poi_matrix_min <- prepare_n_to_c_data(exampleN_C_dat)
+#'
+prepare_n_to_c_data <- function(poi_matrix_min, model_site = "model_site") {
+  # Add imputation status based on model name
+  poi_matrix_min$imputation_status <- ifelse(grepl("imputed", poi_matrix_min[[model_site]]), "imputed", "observed")
+
+  # Ensure numeric types for position columns
+  class(poi_matrix_min[["startModSite"]]) <- "numeric"
+  class(poi_matrix_min[["endModSite"]]) <- "numeric"
+
+  # Calculate positions and handle non-localized sites
+  poi_matrix_min <- poi_matrix_min |>
+    dplyr::mutate(
+      posInProtein = ifelse(
+        .data$AllLocalized,
+        .data$posInProtein,
+        as.integer(.data$startModSite + .data$endModSite) / 2
+      )
+    ) |>
+    dplyr::mutate(
+      modAA = ifelse(.data$AllLocalized, .data$modAA, "NotLoc")
+    )
+
+  return(poi_matrix_min)
+}
+
 #' N to C plot using ggplot2
 #' @param POI_matrixMin data.frame
 #' @param protein_name name of protein
@@ -12,8 +56,11 @@ NULL
 #' @export
 #' @examples
 #' data(exampleN_C_dat)
-#' n_to_c_plot(exampleN_C_dat, "A0A1I9LPZ1", 2160, "H1FC")
-#' n_to_c_plot(exampleN_C_dat_no_prot, "A0A178US29", 806, "H1FC")
+#' # Prepare data for plotting
+#' poi_matrix_min <- prepare_n_to_c_data(exampleN_C_dat)
+#'
+#' n_to_c_plot(poi_matrix_min, "A0A1I9LPZ1", 2160, "H1FC")
+#' n_to_c_plot(poi_matrix_min, "A0A178US29", 806, "H1FC")
 n_to_c_plot <- function(
     poi_matrix_min,
     protein_name,
@@ -22,25 +69,18 @@ n_to_c_plot <- function(
     thr_a = 0.05,
     thr_b = 0.2,
     color_protein = "yellow") {
-  get_significance <- function(fdr, thr_a = 0.05, thr_b = 0.2) {
-    if (fdr < thr_a) {
-      return("**")
-    } else if (fdr < thr_b) {
-      return("*")
-    } else {
-      return("")
-    }
-  }
-  poi_matrix_min$linetype <- ifelse(grepl("imputed", poi_matrix_min$model_site), "imputed", "observed")
-  class(poi_matrix_min[["startModSite"]]) <- "numeric"
-  class(poi_matrix_min[["endModSite"]]) <- "numeric"
-
-  poi_matrix_min <- poi_matrix_min |>
-    dplyr::mutate(
-      posInProtein =
-        ifelse(.data$AllLocalized, .data$posInProtein, as.integer(.data$startModSite + .data$endModSite) / 2)
+  # Validate required columns
+  required_cols <- c(
+    "diff.protein", "diff.site", "FDR.site", "posInProtein",
+    "modAA", "imputation_status"
+  )
+  missing_cols <- setdiff(required_cols, colnames(poi_matrix_min))
+  if (length(missing_cols) > 0) {
+    stop(
+      "Missing required columns in poi_matrix_min: ",
+      paste(missing_cols, collapse = ", ")
     )
-  poi_matrix_min <- poi_matrix_min |> dplyr::mutate(modAA = ifelse(.data$AllLocalized, .data$modAA, "NotLoc"))
+  }
 
   mean_diff_prot <- mean(poi_matrix_min$diff.protein, na.rm = TRUE)
   poi_matrix_min$significance <- sapply(poi_matrix_min$FDR.site, get_significance, thr_a, thr_b)
@@ -48,14 +88,14 @@ n_to_c_plot <- function(
   plot_title <- paste0(
     "Prot : ", protein_name,
     "; length: ", prot_length, "; # sites:",
-    nrow(poi_matrix_min), "; # not localized sites:", sum(!poi_matrix_min$AllLocalized)
+    nrow(poi_matrix_min), "; # not localized sites:", sum(!poi_matrix_min$modAA == "NotLoc")
   )
 
 
   p <- ggplot(data = poi_matrix_min) +
     geom_segment(aes(
       x = .data$posInProtein, xend = .data$posInProtein, y = 0, yend = .data$diff.site, color = .data$modAA,
-      linetype = .data$linetype
+      linetype = .data$imputation_status
     )) +
     scale_linetype_manual(values = c("imputed" = "dashed", "observed" = "solid")) +
     annotate("segment", x = 0, xend = prot_length, y = 0, yend = 0, color = "black") +
@@ -118,15 +158,16 @@ n_to_c_plot_integrated <- function(
     thr_a = 0.05,
     thr_b = 0.2,
     color_protein = "yellow") {
-  get_significance <- function(fdr, thr_a = 0.05, thr_b = 0.2) {
-    if (fdr < thr_a) {
-      return("**")
-    } else if (fdr < thr_b) {
-      return("*")
-    } else {
-      return("")
-    }
+  # Validate required columns
+  required_cols <- c("diff_diff", "FDR_I", "posInProtein", "modAA")
+  missing_cols <- setdiff(required_cols, colnames(poi_matrix_min))
+  if (length(missing_cols) > 0) {
+    stop(
+      "Missing required columns in poi_matrix_min: ",
+      paste(missing_cols, collapse = ", ")
+    )
   }
+
   poi_matrix_min$significance <- sapply(poi_matrix_min$FDR_I, get_significance, thr_a, thr_b)
 
   plot_title <- paste0("Prot : ", protein_name, "; length: ", prot_length, "; # sites:", nrow(poi_matrix_min))
