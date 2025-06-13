@@ -32,6 +32,9 @@ N to C plot using ggplot2
 }
 \examples{
 data(exampleN_C_dat)
-n_to_c_plot(exampleN_C_dat, "A0A1I9LPZ1", 2160, "H1FC")
-n_to_c_plot(exampleN_C_dat_no_prot, "A0A178US29", 806, "H1FC")
+# Prepare data for plotting
+poi_matrix_min <- prepare_n_to_c_data(exampleN_C_dat)
+
+n_to_c_plot(poi_matrix_min, "A0A1I9LPZ1", 2160, "H1FC")
+n_to_c_plot(poi_matrix_min, "A0A178US29", 806, "H1FC")
 }

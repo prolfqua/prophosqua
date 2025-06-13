@@ -7,7 +7,7 @@
                             df = c("df"),
                             suffix_a = ".site",
                             suffix_b = ".protein") {
-  dataf <- dplyr::inner_join(dataframe_a, df_b, by = by, suffix = c(suffix_a, suffix_b))
+  dataf <- dplyr::inner_join(dataframe_a, dataframe_b, by = by, suffix = c(suffix_a, suffix_b))
 
   f_se <- function(stde_a, stde_b) {
     sqrt(stde_a^2 + stde_b^2)
