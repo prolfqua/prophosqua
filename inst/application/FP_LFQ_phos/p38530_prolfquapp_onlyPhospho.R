@@ -121,3 +121,34 @@ system("chmod a+x prolfqua_*")
 # ./prolfqua_dea.sh -i ../phospho_enriched/ -d o38530_enriched_annotationTable.xlsx -y PTMenriched.yaml -w DEA_PTM -s FP
 
 
+
+
+# 2025-06-18: comment from Antje:
+#Hi Jonas,
+#wir haben den Verdacht dass zwei Proben vertauscht wurden. Könntest du die Analyse noch mal laufen lassen und manuell die Proben S944602 und S944605 der jeweils anderen Gruppe zuorden? Also:
+# 20250606_005_S944602_C_VRK1_treated_replicate_3_enriched zur "treated" Gruppe
+# 20250606_006_S944605_F_deadVRK1_treated_replicate_3_enriched zur "control" Gruppe
+# Zum einen würde der PCA dann besser passen aber wir sehen das auch in den TIC traces vom chromatogram.
+#Danke und viele Grüsse
+#
+#Antje
+
+# label switches were manually adapted in the excel:
+
+# rerun DEA
+# run this in Terminal
+system("cd ~/FGCZ/Interdisziplinar/o38530_onlyPhos_LFQ/prophosqua")
+# ./prolfqua_dea.sh -i ../phospho_enriched/ -d o38530_enriched_annotationTable_labelSwitch.xlsx -y PTMenriched.yaml -w DEA_PTM_labelSwitched -s FP
+
+# take the switched samples out
+# ./prolfqua_dea.sh -i ../phospho_enriched/ -d o38530_enriched_annotationTable_twoSamplesOut.xlsx -y PTMenriched.yaml -w DEA_PTM_twoSamplesOut -s FP
+
+
+# after meeting with Laura and Antje
+# request: rerun, labels shorter, contrast switched
+# Yet once more
+#./prolfqua_dea.sh -i ../phospho_enriched/ -d o38530_enriched_annotationTable_labelSwitch_v2.xlsx -y PTMenriched.yaml -w DEA_PTM_labelSwitchedv2 -s FP
+#./prolfqua_dea.sh -i ../phospho_enriched/ -d o38530_enriched_annotationTable_labelSwitch_v2.xlsx -y PTMenriched_v2_robscale.yaml -w DEA_PTM_labelSwitchedv2 -s FP
+
+
+# ./prolfqua_dea.sh -i ../phospho_enriched/ -d o38530_enriched_annotationTable_twoSamplesOut_v2.xlsx -y PTMenriched.yaml -w DEA_PTM_twoSamplesOutv2 -s FP
