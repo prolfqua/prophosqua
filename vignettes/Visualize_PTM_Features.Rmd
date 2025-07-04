@@ -1,0 +1,327 @@
+---
+title: "Integration PTM-features and total proteome"
+output: html_document
+date: "2025-07-03"
+editor_options: 
+  chunk_output_type: console
+---
+
+This vignette demonstrates how to **integrate and visualize PTM (Post-Translational Modification) features with total proteome data**. The analysis combines phosphorylation site information with overall protein expression to understand both **differential expression** and **differential usage** of modification sites.
+
+## Overview
+
+This workflow performs two main types of analysis:
+
+1. **Differential PTM Feature Expression (DPE)** - How much each modification site changes in abundance
+2. **Differential PTM Feature Usage (DPU)** - How the usage/occupancy of modification sites changes relative to total protein
+
+The analysis creates N-to-C plots showing modification sites along protein backbones with their expression and usage changes.
+
+```{r setup_2, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warnings = FALSE)
+library(tidyverse)
+library(prolfqua)
+library(prophosqua)
+message("prolfqua Version :", packageVersion("prolfqua"), "\n")
+message("prolfquaapp Version :", packageVersion("prolfquapp"), "\n")
+```
+
+# Data Setup and Configuration
+
+## Setting up project parameters
+
+This section defines the project identifiers and analysis type. The `ptm_feature` parameter determines whether we analyze single phosphorylation sites or multi-site patterns.
+
+```{r}
+wu_id <- "CustomPhosphoAnalysis"
+fgcz_project <- "PTM_example"
+oid_fgcz <- "fgcz_project"
+ptm_feature <- "singlesite"
+
+
+project_dir <- "../inst/PTM_example/"
+tot_file <- file.path(
+  project_dir,
+  "DEA_20250703_WUtotal_proteome_vsn/Results_WU_total_proteome/DE_WUtotal_proteome.xlsx"
+)
+
+if (ptm_feature == "multisite") {
+  ptm_file <- file.path(
+    project_dir,
+    "DEA_20250703_WUmultisite_PTM_vsn/Results_WU_multisite_PTM/DE_WUmultisite_PTM.xlsx"
+  )
+} else if (ptm_feature == "singlesite") {
+  ptm_file <- file.path(
+    project_dir,
+    "DEA_20250703_WUsinglesite_PTM_vsn/Results_WU_singlesite_PTM/DE_WUsinglesite_PTM.xlsx"
+  )
+}
+
+# Directory paths
+file.exists(tot_file)
+file.exists(ptm_file)
+```
+
+## Creating results directory
+
+Sets up the output directory with a timestamped name for organizing results.
+
+```{r}
+datetoday <- format(Sys.Date(), "%Y%m%d")
+descri <- wu_id
+res_dir <- file.path(project_dir, paste0(fgcz_project, "_", datetoday, "_", ptm_feature, "_", descri))
+
+# Create results directory
+if (!dir.exists(res_dir)) {
+  dir.create(res_dir, recursive = TRUE)
+}
+```
+
+## Defining analysis parameters
+
+Sets the statistical thresholds and column mapping for joining total proteome and PTM data.
+
+```{r}
+fdr_threshold <- 0.01
+join_column <- c("fasta.id" = "protein_Id", "contrast", "description", "protein_length")
+suffix_a <- ".site"
+suffix_b <- ".protein"
+```
+
+## Loading and preprocessing data
+
+Loads both total proteome and PTM data, filters out contaminants, and ensures data quality.
+
+```{r}
+required_cols <- c("protein_Id", "protein_length", "contrast")
+tot_res <- load_and_preprocess_data(tot_file, required_cols)
+tot_res <- filter_contaminants(tot_res)
+phospho_res <- load_and_preprocess_data(ptm_file, required_cols)
+phospho_res <- filter_contaminants(phospho_res)
+```
+
+## Combining PTM and total proteome data
+
+Joins the phosphorylation site data with total protein data to enable integrated analysis. This creates a dataset where each phosphorylation site is linked to its corresponding protein-level measurements.
+
+```{r}
+combined_site_prot <- dplyr::left_join(
+  phospho_res,
+  tot_res,
+  by = join_column,
+  suffix = c(suffix_a, suffix_b)
+)
+combined_site_prot$contrast |> table()
+```
+
+# Differential PTM Feature Expression (DPE)
+
+This analysis examines how much each phosphorylation site changes in abundance between experimental conditions, independent of changes in the total protein.
+
+## Creating N-to-C expression plots
+
+Generates plots showing phosphorylation sites along protein backbones with their differential expression values. The plots distinguish between multi-site and single-site analyses.
+
+```{r makeplot, results='hide'}
+if (ptm_feature == "multisite") {
+  combined_site_prot_long <- explode_multisites(combined_site_prot)
+  plot_data <- n_to_c_expression(combined_site_prot_long, "KO_vs_WT_at_Uninfect", 0.01)
+} else if (ptm_feature == "singlesite") {
+  plot_data <- n_to_c_expression(combined_site_prot, "KO_vs_WT_at_Uninfect", 0.01)
+}
+```
+
+## Example plots for specific proteins
+
+### Protein Q8C0J2
+
+Shows the N-to-C plot for protein Q8C0J2, displaying phosphorylation sites along the protein backbone with their expression changes.
+
+```{r plotQ8C0J2, fig.cap="Q8C0J2"}
+x1 <- which(plot_data$protein_Id == "Q8C0J2")
+plot_data$plot[[x1]]
+knitr::kable(plot_data$data[[x1]])
+```
+
+### Protein Q64337
+
+Shows the N-to-C plot for protein Q64337, another example of how phosphorylation sites change in expression.
+
+```{r plotQ64337, fig.cap="Q64337"}
+x1 <- which(plot_data$protein_Id == "Q64337")
+plot_data$plot[[x1]]
+knitr::kable(plot_data$data[[x1]])
+```
+
+## Saving expression plots
+
+Exports all N-to-C expression plots to a PDF file for further analysis and presentation.
+
+```{r}
+# Create plots
+pdf(file.path(res_dir, "Site_differential_Expression.pdf"))
+for (i in seq_len(100)) {
+  print(plot_data$plot[[i]])
+}
+dev.off()
+```
+
+# Differential PTM Feature Usage (DPU)
+
+This analysis examines how the **usage/occupancy** of phosphorylation sites changes relative to total protein abundance. This reveals whether changes in phosphorylation are due to changes in site usage or simply changes in total protein abundance.
+
+## Computing PTM feature usage
+
+
+Statistics used for testing differences of differences (fold changes)
+
+$$
+\Delta_I = \log_2FC_{PTM} - \log_2FC_{Protein}
+$$
+
+$$
+SE_I = \sqrt{SE_{PTM}^2 + SE_{Protein}^2}
+$$
+
+$$
+df_I = (SE_{PTM}^2 + SE_{Protein}^2)^2 \biggm/ (\frac{SE_{PTM}^4}{DF_{PTM}} + \frac{SE_{Protein}^4}{DF_{Protein}})
+$$
+
+
+The `test_diff` function calculates the difference of differences between PTM and total proteome data, revealing site-specific usage changes.
+
+```{r compute_ptm_usage}
+combined_test_diff <- prophosqua::test_diff(phospho_res, tot_res, join_column = join_column)
+```
+
+## Creating N-to-C usage plots
+
+Generates plots showing differential usage of phosphorylation sites. These plots reveal which sites are being used more or less actively, independent of total protein changes.
+
+```{r generate_plots_usage, results='hide', message=FALSE}
+if (ptm_feature == "multisite") {
+  combined_test_diff_long <- explode_multisites(combined_test_diff)
+  plot_data <- n_to_c_usage(combined_test_diff_long, "KO_vs_WT_at_Uninfect", FDR_threshold = 0.05)
+} else if (ptm_feature == "singlesite") {
+  plot_data <- n_to_c_usage(combined_test_diff, "KO_vs_WT_at_Uninfect", FDR_threshold = 0.05)
+}
+```
+
+## Example usage plot
+
+### PTM Feature Usage for Q64337
+
+Shows how the usage of phosphorylation sites on protein Q64337 changes between experimental conditions.
+
+```{r show_usageQ64337, fig.cap="PTM feature usage for Q64337"}
+x1 <- which(plot_data$protein_Id == "Q64337")
+
+plot_data$plot[[x1]]
+knitr::kable(plot_data$data[[x1]])
+```
+
+## Saving usage plots
+
+Exports all N-to-C usage plots to a PDF file.
+
+```{r}
+pdf(file.path(res_dir, "Site_differential_UsageChange.pdf"))
+for (i in seq_len(100)) {
+  print(plot_data$plot[[i]])
+}
+dev.off()
+```
+
+# Report Generation
+
+## Setting up report configuration
+
+Creates the configuration object needed for generating the interactive HTML report.
+
+```{r render_report_expression}
+drumm <- prolfquapp::make_DEA_config_R6(
+  PROJECTID = fgcz_project,
+  ORDERID = oid_fgcz,
+  WORKUNITID = descri
+)
+# Copy integration files
+prophosqua::copy_phospho_integration()
+```
+
+## Rendering the HTML report
+
+Generates an interactive HTML report with comprehensive analysis results, including tables, plots, and statistical summaries.
+
+```{r store, eval = FALSE}
+# Render HTML report
+rmarkdown::render(
+  "_Overview_PhosphoAndIntegration_site.Rmd",
+  params = list(
+    data = combined_test_diff,
+    grp = drumm,
+    phosres = phospho_res
+  ),
+  output_format = bookdown::html_document2(toc = TRUE, toc_float = TRUE),
+  envir = new.env(parent = globalenv())
+)
+
+
+
+# Copy HTML report to results directory
+file.copy(
+  from = "_Overview_PhosphoAndIntegration_site.html",
+  to = file.path(res_dir, "Result_phosphoAndIntegration.html")
+)
+```
+
+## Saving results to Excel
+
+Exports the integrated analysis results to an Excel file for further analysis and sharing.
+
+```{r store_ptm_usage_xlsx}
+excel_result_list <- list(combinedStats = combined_test_diff)
+writexl::write_xlsx(
+  excel_result_list,
+  path = file.path(res_dir, "Result_phosphoAndTotalIntegration.xlsx")
+)
+```
+
+# Results Summary
+
+The analysis produces several output files that can be accessed through the links below:
+
+```{r link_to_report, echo=FALSE, results='asis'}
+html_path <- file.path(res_dir, "Result_phosphoAndIntegration.html")
+xlsx_path <- file.path(res_dir, "Result_phosphoAndTotalIntegration.xlsx")
+plot_pdf_expression <- file.path(res_dir, "Site_differential_Expression.pdf")
+plot_pdf_usage <- file.path(res_dir, "Site_differential_UsageChange.pdf")
+
+cat(sprintf(
+  '- [View the phospho‐integration report](%s){target="_blank"}\n',
+  html_path
+))
+cat(sprintf(
+  '- [Download the phospho+total integration results (Excel)](%s){target="_blank"}\n',
+  xlsx_path
+))
+
+cat(sprintf(
+  '- [View n_to_c plots of differential ptm-feature expression](%s){target="_blank"}\n',
+  plot_pdf_expression
+))
+cat(sprintf(
+  '- [View n_to_c plots of differential ptm-feature usage](%s){target="_blank"}\n',
+  plot_pdf_usage
+))
+```
+
+## Key Insights from This Analysis
+
+This integrated approach provides several advantages:
+
+1. **Distinguishes expression vs. usage changes** - Separates changes due to protein abundance from changes in modification site usage
+2. **Site-specific information** - Identifies which specific amino acids are modified under different conditions
+3. **Biological interpretation** - Helps understand whether changes are due to protein regulation or signaling pathway activation
+4. **Visual representation** - N-to-C plots provide intuitive visualization of modification patterns along protein sequences
+
+The results can be used to identify key regulatory sites, understand signaling pathway changes, and prioritize follow-up experiments.

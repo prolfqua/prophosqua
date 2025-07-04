@@ -88,7 +88,7 @@ n_to_c_plot <- function(
   plot_title <- paste0(
     "Prot : ", protein_name,
     "; length: ", prot_length, "; # sites:",
-    nrow(poi_matrix_min), "; # not localized sites:", sum(!poi_matrix_min$modAA == "NotLoc")
+    nrow(poi_matrix_min), "; # not localized sites:", sum(poi_matrix_min$modAA == "NotLoc")
   )
 
 
@@ -102,7 +102,7 @@ n_to_c_plot <- function(
     scale_color_manual(values = c("S" = "blue", "T" = "green", Y = "brown", NotLoc = "pink")) +
     scale_x_continuous(limits = c(0, prot_length)) +
     geom_text(aes(x = .data$posInProtein, y = .data$diff.site, label = .data$significance),
-      vjust = 0.4, size = 7, color = "red"
+              vjust = 0.4, size = 7, color = "red"
     ) +
     labs(y = paste0("diff : ", contrast), title = plot_title) +
     theme_minimal()
@@ -131,13 +131,13 @@ n_to_c_plot <- function(
   } else {
     yext <- max(poi_matrix_min$diff.site, na.rm = TRUE)
     p <- p + annotate("rect",
-      xmin = 0, xmax = prot_length,
-      ymin = -yext / 2, ymax = +yext / 2, alpha = 0.3,
-      fill = "white", color = "red", linetype = "dashed"
+                      xmin = 0, xmax = prot_length,
+                      ymin = -yext / 2, ymax = +yext / 2, alpha = 0.3,
+                      fill = "white", color = "red", linetype = "dashed"
     ) +
       annotate("text",
-        x = prot_length / 2,
-        y = 0, label = "No estimate for diff of protein", color = "red", angle = 45, size = 6
+               x = prot_length / 2,
+               y = 0, label = "No estimate for diff of protein", color = "red", angle = 45, size = 6
       )
   }
   return(p)
@@ -170,21 +170,30 @@ n_to_c_plot_integrated <- function(
 
   poi_matrix_min$significance <- sapply(poi_matrix_min$FDR_I, get_significance, thr_a, thr_b)
 
-  plot_title <- paste0("Prot : ", protein_name, "; length: ", prot_length, "; # sites:", nrow(poi_matrix_min))
+  plot_title <- paste0("Prot : ", protein_name,
+                       "; length: ",
+                       prot_length,
+                       "; # sites:", nrow(poi_matrix_min)
+                       ,"; # not localized sites:",
+                       sum(poi_matrix_min$modAA == "NotLoc"))
+
+
   mean_diff_prot <- 0
   p <- ggplot(data = poi_matrix_min) +
     geom_segment(aes(
       x = .data$posInProtein,
       xend = .data$posInProtein, y = 0, yend = .data$diff_diff,
-      color = .data$modAA
+      color = .data$modAA,
+      linetype = .data$imputation_status
     )) +
+    scale_linetype_manual(values = c("imputed" = "dashed", "observed" = "solid")) +
     annotate("segment", x = 0, xend = prot_length, y = 0, yend = 0, color = "black") +
     scale_color_manual(values = c("S" = "blue", "T" = "green", Y = "brown", NotLoc = "pink")) +
     scale_x_continuous(limits = c(0, prot_length)) +
     annotate("text", x = 0, y = mean_diff_prot, label = "N", vjust = 0, hjust = 0) +
     annotate("text", x = prot_length, y = mean_diff_prot, label = "C", vjust = 0, hjust = 0) +
     geom_text(aes(x = .data$posInProtein, y = .data$diff_diff, label = .data$significance),
-      vjust = 0.4, size = 7, color = "red"
+              vjust = 0.4, size = 7, color = "red"
     ) +
     labs(y = paste0("diff : ", contrast), title = plot_title) +
     theme_minimal()
