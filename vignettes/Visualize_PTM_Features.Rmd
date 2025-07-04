@@ -37,23 +37,23 @@ wu_id <- "CustomPhosphoAnalysis"
 fgcz_project <- "PTM_example"
 oid_fgcz <- "fgcz_project"
 ptm_feature <- "singlesite"
-
+datetoday <- format(Sys.Date(), "%Y%m%d")
 
 project_dir <- "../inst/PTM_example/"
 tot_file <- file.path(
-  project_dir,
-  "DEA_20250703_WUtotal_proteome_vsn/Results_WU_total_proteome/DE_WUtotal_proteome.xlsx"
+  project_dir,paste0("DEA_", datetoday, "_",
+                     "WUtotal_proteome_vsn/Results_WU_total_proteome/DE_WUtotal_proteome.xlsx")
 )
 
 if (ptm_feature == "multisite") {
   ptm_file <- file.path(
-    project_dir,
-    "DEA_20250703_WUmultisite_PTM_vsn/Results_WU_multisite_PTM/DE_WUmultisite_PTM.xlsx"
+    project_dir,paste0("DEA_", datetoday, "_",
+    "WUmultisite_PTM_vsn/Results_WU_multisite_PTM/DE_WUmultisite_PTM.xlsx")
   )
 } else if (ptm_feature == "singlesite") {
   ptm_file <- file.path(
-    project_dir,
-    "DEA_20250703_WUsinglesite_PTM_vsn/Results_WU_singlesite_PTM/DE_WUsinglesite_PTM.xlsx"
+    project_dir,paste0("DEA_", datetoday, "_",
+    "WUsinglesite_PTM_vsn/Results_WU_singlesite_PTM/DE_WUsinglesite_PTM.xlsx")
   )
 }
 
@@ -67,7 +67,7 @@ file.exists(ptm_file)
 Sets up the output directory with a timestamped name for organizing results.
 
 ```{r}
-datetoday <- format(Sys.Date(), "%Y%m%d")
+#datetoday <- format(Sys.Date(), "%Y%m%d")
 descri <- wu_id
 res_dir <- file.path(project_dir, paste0(fgcz_project, "_", datetoday, "_", ptm_feature, "_", descri))
 
