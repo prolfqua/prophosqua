@@ -11,10 +11,6 @@ NULL
 }
 
 
-
-
-
-
 #' extract sequence window from fasta files for plotting.
 #' @export
 get_sequence_windows <- function(phos_res, fasta_file, rev_pattern = "rev_", window_size = 15) {

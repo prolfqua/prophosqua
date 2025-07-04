@@ -1,0 +1,179 @@
+---
+title: "Differential Expression Analysis Overview and Integration for Phospho DIA-LFQ Data"
+author: "Functional Genomics Center Zurich"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    toc: true
+  bookdown::html_document2:
+    toc: true
+  pdf_document: 
+    toc: true
+header-includes: 
+  \usepackage{fancyhdr}
+  \pagestyle{fancy}
+  \fancyhead[CO,CE]{Phospho DIA LFQ - Differential Expression Analysis}
+  \fancyfoot[CO,CE]{\textbf{FGCZ} - www.fgcz.ch - 2018}
+  \fancyfoot[LE,RO]{\thepage} 
+params:
+  data: NULL
+  grp: NULL
+  phosres : NULL
+vignette: >
+  %\VignetteIndexEntry{FGCZ Two-Group Analysis}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+bibliography: bibliography2025.bib
+editor_options: 
+  chunk_output_type: console
+always_allow_html: true
+---
+
+
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE
+)
+
+grp2 <- params$grp
+data_diff_diff <- params$data
+phosres <- params$phosres
+```
+
+# Overview
+
+This report will be stored at a later point in the LIMS system [_bfabric_](https://fgcz-bfabric.uzh.ch) [@Trker2010] in the 
+__project__: `r grp2$Bfabric$projectID`, __order__: `r grp2$project_spec$orderID`, `r if(!is.null(grp2$project_spec$workunitID)){ "with the workunit ID :" }`  `r grp2$project_spec$workunitID`. Currently it is only uploaded as generic zip resource and attached to the result of the order.
+
+In this analysis, the enriched (phospho peptide enrichment) as well as the pre-enriched samples (total input) are first analyzed separately using the Spectronaut software. While for the total input (protein level), the roll-up is done from precursor level to protein level (here using med-polish approach) from the default BGS-report, the enriched phospho dataset is analyzed using the phospho-site centric export from Spectronaut (PTM-workflow). Both datasets are statistically evaluated first individually and reports are generated for both. After this the two datasets are joined together. For all phospho sites where the protein is also quantified in the pre-enriched sample the protein statistics and the phospho peptide statistics are used to normalize the observed change of the phospho site with respect to the observed fold-change for the protein. This is done in the same way as described for MSstatsPTM [@Kohler2023yo]. The adjusted statistics are then used to generate a combined report. 
+
+# Numbers
+
+```{r nummms, eval=TRUE, fig.height=5, fig.width=8}
+coi <- unique(data_diff_diff$contrast)[1]
+data_diffOneC <- data_diff_diff[data_diff_diff$contrast == coi,]
+totAll <- length(unique(data_diffOneC$site))
+
+totS <- sum(data_diffOneC$modAA == "S", na.rm = TRUE)
+totT <- sum(data_diffOneC$modAA == "T", na.rm = TRUE)
+totY <- sum(data_diffOneC$modAA == "Y", na.rm = TRUE)
+
+numdf <- data.frame(
+  where = c( 
+        "Number of phospho-Serine: ", "Number of phospho-Threonine: ", 
+        "Number of phospho-Tyrosine: ", "Total number of identified phospho sites: "), 
+numbers = c(totS, totT, totY, totAll)
+)
+knitr::kable(numdf, caption = "Overview on identified phospho sites")
+
+```
+
+
+# Joining Phospho Peptide Sites with Non-enriched Proteome
+
+```{r foundInGlobal, eval=TRUE}
+tt <- data_diff_diff |> dplyr::select(protein_Id, measured_In) |> dplyr::distinct() |> dplyr::pull(measured_In) |> table()
+percFoundInGlobal <- tt["both"] / (tt["both"] + tt["site"]) * 100
+totProtFromSites <- (tt["both"] + tt["site"])
+sitesM <- data_diff_diff |>  dplyr::select(protein_Id, site, measured_In) |> dplyr::distinct() |> dplyr::pull(measured_In) |> table()
+```
+
+When phospho peptide enrichment is done, usually also peptides are identified for which there is no corresponding identification in the total proteome measurement.
+Therefore, in some cases the information on the proteome level is missing. Here for `r percFoundInGlobal`% of all identified phospho proteins (`r totProtFromSites`)
+the protein is also quantified in the global proteome measurements.
+For `r sitesM["both"]` phospho sites mapping to a total of `r tt["both"]` proteins we can expand and combine the tables. 
+
+
+# Integration with Non-enriched Proteome
+
+Next, we integrate the modified peptide statistics with the changes on protein level in the same way as described for MSstatsPTM [@Kohler2023yo]. We refer to this as *MSstatsPTM adjustment* and refer to these statistcis in our outputs as *diff_diff* and *FDR_I*.
+In brief, the difference in the levels of a phospho site between two conditions is normalized by the difference in the protein levels for that same contrast. By doing so, the difference of the proteins (if identified) are subtracted from the phospho site differences and the degrees of freedom as well as the T-statistics are further used to calculate the raw- and adjusted p-value (FDR_I) for the adjusted difference (diff_diff).
+
+
+```{r tableAllProt, fig.cap="Differential expression analysis results of all phospho sites (showing MSstatsPTM adjusted log2FCs and FDR)"}
+bb <- data_diff_diff |> dplyr::select(all_of(c("site", "site","protein_Id","contrast","modelName.site","diff_diff","FDR_I")))
+bb <- crosstalk::SharedData$new(bb, ~site, group = "BB")
+
+DT::datatable(bb, filter = "bottom",
+  extensions = "Scroller",
+  style = "auto",
+  class = "compact",
+  options = list(deferRender = TRUE,
+                 scrollY = 300,
+                 scrollX = 400,
+                 scroller = TRUE) ) |>
+  DT::formatRound(columns = c('diff_diff', 'FDR_I'), digits = 3)
+
+```
+
+
+(ref:scatterplot) PTM site differences (Y axis) as a function of protein differences (X axis).
+
+```{r scatterplot, fig.cap="(ref:scatterplot)", fig.width=9, fig.height=7, include = TRUE, eval = TRUE}
+
+datax <- data_diff_diff |> dplyr::select(
+  all_of(c("site", "contrast", "protein_Id",
+           "diff.protein",
+           "diff.site",
+           "modelName.site", "modelName.protein")))
+
+#datax <- datax |> tidyr::unite("modelName", c("modelName.site", "modelName.protein"), sep = "~")
+#datax$modelName |> table()
+palette <- c("black","orange")
+palette <- setNames(palette, c("Linear_Model_moderated", "Imputed_Mean_moderated"))  
+
+
+xd <- prolfqua::scatter_plotly( 
+  datax ,
+  proteinID = "site",
+  dx = "diff.protein",
+  dy = "diff.site",
+  contrast = "contrast",
+  color = "modelName.site",
+  palette = palette,
+  title_size = 14,
+  group = "BB")
+
+xd <- lapply(xd, plotly::highlight , off = "plotly_doubleclick")
+nrow <- ceiling(length(xd) / 4)
+plotly::subplot(xd, shareX = TRUE, shareY = TRUE, nrows = nrow)
+
+```
+
+
+(ref:volcanoplot)  Volcano plot showing $-\log_{10}$ transformed FDR as function of the protein level adjusted difference between groups. The red line indicates the $-log_{10}(FDR)$ of FDR = `r grp2$processing_options$FDR_threshold`, while the green lines represent the the difference of minus and plus `r grp2$processing_options$diff_threshold`. Orange dots differences and FDRs were estimated using missing value imputation.
+
+
+```{r volcanoplot, fig.cap = "(ref:volcanoplot)", fig.width=9, fig.height=7, include = TRUE, eval = TRUE}
+datax <- data_diff_diff |> dplyr::select(
+  all_of(c("site", "protein_Id",
+           "contrast",
+           "modelName.site",
+           "diff_diff",
+           "FDR_I" )))
+palette <- c("black","orange")
+palette <- setNames(palette, c("Linear_Model_moderated", "Imputed_Mean_moderated"))  
+xd <- prolfqua::volcano_plotly( 
+  datax ,
+  proteinID = "site",
+  effect = "diff_diff",
+  significance = "FDR_I",
+  contrast = "contrast",
+  color = "modelName.site",
+  palette = palette,
+  xintercept =  c(-grp2$processing_options$diff_threshold,grp2$processing_options$diff_threshold),
+  yintercept = grp2$processing_options$FDR_threshold,
+  title_size = 14,
+  group = "BB")
+
+xd <- lapply(xd, plotly::highlight , off = "plotly_doubleclick")
+nrow <- ceiling(length(xd) / 4)
+plotly::subplot(xd, shareX = TRUE, shareY = TRUE, nrows = nrow)
+
+```
+
+# References
