@@ -105,8 +105,16 @@ This analysis examines changes in overall protein abundance between experimental
 ```{bash runDEAtotal, echo = TRUE, results="hide"}
 ./prolfqua_yaml.sh -y config.yaml
 ./prolfqua_dea.sh -i ptm_example-main/data_total/FP_22 -d dataset_with_contrasts.tsv -y config.yaml -w total_proteome -s  prolfquapp.FP_TMT
+```
+After running the differential expression analysis, the results are stored in a timestamped directory. This code constructs the path to the results directory using the `prolfquapp::zipdir_name()` function, which follows the standard naming convention for DEA results.
+
+```{r dir_total}
+dir_total <- file.path(".", prolfquapp::zipdir_name("DEA", workunit_id = "total_proteome"))
 
 ```
+
+The results of the total proteome analysis can be found in the [DEA report](`r dir_total`/index.html).
+
 
 # Running DEA analysis of the enriched proteomes
 
@@ -118,8 +126,14 @@ Multi-site analysis examines changes in modification patterns across multiple si
 
 ```{bash multisite,eval=TRUE,results="hide"}
 ./prolfqua_dea.sh -i ptm_example-main/data_ptm/FP_22 -d dataset_with_contrasts.tsv -y config.yaml -w multisite_PTM -s  prolfquappPTMreaders.FP_multisite
-
 ```
+
+```{r dirmultisite}
+dir_multisite <- file.path(".", prolfquapp::zipdir_name("DEA", workunit_id = "multisite_PTM"))
+```
+
+
+The results of the multi-site analysis can be found in the [DEA report](`r dir_multisite`/index.html).
 
 ## Differential expression analysis for single-site output
 
@@ -127,8 +141,13 @@ Single-site analysis examines changes at individual modification sites. This pro
 
 ```{bash singlesite,eval=TRUE, results="hide"}
 ./prolfqua_dea.sh -i ptm_example-main/data_ptm/FP_22 -d dataset_with_contrasts.tsv -y config.yaml -w singlesite_PTM -s  prolfquappPTMreaders.FP_singlesite
-
 ```
+
+```{r dirsinglesite}
+dir_singlesite <- file.path(".", prolfquapp::zipdir_name("DEA", workunit_id = "singlesite_PTM"))
+```
+
+The results of the single-site analysis can be found in the [DEA report](`r dir_singlesite`/index.html).
 
 ## Analysis Output
 
