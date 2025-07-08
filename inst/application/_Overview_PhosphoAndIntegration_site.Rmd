@@ -57,23 +57,15 @@ After individual analysis, the two datasets are integrated to perform differenti
 # pick your contrast and subset as before
 coi         <- unique(data_diff_diff$contrast)[1]
 data_diff_1C <- subset(data_diff_diff, contrast == coi)
-# table of counts per modification
 tbl_modAA <- table(data_diff_1C$modAA, useNA = "no")
 
-# total unique sites
 n_sites <- length(unique(data_diff_1C$site))
 
-# if you want a combined object including the total:
 tbl_combined <- c(tbl_modAA, Total = n_sites)
 
-# convert to a data.frame for pretty printing
-df_summary <- as.data.frame(tbl_combined, responseName = "count")
-rownames(df_summary) <- NULL
-colnames(df_summary) <- c("Modification", "Count")
-
-# optionally use knitr::kable()
+df_summary <- tibble::enframe(tbl_combined, name = "Modification", value = "Count")
 knitr::kable(df_summary, 
-             caption = paste0("Overview on identified phospho sites (contrast = ", coi, ")"))
+             caption = paste0("Overview on identified phospho sites"))
 
 ```
 
@@ -115,7 +107,7 @@ DT::datatable(bb, filter = "bottom",
   options = list(deferRender = TRUE,
                  scrollY = 300,
                  scrollX = 400,
-                 scroller = TRUE) ) |>
+                 scroller = TRUE)) |>
   DT::formatRound(columns = c('diff_diff', 'FDR_I'), digits = 3)
 
 ```
@@ -126,16 +118,16 @@ DT::datatable(bb, filter = "bottom",
 ```{r scatterplot, fig.cap="(ref:scatterplot)", fig.width=9, fig.height=7, include = TRUE, eval = TRUE}
 
 datax <- data_diff_diff |> dplyr::select(
-  all_of(c("site", "contrast", "protein_Id",
+  dplyr::all_of(c("site", "contrast", "protein_Id",
            "diff.protein",
            "diff.site",
            "modelName.site", "modelName.protein")))
 
 palette <- c("black","orange")
-palette <- setNames(palette, c("Linear_Model_moderated", "Imputed_Mean_moderated"))  
+palette <- setNames(palette, c("Linear_Model_moderated", "Imputed_Mean_moderated"))
 
 
-xd <- prolfqua::scatter_plotly ( 
+xd <- prolfqua::scatter_plotly(
   datax,
   proteinID = "site",
   dx = "diff.protein",
