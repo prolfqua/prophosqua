@@ -1,7 +1,10 @@
 ---
 title: "Integration PTM-features and total proteome"
-output: html_document
-date: "2025-07-03"
+output:
+  html_document:
+    toc: true
+    code_folding: show
+date: "2025-07-07"
 editor_options: 
   chunk_output_type: console
 ---
@@ -18,6 +21,8 @@ This workflow performs two main types of analysis:
 The analysis creates N-to-C plots showing modification sites along protein backbones with their expression and usage changes.
 
 ```{r setup_2, include=FALSE}
+wd <- here::here("inst", "PTM_example")
+knitr::opts_knit$set(root.dir = wd)
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warnings = FALSE)
 library(tidyverse)
 library(prolfqua)
@@ -32,14 +37,14 @@ message("prolfquaapp Version :", packageVersion("prolfquapp"), "\n")
 
 This section defines the project identifiers and analysis type. The `ptm_feature` parameter determines whether we analyze single phosphorylation sites or multi-site patterns.
 
-```{r}
+```{r specify_inputs}
 wu_id <- "CustomPhosphoAnalysis"
 fgcz_project <- "PTM_example"
 oid_fgcz <- "fgcz_project"
 ptm_feature <- "singlesite"
-datetoday <- format(Sys.Date(), "%Y%m%d")
-
-project_dir <- "../inst/PTM_example/"
+# datetoday <- format(Sys.Date(), "%Y%m%d")
+datetoday <- "20250707"
+project_dir <- "."#./inst/PTM_example/"
 tot_file <- file.path(
   project_dir,paste0("DEA_", datetoday, "_",
                      "WUtotal_proteome_vsn/Results_WU_total_proteome/DE_WUtotal_proteome.xlsx")
@@ -58,30 +63,30 @@ if (ptm_feature == "multisite") {
 }
 
 # Directory paths
-file.exists(tot_file)
-file.exists(ptm_file)
+stopifnot(file.exists(tot_file))
+stopifnot(file.exists(ptm_file))
 ```
 
 ## Creating results directory
 
 Sets up the output directory with a timestamped name for organizing results.
 
-```{r}
+```{r create_ou}
 #datetoday <- format(Sys.Date(), "%Y%m%d")
 descri <- wu_id
 res_dir <- file.path(project_dir, paste0(fgcz_project, "_", datetoday, "_", ptm_feature, "_", descri))
-
 # Create results directory
 if (!dir.exists(res_dir)) {
   dir.create(res_dir, recursive = TRUE)
 }
+
 ```
 
 ## Defining analysis parameters
 
 Sets the statistical thresholds and column mapping for joining total proteome and PTM data.
 
-```{r}
+```{r parameters}
 fdr_threshold <- 0.01
 join_column <- c("fasta.id" = "protein_Id", "contrast", "description", "protein_length")
 suffix_a <- ".site"
@@ -92,7 +97,7 @@ suffix_b <- ".protein"
 
 Loads both total proteome and PTM data, filters out contaminants, and ensures data quality.
 
-```{r}
+```{r, load_data}
 required_cols <- c("protein_Id", "protein_length", "contrast")
 tot_res <- load_and_preprocess_data(tot_file, required_cols)
 tot_res <- filter_contaminants(tot_res)
@@ -111,10 +116,10 @@ combined_site_prot <- dplyr::left_join(
   by = join_column,
   suffix = c(suffix_a, suffix_b)
 )
-combined_site_prot$contrast |> table()
+combined_site_prot$contrast |> table() |> data.frame() |> knitr::kable(label = "nr sites per contrasts")
 ```
 
-# Differential PTM Feature Expression (DPE)
+# Visualizing PTM Feature Expression (DPE)
 
 This analysis examines how much each phosphorylation site changes in abundance between experimental conditions, independent of changes in the total protein.
 
@@ -132,16 +137,6 @@ if (ptm_feature == "multisite") {
 ```
 
 ## Example plots for specific proteins
-
-### Protein Q8C0J2
-
-Shows the N-to-C plot for protein Q8C0J2, displaying phosphorylation sites along the protein backbone with their expression changes.
-
-```{r plotQ8C0J2, fig.cap="Q8C0J2"}
-x1 <- which(plot_data$protein_Id == "Q8C0J2")
-plot_data$plot[[x1]]
-knitr::kable(plot_data$data[[x1]])
-```
 
 ### Protein Q64337
 
@@ -215,7 +210,6 @@ Shows how the usage of phosphorylation sites on protein Q64337 changes between e
 
 ```{r show_usageQ64337, fig.cap="PTM feature usage for Q64337"}
 x1 <- which(plot_data$protein_Id == "Q64337")
-
 plot_data$plot[[x1]]
 knitr::kable(plot_data$data[[x1]])
 ```
@@ -232,13 +226,13 @@ for (i in seq_len(100)) {
 dev.off()
 ```
 
-# Report Generation
+# Protein PTM Integration Report Generation
 
 ## Setting up report configuration
 
 Creates the configuration object needed for generating the interactive HTML report.
 
-```{r render_report_expression}
+```{r render_report_expression, message=FALSE}
 drumm <- prolfquapp::make_DEA_config_R6(
   PROJECTID = fgcz_project,
   ORDERID = oid_fgcz,
@@ -252,14 +246,13 @@ prophosqua::copy_phospho_integration()
 
 Generates an interactive HTML report with comprehensive analysis results, including tables, plots, and statistical summaries.
 
-```{r store, eval = FALSE}
+```{r renderdocument, eval = TRUE, results="hide"}
 # Render HTML report
 rmarkdown::render(
   "_Overview_PhosphoAndIntegration_site.Rmd",
   params = list(
     data = combined_test_diff,
-    grp = drumm,
-    phosres = phospho_res
+    grp = drumm
   ),
   output_format = bookdown::html_document2(toc = TRUE, toc_float = TRUE),
   envir = new.env(parent = globalenv())
@@ -270,7 +263,7 @@ rmarkdown::render(
 # Copy HTML report to results directory
 file.copy(
   from = "_Overview_PhosphoAndIntegration_site.html",
-  to = file.path(res_dir, "Result_phosphoAndIntegration.html")
+  to = file.path(res_dir, "Result_phosphoAndTotalIntegration.html")
 )
 ```
 
@@ -291,7 +284,7 @@ writexl::write_xlsx(
 The analysis produces several output files that can be accessed through the links below:
 
 ```{r link_to_report, echo=FALSE, results='asis'}
-html_path <- file.path(res_dir, "Result_phosphoAndIntegration.html")
+html_path <- file.path(res_dir, "Result_phosphoAndTotalIntegration.html")
 xlsx_path <- file.path(res_dir, "Result_phosphoAndTotalIntegration.xlsx")
 plot_pdf_expression <- file.path(res_dir, "Site_differential_Expression.pdf")
 plot_pdf_usage <- file.path(res_dir, "Site_differential_UsageChange.pdf")
@@ -325,3 +318,82 @@ This integrated approach provides several advantages:
 4. **Visual representation** - N-to-C plots provide intuitive visualization of modification patterns along protein sequences
 
 The results can be used to identify key regulatory sites, understand signaling pathway changes, and prioritize follow-up experiments.
+
+# Sequence Logo Analysis of Modified Sites
+
+This section analyzes the sequence motifs around significantly modified sites to identify potential kinase recognition patterns.
+
+## Filtering data for sequence logo analysis
+
+
+## Creating sequence logo plots
+
+This code generates sequence logos to visualize the amino acid preferences around phosphorylation sites. The analysis:
+
+1. **Groups sequences by condition and regulation** - Separates up and downregulated sites for each contrast
+2. **Prepares sequence data** - Uses the `SequenceWindow` column containing amino acid sequences around each phosphorylation site
+3. **Creates multi-panel plots** - Shows sequence logos for different groups in a 2-column layout
+4. **Uses probability method** - Displays amino acid frequencies rather than information content
+
+
+First, we filter the integrated analysis results to identify significantly regulated phosphorylation sites. This step focuses on sites with strong statistical evidence of differential usage (FDR_I < 0.01) and includes only the main comparison of interest (KO vs WT).
+
+```{r filter_data_for_seqlogo_plotting}
+library(ggseqlogo)
+
+# Filter for significantly regulated sites (FDR_I < 0.05)
+significant_sites <- combined_test_diff |>
+  filter(FDR_I < 0.05, !is.na(posInProtein), grepl("^KO_vs_WT", contrast)) |>
+  dplyr::mutate(
+    regulation = case_when(
+      diff_diff > 0 ~ "upregulated",
+      diff_diff < 0 ~ "downregulated",
+      TRUE ~ "no_change"
+    )
+  )
+
+with(significant_sites,table(contrast,regulation,modAA)) |> knitr::kable(caption = "number of significantly regulated sites")
+
+```
+
+The sequence logos reveal consensus motifs that can help identify which kinases are responsible for the observed phosphorylation changes.
+
+```{r makeseqlog, fig.width=6, fig.height=12, fig.cap=""}
+
+
+seq_list <- significant_sites |>
+  mutate(.grp = paste(contrast, regulation, modAA,sep = "_")) %>%
+  group_by(.grp) |>
+  summarize(seqs = list(toupper(SequenceWindow)), .groups = "drop") %>%
+  with(setNames(seqs, .grp))
+
+
+
+ggseqlogo(seq_list, ncol=3,seq_type = "aa", method   = "probability")
+```
+
+## Interpreting the sequence logos
+
+The sequence logos show:
+
+- **Y-axis**: Amino acid frequency (0-1 scale)
+- **X-axis**: Position relative to the phosphorylation site (center)
+- **Letter height**: Frequency of each amino acid at that position
+- **Color coding**: Different amino acid types (hydrophobic, polar, charged, etc.)
+
+**Key insights to look for:**
+
+1. **Consensus motifs** - Highly conserved amino acids at specific positions
+2. **Kinase preferences** - Different patterns for up vs. downregulated sites
+3. **Position-specific preferences** - Certain amino acids preferred at -3, -2, +1, +2 positions
+4. **Known kinase motifs** - Comparison with established kinase recognition patterns
+
+**Common kinase motifs include:**
+
+- **PKA/PKG**: R-R-X-S/T (arginine at -3, -2 positions)
+- **PKC**: R-X-S/T-X-R (arginine at -3, +2 positions)  
+- **CK2**: S/T-X-X-E/D (acidic residue at +3 position)
+- **MAPK**: P-X-S/T-P (proline at -2, +1 positions)
+
+This analysis helps identify the signaling pathways and kinases responsible for the observed phosphorylation changes in your experimental conditions.
+

@@ -71,7 +71,6 @@ phospho_xlsx <- find_file_by_pattern(
 phospho_res <- load_and_preprocess_data(phospho_xlsx, required_cols)
 phospho_res <- filter_contaminants(phospho_res)
 
-
 # Join total and phospho analysis
 combined_site_prot <- dplyr::left_join(
   phospho_res,
