@@ -23,7 +23,7 @@ This workflow analyzes:
 The example uses a factorial experimental design with genotype and timepoint factors.
 
 ```{r setup, include=FALSE}
-wd <- here::here("inst", "PTM_example")
+wd <- here::here("inst", "PTM_analysis_example")
 dir.create(wd, recursive = TRUE, showWarnings = FALSE)
 knitr::opts_knit$set(root.dir = wd)
 knitr::opts_chunk$set(
@@ -46,9 +46,10 @@ The first step is to download the example PTM dataset. This dataset contains bot
 zip_url  <- "https://gitlab.bfabric.org/wolski/ptm_example/-/archive/main/ptm_example-main.zip"
 destfile <- "ptm_example-main.zip"
 
-# Download and unzip
+# Download, unzip and delete
 download.file(zip_url, destfile, mode = "wb")
 unzip(destfile, exdir = ".")
+unlink(destfile)
 
 ```
 
@@ -165,9 +166,9 @@ The results of the single-site analysis can be found in the [DEA report](`r dir_
 
 After running these analyses, you will have:
 
-1. **Total proteome results** - Protein-level differential expression
-2. **Multi-site PTM results** - Modification pattern changes
-3. **Single-site PTM results** - Individual modification site changes
+1. **Total proteome results** - Protein-level differential expression - [DEA report](`r dir_total`/index.html)
+2. **Multi-site PTM results** - Modification pattern changes - [DEA report](`r dir_multisite`/index.html)
+3. **Single-site PTM results** - Individual modification site changes - [DEA report](`r dir_singlesite`/index.html)
 
 Each analysis produces:
 - Statistical tables with p-values and fold changes
