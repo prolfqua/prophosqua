@@ -1,0 +1,689 @@
+---
+title: "Supplementary Material: Computational Protocol for Integration and Analysis of Total Proteome and PTM-Enriched Mass Spectrometry Data"
+subtitle: "Complete Implementation Guide"
+author: "Functional Genomics Center Zurich"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    code_folding: show
+    theme: flatly
+  pdf_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    keep_tex: false
+header-includes:
+  - \usepackage{fancyhdr}
+  - \pagestyle{fancy}
+  - \fancyhead[CO,CE]{Supplementary Material - PTM Integration Protocol}
+  - \fancyfoot[CO,CE]{\textbf{FGCZ} - www.fgcz.ch}
+  - \fancyfoot[LE,RO]{\thepage}
+bibliography: bibliography2025.bib
+editor_options: 
+  chunk_output_type: console
+always_allow_html: true
+---
+
+```{r setup_global, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 10,
+  fig.height = 6,
+  dpi = 300
+)
+
+# Set working directory for analysis
+wd <- here::here("inst", "PTM_analysis_example")
+dir.create(wd, recursive = TRUE, showWarnings = FALSE)
+knitr::opts_knit$set(root.dir = wd)
+
+# Load required libraries
+suppressPackageStartupMessages({
+  library(prolfquapp)
+  library(prophosqua)
+  library(tidyverse)
+  library(ggseqlogo)
+  library(here)
+})
+```
+
+# Overview {#overview}
+
+This supplementary material provides a complete, executable implementation of the computational protocol described in the main manuscript. The workflow is divided into two main parts:
+
+**Part A**: Differential expression analysis using `prolfquapp` for individual datasets
+**Part B**: Integration and analysis of PTM features using `prophosqua`
+
+The protocol demonstrates:
+
+1. **Setup and data preparation** - Environment configuration and example data retrieval
+2. **Differential expression analysis** - Statistical analysis of total proteome and PTM data
+3. **Data integration** - Combining PTM and protein-level results
+4. **Visualization** - N-to-C plots showing modification sites along protein sequences
+5. **Biological interpretation** - Sequence motif analysis for kinase prediction
+6. **Reporting** - Automated generation of comprehensive analysis reports
+
+## Software Requirements
+
+- **R version**: ≥ 4.0.0
+- **Required packages**: `prolfquapp`, `prophosqua`, `tidyverse`, `ggseqlogo`
+- **System requirements**: 8GB+ RAM, 5GB+ storage
+- **Expected runtime**: 30 minutes to 2 hours depending on dataset size
+
+---
+
+# A. Differential expression analysis using `prolfquapp` for individual datasets
+
+
+This vignette demonstrates how to perform **differential expression analysis (DEA)** on both total proteome and PTM-enriched proteome data using the `prolfquapp` package. The analysis compares protein expression changes between different experimental conditions, focusing on both overall protein abundance and post-translational modifications (PTMs).
+
+Overview
+
+This workflow analyzes:
+1. **Total proteome data** - Overall protein expression changes
+2. **PTM-enriched data** - Post-translational modification changes (phosphorylation, etc.)
+3. **Multi-site analysis** - Changes in multiple modification sites
+4. **Single-site analysis** - Individual modification site analysis
+
+The example uses a factorial experimental design with genotype and timepoint factors.
+
+
+## A.1 Downloading the example dataset
+
+The first step is to download the example PTM dataset. This dataset contains both total proteome and PTM-enriched measurements from a factorial experiment.
+
+```{r a1_get_thedata}
+zip_url  <- "https://gitlab.bfabric.org/wolski/ptm_example/-/archive/main/ptm_example-main.zip"
+destfile <- "ptm_example-main.zip"
+
+# Download, unzip and delete
+download.file(zip_url, destfile, mode = "wb")
+unzip(destfile, exdir = ".")
+unlink(destfile)
+
+```
+
+### A.2 Setting up prolfquapp scripts
+
+The `prolfquapp` package provides shell scripts for running differential expression analysis. This command copies these scripts to the current working directory.
+
+```{bash a2_get_scritps, results="hide"}
+R --vanilla -e "library(prolfquapp); copy_shell_script(workdir = '.')"
+```
+
+### A.3 Creating sample annotation
+
+Sample annotation is crucial for differential expression analysis. It defines the experimental design and groups samples according to their experimental conditions.
+
+### A.3.1 Creating the initial dataset file
+
+This command processes FragPipe output files to create a dataset annotation file that maps sample names to their experimental conditions.
+
+```{bash a3_create_dataset, results="hide"}
+./prolfqua_dataset.sh --indir ptm_example-main/data_total/FP_22/ --dataset "ptm_example-main/data_total/dataset.tsv" --software prolfquapp.FP_TMT
+```
+
+### A.3.2 Adding experimental factors and contrasts
+
+The sample names contain encoded information about the experimental design. This code:
+
+1. **Parses sample names** to extract genotype and timepoint information
+2. **Creates factorial contrasts** for statistical analysis
+3. **Generates comparison groups** for differential expression testing
+
+```{r a3_create_contrasts}
+
+annot <- readr::read_tsv("ptm_example-main/data_total/dataset.tsv")
+knitr::kable(head(annot))
+annot <- annot |> tidyr::separate("name", c("Genotype", "Timepoint", NA), sep = "_", remove = FALSE)
+annot$group <- NULL
+annot$subject <- NULL
+annot$CONTROL <- NULL
+annot2 <- prolfqua::annotation_add_contrasts(
+  annot, "Genotype", "Timepoint" ,
+  decreasing = TRUE, interactions = FALSE)$annot
+knitr::kable(head(annot2))
+
+write_tsv(annot2, "dataset_with_contrasts.tsv")
+
+```
+
+The file `dataset_with_contrasts.tsv` is the final dataset file that will be used for the differential expression analysis.
+
+[Download the dataset with contrasts file](dataset_with_contrasts.tsv)
+
+## A.4 Running DEA analysis of total proteome
+
+This analysis examines changes in overall protein abundance between experimental conditions. The command:
+
+- **`-i`**: Specifies input directory with FragPipe results
+- **`-d`**: Uses the annotated dataset file
+- **`-y`**: Applies configuration settings
+- **`-w`**: Sets working directory name
+- **`-s`**: Specifies software format (FragPipe TMT)
+
+```{bash a4_runDEAtotal, echo = TRUE, results="hide"}
+./prolfqua_yaml.sh -y config.yaml
+./prolfqua_dea.sh -i ptm_example-main/data_total/FP_22 -d dataset_with_contrasts.tsv -y config.yaml -w total_proteome -s  prolfquapp.FP_TMT
+```
+
+After running the differential expression analysis, the results are stored in a time-stamped directory. This code constructs the path to the results directory using the `prolfquapp::zipdir_name()` function, which follows the standard naming convention for DEA results.
+
+```{r a4_dir_total}
+dir_total <- file.path(".", prolfquapp::zipdir_name("DEA", workunit_id = "total_proteome"))
+
+```
+
+The results of the total proteome analysis can be found in the [DEA report](`r dir_total`/index.html).
+
+
+## A.5 Running DEA analysis of the enriched proteomes
+
+PTM-enriched proteomes provide information about post-translational modifications. We analyze this data in two ways:
+
+### A.5.1 Differential expression analysis for multi-site output
+
+Multi-site analysis examines changes in modification patterns across multiple sites on the same protein. This is useful for understanding global modification changes.
+
+```{bash a5_multisite,eval=TRUE,results="hide"}
+./prolfqua_dea.sh -i ptm_example-main/data_ptm/FP_22 -d dataset_with_contrasts.tsv -y config.yaml -w multisite_PTM -s  prolfquappPTMreaders.FP_multisite
+```
+
+```{r a5_dirmultisite}
+dir_multisite <- file.path(".", prolfquapp::zipdir_name("DEA", workunit_id = "multisite_PTM"))
+```
+
+
+The results of the multi-site analysis can be found in the [DEA report](`r dir_multisite`/index.html).
+
+### A.5.2 Differential expression analysis for single-site output
+
+Single-site analysis examines changes at individual modification sites. This provides site-specific information about which particular amino acids are modified under different conditions.
+
+```{bash a5_singlesite,eval=TRUE, results="hide"}
+./prolfqua_dea.sh -i ptm_example-main/data_ptm/FP_22 -d dataset_with_contrasts.tsv -y config.yaml -w singlesite_PTM -s  prolfquappPTMreaders.FP_singlesite
+```
+
+```{r a5_dirsinglesite}
+dir_singlesite <- file.path(".", prolfquapp::zipdir_name("DEA", workunit_id = "singlesite_PTM"))
+```
+
+The results of the single-site analysis can be found in the [DEA report](`r dir_singlesite`/index.html).
+
+## A.6 Analysis Output
+
+After running these analyses, you will have:
+
+1. **Total proteome results** - Protein-level differential expression - [DEA report](`r dir_total`/index.html)
+2. **Multi-site PTM results** - Modification pattern changes - [DEA report](`r dir_multisite`/index.html)
+3. **Single-site PTM results** - Individual modification site changes - [DEA report](`r dir_singlesite`/index.html)
+
+Each analysis produces:
+- Statistical tables with p-values and fold changes
+- Visualization plots
+- Quality control reports
+- Excel files with comprehensive results
+
+These results can be further integrated using the `prophosqua` package for combined analysis of total proteome and PTM data.
+
+# B. Integration and analysis of PTM features using `prophosqua`
+
+
+This vignette demonstrates how to **integrate and visualize PTM (Post-Translational Modification) features with total proteome data**. The analysis combines phosphorylation site information with overall protein expression to understand both **differential expression** and **differential usage** of modification sites.
+
+
+This workflow performs two main types of analysis:
+
+1. **Differential PTM Feature Expression (DPE)** - How much each modification site changes in abundance
+2. **Differential PTM Feature Usage (DPU)** - How the usage/occupancy of modification sites changes relative to total protein
+
+The analysis creates N-to-C plots showing modification sites along protein backbones with their expression and usage changes.
+
+```{r b1_setup_2, include=FALSE}
+library(prophosqua)
+```
+
+## B.1 Data Setup and Configuration
+
+
+This section defines the project identifiers and analysis type. The `ptm_feature` parameter determines whether we analyze single phosphorylation sites or multi-site patterns.
+
+We run the single-site analysis, to run the multi-site analysis, change the `ptm_feature` parameter to `multisite`.
+
+```{r b1_specify_inputs}
+wu_id <- "CustomPhosphoAnalysis"
+fgcz_project <- "PTM_analysis_example"
+oid_fgcz <- "fgcz_project"
+ptm_feature <- "singlesite"
+datetoday <- "20250708"
+project_dir <- "."#./inst/PTM_analysis_example/"
+
+tot_file <- file.path(
+  project_dir, 
+  paste0("DEA_", datetoday, "_",
+  "WUtotal_proteome_vsn/Results_WU_total_proteome/DE_WUtotal_proteome.xlsx")
+)
+
+if (ptm_feature == "multisite") {
+  ptm_file <- file.path(
+    project_dir, 
+    paste0("DEA_", datetoday, "_",
+    "WUmultisite_PTM_vsn/Results_WU_multisite_PTM/DE_WUmultisite_PTM.xlsx")
+  )
+} else if (ptm_feature == "singlesite") {
+  ptm_file <- file.path(
+    project_dir,paste0("DEA_", datetoday, "_",
+    "WUsinglesite_PTM_vsn/Results_WU_singlesite_PTM/DE_WUsinglesite_PTM.xlsx")
+  )
+}
+
+# Directory paths
+stopifnot(file.exists(tot_file))
+stopifnot(file.exists(ptm_file))
+```
+
+## B.2 Creating results directory
+
+Sets up the output directory with a timestamped name for organizing results.
+
+```{r b2_create_output_dir}
+descri <- wu_id
+res_dir <- file.path(project_dir, paste0(fgcz_project, "_", datetoday, "_", ptm_feature, "_", descri))
+# Create results directory
+if (!dir.exists(res_dir)) {
+  dir.create(res_dir, recursive = TRUE)
+}
+
+```
+
+## B.3 Defining analysis parameters
+
+Sets the statistical thresholds and column mapping for joining total proteome and PTM data.
+
+```{r b3_define_analysis_parameters}
+fdr_threshold <- 0.01
+join_column <- c("fasta.id" = "protein_Id", "contrast", "description", "protein_length")
+suffix_a <- ".site"
+suffix_b <- ".protein"
+```
+
+## B.4 Loading and preprocessing data
+
+Loads both total proteome and PTM data, filters out contaminants, and ensures data quality.
+
+```{r b4_load_data}
+required_cols <- c("protein_Id", "protein_length", "contrast")
+tot_res <- load_and_preprocess_data(tot_file, required_cols)
+tot_res <- filter_contaminants(tot_res)
+phospho_res <- load_and_preprocess_data(ptm_file, required_cols)
+phospho_res <- filter_contaminants(phospho_res)
+```
+
+## B.5 Combining PTM and total proteome data
+
+Joins the phosphorylation site data with total protein data to enable integrated analysis. This creates a dataset where each phosphorylation site is linked to its corresponding protein-level measurements.
+
+```{r b5_combine_data}
+combined_site_prot <- dplyr::left_join(
+  phospho_res,
+  tot_res,
+  by = join_column,
+  suffix = c(suffix_a, suffix_b)
+)
+combined_site_prot$contrast |> table() |> data.frame() |> knitr::kable(label = "nr sites per contrasts")
+```
+
+## B.6 Visualizing PTM Feature Expression (DPE)
+
+This analysis examines how much each phosphorylation site changes in abundance between experimental conditions, independent of changes in the total protein.
+
+### B.6.1 Creating N-to-C expression plots
+
+Generates plots showing phosphorylation sites along protein backbones with their differential expression values. The plots distinguish between multi-site and single-site analyses.
+
+```{r b6_makeplot, results='hide'}
+if (ptm_feature == "multisite") {
+  combined_site_prot_long <- explode_multisites(combined_site_prot)
+  plot_data <- n_to_c_expression(combined_site_prot_long, "KO_vs_WT_at_Uninfect", 0.01)
+} else if (ptm_feature == "singlesite") {
+  plot_data <- n_to_c_expression(combined_site_prot, "KO_vs_WT_at_Uninfect", 0.01)
+}
+```
+
+
+### B.6.2 Protein Q64337
+
+Shows the N-to-C plot for protein Q64337, another example of how phosphorylation sites change in expression.
+
+```{r b6_plotQ64337, fig.cap="Q64337"}
+x1 <- which(plot_data$protein_Id == "Q64337")
+plot_data$plot[[x1]]
+knitr::kable(plot_data$data[[x1]])
+```
+
+### B.6.3 Saving expression plots
+
+Exports all N-to-C expression plots to a PDF file for further analysis and presentation.
+
+```{r b6_save_expression_plots}
+# Create plots
+pdf(file.path(res_dir, "Site_differential_Expression.pdf"))
+for (i in seq_len(100)) {
+  print(plot_data$plot[[i]])
+}
+dev.off()
+```
+
+## B.7 Differential PTM Feature Usage (DPU)
+
+
+The `test_diff` function implements a statistical framework for calculating differential PTM usage (DPU) that accounts for both PTM and protein-level changes. The analysis involves three key mathematical components:
+
+- 1. Effect Size Calculation ($\Delta I$)
+- 2. Standard Error Propagation ($SE_I$)
+- 3. Degrees of Freedom Calculation ($df_I$)
+
+The differential PTM usage effect size is calculated as the difference between PTM and protein log2 fold changes:
+
+$$
+\Delta_I = \log_2FC_{PTM} - \log_2FC_{Protein}
+$$
+
+This represents the protein-normalized change in PTM abundance, where:
+- **Positive values** indicate increased modification stoichiometry (higher fraction of protein is modified)
+- **Negative values** indicate decreased modification stoichiometry (lower fraction of protein is modified)
+- **Zero values** indicate no change in modification stoichiometry relative to protein expression
+
+
+The combined standard error accounts for uncertainty in both PTM and protein measurements:
+
+$$
+SE_I = \sqrt{SE_{PTM}^2 + SE_{Protein}^2}
+$$
+
+This error propagation ensures that the statistical significance of usage changes reflects uncertainty from both datasets, providing a more robust assessment of the reliability of the observed changes.
+
+
+The effective degrees of freedom for the combined test are calculated using Welch's approximation:
+
+$$
+df_I = (SE_{PTM}^2 + SE_{Protein}^2)^2 \biggm/ (\frac{SE_{PTM}^4}{DF_{PTM}} + \frac{SE_{Protein}^4}{DF_{Protein}})
+$$
+
+This provides appropriate statistical power for the combined analysis while accounting for potentially different sample sizes and variances between PTM and protein measurements. The Welch approximation is particularly important when the two datasets have different experimental designs or sample sizes.
+
+Using these calculated parameters, a t-statistic is computed:
+
+$$t = \frac{\Delta_I}{SE_I}$$
+
+The corresponding p-value is determined using the t-distribution with dfI degrees of freedom, and multiple testing correction (e.g., Benjamini-Hochberg FDR) is applied across all tested sites.
+
+## B.8 Differential PTM-feature Usage (DPU) Analysis
+
+
+The `test_diff` function calculates the difference of differences between PTM and total proteome data, revealing site-specific usage changes.
+
+```{r b8_compute_ptm_usage}
+combined_test_diff <- prophosqua::test_diff(phospho_res, tot_res, join_column = join_column)
+```
+
+### B.8.1 Creating N-to-C usage plots
+
+Generates plots showing differential usage of phosphorylation sites. These plots reveal which sites are being used more or less actively, independent of total protein changes.
+
+```{r b9_generate_plots_usage, results='hide', message=FALSE}
+if (ptm_feature == "multisite") {
+  combined_test_diff_long <- explode_multisites(combined_test_diff)
+  plot_data <- n_to_c_usage(combined_test_diff_long, "KO_vs_WT_at_Uninfect", FDR_threshold = 0.05)
+} else if (ptm_feature == "singlesite") {
+  plot_data <- n_to_c_usage(combined_test_diff, "KO_vs_WT_at_Uninfect", FDR_threshold = 0.05)
+}
+```
+
+
+### B.8.2 PTM Feature Usage for Protein `Q64337`
+
+Shows how the usage of phosphorylation sites on protein `Q64337` changes between experimental conditions.
+
+```{r b8_show_usageQ64337, fig.cap="PTM feature usage for Q64337"}
+x1 <- which(plot_data$protein_Id == "Q64337")
+plot_data$plot[[x1]]
+knitr::kable(plot_data$data[[x1]])
+```
+
+### B.8.3 Saving usage plots
+
+Exports all N-to-C usage plots to a PDF file.
+
+```{r b8_save_usage_plots}
+pdf(file.path(res_dir, "Site_differential_UsageChange.pdf"))
+for (i in seq_len(100)) {
+  print(plot_data$plot[[i]])
+}
+dev.off()
+```
+
+## B.9 Protein PTM Integration Report Generation
+
+### B.9.1 Setting up report configuration
+
+Creates the configuration object needed for generating the interactive HTML report.
+
+```{r b9_render_report_expression, message=FALSE}
+drumm <- prolfquapp::make_DEA_config_R6(
+  PROJECTID = fgcz_project,
+  ORDERID = oid_fgcz,
+  WORKUNITID = descri
+)
+# Copy integration files
+prophosqua::copy_phospho_integration()
+```
+
+### B.9.2 Rendering the HTML report
+
+Generates an interactive HTML report with comprehensive analysis results, including tables, plots, and statistical summaries.
+
+```{r b9_renderdocument, eval = TRUE, results="hide"}
+# Render HTML report
+rmarkdown::render(
+  "_Overview_PhosphoAndIntegration_site.Rmd",
+  params = list(
+    data = combined_test_diff,
+    grp = drumm
+  ),
+  output_format = bookdown::html_document2(toc = TRUE, toc_float = TRUE),
+  envir = new.env(parent = globalenv())
+)
+
+
+
+# Copy HTML report to results directory
+file.copy(
+  from = "_Overview_PhosphoAndIntegration_site.html",
+  to = file.path(res_dir, "Result_phosphoAndTotalIntegration.html")
+)
+```
+
+## B.10 Saving results to Excel
+
+Exports the integrated analysis results to an Excel file for further analysis and sharing.
+
+```{r store_ptm_usage_xlsx}
+excel_result_list <- list(combinedStats = combined_test_diff)
+writexl::write_xlsx(
+  excel_result_list,
+  path = file.path(res_dir, "Result_phosphoAndTotalIntegration.xlsx")
+)
+```
+
+## B.11 Results Summary
+
+The analysis produces several output files that can be accessed through the links below:
+
+```{r b11_link_to_report, echo=FALSE, results='asis'}
+html_path <- file.path(res_dir, "Result_phosphoAndTotalIntegration.html")
+xlsx_path <- file.path(res_dir, "Result_phosphoAndTotalIntegration.xlsx")
+plot_pdf_expression <- file.path(res_dir, "Site_differential_Expression.pdf")
+plot_pdf_usage <- file.path(res_dir, "Site_differential_UsageChange.pdf")
+
+cat(sprintf(
+  '- [View the phospho‐integration report](%s){target="_blank"}\n',
+  html_path
+))
+cat(sprintf(
+  '- [Download the phospho+total integration results (Excel)](%s){target="_blank"}\n',
+  xlsx_path
+))
+
+cat(sprintf(
+  '- [View n_to_c plots of differential ptm-feature expression](%s){target="_blank"}\n',
+  plot_pdf_expression
+))
+cat(sprintf(
+  '- [View n_to_c plots of differential ptm-feature usage](%s){target="_blank"}\n',
+  plot_pdf_usage
+))
+```
+
+## B.12 Key Insights from This Analysis
+
+This integrated approach provides several advantages:
+
+1. **Distinguishes expression vs. usage changes** - Separates changes due to protein abundance from changes in modification site usage
+2. **Site-specific information** - Identifies which specific amino acids are modified under different conditions
+3. **Biological interpretation** - Helps understand whether changes are due to protein regulation or signaling pathway activation
+4. **Visual representation** - N-to-C plots provide intuitive visualization of modification patterns along protein sequences
+
+The results can be used to identify key regulatory sites, understand signaling pathway changes, and prioritize follow-up experiments.
+
+# C. Sequence Logo Analysis of Modified Sites
+
+This section analyzes the sequence motifs around significantly modified sites to identify potential kinase recognition patterns.
+This code generates sequence logos to visualize the amino acid preferences around phosphorylation sites. The analysis:
+
+1. **Filtering data** - Filters for significantly regulated sites (FDR_I < 0.05) and includes only the main comparison of interest (KO vs WT)
+2. **Groups sequences by condition and regulation** - Separates up and downregulated sites for each contrast
+3. **Prepares sequence data** - Uses the `SequenceWindow` column containing amino acid sequences around each phosphorylation site
+4. **Creates multi-panel plots** - Shows sequence logos for different groups in a 2-column layout
+5. **Uses probability method** - Displays amino acid frequencies rather than information content
+
+
+First, we filter the integrated analysis results to identify significantly regulated phosphorylation sites. This step focuses on sites with strong statistical evidence of differential usage (FDR_I < 0.01) and includes only the main comparison of interest (KO vs WT).
+
+```{r filter_data_for_seqlogo_plotting}
+library(ggseqlogo)
+
+# Filter for significantly regulated sites (FDR_I < 0.05)
+log_2FC_threshold <- 0.58
+significant_sites <- combined_test_diff |>
+  filter(FDR_I < 0.05, abs(diff_diff) > log_2FC_threshold, !is.na(posInProtein), grepl("^KO_vs_WT", contrast)) |>
+  dplyr::mutate(
+    regulation = case_when(
+      diff_diff > 0 ~ "upregulated",
+      diff_diff < 0 ~ "downregulated",
+      TRUE ~ "no_change"
+    )
+  )
+
+with(significant_sites, table(contrast, regulation, modAA)) |>
+  knitr::kable(caption = "number of significantly regulated sites")
+
+```
+
+The sequence logos reveal consensus motifs that can help identify which kinases are responsible for the observed phosphorylation changes.
+
+```{r c1_makeseqlog, fig.width=6, fig.height=12, fig.cap=""}
+
+
+seq_list <- significant_sites |>
+  mutate(.grp = paste(contrast, regulation, modAA, sep = "_")) %>%
+  group_by(.grp) |>
+  summarize(seqs = list(toupper(SequenceWindow)), .groups = "drop") %>%
+  with(setNames(seqs, .grp))
+
+ggseqlogo(seq_list, ncol = 3, seq_type = "aa", method   = "probability")
+
+```
+
+## C.2 Interpreting the sequence logos
+
+The sequence logos show:
+
+- **Y-axis**: Amino acid frequency (0-1 scale)
+- **X-axis**: Position relative to the phosphorylation site (center)
+- **Letter height**: Frequency of each amino acid at that position
+- **Color coding**: Different amino acid types (hydrophobic, polar, charged, etc.)
+
+**Key insights to look for:**
+
+1. **Consensus motifs** - Highly conserved amino acids at specific positions
+2. **Kinase preferences** - Different patterns for up vs. downregulated sites
+3. **Position-specific preferences** - Certain amino acids preferred at -3, -2, +1, +2 positions
+4. **Known kinase motifs** - Comparison with established kinase recognition patterns
+
+**Common kinase motifs include:**
+
+- **PKA/PKG**: R-R-X-S/T (arginine at -3, -2 positions)
+- **PKC**: R-X-S/T-X-R (arginine at -3, +2 positions)  
+- **CK2**: S/T-X-X-E/D (acidic residue at +3 position)
+- **MAPK**: P-X-S/T-P (proline at -2, +1 positions)
+
+This analysis helps identify the signaling pathways and kinases responsible for the observed phosphorylation changes in your experimental conditions.
+
+# D Summary of Complete Workflow
+
+This supplementary material has demonstrated the complete implementation of the computational protocol for integrated PTM and total proteome analysis. The workflow successfully:
+
+1. **Performed differential expression analysis** on total proteome and PTM datasets
+2. **Integrated the datasets** to enable comparative analysis
+3. **Distinguished expression vs. usage changes** through DPE and DPU analysis
+4. **Identified sequence motifs** for kinase prediction
+5. **Generated comprehensive visualizations** and reports
+
+## D.1 Biological Interpretation Framework
+
+### D.1.1 DPE vs. DPU Interpretation:
+
+- **DPE+ only**: PTM changes due to protein expression changes
+- **DPU+ only**: True changes in modification stoichiometry
+- **DPE+ and DPU+**: Enhanced modification beyond protein expression
+- **DPE- and DPU+**: Selective modification maintenance despite protein reduction
+
+
+### D.1.2 Quality Control Metrics:
+
+- **Match rate > 80%**: Good integration between datasets
+- **FDR < 0.05**: Standard significance threshold
+- **|log_2FC_threshold| > 0.58**: Minimum 1.5-fold change threshold
+
+## Troubleshooting Common Issues
+
+1. **Low match rates**: Check protein ID consistency between datasets
+2. **No significant DPU**: Verify statistical power and effect sizes
+3. **Memory issues**: Process data in chunks or increase available RAM
+4. **Missing sequence data**: Ensure FASTA database matches identifications
+
+
+## D. Software Versions and Session Information
+
+```{r session_info}
+# Display session information
+cat("R Session Information:\n")
+sessionInfo()
+
+# Display package versions
+cat("\nKey Package Versions:\n")
+cat("- prolfquapp:", as.character(packageVersion("prolfquapp")), "\n")
+cat("- prophosqua:", as.character(packageVersion("prophosqua")), "\n")
+cat("- tidyverse:", as.character(packageVersion("tidyverse")), "\n")
+```
+
+
+
+
+
