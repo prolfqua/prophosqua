@@ -12,6 +12,16 @@ devtools::install_github(c('prolfqua/prophosqua'))
 
 ```
 
+
+```{r}
+
+rmarkdown::render("vignettes/Run_DEA_prolfquapp.Rmd")
+file.copy("vignettes/Run_DEA_prolfquapp.html","inst/PTM_example/Run_DEA_prolfquapp.html")
+rmarkdown::render("vignettes/Visualize_PTM_features.Rmd")
+file.copy("vignettes/Visualize_PTM_features.html","inst/PTM_example/Visualize_PTM_features.html")
+
+```
+
 Some more information should be given here what this package is all about and what we are using it for.
 
 ## Related Work
@@ -20,5 +30,7 @@ Some more information should be given here what this package is all about and wh
 - [msqrob2PTM](https://www.sciencedirect.com/science/article/pii/S1535947623002190)
 
 ## Poster
+
+
 [Prophosqua Poster from SIBDays 2024](img/SIBDays24_Poster_Prophosqua_Grossmann.pdf)
 
