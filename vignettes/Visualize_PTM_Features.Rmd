@@ -97,7 +97,7 @@ suffix_b <- ".protein"
 
 Loads both total proteome and PTM data, filters out contaminants, and ensures data quality.
 
-```{r, load_data}
+```{r load_data}
 required_cols <- c("protein_Id", "protein_length", "contrast")
 tot_res <- load_and_preprocess_data(tot_file, required_cols)
 tot_res <- filter_contaminants(tot_res)
@@ -109,7 +109,7 @@ phospho_res <- filter_contaminants(phospho_res)
 
 Joins the phosphorylation site data with total protein data to enable integrated analysis. This creates a dataset where each phosphorylation site is linked to its corresponding protein-level measurements.
 
-```{r}
+```{r summarize_number_sites}
 combined_site_prot <- dplyr::left_join(
   phospho_res,
   tot_res,
