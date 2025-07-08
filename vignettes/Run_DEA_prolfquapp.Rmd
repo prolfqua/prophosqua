@@ -89,7 +89,9 @@ annot <- annot |> tidyr::separate("name", c("Genotype", "Timepoint", NA), sep = 
 annot$group <- NULL
 annot$subject <- NULL
 annot$CONTROL <- NULL
-annot2 <- prolfqua::annotation_add_contrasts(annot, "Genotype", "Timepoint" , decreasing = TRUE)$annot
+annot2 <- prolfqua::annotation_add_contrasts(
+  annot, "Genotype", "Timepoint" ,
+  decreasing = TRUE, interactions = FALSE)$annot
 knitr::kable(head(annot2))
 
 write_tsv(annot2, "dataset_with_contrasts.tsv")
