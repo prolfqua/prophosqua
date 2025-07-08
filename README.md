@@ -76,23 +76,23 @@ The following code renders the vignettes and copies them to the example director
 ```r
 # Render the differential expression analysis vignette
 rmarkdown::render("vignettes/Run_DEA_prolfquapp.Rmd")
-file.copy("vignettes/Run_DEA_prolfquapp.html","inst/PTM_example/Run_DEA_prolfquapp.html")
+file.copy("vignettes/Run_DEA_prolfquapp.html","inst/PTM_analysis_example/Run_DEA_prolfquapp.html")
 
 # Render the PTM integration and visualization vignette  
 rmarkdown::render("vignettes/Visualize_PTM_features.Rmd")
-file.copy("vignettes/Visualize_PTM_features.html","inst/PTM_example/Visualize_PTM_features.html")
+file.copy("vignettes/Visualize_PTM_features.html","inst/PTM_analysis_example/Visualize_PTM_features.html")
 ```
 
 This code:
 1. **Renders R Markdown files** to HTML using `rmarkdown::render()`
-2. **Copies the HTML files** to the `inst/PTM_example/` directory for easy access
+2. **Copies the HTML files** to the `inst/PTM_analysis_example/` directory for easy access
 3. **Creates interactive reports** with code folding and navigation
 
 ### Available Vignettes
 
 - **`Run_DEA_prolfquapp.Rmd`** - Complete workflow for differential expression analysis
 - **`Visualize_PTM_features.Rmd`** - Integration and visualization of PTM data
-- **Interactive reports** - Available in the `inst/PTM_example/` directory
+- **Interactive reports** - Available in the `inst/PTM_analysis_example/` directory
 
 ## Related Publications
 

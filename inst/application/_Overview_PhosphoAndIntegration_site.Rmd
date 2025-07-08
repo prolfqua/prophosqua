@@ -1,5 +1,5 @@
 ---
-title: "Differential Expression Analysis Overview and Integration for Phospho DIA-LFQ Data"
+title: "Integration of PTM Features and Total Proteome Data for Comprehensive Phosphoproteomics Analysis"
 author: "Functional Genomics Center Zurich"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
@@ -12,7 +12,7 @@ output:
 header-includes: 
   \usepackage{fancyhdr}
   \pagestyle{fancy}
-  \fancyhead[CO,CE]{Phospho DIA LFQ - Differential Expression Analysis}
+  \fancyhead[CO,CE]{PTM Features and Total Proteome Integration Analysis}
   \fancyfoot[CO,CE]{\textbf{FGCZ} - www.fgcz.ch - 2018}
   \fancyfoot[LE,RO]{\thepage} 
 params:
@@ -47,53 +47,65 @@ data_diff_diff <- params$data
 This report will be stored at a later point in the LIMS system [_bfabric_](https://fgcz-bfabric.uzh.ch) [@Trker2010] in the 
 __project__: `r grp2$Bfabric$projectID`, __order__: `r grp2$project_spec$orderID`, `r if(!is.null(grp2$project_spec$workunitID)){ "with the workunit ID :" }`  `r grp2$project_spec$workunitID`. Currently it is only uploaded as generic zip resource and attached to the result of the order.
 
-In this analysis, the enriched (phospho peptide enrichment) as well as the pre-enriched samples (total input) are first analyzed separately using the Spectronaut software. While for the total input (protein level), the roll-up is done from precursor level to protein level (here using med-polish approach) from the default BGS-report, the enriched phospho dataset is analyzed using the phospho-site centric export from Spectronaut (PTM-workflow). Both datasets are statistically evaluated first individually and reports are generated for both. After this the two datasets are joined together. For all phospho sites where the protein is also quantified in the pre-enriched sample the protein statistics and the phospho peptide statistics are used to normalize the observed change of the phospho site with respect to the observed fold-change for the protein. This is done in the same way as described for MSstatsPTM [@Kohler2023yo]. The adjusted statistics are then used to generate a combined report. 
+In this analysis, both enriched (phosphopeptide enrichment) and non-enriched (total proteome) samples are analyzed separately using standard proteomics software. For the total proteome analysis, protein quantification is performed by aggregating peptide-level measurements to protein-level abundances. For the phosphoproteome analysis, phosphorylation site-specific quantification is performed using PTM-centric workflows. Both datasets are statistically evaluated individually to generate separate reports for differential protein expression (DPE) and differential PTM expression.
+
+After individual analysis, the two datasets are integrated to perform differential PTM usage (DPU) analysis. For all phosphorylation sites where the corresponding protein is also quantified in the total proteome measurement, the protein-level statistics are used to normalize the observed changes in phosphorylation site abundance. This normalization follows the approach described for MSstatsPTM [@Kohler2023yo], where the difference in phosphorylation site levels between conditions is adjusted by the difference in total protein levels for the same comparison. This integrated analysis reveals whether changes in phosphorylation are due to changes in protein abundance or to changes in site-specific modification usage, providing deeper insights into cellular signaling and regulation.
 
 # Numbers
 
 ```{r nummms, eval=TRUE, fig.height=5, fig.width=8}
-coi <- unique(data_diff_diff$contrast)[1]
-data_diffOneC <- data_diff_diff[data_diff_diff$contrast == coi,]
-totAll <- length(unique(data_diffOneC$site))
+# pick your contrast and subset as before
+coi         <- unique(data_diff_diff$contrast)[1]
+data_diff_1C <- subset(data_diff_diff, contrast == coi)
+# table of counts per modification
+tbl_modAA <- table(data_diff_1C$modAA, useNA = "no")
 
-totS <- sum(data_diffOneC$modAA == "S", na.rm = TRUE)
-totT <- sum(data_diffOneC$modAA == "T", na.rm = TRUE)
-totY <- sum(data_diffOneC$modAA == "Y", na.rm = TRUE)
+# total unique sites
+n_sites <- length(unique(data_diff_1C$site))
 
-numdf <- data.frame(
-  where = c( 
-        "Number of phospho-Serine: ", "Number of phospho-Threonine: ", 
-        "Number of phospho-Tyrosine: ", "Total number of identified phospho sites: "), 
-numbers = c(totS, totT, totY, totAll)
-)
-knitr::kable(numdf, caption = "Overview on identified phospho sites")
+# if you want a combined object including the total:
+tbl_combined <- c(tbl_modAA, Total = n_sites)
+
+# convert to a data.frame for pretty printing
+df_summary <- as.data.frame(tbl_combined, responseName = "count")
+rownames(df_summary) <- NULL
+colnames(df_summary) <- c("Modification", "Count")
+
+# optionally use knitr::kable()
+knitr::kable(df_summary, 
+             caption = paste0("Overview on identified phospho sites (contrast = ", coi, ")"))
 
 ```
 
 
-# Joining Phospho Peptide Sites with Non-enriched Proteome
+# Joining Phosphorylation Sites with Total Proteome
 
 ```{r foundInGlobal, eval=TRUE}
-tt <- data_diff_diff |> dplyr::select(protein_Id, measured_In) |> dplyr::distinct() |> dplyr::pull(measured_In) |> table()
+tt <- data_diff_diff |>
+  dplyr::select(protein_Id, measured_In) |>
+  dplyr::distinct() |>
+  dplyr::pull(measured_In) |>
+  table()
+
+# Calculate percentages
 percFoundInGlobal <- tt["both"] / (tt["both"] + tt["site"]) * 100
 totProtFromSites <- (tt["both"] + tt["site"])
 sitesM <- data_diff_diff |>  dplyr::select(protein_Id, site, measured_In) |> dplyr::distinct() |> dplyr::pull(measured_In) |> table()
 ```
 
-When phospho peptide enrichment is done, usually also peptides are identified for which there is no corresponding identification in the total proteome measurement.
-Therefore, in some cases the information on the proteome level is missing. Here for `r percFoundInGlobal`% of all identified phospho proteins (`r totProtFromSites`)
-the protein is also quantified in the global proteome measurements.
-For `r sitesM["both"]` phospho sites mapping to a total of `r tt["both"]` proteins we can expand and combine the tables. 
+When phosphopeptide enrichment is performed, some peptides are identified for which there is no corresponding protein identification in the total proteome measurement. Therefore, protein-level information may be missing for some phosphorylation sites. Here, for `r percFoundInGlobal`% of all identified phosphoproteins (`r totProtFromSites` total), the corresponding protein is also quantified in the total proteome measurements. For `r sitesM["both"]` phosphorylation sites mapping to a total of `r tt["both"]` proteins, we can perform integrated analysis combining both datasets.
 
 
-# Integration with Non-enriched Proteome
+# Integration with Total Proteome
 
-Next, we integrate the modified peptide statistics with the changes on protein level in the same way as described for MSstatsPTM [@Kohler2023yo]. We refer to this as *MSstatsPTM adjustment* and refer to these statistcis in our outputs as *diff_diff* and *FDR_I*.
-In brief, the difference in the levels of a phospho site between two conditions is normalized by the difference in the protein levels for that same contrast. By doing so, the difference of the proteins (if identified) are subtracted from the phospho site differences and the degrees of freedom as well as the T-statistics are further used to calculate the raw- and adjusted p-value (FDR_I) for the adjusted difference (diff_diff).
+Next, we integrate the phosphorylation site statistics with the protein-level changes using the MSstatsPTM approach [@Kohler2023yo]. We refer to this as *MSstatsPTM adjustment* and refer to these statistics in our outputs as *diff_diff* and *FDR_I*. This analysis reveals differential PTM usage (DPU), which distinguishes between changes due to protein abundance and changes due to site-specific modification usage.
+
+In brief, the difference in phosphorylation site levels between two conditions is normalized by the difference in total protein levels for the same contrast. By doing so, protein-level changes are subtracted from phosphorylation site changes, and the adjusted statistics are used to calculate raw and adjusted p-values (FDR_I) for the normalized difference (diff_diff). This approach reveals whether phosphorylation changes are due to changes in protein abundance or to changes in site-specific modification usage.
 
 
-```{r tableAllProt, fig.cap="Differential expression analysis results of all phospho sites (showing MSstatsPTM adjusted log2FCs and FDR)"}
-bb <- data_diff_diff |> dplyr::select(all_of(c("site", "site","protein_Id","contrast","modelName.site","diff_diff","FDR_I")))
+```{r tableAllProt, fig.cap="Differential PTM usage analysis results of all phospho sites (showing MSstatsPTM adjusted log2FCs and FDR)"}
+bb <- data_diff_diff |>
+  dplyr::select(all_of(c("site", "site","protein_Id","contrast","modelName.site","diff_diff","FDR_I")))
 bb <- crosstalk::SharedData$new(bb, ~site, group = "BB")
 
 DT::datatable(bb, filter = "bottom",
@@ -109,7 +121,7 @@ DT::datatable(bb, filter = "bottom",
 ```
 
 
-(ref:scatterplot) PTM site differences (Y axis) as a function of protein differences (X axis).
+(ref:scatterplot) Phosphorylation site differences (Y axis) as a function of protein differences (X axis). This scatter plot shows the relationship between changes in total protein abundance and changes in phosphorylation site abundance, helping to identify whether phosphorylation changes are driven by protein-level changes or by site-specific modification usage.
 
 ```{r scatterplot, fig.cap="(ref:scatterplot)", fig.width=9, fig.height=7, include = TRUE, eval = TRUE}
 
@@ -119,14 +131,12 @@ datax <- data_diff_diff |> dplyr::select(
            "diff.site",
            "modelName.site", "modelName.protein")))
 
-#datax <- datax |> tidyr::unite("modelName", c("modelName.site", "modelName.protein"), sep = "~")
-#datax$modelName |> table()
 palette <- c("black","orange")
 palette <- setNames(palette, c("Linear_Model_moderated", "Imputed_Mean_moderated"))  
 
 
-xd <- prolfqua::scatter_plotly( 
-  datax ,
+xd <- prolfqua::scatter_plotly ( 
+  datax,
   proteinID = "site",
   dx = "diff.protein",
   dy = "diff.site",
@@ -143,7 +153,7 @@ plotly::subplot(xd, shareX = TRUE, shareY = TRUE, nrows = nrow)
 ```
 
 
-(ref:volcanoplot)  Volcano plot showing $-\log_{10}$ transformed FDR as function of the protein level adjusted difference between groups. The red line indicates the $-log_{10}(FDR)$ of FDR = `r grp2$processing_options$FDR_threshold`, while the green lines represent the the difference of minus and plus `r grp2$processing_options$diff_threshold`. Orange dots differences and FDRs were estimated using missing value imputation.
+(ref:volcanoplot)  Volcano plot showing $-\log_{10}$ transformed FDR as a function of the protein-level adjusted difference between groups. The red line indicates the $-log_{10}(FDR)$ threshold of FDR = `r grp2$processing_options$FDR_threshold`, while the green lines represent the difference thresholds of minus and plus `r grp2$processing_options$diff_threshold`. Orange dots indicate differences and FDRs that were estimated using missing value imputation. This plot highlights phosphorylation sites with significant changes in usage (DPU) independent of protein abundance changes.
 
 
 ```{r volcanoplot, fig.cap = "(ref:volcanoplot)", fig.width=9, fig.height=7, include = TRUE, eval = TRUE}
@@ -152,11 +162,11 @@ datax <- data_diff_diff |> dplyr::select(
            "contrast",
            "modelName.site",
            "diff_diff",
-           "FDR_I" )))
-palette <- c("black","orange")
+           "FDR_I")))
+palette <- c("black", "orange")
 palette <- setNames(palette, c("Linear_Model_moderated", "Imputed_Mean_moderated"))  
 xd <- prolfqua::volcano_plotly( 
-  datax ,
+  datax,
   proteinID = "site",
   effect = "diff_diff",
   significance = "FDR_I",

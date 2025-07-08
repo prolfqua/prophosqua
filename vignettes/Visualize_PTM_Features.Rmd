@@ -21,7 +21,7 @@ This workflow performs two main types of analysis:
 The analysis creates N-to-C plots showing modification sites along protein backbones with their expression and usage changes.
 
 ```{r setup_2, include=FALSE}
-wd <- here::here("inst", "PTM_example")
+wd <- here::here("inst", "PTM_analysis_example")
 knitr::opts_knit$set(root.dir = wd)
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warnings = FALSE)
 library(tidyverse)
@@ -39,12 +39,12 @@ This section defines the project identifiers and analysis type. The `ptm_feature
 
 ```{r specify_inputs}
 wu_id <- "CustomPhosphoAnalysis"
-fgcz_project <- "PTM_example"
+fgcz_project <- "PTM_analysis_example"
 oid_fgcz <- "fgcz_project"
 ptm_feature <- "singlesite"
 # datetoday <- format(Sys.Date(), "%Y%m%d")
-datetoday <- "20250707"
-project_dir <- "."#./inst/PTM_example/"
+datetoday <- "20250708"
+project_dir <- "."#./inst/PTM_analysis_example/"
 tot_file <- file.path(
   project_dir,paste0("DEA_", datetoday, "_",
                      "WUtotal_proteome_vsn/Results_WU_total_proteome/DE_WUtotal_proteome.xlsx")
