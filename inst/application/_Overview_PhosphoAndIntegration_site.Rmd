@@ -82,7 +82,11 @@ tt <- data_diff_diff |>
 # Calculate percentages
 percFoundInGlobal <- tt["both"] / (tt["both"] + tt["site"]) * 100
 totProtFromSites <- (tt["both"] + tt["site"])
-sitesM <- data_diff_diff |>  dplyr::select(protein_Id, site, measured_In) |> dplyr::distinct() |> dplyr::pull(measured_In) |> table()
+sitesM <- data_diff_diff |>  
+  dplyr::select(protein_Id, site, measured_In) |> 
+  dplyr::distinct() |> 
+  dplyr::pull(measured_In) |> 
+  table()
 ```
 
 When phosphopeptide enrichment is performed, some peptides are identified for which there is no corresponding protein identification in the total proteome measurement. Therefore, protein-level information may be missing for some phosphorylation sites. Here, for `r percFoundInGlobal`% of all identified phosphoproteins (`r totProtFromSites` total), the corresponding protein is also quantified in the total proteome measurements. For `r sitesM["both"]` phosphorylation sites mapping to a total of `r tt["both"]` proteins, we can perform integrated analysis combining both datasets.
@@ -95,9 +99,10 @@ Next, we integrate the phosphorylation site statistics with the protein-level ch
 In brief, the difference in phosphorylation site levels between two conditions is normalized by the difference in total protein levels for the same contrast. By doing so, protein-level changes are subtracted from phosphorylation site changes, and the adjusted statistics are used to calculate raw and adjusted p-values (FDR_I) for the normalized difference (diff_diff). This approach reveals whether phosphorylation changes are due to changes in protein abundance or to changes in site-specific modification usage.
 
 
-```{r tableAllProt, fig.cap="Differential PTM usage analysis results of all phospho sites (showing MSstatsPTM adjusted log2FCs and FDR)"}
+```{r tableAllProt}
 bb <- data_diff_diff |>
-  dplyr::select(all_of(c("site", "site","protein_Id","contrast","modelName.site","diff_diff","FDR_I")))
+  dplyr::select(all_of(c("site", "site", "protein_Id", "contrast", 
+                         "modelName.site", "modAA", "diff_diff", "FDR_I")))
 bb <- crosstalk::SharedData$new(bb, ~site, group = "BB")
 
 DT::datatable(bb, filter = "bottom",
@@ -108,7 +113,11 @@ DT::datatable(bb, filter = "bottom",
                  scrollY = 300,
                  scrollX = 400,
                  scroller = TRUE)) |>
-  DT::formatRound(columns = c('diff_diff', 'FDR_I'), digits = 3)
+  DT::formatRound(
+    columns = c('diff_diff', 'FDR_I'), 
+    digits = 3,
+    caption = "Differential PTM usage analysis results of all phospho sites (showing MSstatsPTM adjusted log2FCs and FDR)"
+  )
 
 ```
 
@@ -119,9 +128,9 @@ DT::datatable(bb, filter = "bottom",
 
 datax <- data_diff_diff |> dplyr::select(
   dplyr::all_of(c("site", "contrast", "protein_Id",
-           "diff.protein",
-           "diff.site",
-           "modelName.site", "modelName.protein")))
+                   "diff.protein",
+                   "diff.site",
+                   "modelName.site", "modelName.protein")))
 
 palette <- c("black","orange")
 palette <- setNames(palette, c("Linear_Model_moderated", "Imputed_Mean_moderated"))
@@ -165,7 +174,8 @@ xd <- prolfqua::volcano_plotly(
   contrast = "contrast",
   color = "modelName.site",
   palette = palette,
-  xintercept =  c(-grp2$processing_options$diff_threshold,grp2$processing_options$diff_threshold),
+  xintercept = c(-grp2$processing_options$diff_threshold,
+                 grp2$processing_options$diff_threshold),
   yintercept = grp2$processing_options$FDR_threshold,
   title_size = 14,
   group = "BB")

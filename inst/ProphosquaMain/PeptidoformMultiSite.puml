@@ -1,0 +1,81 @@
+skinparam dpi 600
+@startuml
+left to right direction
+
+entity "PSM (DDA)" as PM {
+  * psm_id         : PK
+  --
+  fk_ion_id       : FK
+}
+
+entity "elution group (DIA)" as EG {
+  * eg_id          : PK
+  --
+  fk_ion_id       : FK
+}
+
+entity "ion" as I {
+  * ion_id         : PK
+  --
+  fk_peptidoform_id : FK
+}
+
+entity "peptidoform" as PF {
+  * peptidoform_id : PK
+  --
+  fk_multisite_id : FK
+  fk_site_id      : FK[]
+}
+
+
+entity "multisite" as MS {
+  * multisite_id   : PK
+  --
+  * site_ids       : FK[]
+  }
+
+entity "site" as ModSite {
+  * site_id          : PK
+  --
+  fk_multisite_id    : FK[]
+  fk_peptidoform_id  : FK[]
+  site_position      : INT
+  site_residue       : CHAR
+  **multiplicity**       : INT
+}
+
+
+
+' DDA: many PSMMatches → one Ion
+PM }o--|| I : matches to
+
+' DIA: many ElutionGroups → one Ion
+EG ||--|| I : matches to
+
+' many Ions → one Peptidoform
+I  }o--|| PF : ions of
+
+' many Peptidoforms → one Multisite
+PF }o--|| MS
+note on link
+  <b>Grouping rule</b>:  
+  all peptidoforms
+  whose set of localized 
+  and unlocalized 
+  sites is identical 
+  get collapsed
+end note
+
+PF    }o--o{ ModSite
+note on link
+  <b>Grouping rule</b>:  
+  all peptidoforms
+  with the same 
+  localized **site**
+end note
+
+MS    }o--o{ ModSite 
+
+
+@enduml
+
