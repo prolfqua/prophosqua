@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/784111954.svg)](https://doi.org/10.5281/zenodo.15845272)
+
 # prophosqua
 
 **Integration of phosphoproteome and total proteome data for comprehensive PTM analysis**
