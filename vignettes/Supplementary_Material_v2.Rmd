@@ -70,8 +70,14 @@ The protocol demonstrates:
 
 ## Software Requirements
 
-- **R version**: ≥ 4.0.0
-- **Required packages**: `prolfquapp`, `prophosqua`, `tidyverse`, `ggseqlogo`
+- **R version**: $\ge$ 4.0.0
+- **Required packages**: 
+  - `prolfqua` (doi:10.1021/acs.jproteome.2c00441)
+  - `prolfquapp` (doi:10.1021/acs.jproteome.4c00911) 
+  - `prolfquappPTMreaders` (doi:10.5281/zenodo.15845243)
+  - `prophosqua` (doi:10.5281/zenodo.15845272)
+  - `tidyverse` (doi:10.21105/joss.01686)
+  - `ggseqlogo` (doi:10.32614/CRAN.package.ggseqlogo)
 - **System requirements**: 8GB+ RAM, 5GB+ storage
 - **Expected runtime**: 30 minutes to 2 hours depending on dataset size
 
@@ -335,7 +341,29 @@ combined_site_prot <- dplyr::left_join(
   by = join_column,
   suffix = c(suffix_a, suffix_b)
 )
-combined_site_prot$contrast |> table() |> data.frame() |> knitr::kable(label = "nr sites per contrasts")
+
+```
+
+### B.5.1 Check the match rate between PTM sites and proteins
+
+Check the match rate between PTM sites and proteins, that is the number of PTM sites that have a protein match divided by the total number of PTM sites.
+
+```{r b5_match_rate}
+
+# Calculate match rate by contrast
+match_rates <- combined_site_prot |>
+  group_by(contrast) |>
+  summarize(
+    total_sites = n(),
+    matched_sites = sum(!is.na(diff.protein)),
+    match_rate = round(matched_sites / total_sites * 100, 1)
+  )
+
+knitr::kable(match_rates,
+             col.names = c("Contrast", "Total Sites", "Matched Sites", "Match Rate (%)"),
+             caption = "Match rates between PTM sites and proteins")
+
+
 ```
 
 ## B.6 Visualizing PTM Feature Expression (DPE)
@@ -384,9 +412,9 @@ dev.off()
 
 The `test_diff` function implements a statistical framework for calculating differential PTM usage (DPU) that accounts for both PTM and protein-level changes. The analysis involves three key mathematical components:
 
-- 1. Effect Size Calculation ($\Delta I$)
-- 2. Standard Error Propagation ($SE_I$)
-- 3. Degrees of Freedom Calculation ($df_I$)
+1. Effect Size Calculation ($\Delta I$)
+2. Standard Error Propagation ($SE_I$)
+3. Degrees of Freedom Calculation ($df_I$)
 
 The differential PTM usage effect size is calculated as the difference between PTM and protein log2 fold changes:
 
@@ -514,7 +542,8 @@ file.copy(
 Exports the integrated analysis results to an Excel file for further analysis and sharing.
 
 ```{r store_ptm_usage_xlsx}
-excel_result_list <- list(combinedStats = combined_test_diff)
+excel_result_list <- list(combinedStats = combined_test_diff,
+                          combinedSiteProteinData = combined_site_prot)
 writexl::write_xlsx(
   excel_result_list,
   path = file.path(res_dir, "Result_phosphoAndTotalIntegration.xlsx")
@@ -566,7 +595,7 @@ The results can be used to identify key regulatory sites, understand signaling p
 This section analyzes the sequence motifs around significantly modified sites to identify potential kinase recognition patterns.
 This code generates sequence logos to visualize the amino acid preferences around phosphorylation sites. The analysis:
 
-1. **Filtering data** - Filters for significantly regulated sites (FDR_I < 0.05) and includes only the main comparison of interest (KO vs WT)
+1. **Filtering data** - Filters for significantly regulated sites (FDR_I < 0.05 and fold change > 0.58)
 2. **Groups sequences by condition and regulation** - Separates up and downregulated sites for each contrast
 3. **Prepares sequence data** - Uses the `SequenceWindow` column containing amino acid sequences around each phosphorylation site
 4. **Creates multi-panel plots** - Shows sequence logos for different groups in a 2-column layout
@@ -669,7 +698,7 @@ This supplementary material has demonstrated the complete implementation of the 
 4. **Missing sequence data**: Ensure FASTA database matches identifications
 
 
-## D. Software Versions and Session Information
+## Enhanced. Software Versions and Session Information
 
 ```{r session_info}
 # Display session information
