@@ -1,4 +1,13 @@
 *.html
 *.pdf
-*tex
+*.tex
+*.log
+*.out
+*.aux
+*.bbl
+*.blg
+*.fls
+*.fdb_latexmk
+*.fls
+*.fdb_latexmk
 ./*
