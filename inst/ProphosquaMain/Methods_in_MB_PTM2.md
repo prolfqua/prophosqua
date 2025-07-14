@@ -28,7 +28,7 @@ Furthermore, PTM datasets typically exhibit higher rates of missing values compa
 
 ### 1.3.1 Mass Spectrometry-Based Quantification Strategies
 
-Isobaric tagging with TMT reagents has emerged as the gold standard for multiplexed PTM analysis, enabling simultaneous analysis of up to 35 samples in a single combined run and significantly reducing inter-sample technical variability ([10.1021/acs.jproteome.4c00668](https://doi.org/10.1021/acs.jproteome.4c00668)). This multiplexing approach provides enhanced statistical power while minimizing batch effects that can confound biological interpretation, creating closed systems with unique statistical properties that allow for greater confidence in comparative results ([10.1021/ac0262560](https://doi.org/10.1021/ac0262560)). Enrichment of phosphorylated peptides is typically achieved through metal affinity chromatography (IMAC) or metal oxide affinity chromatography (MOAC), with Fe³⁺, Zr⁴⁺, Ti⁴⁺ ions, or TiO₂ providing complementary selectivity profiles that enable coverage of the phosphoproteome ([10.1074/mcp.M114.045609](https://doi.org/10.1074/mcp.M114.045609); [10.1101/2020.04.13.038810](https://doi.org/10.1101/2020.04.13.038810)).
+Isobaric tagging with TMT reagents has emerged as the gold standard for multiplexed PTM analysis, enabling simultaneous analysis of up to 35 samples in a single combined run and significantly reducing inter-sample technical variability ([10.1021/acs.jproteome.4c00668](https://doi.org/10.1021/acs.jproteome.4c00668)). This multiplexing approach provides enhanced statistical power while minimizing batch effects that can confound biological interpretation, creating closed systems with unique statistical properties that allow for greater confidence in comparative results ([10.1021/ac0262560](https://doi.org/10.1021/ac0262560)). Enrichment of phosphorylated peptides is typically achieved through metal affinity chromatography (IMAC) or metal oxide affinity chromatography (MOAC), with Fe³⁺, Zr⁴⁺, Ti⁴⁺ ions, or TiO₂ providing complementary selectivity profiles that enable coverage of the phosphoproteome ([10.1074/mcp.M114.045609](https://doi.org/10.1074/mcp.M114.045609); [10.1101/2020.04.13.038810](https://doi.org/10.1101/2020.04.13.038810)). The practical implementation of these strategies, including automated sample preparation protocols using SP3-based digestion and Fe-NTA enrichment, is detailed in the experimental methods section of this chapter.
 
 ### 1.3.2 Computational Tools and Workflows
 
@@ -72,47 +72,62 @@ The integrated analytical approach combines optimized sample preparation protoco
 
 ## 1.5 Chapter Overview and Learning Objectives
 
-This protocol demonstrates the complete workflow using the Atg16l1 macrophage dataset (Maculins *et al.*, eLife 2021, [10.7554/eLife.62320](https://doi.org/10.7554/eLife.62320)), which comprises TMT-11-plex measurements from six conditions (WT/KO × uninfected/early/late infection) with both total proteome and phospho-enriched samples. 
+This protocol presents a complete experimental and analytical workflow for integrated PTM studies. The wet lab component describes the optimized protocols used at the Functional Genomics Center Zurich for PTM services, covering automated sample preparation, enrichment strategies, and LC-MS/MS acquisition. The computational analysis is demonstrated using the Atg16l1 macrophage dataset (Maculins *et al.*, eLife 2021, [10.7554/eLife.62320](https://doi.org/10.7554/eLife.62320)), which comprises TMT-11-plex measurements from six conditions (WT/KO × uninfected/early/late infection) with both total proteome and phospho-enriched samples.
 
 **Learning objectives include:**
-1. Implementing automated, scalable sample preparation protocols
-2. Performing integrated statistical analysis of PTM and protein data
-3. Interpreting DPE vs. DPU results for biological insights
-4. Generating publication-quality visualizations and reports
-5. Conducting sequence motif analysis for kinase prediction
+1. Implementing automated, scalable sample preparation protocols using SP3-based digestion and KingFisher Flex automation
+2. Performing phosphopeptide enrichment with Fe-NTA and optional antibody-based enrichment strategies
+3. Executing high-pH offline fractionation and optimized LC-MS/MS acquisition on Evosep-Orbitrap systems
+4. Conducting integrated statistical analysis of PTM and protein data using `prolfquapp` and `prophosqua` R packages
+5. Interpreting DPE vs. DPU results for biological insights and generating publication-quality visualizations
+6. Performing sequence motif analysis for kinase prediction and pathway reconstruction
 
-The workflow emphasizes reproducibility, automation, and biological interpretation, making it suitable for both experienced researchers and newcomers to integrated PTM analysis.
+The workflow emphasizes reproducibility, automation, and biological interpretation, spanning from sample lysis through data analysis and making it suitable for both experienced researchers and newcomers to integrated PTM analysis. All protocols include extensive quality control measures and troubleshooting guidelines for large-scale studies.
 
 # 2. Materials
 
 ## 2.1 Biological Samples
 
-As described above, we are focusing on the dataset from Maculins et al. ([10.7554/eLife.62320](https://doi.org/10.7554/eLife.62320)) in this section. We are using the phospho-enriched and the total proteome datasets for demonstration purposes. In the original publication, the authors also performed a KGG-enrichment (ubiquitin remnant). Furthermore, the same dataset was also used in the MSstatsPTM publication (MCP, Kohler et. al, 2023, [10.1016/j.mcpro.2022.100477](https://doi.org/10.1016/j.mcpro.2022.100477)). 
+### 2.1.1 Demonstration Dataset
 
-**Representative sample types compatible with this protocol:**
-- Fresh-frozen tissue samples (≤5 mg per sample)
-- Cultured cell pellets (≥1×10⁶ cells per sample)
-- Primary cells isolated from tissue
-- Organoids and spheroid cultures
+This protocol uses the Atg16l1 macrophage dataset from Maculins et al. ([10.7554/eLife.62320](https://doi.org/10.7554/eLife.62320)) to demonstrate the bioinformatics workflow and integrated statistical analysis. The dataset comprises TMT-11-plex measurements from six conditions (WT/KO × uninfected/early/late infection) with both phospho-enriched and total proteome samples, making it ideal for illustrating the principles of integrated PTM analysis. In the original publication, the authors also performed KGG-enrichment (ubiquitin remnant), though we focus on the phosphoproteome and total proteome datasets for demonstration purposes. This same dataset was previously used in the MSstatsPTM publication (Kohler et al., MCP 2023, [10.1016/j.mcpro.2022.100477](https://doi.org/10.1016/j.mcpro.2022.100477)), providing additional validation of the analytical approaches.
 
-**Sample storage requirements:**
-- Store at -80°C immediately after collection
-- Avoid freeze-thaw cycles
-- Process within 6 months of collection for optimal results
+### 2.1.2 Sample Types Compatible with FGCZ Protocol
 
-The material and methods that were used in this publication are not identical to what we suggest here. Nevertheless, the most important parts are that chemical labeling was used and there is a PTM-enriched dataset with potentially multiple fractions (phospho-enriched here) as well as a total proteome part that can be integrated. The main differences in sample preparation between the proposed method and the method used by Maculins et al. are summarized in the table. 
+The wet lab protocols described in this chapter are optimized for high-throughput processing and are compatible with a wide range of biological sample types:
 
-| Step | Maculins et al. ([10.7554/eLife.62320](https://doi.org/10.7554/eLife.62320))| Current Protocol (This Work) |
-| ----- | ----- | ----- |
-| **Lysis & Digestion** | Manual lysis, SDS buffer; trypsin digestion | SDS lysis; automated SP3 digestion on KingFisher Flex |
-| **Protein Cleanup** | Acetone or methanol/chloroform precipitation | Automated SP3 bead-based cleanup |
-| **TMT Labeling Timing** | Post-enrichment (for KGG peptides); pre-enrichment (flow-through) | Pre-enrichment TMTpro labeling for all samples |
-| **Enrichment Targets** | KGG (ubiquitin remnant), phosphotyrosine (pY), phosphoserine/threonine (pST) | Optional pY or motif antibody enrichment \+ Fe-NTA for pST |
-| **Enrichment Method** | Manual, multiple kits (e.g., CST pY1000, Thermo Fe-NTA) | Automated enrichment using KingFisher Flex with BindIt control |
-| **Fractionation** | Manual StageTips or high-pH kit, 6–18 fractions | Automated high-pH fractionation on Vanquish Flex, concatenated into 36 fractions |
-| **Peptide Elution & Loading** | Manual cleanup, reconstitution for LC-MS | Evotip-compatible elution and direct loading |
-| **Automation** | Mostly manual steps | Fully automated digestion, enrichment, and fractionation |
-| **Scalability & Reproducibility** | Moderate, sample-specific variability | High-throughput, reproducible across large sample cohorts |
+- **Fresh-frozen tissue samples** (≤5 mg per sample): Optimal for preserving PTM states and minimizing degradation
+- **Cultured cell pellets** (≥1×10⁶ cells per sample): Standard format for most cell culture experiments  
+- **Primary cells isolated from tissue**: Requires careful handling to maintain viability during isolation
+- **Organoids and spheroid cultures**: Emerging model systems requiring specialized collection protocols
+
+### 2.1.3 Sample Storage and Handling Requirements
+
+Proper sample handling is critical for PTM preservation and protocol success:
+
+**Storage requirements:**
+- Store samples at -80°C immediately after collection to prevent PTM degradation
+- Avoid freeze-thaw cycles which can lead to protein degradation and PTM loss
+- Process samples within 6 months of collection for optimal results
+- Use appropriate sample labeling and tracking systems for large studies
+
+**Pre-processing considerations:**
+- Flash-freeze samples in liquid nitrogen when possible
+- Minimize time between sample collection and freezing (target <5 minutes)
+- Consider phosphatase and kinase inhibitor cocktails for certain sample types
+- Document collection conditions and timing for batch effect analysis
+
+### 2.1.4 Protocol Compatibility and Adaptations
+
+The experimental methods presented here represent optimized protocols developed at the Functional Genomics Center Zurich. While the demonstration uses the Maculins et al. dataset, the analytical approaches are broadly applicable to TMT-based phosphoproteomics studies regardless of the specific sample preparation method used, provided that:
+
+- Chemical labeling (TMT or similar isobaric tags) was employed
+- Both PTM-enriched and total proteome datasets are available
+- Consistent sample preparation was applied across experimental conditions
+- Appropriate biological and technical replicates are included in the experimental design
+
+The protocols emphasize automation, scalability, and reproducibility, making them suitable for large cohort studies while maintaining the analytical rigor necessary for high-impact publications.
+
 
 ## 2.2 Sample Preparation
 
@@ -208,29 +223,19 @@ This protocol describes a generic lysis approach for fresh-frozen tissue or froz
 **Day 1: Cell lysis and protein extraction**
 
 1. Add up to 50 μL lysis buffer for small pellets (≤10 μL pellet volume) and more for larger pellets, using 3×–5× the pellet volume and completely resuspend and disrupt cells in buffer by pipetting up and down; apply 1 min Tissue Lyzer (30 Hz) cycles with glass beads if cell pellet is not completely disrupted and lysed (**Critical:** Complete cell disruption is essential for protein extraction efficiency)
-
 2. For tissue samples, add 300 μL lysis buffer to up to 5 mg of tissue (optimal volume depends on tissue origin and protein content) and disrupt the sample using the Tissue Lyzer II with 2× 1 min cycles (30 Hz) (**Time:** 5 min total homogenization)
-
 3. Apply a 1-minute sonication pulse to the sample (probe-type sonicator) (**Critical:** Use 50% amplitude to avoid overheating)
-
 4. Incubate 5 min at 95°C (**Critical:** This step inactivates phosphatases and kinases)
-
 5. Apply a 1-minute sonication pulse to the sample (probe-type sonicator)
-
 6. If viscosity is still high due to high DNA content, dilute the sample to 1% SDS and add 5–10 U of Benzonase and incubate for 15 min at room temperature (**Quality check:** Sample should flow easily when pipetted)
-
 7. Centrifuge 5 min at 20,000×g and proceed with supernatant (**Expected yield:** >90% of total protein in supernatant)
-
 8. Take a small aliquot for protein concentration determination and dilute at least 1:20 for 280 nm reading on the Lunatic (**Expected concentration:** 1-5 mg/mL for cell pellets, 0.5-2 mg/mL for tissue)
-
 9. Snap-freeze samples in liquid nitrogen and store at -20°C or proceed with the protocol for 30–50 µg of total protein with 0.5–2 µg/µL (**Stopping point:** Samples can be stored for up to 6 months)
 
 **Reduction and alkylation:**
 
 10. Add TCEP to a final concentration of 5 mM (**Time:** Immediate)
-
 11. Add ClAA to a final concentration of 15 mM (**Critical:** Add in the dark, ClAA is light-sensitive)
-
 12. Incubate 30 min at 30°C in the dark, shaking at 500 rpm (**Quality check:** No precipitation should be visible)
 
 **SP3 bead preparation and protein binding:**
@@ -239,9 +244,7 @@ This protocol describes a generic lysis approach for fresh-frozen tissue or froz
     1. Use 10 μg of beads for each μg of protein (**Critical ratio for efficient binding**)
     2. Beads are available at a stock concentration of 50 μg/μL. Take the required volume of beads and mix hydrophilic and hydrophobic beads at a 1:1 ratio
     3. Wash beads three times with water and add the respective amount in 250 µL to each well
-
 14. Add 100% EtOH to the reduced and alkylated sample to reach 60% EtOH (v/v) (1.5× of reduced and alkylated sample volume) (**Critical:** Add slowly while mixing to prevent precipitation)
-
 15. Fill three deep-well plates with 500 µL wash buffer (80% EtOH) (**Preparation time:** 10 min)
 
 16. Add 100 µL of trypsin in 20 mM TEAB at an enzyme:protein ratio of 1:50 to a microwell plate (**Critical:** Use MS-grade trypsin)
@@ -265,15 +268,10 @@ This protocol describes a generic lysis approach for fresh-frozen tissue or froz
 **TMT labeling quality control and sample pooling:**
 
 21. Add 3.5 µL of 5% hydroxylamine to quench the reaction (**Time:** Immediate quenching essential)
-
 22. Pool a small fraction of each sample (e.g., 1 μL, ensure precise pipetting) and pool at equal ratio to check for sample loading variation and labeling efficiency using LC-MS/MS in QC step (**Critical QC step:** Assess before proceeding)
-
 23. If needed, adjust the pooling ratio based on QC LC-MS/MS, otherwise, proceed with pooling all samples at an equal ratio (**Expected CV:** <20% across channels)
-
 24. Optional: if antibody-based enrichment is required, split the sample in half
-
 25. Dry down in SpeedVac (**Stopping point:** can be stored frozen at -80°C for up to 1 year)
-
 26. Optional: For final clean-up, subject sample to C18 solid-phase extraction (SPE) (e.g., Sep-Pak, Waters) (**Recovery:** >85% of peptides)
 
 **Expected outcomes:**
@@ -323,7 +321,6 @@ This protocol describes the general flow of events for high-pH offline fractiona
 10. After the run, equilibrate the column with 100 % acetonitrile and then return the system to 20 % methanol.  
 11. Remove the deep-well plate from the fraction collector, snap-freeze, and dry down the samples in a SpeedVac. Peptides can be stored at \-80°C
 
-    
 
 ### 3.1.4 Phosphopeptide enrichment and Evotip loading
 
