@@ -79,20 +79,25 @@ The following code renders the vignettes and copies them to the example director
 # Render the differential expression analysis vignette
 
 wd <- "inst/PTM_analysis_example"
+
+
 rmarkdown::render("vignettes/QCReport.qmd",
 params=list(wd=wd,
 psm="ptm_example-main/qc_example_data/QCmini/psm.tsv",
 fasta="ptm_example-main/qc_example_data/fgcz_3702_UP000006548_AraUniprot_1spg_d_20231024.fasta",
 workunit="exampleQC",
 projectid="ABCD1234"))
-
 file.copy("vignettes/QCReport.html", file.path(wd,"QCReport.html"))
 
 # Render the PTM integration and visualization vignette  
 rmarkdown::render("vignettes/Supplementary_Material_v2.Rmd",
-params=list(wd = wd), output_format=bookdown::pdf_document2())
-file.copy("vignettes/Supplementary_Material_v2.pdf",
-file.path(wd,"Supplementary_Material_v2.pdf"))
+params=list(wd = wd, dodea = TRUE), output_format=bookdown::pdf_document2())
+file.copy("vignettes/Supplementary_Material_v2.pdf", file.path(wd,"Supplementary_Material_v2.pdf"))
+
+rmarkdown::render("vignettes/Supplementary_Material_v2.Rmd",
+params=list(wd = wd, dodea = FALSE), output_format=bookdown::html_document2())
+file.copy("vignettes/Supplementary_Material_v2.html", file.path(wd,"Supplementary_Material_v2.html"))
+
 
 ```
 
