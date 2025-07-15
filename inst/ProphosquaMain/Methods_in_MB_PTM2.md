@@ -2,6 +2,12 @@
 
 # Integrated Analysis of Post-Translational Modifications and Total Proteome: Methods for Distinguishing Expression from Usage Changes
 
+Authors: 
+- [@Jonas Grossmann](http://www.fgcz.ch)
+- [@Antje Dittmann](http://www.fgcz.ch)
+- [@Witold Wolski](http://www.fgcz.ch)
+
+
 ## **Abstract**
 
 **Background:** Post-translational modifications (PTMs), particularly phosphorylation, regulate protein function at substoichiometric levels, making their quantitative analysis technically challenging. A critical limitation in PTM studies is distinguishing between changes in modification abundance due to altered protein expression versus genuine changes in modification stoichiometry (the fraction of protein molecules that are modified).
@@ -23,6 +29,13 @@ Protein phosphorylation represents a reversible post-translational modification 
 The analysis of post-translational modifications presents significant analytical challenges due to the low stoichiometry of phosphopeptides, which typically represent less than 1-5% of total peptide abundance ([10.1039/C5MB00024F](https://doi.org/10.1039/C5MB00024F); [10.1186/1477-5956-4-15](https://doi.org/10.1186/1477-5956-4-15)). This substoichiometric nature necessitates specialized workflows for quantification and creates substantial technical hurdles for PTM analysis ([10.1016/j.mcpro.2024.100044](https://doi.org/10.1016/j.mcpro.2024.100044)). Traditional proteomics approaches often fail to distinguish between changes in PTM abundance that result from altered protein expression versus genuine changes in modification efficiency or stoichiometry ([10.1016/j.mcpro.2022.100477](https://doi.org/10.1016/j.mcpro.2022.100477); [10.1016/j.mcpro.2023.100708](https://doi.org/10.1016/j.mcpro.2023.100708)). This confounding factor has led to widespread misinterpretation of PTM data, where apparent increases in phosphorylation may simply reflect higher protein abundance rather than enhanced kinase activity or altered signaling states ([10.1039/C5MB00024F](https://doi.org/10.1039/C5MB00024F)).
 
 Furthermore, PTM datasets typically exhibit higher rates of missing values compared to total proteome data, with quantified phosphosites often representing only 60-75% of detected sites prior to imputation ([10.1101/2020.08.31.276329](https://doi.org/10.1101/2020.08.31.276329)), due to the substoichiometric nature of modifications and the requirement for enrichment strategies that can introduce technical variability ([10.1039/C5MB00024F](https://doi.org/10.1039/C5MB00024F); [10.1016/j.aca.2021.338716](https://doi.org/10.1016/j.aca.2021.338716)). Each stage of the phosphoproteomics workflow contributes to overall data variability and must be optimized thoroughly to ensure reproducible quantification ([10.1038/s41467-018-03309-6](https://doi.org/10.1038/s41467-018-03309-6); [10.1016/j.aca.2021.338716](https://doi.org/10.1016/j.aca.2021.338716)). These analytical challenges demand experimental design and computational approaches to extract biologically meaningful information from complex PTM datasets.
+
+### 1.2.1 The Protein Assignment Problem in DPU 
+
+Identification and quantification tools need to assign peptides to proteins, i.e., find the leading or representative protein ID. This assignment may be run specific, and may differ between the PTM and the total proteome dataset. Therefore, using protein IDs to match PTM features with proteins from the total run might lead to a loss of information because of differing representative IDs ([10.1093/bib/bbr065](https://doi.org/10.1093/bib/bbr065)). For example, a phosphopeptide might be assigned to protein isoform A in the PTM dataset while the corresponding total protein abundance is quantified under isoform B in the proteome dataset, preventing proper integration and DPU analysis.
+
+A robust solution involves matching stripped peptide sequences from the PTM dataset to peptide sequences of proteins quantified in the total proteome dataset, bypassing protein ID dependency entirely. When peptides are shared among multiple protein isoforms, the averaged protein abundance across all matching isoforms provides a more stable reference for normalization. While this sequence-based matching approach requires additional computational implementation, it significantly improves integration success rates and reduces the loss of valuable PTM information due to arbitrary protein assignment differences between datasets.
+
 
 ## 1.3 Current Methodological Approaches
 
@@ -212,7 +225,7 @@ The protocols emphasize automation, scalability, and reproducibility, making the
 
 # 3. Methods
 
-## 3.1 Sample Preparation
+## 3.1 Common Sample Preparation Protocol
 
 ### 3.1.1 Cell lysis, digestion, and labeling of tryptic digests with TMT reagents
 **Expected time:** 2 days (Day 1: lysis to digestion setup, Day 2: TMT labeling)
@@ -280,67 +293,96 @@ This protocol describes a generic lysis approach for fresh-frozen tissue or froz
 - **Sample purity:** Suitable for downstream enrichment and fractionation
 - **Storage stability:** 1 year at -80°C without significant degradation
 
-### 3.1.2 Optional antibody-based enrichment
+### 3.1.2 Sample splitting and workflow assignment
+
+After TMT labeling and pooling, split the sample into two workflows:
+
+- **Aliquot A (5-10% of total):** Total proteome analysis (proceed to section 3.2)
+- **Aliquot B (90-95% of total):** Phospho-enrichment analysis (proceed to section 3.3)
+
+*Note: The small aliquot for total proteome can be taken either before phospho-enrichment (step 3.3.1, step 2) or from the non-bound fraction after phospho-enrichment.*
+
+## 3.2 Total Proteome Workflow
+
+### 3.2.1 Sample cleanup and fractionation for total proteome
+
+1. Take 5-10% of the pooled TMT-labeled peptides for total proteome analysis
+2. Subject sample to C18 solid-phase extraction (SPE) for cleanup if not already performed
+3. Proceed with high-pH offline fractionation following the protocol described in section 3.2.2
+4. Collect fewer fractions (12-24) compared to phospho-enrichment workflow to account for lower sample complexity
+
+### 3.2.2 High pH offline fractionation for total proteome
+
+Follow the general fractionation protocol with modifications for total proteome:
+
+1. For total proteome analysis, aim for 2-5 µg of peptide per fraction
+2. Generate 12-24 fractions (adjust FC.FractionRange accordingly)
+3. Follow steps 2-11 from section 3.1.3 with appropriate scaling
+
+### 3.2.3 LC-MS/MS analysis - Total proteome
+
+1. Peptides are separated on an Aurora Elite XT column using the 40SPD Evosep method, interfaced with the mass spectrometer through an EASY-spray source
+2. On MS1 level, peptide masses were detected at a resolution of 120,000, with an ion target of 3×10⁶, maximal injection time of 45 ms, and RF lens set to 40%
+3. MS2 spectra were recorded for the top 12 precursors with an intensity threshold of 10³, which were isolated at 0.7 Th and subjected to dynamic exclusion for 16 s. Normalized collision energy was set to 32% and spectra were recorded with a resolution of **30,000 with TMTpro on**, ion target of **1×10⁵** and a maximal injection time of **Auto**
+
+## 3.3 Phospho-enrichment Workflow
+
+### 3.3.1 High pH offline fractionation for phospho-enrichment
+
+This protocol describes the general flow of events for high-pH offline fractionation of peptides on the Thermo Vanquish Flex System, featuring automatic fraction collection and concatenation for subsequent phospho-peptide enrichment on the KingFisher Flex.
+
+1. For robust and sensitive performance of phosphoproteomics experiments, we typically aim for 10-25 µg of peptide per fraction. These amounts have been demonstrated to be effective for automated protocols on the KingFisher Flex ([10.1016/j.mcpro.2024.100754](https://doi.org/10.1016/j.mcpro.2024.100754), [10.1002/pmic.202100245](https://doi.org/10.1002/pmic.202100245)). We generate 36 fractions, corresponding to a total of approximately 180-540 µg of pooled peptide before fractionation
+2. Resuspend the peptides in 100 µL of high-pH buffer A, and sonicate for 5 min to ensure complete resuspension. Pellet insoluble material and only transfer supernatant into the HPLC vial
+3. Purge and equilibrate HPLC with high pH buffer A and 2.1% high pH buffer B)
+4. Connect XBridge peptide BEH column and adjust the flow rate to 0.75 mL/min, column compartment heater to 40 °C, and equilibrate the system until pressure and UV readings stabilize (see Note 4.7)
+5. Place the KingFisher deep-well plate in the fraction collector (FC) and check the 'Use Safe Needle Height' setting in Chromeleon FC General Settings
+6. Set up a sample queue in Chromeleon and add the custom variable specifying the fractionation starting position (needs to be specified in the Script editor)
+7. Always run QC without fractionation using BSA peptide standard and check the elution profile for proper peak separation before an actual sample
+8. For sample fractionation, adjust the FC.FractionRange in the Script editor to 36 and the MaxTubesPerFraction to 72, collecting each fraction for 60 seconds. The needle will start again at the first position after 36 fractions, i.e. concatenating fraction 37 into fraction 1, fraction 38 into fraction 2, etc. (see Note 4.8)
+9. Set up the flow gradient to run from 2.1% B to 42.1% B in 54 minutes, followed by 5 minutes at 95% B and another 10 minutes equilibrating back to 2.1% B
+10. After the run, equilibrate the column with 100% acetonitrile and then return the system to 20% methanol
+11. Remove the deep-well plate from the fraction collector, snap-freeze, and dry down the samples in a SpeedVac. Peptides can be stored at -80°C
+
+### 3.3.2 Phosphopeptide enrichment and Evotip loading
+
+1. Resuspend each fraction in 150 µL Ti-IMAC buffer I (see Note 4.10), sonicate for 10 min
+2. If total proteome measurements are required as well, take a small aliquot of either the input before phospho-peptide binding or the non-bound fraction after phospho-peptide binding
+3. Prepare an appropriate volume of Ti-IMAC HP beads (see Note 4.11) from 20% bead slurry, aiming for a peptide-to-bead ratio of 1:4
+4. Wash the beads with 200 µL Ti-IMAC buffer I, collecting the beads on a magnetic rack each time and discarding the wash buffer. Repeat for a total of three washes, then add beads to the microwell plate in a final volume of 150 µL per well
+5. Prepare three additional microwell plates, each with 150 µL of Ti-IMAC buffer I, II, and III
+6. Start enrichment protocol from the BindIT control software as described in Leutert et al. ([10.15252/msb.20199021](https://doi.org/10.15252/msb.20199021))
+7. Add 80 µL Ti-IMAC elution buffer to each well of a microwell plate and add the plate to the indicated KingFisher slot during the pause after the last wash step, and continue with the peptide elution
+8. Immediately after elution, neutralize peptides by adding 10 μL of neutralization buffer
+9. Follow the Evotip pure loading protocol for peptide binding to Evotips
+
+### 3.3.3 Optional antibody-based enrichment
 
 This protocol describes the targeted enrichment of peptides harboring specific kinase substrate motifs or phosphorylated tyrosines using PTMScan HS antibody beads from Cell Signaling Technology. Binding and wash buffers have been modified, and an additional second enrichment step using Fe-NTA spin columns is used to further increase phospho-peptide enrichment specificity (see Note 4.5).
 
-1. Resuspend one half of the pooled labeled peptides in 400 µL cold IP binding buffer, vortex, and incubate rotating at 4 °C for 5 min, check pH (should be neutral or slightly basic, not below pH 7\)  
-2. Spin down solution 5 min at 20'000 x g to clear the solution and pellet insoluble material  
-3. Gently mix the antibody bead slurry to obtain a uniform bead suspension and transfer 10 µL of the antibody slurry (see Note 4.6) into an Eppendorf tube.   
-4. Wash the beads with 500 µL of cold IP binding buffer by inverting the tube to resuspend the beads in the buffer, and then remove the buffer by placing the tube on a magnetic rack. Repeat for a total of four washes   
-5. Transfer the soluble peptide solution to the washed beads  
-6. Incubate on an end-over-end shaker for 2 hours at 4 °C (see Note 4.7)  
-7. Collect buffer solution by spinning at no more than 1000 x g for 4-5 seconds  
-8. Collect beads on magnetic rack and transfer supernatant into a new tube (can be saved and stored at \-80°C)  
-9. Wash the beads with 400 µL of cold I**P binding buffer** by inverting the tube to resuspend the beads. Collect the beads on a magnetic rack and discard the buffer. Repeat for a total of two washes  
-10. Wash the beads with 400 µL of cold **IP wash buffer** by inverting the tube to resuspend the beads. Collect the beads on a magnetic rack and discard the buffer. Repeat for a total of two washes  
-11. Wash the beads with 400 µL **of cold water** by inverting the tube to resuspend the beads. Collect the beads on a magnetic rack and discard the water. Repeat for a total of two washes  
-12. Add 50 µL High Select Fe-NTA binding buffer and incubate beads for 10 min at room temperature on a shaker or Thermomixer. Ensure beads stay in suspension but are not splashed to the sides of the tube  
-13. Collect beads and transfer elution to High Select Fe-NTA spin column conditioned as per the manufacturer's instructions  
-14. Repeat the elution step and combine with the first elution in the same spin column  
-15. Follow the manufacturer's instructions for binding and washing routines  
-16. Add 30 µL elution buffer and collect elution into a fresh Eppendorf tube. Repeat elution once into the same collection tube  
-17. Dry peptides down to near-completeness, leaving \~5 \-10 µL of liquid in the tube if continuing with data acquisition immediately. Otherwise, dry and store peptides at \-80 °C.  
-18. Acidify with 40 µL buffer A, check pH (should be at or below pH 4, see section 3.1.4)
+1. Resuspend one half of the pooled labeled peptides in 400 µL cold IP binding buffer, vortex, and incubate rotating at 4°C for 5 min, check pH (should be neutral or slightly basic, not below pH 7)
+2. Spin down solution 5 min at 20,000×g to clear the solution and pellet insoluble material
+3. Gently mix the antibody bead slurry to obtain a uniform bead suspension and transfer 10 µL of the antibody slurry (see Note 4.6) into an Eppendorf tube
+4. Wash the beads with 500 µL of cold IP binding buffer by inverting the tube to resuspend the beads in the buffer, and then remove the buffer by placing the tube on a magnetic rack. Repeat for a total of four washes
+5. Transfer the soluble peptide solution to the washed beads
+6. Incubate on an end-over-end shaker for 2 hours at 4°C (see Note 4.7)
+7. Collect buffer solution by spinning at no more than 1000×g for 4-5 seconds
+8. Collect beads on magnetic rack and transfer supernatant into a new tube (can be saved and stored at -80°C)
+9. Wash the beads with 400 µL of cold IP binding buffer by inverting the tube to resuspend the beads. Collect the beads on a magnetic rack and discard the buffer. Repeat for a total of two washes
+10. Wash the beads with 400 µL of cold IP wash buffer by inverting the tube to resuspend the beads. Collect the beads on a magnetic rack and discard the buffer. Repeat for a total of two washes
+11. Wash the beads with 400 µL of cold water by inverting the tube to resuspend the beads. Collect the beads on a magnetic rack and discard the water. Repeat for a total of two washes
+12. Add 50 µL High Select Fe-NTA binding buffer and incubate beads for 10 min at room temperature on a shaker or Thermomixer. Ensure beads stay in suspension but are not splashed to the sides of the tube
+13. Collect beads and transfer elution to High Select Fe-NTA spin column conditioned as per the manufacturer's instructions
+14. Repeat the elution step and combine with the first elution in the same spin column
+15. Follow the manufacturer's instructions for binding and washing routines
+16. Add 30 µL elution buffer and collect elution into a fresh Eppendorf tube. Repeat elution once into the same collection tube
+17. Dry peptides down to near-completeness, leaving ~5-10 µL of liquid in the tube if continuing with data acquisition immediately. Otherwise, dry and store peptides at -80°C
+18. Acidify with 40 µL buffer A, check pH (should be at or below pH 4, see section 3.4.4)
 
-    
+### 3.3.4 LC-MS/MS analysis - Phosphoproteome
 
-### 3.1.3 High pH offline fractionation
-
-This protocol describes the general flow of events for high-pH offline fractionation of peptides on the Thermo Vanquish Flex System, featuring automatic fraction collection and concatenation for subsequent phospho-peptide enrichment on the KingFisher Flex. 
-
-1. For robust and sensitive performance of phosphoproteomics experiments, we typically aim for 10-25 µg of peptide per fraction. These amounts have been demonstrated to be effective for automated protocols on the KingFisher Flex ([10.1016/j.mcpro.2024.100754](https://doi.org/10.1016/j.mcpro.2024.100754), [10.1002/pmic.202100245](https://doi.org/10.1002/pmic.202100245)). We generate 36 fractions, corresponding to a total of approximately 180-540 µg of pooled peptide before fractionation.  
-2. Resuspend the peptides in 100 µL of high-pH buffer A, and sonicate for 5 min to ensure complete resuspension. Pellet insoluble material and only transfer supernatant into the HPLC vial  
-3. Purge and equilibrate HPLC with high pH buffer A and 2.1% high pH buffer B)  
-4. Connect XBridge peptide BEH column and adjust the flow rate to 0.75 mL/min, column compartment heater to 40 °C, and equilibrate the system until pressure and UV readings stabilize (see Note 4.7)  
-5. Place the KingFisher deep-well plate in the fraction collector (FC) and check the 'Use Safe Needle Height' setting in Chromeleon FC General Settings.  
-6. Set up a sample queue in Chromeleon and add the custom variable specifying the fractionation starting position (needs to be specified in the Script editor)  
-7. Always run QC without fractionation using BSA peptide standard and check the elution profile for proper peak separation before an actual sample.  
-8. For sample fractionation, adjust the FC.FractionRange in the Script editor to 36 and the MaxTubesPerFraction to 72, collecting each fraction for 60 seconds. The needle will start again at the first position after 36 fractions, i.e. concatenating fraction 37 into fraction 1, fraction 38 into fraction 2, etc. (see Note 4.8)  
-9. Set up the flow gradient to run from 2.1% B to 42.1% B in 54 minutes, followed by 5 minutes at 95% B and another 10 minutes equilibrating back to 2.1% B.  
-10. After the run, equilibrate the column with 100 % acetonitrile and then return the system to 20 % methanol.  
-11. Remove the deep-well plate from the fraction collector, snap-freeze, and dry down the samples in a SpeedVac. Peptides can be stored at \-80°C
-
-
-### 3.1.4 Phosphopeptide enrichment and Evotip loading
-
-1. Resuspend each fraction in 150 µL Ti-IMAC buffer I (see Note 4.10), sonicate for 10 min.   
-2. If total proteome measurements are required as well, take a small aliquot of either the input before phospho-peptide binding or the non-bound fraction after phospho-peptide binding  
-3. Prepare an appropriate volume of Ti-IMAC HP beads (see Note 4.11) from 20 % bead slurry, aiming for a peptide-to-bead ratio of 1:4   
-4. Wash the beads with 200 µL Ti-IMAC buffer I, collecting the beads on a magnetic rack each time and discarding the wash buffer. Repeat for a total of three washes, then add beads to the microwell plate in a final volume of 150 µL per well   
-5. Prepare three additional microwell plates, each with 150 µL of Ti-IMAC buffer I, II, and III.  
-6. Start enrichment protocol from the BindIT control software as described in Leutert et al. ([10.15252/msb.20199021](https://doi.org/10.15252/msb.20199021))  
-7. Add 80 µL Ti-IMAC elution buffer to each well of a microwell plate and add the plate to the indicated KingFisher slot during the pause after the last wash step, and continue with the peptide elution  
-8. Immediately after elution, neutralize peptides by adding 10 μL of neutralization buffer.  
-9. Follow the Evotip pure loading protocol for peptide binding to Evotips 
-
-## 3.2 LC-MS/MS analysis
-
-The following section describes the instrument settings for the commonly used Thermo Orbitrap Exploris 480 mass spectrometer. Other instrument platforms with sufficient mass resolving power in the reporter mass region can also be used, provided the appropriate settings are applied.
-
-1. Peptides are separated on an Aurora Elite XT column using the 40SPD Evosep method, interfaced with the mass spectrometer through an EASY-spray source.  
-2. On MS1 level, peptide masses were detected at a resolution of 120'000, with an ion target of $3\times10^6$, maximal injection time of 45 ms, and RF lens set to 40 $\%$  
-3. MS2 spectra were recorded for the top 12 precursors with an intensity threshold of $10^3$, which were isolated at 0.7 Th and subjected to dynamic exclusion for 16 s. Normalized collision energy was set to 32 $\%$ and spectra were recorded with a resolution of 45'000 (phosphopeptides) or 30'000 and TMTpro on (total proteome), ion target of $1\times10^5$ and a maximal injection time of 250 ms (phosphopeptides) or Auto (total proteome)
+1. Peptides are separated on an Aurora Elite XT column using the 40SPD Evosep method, interfaced with the mass spectrometer through an EASY-spray source
+2. On MS1 level, peptide masses were detected at a resolution of 120,000, with an ion target of $3\times10^6$, maximal injection time of 45 ms, and RF lens set to 40%
+3. MS2 spectra were recorded for the top 12 precursors with an intensity threshold of $10^3$, which were isolated at 0.7 Th and subjected to dynamic exclusion for 16 s. Normalized collision energy was set to 32 $\%$ and spectra were recorded with a resolution of **45,000**, ion target of **$1\times10^5$** and a maximal injection time of **250 ms**
 
 
 ## 3.3 Mass Spectrometry Data Processing
@@ -351,7 +393,6 @@ Raw mass spectrometry (MS) data acquired using data-dependent acquisition (DDA) 
 2. Reporter ion quantification: Reporter ion intensities are extracted
 3. Site localization scoring: Post-translational modification (PTM) site localization probabilities are calculated
 
-Several free and commercial DDA-TMT compatible software suites are available, including Andromeda/MaxQuant (Cox et al., 2011), Proteome Discoverer (Thermo Fisher Scientific), FragPipe ([10.1038/s41467-023-39891-7](https://doi.org/10.1038/s41467-023-39891-7)) (fragpipe.nesvilab.org), and PeptideShaker (peptide-shaker.compomics.com). Additional specialized tools for PTM site localization scoring include PTMProphet ([10.1038/s41467-020-17914-x](https://doi.org/10.1038/s41467-020-17914-x)), PhosphoRS ([10.1038/nmeth.1107](https://doi.org/10.1038/nmeth.1107)), and Ascore ([10.1038/nmeth.1107](https://doi.org/10.1038/nmeth.1107)).
 
 ### 3.3.1 FragPipe Method
 
@@ -398,7 +439,15 @@ Post-translational modifications (PTMs) play a crucial role in regulating protei
 
 ### 3.4.1 Data and Software Setup
 
-The first step involves obtaining the FragPipe 22 mass spectrometry output files [10.5281/zenodo.15850770](http://doi.org/10.5281/zenodo.15850770) and setting up the analysis environment in R. The `prolfquapp` ([10.1021/acs.jproteome.4c00911](https://doi.org/10.1021/acs.jproteome.4c00911)) package provides a set of shell scripts that automate the analysis workflow. These scripts are copied into the working directory to be used in subsequent steps. See **Supplementary Material Section A.1-A.2** for complete setup instructions and example dataset download.
+The first step involves obtaining the FragPipe 22 mass spectrometry output files [10.5281/zenodo.15850770](http://doi.org/10.5281/zenodo.15850770) and setting up the analysis environment in R.
+
+- For total proteome samples `psm.tsv` files containing peptide-spectrum match data
+- For phospho-enriched samples:
+  - abundance_multi-site.tsv files for multisite feature analysis
+- abundance_single-site.tsv files for individual modification site analysis
+
+
+ The `prolfquapp` ([10.1021/acs.jproteome.4c00911](https://doi.org/10.1021/acs.jproteome.4c00911)) package provides a set of shell scripts that automate the analysis workflow. These scripts are copied into the working directory to be used in subsequent steps. See **Supplementary Material Section A.1-A.2** for complete setup instructions and example dataset download.
 
 ### 3.4.2 Sample Annotation
 
@@ -454,6 +503,8 @@ This part describes how to load the results of the Differential Expression Analy
 ### 3.5.1 Data Loading and Integration
 
 The differential expression results, in Excel format, generated by `prolfquapp`, from the total proteome, and either multi or single-site PTM analyses, are loaded into the R. The two datasets are then integrated by performing a left-join operation on the protein IDs, merging the PTM-level statistics with the corresponding protein-level statistics of the total proteome experiment for each condition. A left join is used because we want to retain all PTM features, even if their parent proteins were not detected in the total proteome analysis - this ensures we don't lose any PTM information while still being able to normalize PTM changes by protein abundance when available. See **Supplementary Material Sections B.1-B.5** for complete data loading and integration workflow.
+
+The current prolfquapp implementation uses protein ID matching. This is a limitation, as it may lead to a loss of information because of differing representative IDs in the PTM enriched and total proteome dataset.
 
 
 
@@ -817,19 +868,27 @@ To infer which kinases may be responsible for the observed changes in phosphoryl
 - **Mass accuracy:** <5 ppm for precursor ions, <20 ppm for fragment ions
 - **Integration success:** >80% match rate between PTM and protein datasets indicates good data quality
 
+**Note 5.25**: **Automated QC reporting with FragPipe TMT QC script**: An automated quality control script generates comprehensive TMT labeling efficiency reports directly from FragPipe PSM output files. The script evaluates labeling completeness at both peptide and PSM levels for N-terminal and lysine modifications, calculates missed cleavage rates for tryptic digestion efficiency, and provides quantitative channel balance assessment across all TMT channels. Key metrics include percentage of modified N-termini and lysine residues (expected >95%), missed cleavage rates for lysine and arginine residues (typically 5-15%), and relative abundance distributions across channels to detect loading imbalances. The script outputs interactive HTML reports with visualization of identification numbers per channel, modification frequencies, total abundance distributions, and density plots for rapid assessment of data quality before proceeding with downstream analysis.
+
+
+
 # 6. Alternative Approaches
 
 ## 6.1 Comparison with Other PTM Analysis Methods
 
 **Label-free quantification vs. TMT-based approach:**
-- **TMT advantages:** Higher throughput, reduced missing values, better quantitative precision
+- **TMT advantages:** Higher throughput, reduced missing values, better quantitative precision; enables efficient use of fractionation with all samples in each fraction
 - **Label-free advantages:** No modification artifacts, unlimited sample capacity, lower cost per sample
-- **Recommendation:** Use TMT for studies requiring high precision across many conditions; use label-free for discovery-phase studies or when sample numbers exceed multiplex capacity
+- **Fractionation synergy:** TMT allows all samples to be compared within each fraction, with cross-fraction integration; DIA preferred when avoiding fractionation entirely
+- **Recommendation:** Use TMT for studies requiring high precision across many conditions, especially when fractionation can improve depth; use label-free/DIA for discovery-phase studies or when sample numbers exceed multiplex capacity
 
-**MSstatsPTM vs. prophosqua integration:**
-- **MSstatsPTM:** More established statistical framework, peptidoform-level analysis
-- **prophosqua:** Enhanced visualization tools, protein-centric analysis, N-to-C plots
-- **Recommendation:** Consider MSstatsPTM for rigorous statistical validation; use prophosqua for hypothesis generation and biological interpretation
+**MSstatsPTM vs. prophosqua vs. msqrob2PTM:**
+- **MSstatsPTM:** Model-first approach (separate modeling then adjustment), established workflow
+- **prophosqua:** Model-first approach (with easy correct-first option), enhanced visualization tools, flexible input handling (multi-site, single-site, FragPipe, DIA-NN outputs), N-to-C plots
+- **msqrob2PTM:** Correct-first approach (normalize then model), built on QFeatures infrastructure, handles both peptidoform and PTM-level analysis
+- **Statistical framework:** All use equivalent statistical rigor and correct for protein abundance; key difference is modeling strategy (separate modeling vs. direct normalization)
+- **Recommendation:** Consider MSstatsPTM for the model-first approach, msqrob2PTM for the correct-first approach, and prophosqua for either approach plus flexible input handling and enhanced visualization
+
 
 ## 6.2 When to Use This vs. Other Approaches
 
@@ -840,46 +899,37 @@ To infer which kinases may be responsible for the observed changes in phosphoryl
 - Publication requires rigorous PTM normalization
 
 **Consider alternative approaches when:**
-- Protein expression is stable across conditions
-- Single PTM class analysis is sufficient
-- Limited sample material available
-- Budget constraints prohibit TMT labeling
+- Protein expression is stable across conditions, e.g., timescale is too short for protein expression changes to occur
+- Budget constraints prohibit comprehensive analysis
 
 ## 6.3 Limitations and Scope
 
-**Technical limitations:**
-- Requires both PTM and protein measurements
-- Limited to modifications detectable by enrichment
-- Cannot analyze modifications with poor ionization
-- Requires specialized computational expertise
+**Technical challenges:**
+- Low stoichiometry of PTM peptides (typically <1-5% of total peptide abundance)
+- Requires both PTM-enriched and total proteome measurements for DPU analysis
 
 **Biological scope:**
-- Best suited for phosphorylation analysis
+- Demonstrated for phosphorylation analysis
 - Adaptable to other enrichable modifications (acetylation, ubiquitination)
-- Not applicable to non-enrichable modifications
-- Limited dynamic range compared to targeted approaches
+- Distinguishes genuine PTM regulation from protein abundance effects
+- Optimal for systems with dynamic protein expression changes
 
 # 7. Data Interpretation Guidelines
 
 ## 7.1 Step-by-Step Result Interpretation
 
 ### 7.1.1 Quality Assessment
-1. **Check match rates:** >80% between PTM and protein datasets indicates good integration
-2. **Examine coverage:** Assess protein and site coverage across experimental conditions
-3. **Evaluate reproducibility:** Technical replicates should show >0.9 correlation
-4. **Assess missing data:** <30% missing values per group for reliable quantification
+
+1. **Check match rates:** >80% between PTM and protein datasets indicates good integration. Lower rates may be due to protein assignment differences in the PTM and total proteome datasets, and sequence-based matching could improve the match rates.
+2. **p-value distribution:** check p-value distribution, e.g., uniform distribution of p-values larger than 0.2
 
 ### 7.1.2 Statistical Results Review
-1. **DPE analysis:** Identifies sites where absolute PTM abundance changes
-2. **DPU analysis:** Reveals sites where modification stoichiometry changes
-3. **Volcano plot examination:** Look for balanced distribution of up/down regulation
-4. **FDR validation:** Confirm appropriate statistical stringency for biological system
 
-### 7.1.3 Biological Interpretation Framework
-**DPE+/DPU- sites:** PTM changes driven by protein expression
-**DPE-/DPU+ sites:** True signaling changes with stable protein levels
-**DPE+/DPU+ sites:** Amplified signaling (protein and modification increase)
-**DPE-/DPU- sites:** Coordinated decrease in protein and modification
+1. **DPE analysis:** Identifies sites with absolute PTM abundance changes
+2. **DPU analysis:** Reveals sites with modification stoichiometry changes
+3. **p-value correction:** use false discovery rates to correct for multiplicity
+4. **motif analysis:** for up and down regulated sites
+
 
 ## 7.2 Common Pitfalls in Biological Interpretation
 
@@ -889,7 +939,7 @@ To infer which kinases may be responsible for the observed changes in phosphoryl
 - Validate key findings with orthogonal methods
 
 **Ignoring protein context:**
-- Always examine protein-level changes before interpreting PTM data
+- examine protein-level changes before interpreting PTM data
 - Consider protein function and localization
 - Check for known regulatory sites in literature
 
