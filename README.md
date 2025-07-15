@@ -25,8 +25,8 @@ This package depends on several other packages that should be installed first:
 ```r
 # Install prolfqua (core proteomics analysis package)
 library(devtools)
+devtools::install_github('protviz/prozor', dependencies = TRUE)
 devtools::install_github('prolfqua/prolfqua', dependencies = TRUE)
-
 # Install prolfquapp (proteomics analysis workflow package)
 devtools::install_github('prolfqua/prolfquapp', dependencies = TRUE)
 ```
@@ -77,12 +77,23 @@ The following code renders the vignettes and copies them to the example director
 
 ```r
 # Render the differential expression analysis vignette
-rmarkdown::render("vignettes/Run_DEA_prolfquapp.Rmd")
-file.copy("vignettes/Run_DEA_prolfquapp.html","inst/PTM_analysis_example/Run_DEA_prolfquapp.html")
+
+wd <- "inst/PTM_analysis_example"
+rmarkdown::render("vignettes/QCReport.qmd",
+params=list(wd=wd,
+psm="ptm_example-main/qc_example_data/QCmini/psm.tsv",
+fasta="ptm_example-main/qc_example_data/fgcz_3702_UP000006548_AraUniprot_1spg_d_20231024.fasta",
+workunit="exampleQC",
+projectid="ABCD1234"))
+
+file.copy("vignettes/QCReport.html", file.path(wd,"QCReport.html"))
 
 # Render the PTM integration and visualization vignette  
-rmarkdown::render("vignettes/Visualize_PTM_features.Rmd")
-file.copy("vignettes/Visualize_PTM_features.html","inst/PTM_analysis_example/Visualize_PTM_features.html")
+rmarkdown::render("vignettes/Supplementary_Material_v2.Rmd",
+params=list(wd = wd), output_format=bookdown::pdf_document2())
+file.copy("vignettes/Supplementary_Material_v2.pdf",
+file.path(wd,"Supplementary_Material_v2.pdf"))
+
 ```
 
 This code:
