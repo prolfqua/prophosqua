@@ -1,8 +1,9 @@
 ---
 title: "Supplementary Material"
-author: "Witold Wolski"
+author: "Witold Wolski, Antje Dittmann, Jonas Grossmann"
 params:
   wd: ""
+  dodea: TRUE
 output:
   pdf_document:
     keep_tex: true
@@ -114,7 +115,8 @@ destfile <- "ptm_example-main.zip"
 download.file(zip_url, destfile, mode = "wb")
 unzip(destfile, exdir = ".")
 unlink(destfile)
-do_dea <- TRUE
+do_dea <- params$dodea
+
 ```
 
 This dataset is also available from Zenodo [10.5281/zenodo.15879865](http://doi.org/10.5281/zenodo.15879865)
@@ -173,7 +175,8 @@ annot$CONTROL <- NULL
 annot2 <- prolfqua::annotation_add_contrasts(
   annot, "Genotype", "Timepoint" ,
   decreasing = TRUE, interactions = FALSE)$annot
-knitr::kable(head(annot2))
+knitr::kable(head(annot2)) |> 
+  kableExtra::kable_styling(font_size = 9, latex_options = "scale_down")
 
 write_tsv(annot2, "dataset_with_contrasts.tsv")
 
@@ -426,8 +429,10 @@ Shows the N-to-C plot for protein Q64337, another example of how phosphorylation
 
 ```{r b6plotQ64337, fig.cap="Q64337"}
 x1 <- which(plot_data$protein_Id == "Q64337")
-plot_data$plot[[x1]]
-knitr::kable(plot_data$data[[x1]])
+plot_data$plot[[x1]] 
+dtab <- plot_data$data[[x1]] |> tidyr::separate(site, c("site",NA), sep="~")
+knitr::kable(dtab) |> kableExtra::kable_styling(font_size = 9, latex_options = "scale_down")
+
 ```
 
 ### B.6.3 Saving expression plots {-}
@@ -517,7 +522,9 @@ Shows how the usage of phosphorylation sites on protein `Q64337` changes between
 ```{r b8showusageQ64337, fig.cap="PTM feature usage for Q64337"}
 x1 <- which(plot_data$protein_Id == "Q64337")
 plot_data$plot[[x1]]
-knitr::kable(plot_data$data[[x1]])
+dtab <- plot_data$data[[x1]] |> tidyr::separate(site, c("site",NA), sep="~")
+knitr::kable(dtab) |> kableExtra::kable_styling(font_size = 9, latex_options = "scale_down")
+
 ```
 
 ### B.8.3 Saving usage plots {-}
@@ -709,7 +716,8 @@ significant_sites <- combined_test_diff |>
   )
 
 with(significant_sites, table(contrast, regulation, modAA)) |>
-  knitr::kable(caption = "number of significantly regulated sites")
+  knitr::kable(caption = "number of significantly regulated sites") |> 
+  kableExtra::kable_styling(font_size = 9, latex_options = "scale_down")
 
 ```
 
@@ -869,7 +877,7 @@ This section addresses the most frequently encountered problems in integrated PT
 - **Document analysis parameters**: Keep detailed records of all analysis parameters to ensure reproducibility
 
 
-## E. Software Versions and Session Information {-}
+# E. Software Versions and Session Information {-}
 
 ```{r sessioninfo}
 # Display session information
