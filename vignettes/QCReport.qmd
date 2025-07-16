@@ -1,10 +1,14 @@
 ---
 title: "FragPipe TMT QC"
-author: "Witold Wolski"
+author: "Functional Genomics Center Zurich"
 execute:
   echo: false
   cache: true
 output:
+  html_document:
+    toc: true
+    number_sections: false
+    global_numbering: false
   pdf_document:
     keep_tex: true
     latex_engine: pdflatex
@@ -16,11 +20,7 @@ output:
     toc: true
     number_sections: false
     global_numbering: false
-  html_document:
-    toc: true
-    number_sections: false
-    global_numbering: false
-
+  
 editor: source
 editor_options: 
   chunk_output_type: console
@@ -34,10 +34,7 @@ params:
 
 
 
-```{r setupglobal}
-#| include: false
-
-
+```{r setupglobal, include=FALSE}
 knitr::opts_chunk$set(
   echo = TRUE,
   message = FALSE,
@@ -63,17 +60,12 @@ suppressPackageStartupMessages({
   library(ggseqlogo)
   library(here)
   library(ggplot2)
-  library(prolfquapp)
-
 })
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 
 ```
 
-```{r}
-#| echo: false
-#| warning: false
-#| message: false
+```{r themesetup, echo=FALSE, warning=FALSE, message=FALSE}
 ggplot2::theme_set(ggplot2::theme_bw())
 ```
 
