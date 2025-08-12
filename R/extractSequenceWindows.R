@@ -1,46 +1,57 @@
 #’ @importFrom rlang .data
 NULL
 
-.reverse_join_column <- function(join_column){
-  reverse_join_column <- vector(mode = "character", length(join_column))
-  for (i in seq_along(join_column)) {
-    reverse_join_column[i] <- if (names(join_column)[i] != "") {  names(join_column)[i]} else { join_column[i]}
-    names(reverse_join_column)[i] <- if (names(join_column)[i] != "") { join_column[i]} else {""}
-  }
-  return(reverse_join_column)
-}
 
-
-#' extract sequence window from fasta files for plotting.
+#' extract sequence windows, from sequence at pos in protein
 #' @export
-get_sequence_windows <- function(phos_res, fasta_file, rev_pattern = "rev_", window_size = 15) {
-  unique_prot_pep_seq <- phos_res |>
-    dplyr::filter(.data$AllLocalized == TRUE) |>
-    dplyr::select(protein_id = .data$protein_Id, .data$site, phos_sites = .data$PhosSites) |>
-    dplyr::distinct()
+#' @param unique_prot_pep_seq data.frame with sequence and pos in protein
+#' @param sequence name of column with sequence
+#' @param pos_in_protein name of column with position in protein
+#' @param flank_size size of the window to extract
+#' @examples
+#' # Create sample data
+#' library(tidyverse)
+#' sample_data <- data.frame(
+#'   protein_id = c("P12345", "P12345", "Q67890"),
+#'   sequence = c("MKFLVLLFNILCLFPVLAADNH", "MKFLVLLFNILCLFPVLAADNH", "AEQKLISEEDLLRKRREQLKHKLEQL"),
+#'   pos_in_protein = c(5, 12, 8),
+#'   peptide = c("FLV", "ILC", "EED")
+#' )
+#'
+#' # Extract sequence windows with default flank size (7)
+#' result <- get_sequence_windows(sample_data)
+#' stopifnot(all(result$sequence_window == c( "XXXMKFLVLLFNILC", "VLLFNILCLFPVLAA", "AEQKLISEEDLLRKR")))
+#'
+#' # Extract sequence windows with custom flank size
+#' result_small <- get_sequence_windows(sample_data, flank_size = 3)
+#' stopifnot(all(result_small$sequence_window == c( "KFLVLLF",  "NILCLFP",  "LISEEDL")))
+#'
+#' # Extract sequence windows with different column names
+#' sample_data2 <- data.frame(
+#'   prot_seq = "MKTAYIAKQRQISFVKSHFSRQLEERLGLIEVQAPILSRVGDGTQDNLSGAEKAVQVKVKALPDAQFEVVHSLAKWKRIY",
+#'   position = c(10, 25, 40)
+#' )
+#'
+#' result2 <- get_sequence_windows(sample_data2,
+#'                                flank_size = 5,
+#'                                sequence = "prot_seq",
+#'                                pos_in_protein = "position")
+#' print(result2$sequence_window)
+get_sequence_windows <- function(unique_prot_pep_seq,
+                                 flank_size = 7,
+                                 sequence = "sequence",
+                                 pos_in_protein = "pos_in_protein"){
+  half_window <- flank_size
 
-  unique_prot_pep_seq <- unique_prot_pep_seq |>
-    tidyr::separate_longer_delim(.data$phos_sites, delim = ";") |>
+  unique_prot_pep_seq_2 <- unique_prot_pep_seq |>
     dplyr::mutate(
-      pos_in_protein = as.integer(
-        stringr::str_remove(.data$phos_sites, "^[A-Z]")
-      )
-    ) |>
-    dplyr::mutate(aa = stringr::str_remove(.data$phos_sites, "\\d+"))
-
-  fasta <- prolfquapp::get_annot_from_fasta(fasta_file, pattern_decoys = rev_pattern, include_seq = TRUE)
-
-  unique_prot_pep_seq <- dplyr::inner_join(unique_prot_pep_seq, fasta, by = c(protein_id = "proteinname"))
-  unique_prot_pep_seq <- unique_prot_pep_seq |>
-    dplyr::mutate(
-      padded_sequence = paste0(strrep("X", window_size), .data$sequence, strrep("X", window_size)),
-      pos_in_padded_seq = .data$pos_in_protein + window_size,  # Adjust position due to padding
-      pos_start = .data$pos_in_padded_seq - window_size,
-      pos_end = .data$pos_in_padded_seq + window_size,
-      sequence_window = substr(.data$padded_sequence, start = .data$pos_start, stop = .data$pos_end)
-    ) |>
+      padded_sequence = paste0(strrep("X", half_window), !!sym(sequence), strrep("X", half_window)),
+      pos_in_padded_seq = !!sym(pos_in_protein) + half_window,
+      pos_start = !!sym("pos_in_padded_seq") - half_window,
+      pos_end = !!sym("pos_in_padded_seq") + half_window,  # -1 because we want window_size chars
+      sequence_window = substr(!!sym("padded_sequence"), start = pos_start, stop = pos_end)
+    )
+  unique_prot_pep_seq <- unique_prot_pep_seq_2 |>
     dplyr::select(-.data$padded_sequence, -.data$pos_in_padded_seq, -.data$pos_start, -.data$pos_end)
-
-  unique_prot_pep_seq$sequence <- NULL
-  unique_prot_pep_seq
+  return(unique_prot_pep_seq)
 }

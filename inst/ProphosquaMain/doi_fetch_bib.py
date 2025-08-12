@@ -42,8 +42,15 @@ for doi in dois:
     except Exception as e:
         print(f"Warning: Failed to fetch DOI {doi}: {e}", file=sys.stderr)
 
+
+
+# in output entries replace &amp; with &
+output_entries = [entry.replace('&amp;', '&') for entry in output_entries]
+
 # Write combined output to references.bib
 with open('doi_references.bib', 'w') as out_fh:
     out_fh.write('\n\n'.join(output_entries))
 
 print(f"\nDone — wrote {len(output_entries)} entries to references.bib")
+
+
