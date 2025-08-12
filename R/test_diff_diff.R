@@ -38,6 +38,17 @@
   return(dataf)
 }
 
+
+.reverse_join_column <- function(join_column){
+  reverse_join_column <- vector(mode = "character", length(join_column))
+  for (i in seq_along(join_column)) {
+    reverse_join_column[i] <- if (names(join_column)[i] != "") {  names(join_column)[i]} else { join_column[i]}
+    names(reverse_join_column)[i] <- if (names(join_column)[i] != "") { join_column[i]} else {""}
+  }
+  return(reverse_join_column)
+}
+
+
 #' compute MSstats like test statsitics
 #' @export
 #'

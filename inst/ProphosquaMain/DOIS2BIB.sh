@@ -5,8 +5,8 @@ wc dois.txt
 python doi_fetch_bib.py
 python doi_to_key.py
 
-python doi_link_to_cite.py Methods_in_MB_PTM2.md Methods_in_MB_PTM2_cite.md
 
+python doi_link_to_cite.py Methods_in_MB_PTM2.md Methods_in_MB_PTM2_cite.md
 pandoc Methods_in_MB_PTM2_cite.md \
   --citeproc \
   -o Methods_in_MB_PTM2_cite.docx
