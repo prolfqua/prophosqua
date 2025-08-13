@@ -105,18 +105,21 @@ bb <- data_diff_diff |>
                          "modelName.site", "modAA", "diff_diff", "FDR_I")))
 bb <- crosstalk::SharedData$new(bb, ~site, group = "BB")
 
-DT::datatable(bb, filter = "bottom",
+DT::datatable(
+  bb, 
+  filter = "bottom",
   extensions = "Scroller",
   style = "auto",
   class = "compact",
   options = list(deferRender = TRUE,
                  scrollY = 300,
                  scrollX = 400,
-                 scroller = TRUE)) |>
+                 scroller = TRUE),
+  
+  caption = "Differential PTM usage analysis results of all phospho sites (showing MSstatsPTM adjusted log2FCs and FDR)") |>
   DT::formatRound(
     columns = c('diff_diff', 'FDR_I'), 
-    digits = 3,
-    caption = "Differential PTM usage analysis results of all phospho sites (showing MSstatsPTM adjusted log2FCs and FDR)"
+    digits = 3
   )
 
 ```
@@ -128,9 +131,9 @@ DT::datatable(bb, filter = "bottom",
 
 datax <- data_diff_diff |> dplyr::select(
   dplyr::all_of(c("site", "contrast", "protein_Id",
-                   "diff.protein",
-                   "diff.site",
-                   "modelName.site", "modelName.protein")))
+                  "diff.protein",
+                  "diff.site",
+                  "modelName.site", "modelName.protein")))
 
 palette <- c("black","orange")
 palette <- setNames(palette, c("Linear_Model_moderated", "Imputed_Mean_moderated"))
