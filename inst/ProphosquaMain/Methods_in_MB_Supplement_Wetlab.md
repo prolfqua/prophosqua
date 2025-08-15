@@ -1,21 +1,60 @@
+---
+title: "Supplementary Methods: Automated Sample Preparation and Wet Lab Protocols for Integrated PTM Analysis"
+
+author:
+  - Witold Wolski
+  - Antje Dittmann
+  - Laura Kunz
+  - Christian Panse
+  - Jonas Grossmann
+date: 2025-08-13
+running_head: "Supplement 1: Wet Lab Protocols"
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+    toc_title: "Table of Contents"
+  word_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+    toc_title: "Table of Contents"
+  html_document:
+bibliography: doi_references_key.bib
+
+---
+
+| Author             | Affiliation(s)    | Corresponding Author Email                             |
+|--------------------|-------------------|--------------------------------------------------------|
+| Witold Wolski      | FGCZ, SIB         | [witold.wolski@fgcz.uzh.ch](mailto:witold.wolski@fgcz.uzh.ch)   |
+| Antje Dittmann     | FGCZ              | [antje.dittmann@fgcz.uzh.ch](mailto:antje.dittmann@fgcz.uzh.ch)  |
+| Laura Kunz         | FGCZ              |                                                        |
+| Christian Panse    | FGCZ, SIB         |                                                        |
+| Jonas Grossmann    | FGCZ, SIB         | [jonas.grossmann@fgcz.uzh](mailto:jonas.grossmann@fgcz.uzh)      |
+
+- FGCZ - Functional Genomics Center Zurich, Winterthurerstrasse 190, CH-8057 Zurich, 
+- SIB - Swiss Institute of Bioinformatics - Amphipole, Quartier UNIL-Sorge, CH-1015 Lausanne
+
+# 1. Introduction
+
+Identification and quantification of phosphorylated peptides using quantitative proteomics enables a largely unbiased profiling of functionally relevant protein states. Among others, developments in sample preparation methods aimed at improving robustness, reproducibility, and throughput in bottom-up phosphoproteomics have enabled researchers to generate data sets with greater analytical depth and consistent quantification within larger study cohorts than ever before. Here, we describe the implementation and integration of largely automated processes, including protein digestion, high pH offline fractionation, phosphopeptide enrichment, and LC-MS/MS analyses of both input and phospho-enriched peptide fractions. The workflow leverages consistent sample processing and use of smaller input amounts (20-50 µg per sample) afforded by TMTpro-labeling and multiplexing. It offers various entry points to modify specific steps flexibly. These include but are not limited to the number of fractions, which can range from 12 to 36, the type of phosphopeptide enrichment matrix (e.g, Ti-IMAC, Zr-IMAC), and the potential use of complementary antibody-based affinity enrichments. 
+
+
 # 2. Materials
 
 ## 2.1 Biological Samples
 
-### 2.1.1 Demonstration Dataset
-
-This protocol uses the Atg16l1 macrophage dataset from Maculins et al. [10.7554/elife.62320](https://doi.org/10.7554/elife.62320) to demonstrate the bioinformatics workflow and integrated statistical analysis. The dataset comprises TMT-11-plex measurements from six conditions (WT/KO × uninfected/early/late infection) with both phospho-enriched and total proteome samples, making it ideal for illustrating the principles of integrated PTM analysis. In the original publication, the authors also performed ubiquitin remnant-enrichment, though we focus on the phosphoproteome and total proteome datasets for demonstration purposes. This same dataset was previously used in the `MSstatsPTM` publication (Kohler et al., MCP 2023, [10.1016/j.mcpro.2022.100477](https://doi.org/10.1016/j.mcpro.2022.100477)), providing additional validation of the analytical approaches.
-
-### 2.1.2 Sample Types Compatible with FGCZ Protocol
+### 2.1.1 Sample Types Compatible with FGCZ Protocol
 
 The wet lab protocols described in this chapter are optimized for high-throughput processing and are compatible with a wide range of biological sample types:
 
-- **Fresh-frozen tissue samples** (≤5 mg per sample): Optimal for preserving PTM states and minimizing degradation
-- **Cultured cell pellets** (≥1×10⁶ cells per sample): Standard format for most cell culture experiments  
+- **Fresh-frozen tissue samples** ($\le 5$ mg per sample): Optimal for preserving PTM states and minimizing degradation
+- **Cultured cell pellets** ($\ge 1×10^{6}$ cells per sample): Standard format for most cell culture experiments  
 - **Primary cells isolated from tissue**: Requires careful handling to maintain viability during isolation
 - **Organoids and spheroid cultures**: Emerging model systems requiring specialized collection protocols
 
-### 2.1.3 Sample Storage and Handling Requirements
+### 2.1.2 Sample Storage and Handling Requirements
 
 Proper sample handling is critical for PTM preservation and protocol success:
 
@@ -31,9 +70,9 @@ Proper sample handling is critical for PTM preservation and protocol success:
 - Consider phosphatase and kinase inhibitor cocktails for certain sample types
 - Document collection conditions and timing for batch effect analysis
 
-### 2.1.4 Protocol Compatibility and Adaptations
+### 2.1.3 Protocol Compatibility and Adaptations
 
-The experimental methods presented here represent optimized protocols developed at the Functional Genomics Center Zurich. While the demonstration uses the Maculins et al. dataset, the analytical approaches are broadly applicable to TMT-based phosphoproteomics studies regardless of the specific sample preparation method used, provided that:
+The experimental methods presented here represent optimized protocols implemented at the Functional Genomics Center Zurich. While the demonstration uses the Maculins et al. dataset, the analytical approaches are broadly applicable to TMT-based phosphoproteomics studies regardless of the specific sample preparation method used, provided that:
 
 - Chemical labeling (TMT or similar isobaric tags) was employed
 - Both PTM-enriched and total proteome datasets are available
@@ -108,18 +147,6 @@ The protocols emphasize automation, scalability, and reproducibility, making the
 4. **Analytical column:** Aurora Elite XT 15×75 C18 UHPLC column (IonOpticks, Australia, Cat. #AUR3-15075-EXT; store at room temperature)
 5. **Mass spectrometer:** Orbitrap Exploris 480 with EASY-Spray Source (Thermo, USA, Cat. #IQLAAEGAAPFADBMBHQ; includes ion source and control software)
 6. **Column heating:** Column heater and heater controller (IonOpticks, Australia, Cat. #AUR-COL-HEATER; temperature range: ambient to 70°C)
-
-### 2.2.6 Data analysis
-
-1. **Search software:** FragPipe 22.0 (free download from [fragpipe.nesvilab.org](https://fragpipe.nesvilab.org); system requirements: 32GB+ RAM, 50GB+ storage)
-2. **Statistical platform:** `R` version ≥4.0.0 ([https://www.r-project.org/](https://www.r-project.org/)) and RStudio ([https://posit.co/](https://posit.co/))
-3. **R packages:**
-   - `prolfqua` [10.1021/acs.jproteome.2c00441](https://doi.org/10.1021/acs.jproteome.2c00441)
-   - `prolfquapp` [10.1021/acs.jproteome.4c00911](https://doi.org/10.1021/acs.jproteome.4c00911)
-   - `prophosqua` [10.5281/zenodo.15845272](https://doi.org/10.5281/zenodo.15845272)
-   - Additional dependencies: `tidyverse`, `ggseqlogo`, `writexl`, `rmarkdown`
-
-For detailed installation instruction see package documentation on [github.com/fgcz/prolfqua](https://github.com/fgcz/prolfqua), [github.com/prolfqua/prolfquapp](https://github.com/prolfqua/prolfquapp), [github.com/prolfqua/prophosqua](https://github.com/prolfqua/prophosqua).
 
 
 # 3. Methods
@@ -221,7 +248,7 @@ Follow the general fractionation protocol with modifications for the total prote
 
 1. Peptides are separated on an Aurora Elite XT column using the 40SPD Evosep method, interfaced with the mass spectrometer through an EASY-spray source
 2. On MS1 level, peptide masses were detected at a resolution of 120,000, with an ion target of 3×10⁶, maximal injection time of 45 ms, and RF lens set to 40%
-3. MS2 spectra were recorded for the top 12 precursors with an intensity threshold of 10³, which were isolated at 0.7 Th and subjected to dynamic exclusion for 16 s. Normalized collision energy was set to 32% and spectra were recorded with a resolution of **30,000 with TMTpro on**, ion target of **1×10⁵** and a maximal injection time of **Auto**
+3. MS2 spectra were recorded for the top 12 precursors with an intensity threshold of 10³, which were isolated at 0.7 Th and subjected to dynamic exclusion for 16 s. Normalized collision energy was set to 32% and spectra were recorded with a resolution of **30,000 with turboTM set to TMTpro**, ion target of **1×10⁵** and a maximal injection time of **Auto**
 
 ## 3.3 Phospho-enrichment Workflow
 
@@ -281,3 +308,46 @@ This protocol describes the targeted enrichment of peptides harboring specific k
 1. Peptides are separated on an Aurora Elite XT column using the 40SPD Evosep method, interfaced with the mass spectrometer through an EASY-spray source
 2. On MS1 level, peptide masses were detected at a resolution of 120,000, with an ion target of $3\times10^6$, maximal injection time of 45 ms, and RF lens set to 40%
 3. MS2 spectra were recorded for the top 12 precursors with an intensity threshold of $10^3$, which were isolated at 0.7 Th and subjected to dynamic exclusion for 16 s. Normalized collision energy was set to 32 $\%$ and spectra were recorded with a resolution of **45,000**, ion target of **$1\times10^5$** and a maximal injection time of **250 ms**
+
+
+# 4. Notes
+
+## 4.1 Complete cell disruption
+
+Complete cell disruption is essential for reproducible protein extraction efficiency. Incomplete lysis leads to variable protein yields and can cause sample-to-sample variability that affects downstream quantitative analysis. Visual inspection should confirm no visible cell debris remains after centrifugation.
+
+## 4.2 Bead-to-protein ratio
+
+Bead-to-protein ratio of 10:1 (μg beads per μg protein) is critical for efficient protein binding in SP3 protocols. Lower ratios result in protein loss, while higher ratios can cause non-specific binding and increased background. Microsphere-based protein clean-up strategies exploit protein aggregation in organic solvents [10.1074/mcp.tir118.001270](https://doi.org/10.1074/mcp.tir118.001270).
+
+## 4.3 Digestion temperature and time
+
+Digestion temperature and time are critical for achieving optimal trypsin efficiency. The automated protocol typically yields ~20% digestion efficiency. If efficiency decreases, Lys-C pre-digestion can improve proteolytic efficiency and peptide recovery.
+
+## 4.4 TMT reagent handling
+
+TMT reagent handling requires careful attention to moisture control. Recent optimizations have reduced required TMT amounts [10.1074/mcp.tir119.001385](https://doi.org/10.1074/mcp.tir119.001385) by using lower reaction volumes and optimized peptide:TMT ratios. We typically aim for a 4:1 TMT:peptide ratio to ensure high labeling efficiency while minimizing costs.
+
+## 4.5 Antibody bead volume
+
+Antibody bead volume can be downscaled from manufacturer protocols, but peptide:bead ratios must be empirically tested for each sample type and antibody lot to maintain enrichment efficiency.
+
+## 4.6 Antibody incubation conditions
+
+Antibody incubation conditions require careful mixing to keep beads in suspension without splashing to tube walls. Loss of beads during washing significantly reduces enrichment efficiency.
+
+## 4.7 HPLC system equilibration
+
+HPLC system equilibration typically requires 20 minutes for backpressure stabilization. Monitor pressure trends across all injections to ensure optimal column performance and lifetime.
+
+## 4.8 Fraction concatenation strategy
+
+Fraction concatenation strategy can be programmed to omit fractions containing unreacted TMT reagent, typically observed as increased 260 nm UV absorbance. This optimization improves downstream enrichment efficiency.
+
+## 4.9 Buffer freshness
+
+Buffer freshness is crucial for phosphopeptide enrichment efficiency. Ti-IMAC buffer degradation, particularly glycolic acid oxidation, significantly reduces binding specificity and capacity.
+
+## 4.10 Bead preparation
+
+Bead preparation from 20% stock slurry requires thorough mixing before use. Alternative chemistries like Zr-IMAC HP can be substituted and will generate overlapping but complementary peptide pools compared to Ti-IMAC.
