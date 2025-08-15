@@ -158,13 +158,13 @@ This protocol uses the Atg16l1 macrophage dataset from Maculins et al. [10.7554/
 
 ### 2.1.2 Sample Preparation
 
-Overview: This protocol utilizes optimized sample processing methods for high-throughput phosphoproteomics analyses, featuring automated sample clean-up, digestion and enrichment steps, TMT labeling, and dual-workflow processing of both input and phosphopeptide-enriched fractions. The approach is applicable to diverse sample types and compatible with commonly used laboratory reagents (see Supplementary Material Section 2.1). Key workflow components include: 
+Overview: This protocol utilizes optimized sample processing methods for high-throughput phosphoproteomics analyses, featuring automated sample clean-up, digestion and enrichment steps, TMT labeling, and dual-workflow processing of both input and phosphopeptide-enriched fractions. The approach is applicable to diverse sample types and compatible with commonly used laboratory reagents (see **Supplementary Material Wetlab Section 2.1**). Key workflow components include: 
 
 1. Sample preparation using denaturing lysis, automated protein cleanup/digestion, TMT labeling and offline-fractionation (see **Supplementary Material Wetlab Section 3.1**); 
 2. Dual-workflow splitting into total proteome analysis (see Supplementary Material Wetlab Section 3.2) and phosphopeptide-enrichment (see **Supplementary Material Wetlab Section 3.3**)
 2. LC-MS/MS analysis with optimized parameters for each workflow (see **Supplementary Material Wetlab Section 3.3.5  and Section 3.3.6** )
 
-The protocols emphasize automation, scalability, and reproducibility, making them suitable for large cohort studies while maintaining analytical rigor. Expected outcomes: 80-95% protein recovery, >95% TMT labeling efficiency, 20-40 μg peptide yield per 50 μg input protein. Complete wet lab protocols, including detailed materials lists and step-by-step methods, are provided in Supplementary Material Wetlab: Automated Sample Preparation and Wet Lab Protocols.
+The protocols emphasize automation, scalability, and reproducibility, making them suitable for large cohort studies while maintaining analytical rigor. Expected outcomes: 80-95% protein recovery, >95% TMT labeling efficiency, 20-40 μg peptide yield per 50 μg input protein. Complete wet lab protocols, including detailed materials lists and step-by-step methods, are provided in **Supplementary Material Wetlab: Automated Sample Preparation and Wet Lab Protocols**.
 
 ## 2.2 Data analysis
 
