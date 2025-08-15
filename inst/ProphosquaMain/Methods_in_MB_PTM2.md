@@ -96,21 +96,33 @@ Site-level reports collapse signals from all peptidoforms mapping to the same PT
 
 ### 1.3.4 Statistical Analysis of PTM Data
 
-Statistical analysis of PTM data requires specialized methods due to confounding effects between PTM levels and protein abundances. Several statistical packages have emerged to address the critical issue of integrating PTM-feature quantifications with protein abundance data. Notable examples include `MSstatsPTM` [10.1016/j.mcpro.2022.100477](https://doi.org/10.1016/j.mcpro.2022.100477) and `msqrob2PTM` [10.1016/j.mcpro.2023.100708](https://doi.org/10.1016/j.mcpro.2023.100708), which explicitly model both modified peptide and protein-level changes to accurately distinguish genuine PTM regulation from protein abundance effects.
+Statistical analysis of PTM data requires specialized methods due to confounding effects between PTM levels and protein abundances. Several statistical packages have emerged to address the critical issue of integrating PTM-feature quantifications with protein abundance data. Notable examples include `MSstatsPTM` [10.1016/j.mcpro.2022.100477](https://doi.org/10.1016/j.mcpro.2022.100477) and `msqrob2PTM` [10.1016/j.mcpro.2023.100708](https://doi.org/10.1016/j.mcpro.2023.100708), which explicitly model both modified peptide and protein-level changes to distinguish genuine PTM regulation from protein abundance effects accurately.
 
-The `msqrob2PTM` framework exemplifies the statistical approaches now available for PTM analysis, defining two complementary analytical strategies: Differential Peptidoform Abundance (DPA) and Differential Peptidoform Usage (DPU) [10.1016/j.mcpro.2023.100708](https://doi.org/10.1016/j.mcpro.2023.100708). DPA directly models the log₂ intensities of each modified peptide (peptidoform), detecting absolute changes in PTM levels between experimental conditions. In contrast, DPU adjusts the PTM intensities by the corresponding protein-level changes, effectively testing for changes in the relative usage or stoichiometry of a modification site. This dual approach enables researchers to distinguish between PTM changes driven by protein abundance differences (DPA) versus those reflecting genuine changes in modification efficiency or regulatory activity (DPU).
+The `msqrob2PTM` framework exemplifies the statistical approaches now available for PTM analysis, defining two complementary analytical strategies: Differential Peptidoform Abundance (DPA) and Differential Peptidoform Usage (DPU) [10.1016/j.mcpro.2023.100708](https://doi.org/10.1016/j.mcpro.2023.100708). DPA directly models the $log^2$ intensities of each modified peptide (peptidoform), detecting absolute changes in PTM levels between experimental conditions. In contrast, DPU adjusts the PTM intensities by the corresponding protein-level changes, effectively testing for changes in the relative usage or stoichiometry of a modification site. This dual approach enables researchers to distinguish between PTM changes driven by protein abundance differences (DPA) versus those reflecting genuine changes in modification efficiency or regulatory activity (DPU).
 
-These two frameworks differ in their analytical approaches for addressing confounding between PTM and protein abundance changes. `MSstatsPTM` employs a "model then correct" strategy, separately fitting linear models to modified and unmodified peptide data, and then combining statistical inferences post-modeling. In contrast, `msqrob2PTM` follows a "correct then model" approach, first adjusting PTM intensities by their corresponding protein abundances at the data level, and subsequently performing statistical testing on these normalized values. While both methodologies ultimately estimate PTM abundance changes corrected for protein-level effects, differences in workflow design can influence practical considerations such as computational complexity, ease of interpretation, and user preference (TODO: strange sentence - elaborate).
+These two frameworks differ in their analytical approaches for addressing confounding between PTM and protein abundance changes. `MSstatsPTM` employs a "model then correct" strategy, separately fitting linear models to modified and unmodified peptide data, and then combining statistical inferences post-modeling. In contrast, `msqrob2PTM` follows a "correct then model" approach, first adjusting PTM intensities by their corresponding protein abundances at the data level, and subsequently performing statistical testing on these normalized values. 
 
-TODO: add paragraph about modelling protein and site abundances using a single linear model (reference quentins publication)
+A further option, discussed in [10.1007/978-1-0716-1967-4_12](https://doi.org/10.1007/978-1-0716-1967-4_12) is to model the PTM and total proteome data as a factorial design, that jointly includes time, or another biological factor, and a "component" indicator, i.e. modified peptide and its parent protein, fits a linear model with their interaction, and then tests interaction term, to flag modified peptides whose dynamics deviate from the corresponding protein. Here, the package `limma` is used to fit the model and perform the testing.
 
-To further extend these capabilities and offer researchers additional flexibility, we developed `prophosqua` [10.5281/zenodo.15845272](https://doi.org/10.5281/zenodo.15845272), an `R` package designed to streamline statistical analysis of phosphoproteomics and other PTM datasets. Similar to `MSstatsPTM` and `msqrob2PTM`, `prophosqua` explicitly integrates protein-level abundance data into PTM analyses to accurately distinguish genuine PTM regulation from protein-level changes. `prophosqua` implements a robust statistical framework, based on the `prolfqua` package [10.1021/acs.jproteome.2c00441](https://doi.org/10.1021/acs.jproteome.2c00441), that leverages linear modeling of protein-corrected PTM data, generates adjusted significance estimates, and provides intuitive visualizations for comprehensive exploratory analysis.
+While all three methodologies ultimately estimate PTM abundance changes corrected for protein-level effects, each of the methods can lead to different test results. 
 
+There are also different assumptions about the relationship between the PTM and the protein abundances within a sample and differences in how variance and degrees of freedom are estimated.
+
+- `MSstatsPTM` fits the PTM and the protein in separate models, then computes an adjusted effect as a difference of estimated contrasts: $\Delta_{adj} = 
+\Delta_{PTM} − \Delta_{protein}$ with standard error combined in quadrature and Satterthwaite $df$ for the test statistic, which yields p-values for the adjusted fold change directly on the contrast scale. `MSstatsPTM` assumes that there is no correlation between PTM and the protein abundances within the samples.
+- The single-model approach [10.1007/978-1-0716-1967-4_12](https://doi.org/10.1007/978-1-0716-1967-4_12) uses `limma` moderated (empirical-Bayes) variances for the interaction contrasts within one fit, which shrinks feature-wise variances toward a common prior; $df$ are moderated accordingly. The single-model formulation can, in principle, capture shared covariance (e.g., by adding a sample blocking/random effect), but as illustrated in the chapter [10.1007/978-1-0716-1967-4_12](https://doi.org/10.1007/978-1-0716-1967-4_12), the baseline model omits a sample term, effectively treating PTM and protein measurements as independent.
+- `msqrob2PTM` assumes that the PTM and the protein abundances within a sample are correlated and therefore corrects PTM abundances with the matched protein abundances. Then, for modelling, only the corrected PTM intensities are used.
+
+The three pipelines target the PTM-vs-protein effect through different modeling paths and make different assumptions about within-sample covariance, and differ in variance moderation. Therefore, even with the same raw data and contrasts, we can expect differences in estimated effects, standard errors, and p-values.
+
+To offer researchers additional flexibility, we developed `prophosqua` [10.5281/zenodo.15845272](https://doi.org/10.5281/zenodo.15845272), an `R` package designed to streamline statistical analysis of phosphoproteomics and other PTM datasets. Using `prophosqua' and the `prolfqua` package [10.1021/acs.jproteome.2c00441](https://doi.org/10.1021/acs.jproteome.2c00441), the `MStatsPTM` "model first" and `msqrob2PTM` "correct first" approach can be executed to obtain protein-corrected PTM data and provide intuitive visualizations for comprehensive exploratory analysis.
+ 
+ 
 ### 1.3.5 The Protein Assignment Problem in Differential PTM-feature Usage 
 
-Identification and quantification tools need to assign peptides to proteins, i.e., find the leading or representative protein ID. This assignment may be dataset-specific and may differ between the PTM and the total proteome dataset. Therefore, using protein IDs to match PTM features with proteins from the total run might lead to a loss of information because of differing representative IDs [10.1093/bib/bbr065](https://doi.org/10.1093/bib/bbr065). For example, a phosphopeptide might be assigned to protein isoform A in the PTM dataset while the corresponding total protein abundance is quantified under isoform B in the proteome dataset, preventing proper integration and DPU analysis.
+Identification and quantification tools need to assign peptides to proteins, i.e., find the leading or representative protein ID. This assignment may be dataset-specific and may differ between the PTM and the total proteome dataset. Therefore, using protein IDs to match PTM features with proteins from the total run might lead to a loss of information because of differing representative IDs [10.1093/bib/bbr065](https://doi.org/10.1093/bib/bbr065). For example, a phosphopeptide might be assigned to protein isoform A in the PTM dataset. In contrast, in the proteome dataset, the corresponding total protein abundance is quantified under isoform B, preventing proper integration and DPU analysis.
 
-A robust solution involves matching stripped peptide sequences from the PTM dataset to peptide sequences of proteins quantified in the total proteome dataset, bypassing protein ID dependency entirely. When peptides are shared among multiple protein isoforms, the averaged protein abundance across all matching isoforms provides a more stable reference for normalization. While this sequence-based matching approach requires additional computational implementation, it significantly improves integration success rates and reduces the loss of valuable PTM information due to arbitrary protein assignment differences between datasets.
+A robust solution involves matching stripped peptide sequences from the PTM dataset to peptide sequences of proteins quantified in the total proteome dataset, bypassing protein ID dependency entirely. When peptides are shared among multiple protein isoforms, the averaged protein abundance across all matching isoforms provides a more stable reference for normalization. While this sequence-based matching approach requires additional computational implementation, it improves integration success rates and reduces the loss of valuable PTM information due to protein assignment differences between datasets.
 
 
 ## 1.5 Chapter Overview and Learning Objectives
@@ -123,9 +135,10 @@ This chapter introduces an analytical workflow that addresses the biological cha
 
 The integrated analytical approach combines optimized sample preparation protocols, mass spectrometry acquisition strategies, and computational tools (including the `prolfquapp` and `prophosqua` `R` packages) to provide a complete solution spanning from sample processing to biological interpretation. This framework enables researchers to extract maximum biological insight from PTM datasets while avoiding common analytical pitfalls that have historically complicated PTM data interpretation.
 
-This protocol presents a complete experimental and analytical workflow for integrated PTM studies. The wet lab component describes the optimized protocols used at the Functional Genomics Center Zurich for PTM services, covering automated sample preparation, enrichment strategies, and LC-MS/MS acquisition. The computational analysis is demonstrated using the Atg16l1 macrophage dataset (Maculins *et al.*, eLife 2021, [10.7554/elife.62320](https://doi.org/10.7554/elife.62320)), which comprises TMT-11-plex measurements from six conditions (WT/KO × uninfected/early/late infection) with both total proteome and phospho-enriched samples.
+This protocol presents a complete experimental and analytical workflow for integrated PTM studies. The wet lab component describes the optimized protocols used at the Functional Genomics Center Zurich for PTM services, covering automated sample preparation, enrichment strategies, and LC-MS/MS acquisition. The computational analysis is demonstrated using the Atg16l1 macrophage dataset (Maculins *et al.*, eLife 2021, [10.7554/elife.62320](https://doi.org/10.7554/elife.62320)), which comprises two TMT-11-plex measurements from six conditions (WT/KO × uninfected/early/late infection) with both total proteome and phospho-enriched samples.
 
 **Learning objectives include:**
+
 1. Implementing automated, scalable sample preparation protocols using SP3-based digestion and KingFisher Flex automation
 2. Performing phosphopeptide enrichment with Fe-NTA and optional antibody-based enrichment strategies
 3. Executing high-pH offline fractionation and optimized LC-MS/MS acquisition on Evosep-Orbitrap systems
@@ -135,16 +148,48 @@ This protocol presents a complete experimental and analytical workflow for integ
 
 The workflow emphasizes reproducibility, automation, and biological interpretation, spanning from sample lysis through data analysis and making it suitable for both experienced researchers and newcomers to integrated PTM analysis. All protocols include extensive quality control measures and troubleshooting guidelines for large-scale studies.
 
+# 2. Materials
 
-## 3.4 Mass Spectrometry Data Processing
+## 2.1 Biological Samples
+
+### 2.1.1 Demonstration Dataset
+
+This protocol uses the Atg16l1 macrophage dataset from Maculins et al. [10.7554/elife.62320](https://doi.org/10.7554/elife.62320) to demonstrate the bioinformatics workflow and integrated statistical analysis. The dataset comprises TMT-11-plex measurements from six conditions (WT/KO × uninfected/early/late infection) with both phospho-enriched and total proteome samples, making it ideal for illustrating the principles of integrated PTM analysis. In the original publication, the authors also performed ubiquitin remnant-enrichment, though we focus on the phosphoproteome and total proteome datasets for demonstration purposes. This same dataset was previously used in the `MSstatsPTM` publication (Kohler et al., MCP 2023, [10.1016/j.mcpro.2022.100477](https://doi.org/10.1016/j.mcpro.2022.100477)), providing additional validation of the analytical approaches.
+
+### 2.1.2 Sample Preparation
+
+Overview: This protocol utilizes optimized sample processing methods for high-throughput phosphoproteomics analyses, featuring automated sample clean-up, digestion and enrichment steps, TMT labeling, and dual-workflow processing of both input and phosphopeptide-enriched fractions. The approach is applicable to diverse sample types and compatible with commonly used laboratory reagents (see Supplementary Material Section 2.1). Key workflow components include: 
+
+1. Sample preparation using denaturing lysis, automated protein cleanup/digestion, TMT labeling and offline-fractionation (see **Supplementary Material Wetlab Section 3.1**); 
+2. Dual-workflow splitting into total proteome analysis (see Supplementary Material Wetlab Section 3.2) and phosphopeptide-enrichment (see **Supplementary Material Wetlab Section 3.3**)
+2. LC-MS/MS analysis with optimized parameters for each workflow (see **Supplementary Material Wetlab Section 3.3.5  and Section 3.3.6** )
+
+The protocols emphasize automation, scalability, and reproducibility, making them suitable for large cohort studies while maintaining analytical rigor. Expected outcomes: 80-95% protein recovery, >95% TMT labeling efficiency, 20-40 μg peptide yield per 50 μg input protein. Complete wet lab protocols, including detailed materials lists and step-by-step methods, are provided in Supplementary Material Wetlab: Automated Sample Preparation and Wet Lab Protocols.
+
+## 2.2 Data analysis
+
+1. **Search software:** FragPipe 22.0 (free download for academic usefrom [fragpipe.nesvilab.org](https://fragpipe.nesvilab.org); system requirements: 32GB+ RAM, 50GB+ storage)
+2. **Statistical platform:** `R` version ≥4.0.0 ([https://www.r-project.org/](https://www.r-project.org/)) and RStudio ([https://posit.co/](https://posit.co/))
+3. **R packages:**
+   - `prolfqua` [10.1021/acs.jproteome.2c00441](https://doi.org/10.1021/acs.jproteome.2c00441)
+   - `prolfquapp` [10.1021/acs.jproteome.4c00911](https://doi.org/10.1021/acs.jproteome.4c00911)
+   - `prophosqua` [10.5281/zenodo.15845272](https://doi.org/10.5281/zenodo.15845272)
+   - Additional dependencies: `tidyverse`, `ggseqlogo`, `writexl`, `rmarkdown`
+
+For detailed installation instructions, see the package documentation on [github.com/fgcz/prolfqua](https://github.com/fgcz/prolfqua), [github.com/prolfqua/prolfquapp](https://github.com/prolfqua/prolfquapp), [github.com/prolfqua/prophosqua](https://github.com/prolfqua/prophosqua).
+
+# 3. Methods
+
+## 3.1 Mass Spectrometry Data Processing
 
 Raw mass spectrometry (MS) data acquired using data-dependent acquisition (DDA) combined with tandem mass tag (TMT) labeling are processed using specialized software to:
-1. Database searching: Spectra are searched against a protein sequence database including species-specific sequences, common contaminants, and decoy sequences
+
+1. Database searching: Spectra are searched against a protein sequence database including species-specific sequences, common contaminants, and decoy sequences (see 3.1.1)
 2. Reporter ion quantification: Reporter ion intensities are extracted
 3. Site localization scoring: Post-translational modification (PTM) site localization probabilities are calculated
 
 
-### 3.3.1 FragPipe Method
+### 3.1.1 FragPipe Method
 
 The TMT 11-plex phospho workflow in FragPipe [10.1038/s41467-023-39891-7](https://doi.org/10.1038/s41467-023-39891-7) 22.0 with MSFragger [10.1038/nmeth.4256](https://doi.org/10.1038/nmeth.4256) (version 4.1) was utilized.
 Database searching was performed against a species-specific protein sequence database supplemented with common contaminants and reversed decoy sequences. The search parameters included:
@@ -172,9 +217,7 @@ Selected TMTIntegrator parameters are:
 - Use MS1 intensity: OFF
 - Aggregation method: Median
 
-For phospho-enriched samples, PTM sites with PTMProphet [10.1021/acs.jproteome.9b00205](https://doi.org/10.1021/acs.jproteome.9b00205) localization scores ≥ 0.75 are retained.
-
-Note: FragPipe workflow parameters are stored in configuration files (`fragpipe.workflow`), which can be customized for different experimental designs. The exact configuration file used to process the data in this protocol is available for download from Zenodo [10.5281/zenodo.15850770](https://doi.org/10.5281/zenodo.15850770) or [gitlab.bfabric.org/wolski/PTM_example](https://gitlab.bfabric.org/wolski/PTM_example).
+For phospho-enriched samples, PTM sites with PTMProphet [10.1021/acs.jproteome.9b00205](https://doi.org/10.1021/acs.jproteome.9b00205) localization scores ≥ 0.75 are retained. FragPipe workflow parameters are stored in configuration files (`fragpipe.workflow`) (see Note 4.1).
 
 FragPipe provides two types of PTM-features reports for the phospho-enriched samples:
 
@@ -182,12 +225,15 @@ FragPipe provides two types of PTM-features reports for the phospho-enriched sam
 
 - Site-level reports collapse signals from all peptidoforms mapping to the same amino acid position into a single quantitative value per PTM site, ensuring each site has exactly one intensity per sample. In downstream analysis, site-level intensities plug into site-centric enrichment or kinase-activity inference tools (PhosR, PTM-SEA, RoKAI, etc.), streamlining biological interpretation and network reconstruction.
 
-## 3.5 Differential Expression Analysis using `prolfquapp`
+## 3.2 Differential Expression Analysis using `prolfquapp`
 
-A key challenge, when analysing post-translational modifications (PTMs), is to distinguish changes in PTM abundance that are due to altered protein expression from those that reflect a change in the modification stoichiometry (i.e., the fraction of the protein pool that is modified). This protocol provides a step-by-step computational workflow to analyze PTM data in the context of total protein expression changes. We leverage the `R` packages `prolfquapp` [10.1021/acs.jproteome.4c00911](https://doi.org/10.1021/acs.jproteome.4c00911) for streamlined differential expression analysis [10.1021/acs.jproteome.2c00441](https://doi.org/10.1021/acs.jproteome.2c00441) and `prophosqua` [10.5281/zenodo.15845272](https://doi.org/10.5281/zenodo.15845272) for the integration, analysis, and visualization of PTM and total proteome data. The workflow is divided into two main parts: (1) initial differential expression analysis of the phospho-enriched (site and multisite feature abundances) and total proteome datasets (see **Supplementary Material Section A: Differential expression analysis using `prolfquapp`**), and (2) the integrated analysis of differential PTM usage (see **Supplementary Material Section B: Integration and analysis of PTM features using `prophosqua`**).
+A key challenge, when analysing post-translational modifications (PTMs), is to distinguish changes in PTM abundance that are due to altered protein expression from those that reflect a change in the modification stoichiometry (i.e., the fraction of the protein pool that is modified). This protocol provides a step-by-step computational workflow to analyze PTM data in the context of total protein expression changes. We leverage the `R` packages `prolfquapp` [10.1021/acs.jproteome.4c00911](https://doi.org/10.1021/acs.jproteome.4c00911) for streamlined differential expression analysis [10.1021/acs.jproteome.2c00441](https://doi.org/10.1021/acs.jproteome.2c00441) and `prophosqua` [10.5281/zenodo.15845272](https://doi.org/10.5281/zenodo.15845272) for the integration, analysis, and visualization of PTM and total proteome data. The workflow is divided into two main parts: 
+
+1. initial differential expression analysis of the phospho-enriched (site and multisite feature abundances) and total proteome datasets (see **Supplementary Material Section A: Differential expression analysis using `prolfquapp`**)
+2. the integrated analysis of differential PTM usage (see **Supplementary Material Section B: Integration and analysis of PTM features using `prophosqua`**).
 
 
-### 3.4.1 Data and Software Setup
+### 3.2.1 Data and Software Setup
 
 The first step involves obtaining the FragPipe 22 mass spectrometry output files [10.5281/zenodo.15850770](https://doi.org/10.5281/zenodo.15850770) and setting up the analysis environment in `R`. Depending on the sample type, different output files are required:
 
@@ -199,11 +245,12 @@ The first step involves obtaining the FragPipe 22 mass spectrometry output files
 
  The `prolfquapp` [10.1021/acs.jproteome.4c00911](https://doi.org/10.1021/acs.jproteome.4c00911) package provides a set of shell scripts that automate the analysis workflow. These scripts are copied into the working directory to be used in subsequent steps. See **Supplementary Material Section A.1-A.2** for complete setup instructions and example dataset download.
 
-### 3.4.2 Sample Annotation
+### 3.2.2 Sample Annotation
 
 A crucial step is the creation of a detailed sample annotation file. This file maps each raw data file to its experimental conditions. We parse sample names from the FragPipe output files using the `prolfqua_dataset.sh` script (see **Supplementary Material Section A.3.1**). From the sample names, we use `R` to extract experimental factors (e.g., Genotype, Timepoint). If the filenames do not encode the experimental conditions, the explanatory variables would need to be provided by adding columns to the annotation file. We then call the `annotation_add_contrasts` function in the `prolfqua` [10.1021/acs.jproteome.2c00441](https://doi.org/10.1021/acs.jproteome.2c00441) to generate the required factorial contrasts automatically.
 
 The `annotation_add_contrasts` function adds two key columns to the sample annotation:
+
 - **`ContrastName`**: A descriptive name for each statistical contrast
 - **`Contrast`**: The mathematical formula defining the contrast in terms of group means
 
@@ -214,12 +261,12 @@ For the experimental design in this protocol (2×3 factorial: Genotype [KO/WT] �
 3. **KO_vs_WT_at_Late** (Interaction): `G_KO_Late - G_WT_Late` - Compares genotypes specifically in the late infection condition  
 4. **KO_vs_WT_at_Early** (Interaction): `G_KO_Early - G_WT_Early` - Compares genotypes specifically in the early infection condition
 
-Note that setting `interaction=FALSE` in the `annotation_add_contrasts` function disables the generation of interaction contrasts between factors. Interaction contrasts assess whether the effect of one factor depends on the level of another, thereby capturing non‑additive interplay between factors.
+Note that setting the argument`interaction=FALSE` in the `annotation_add_contrasts` function disables the generation of interaction contrasts for factor level combinations. Interaction contrasts assess whether the effect of one factor depends on the level of another, thereby capturing non‑additive interplay between factors.
 
 These contrasts enable comprehensive statistical analysis, distinguishing between general genotype effects and timepoint-specific effects. See **Supplementary Material Section A.3.1-A.3.2** for complete annotation workflow with code examples.
 
 
-### 3.4.3 Execution of Differential Expression Analysis
+### 3.2.3 Execution of Differential Expression Analysis
 
 Before performing differential expression analysis, a YAML configuration file is generated using the `prolfqua_yaml.sh` script. This file (`config.yaml`) defines key analysis parameters, including the normalization method (variance stabilization normalization, VSN, by default), protein summarization strategy (Tukey's median polish), and quality-filtering thresholds such as q-value cutoffs for peptide or protein-level evidence.
 
@@ -244,19 +291,19 @@ This is done separately for three data types of features derived from the mass s
 Complete execution commands and guidance for interpreting these outputs are detailed in **Supplementary Material Sections A.4–A.6**. All differential expression analysis results are publicly archived on Zenodo [10.5281/zenodo.15830988](https://doi.org/10.5281/zenodo.15830988).
 
 
-## 3.6 Integrated PTM Analysis using `prophosqua`
+## 3.3 Integrated PTM Analysis using `prophosqua`
 
 The `prophosqua` package [10.5281/zenodo.15845272](https://doi.org/10.5281/zenodo.15845272) provides tools for integrating and analyzing post-translational modification (PTM) data with total proteome measurements. It enables researchers to distinguish between changes in protein abundance and changes in modification site usage.
 
 This section explains how to load the results of the Differential Expression Analysis, integrate the PTM and total proteome data, and how to determine differential PTM-feature usage. For complete implementation with detailed code examples, see **Supplementary Material Section B** ("Integration and analysis of PTM features using `prophosqua`").
 
-### 3.6.1 Data Loading and Integration
+### 3.3.1 Data Loading and Integration
 
 Differential expression results from `prolfquapp`—provided in Excel format—for the total proteome and the multi- or single-site PTM analyses are imported into `R`. These datasets are then integrated by performing a left join on protein identifiers, merging PTM-level statistics with the corresponding protein-level values for each condition. A left join is specifically chosen to retain all PTM features, even if their parent proteins were not quantified in the total proteome dataset. This ensures that no PTM information is lost, while still allowing normalization by protein abundance when available. See **Supplementary Material Sections B.1–B.5** for the full data loading and integration workflow.
 
 Currently, `prolfquapp` matches PTM and protein features using exact protein IDs. This introduces a limitation: discrepancies in representative protein identifiers between the PTM-enriched and total proteome datasets may lead to loss of mapping information (see Note 4.12).
 
-### 3.6.2 Analysis of Differential PTM-feature Expression (DPE)
+### 3.3.2 Analysis of Differential PTM-feature Expression (DPE)
 
 **Definition:** DPE tests the raw PTM-feature signal change between conditions, without any correction for its parent protein's expression level. This analysis is used to flag any PTM-feature whose abundance changes, even if the parent protein itself is also up- or down-regulated.
 
@@ -266,7 +313,7 @@ Currently, `prolfquapp` matches PTM and protein features using exact protein IDs
 ![N-to-C expression plot showing differential expression of total protein abundance (light yellow rectangle) and phosphorylation sites (vertical lines, color coded by type of residue) along protein sequences. The vertical lines are either dashed or solid, depending on the site's imputation status. The x-axis represents amino acid position from N to C terminus, while the y-axis shows $\log_2$ fold changes. Significantly regulated sites (FDR < 0.05 and FDR < 0.01) are highlighted with one or two red asterisks, respectively. The plot enables visualization of both overall protein regulation and site-specific phosphorylation changes in a single view.](figures/dpe_n_to_c.png)
 
 
-### 3.6.3 Analysis of Differential PTM-feature Usage (DPU)
+### 3.3.3 Analysis of Differential PTM-feature Usage (DPU)
 
 **Definition:** DPU tests the **protein-normalized** changes of PTM-features. This analysis is essential for determining whether the *fraction* of a protein that is modified at a specific site changes between conditions. It isolates changes in modification stoichiometry from changes in overall protein abundance.
 
@@ -306,7 +353,7 @@ $$t = \frac{\Delta_I}{SE_I}$$
 The corresponding p-value is determined using the t-distribution with $df_I$ degrees of freedom, and multiple testing correction (e.g., Benjamini-Hochberg FDR) is applied across all tested sites.
 
 
-The PTM-feature usage fold changes, p-values, and FDR estimates are then added to the dataframe. The DPU results are then visualized using N-to-C plots generated by `prophosqua::n_to_c_usage`, which display the protein-normalized PTM-feature abundance changes and highlight sites with significant changes in usage. See **Supplementary Material Sections B.7-B.8** for complete DPU analysis implementation and statistical framework details.
+The PTM-feature usage fold changes, p-values, and FDR estimates are then added to the dataframe. The DPU results are visualized using N-to-C plots generated by `prophosqua::n_to_c_usage`, which display the protein-normalized PTM-feature abundance changes and highlight sites with significant changes in usage. See **Supplementary Material Sections B.7-B.8** for complete DPU analysis implementation and statistical framework details.
 
 
 For example, when comparing the N-to-C expression plot shown above, with the N-to-C usage plot, shown below, for Protein SQSTM1 (UniProt id Q64337), we can see that while raw PTM-feature expression is upregulated in the KO vs WT contrast, the actual usage of the phosphorylation sites remains unchanged or even is significantly downregulated, after normalizing for protein abundance (shown by the vertical lines with negative log2 fold changes). This demonstrates how DPU analysis can reveal changes in modification stoichiometry that differ from, or even oppose, changes in overall PTM-feature levels. 
@@ -322,7 +369,7 @@ In the *Atg16l1* macrophage dataset [10.7554/elife.62320](https://doi.org/10.755
 When evaluating statistical significance in DPU analysis, it is important to avoid overinterpretation of results (see Note 4.13). Statistical significance does not guarantee biological relevance, and effect sizes should be considered alongside FDR values, when prioritizing sites for further investigation. Key findings should be validated through orthogonal methods, to confirm biological relevance.
 
 
-### 3.6.4 Integration Report Generation
+### 3.3.4 Integration Report Generation
 
 The integrated analysis results are compiled into a comprehensive HTML report using an R Markdown template `_Overview_PhosphoAndIntegration_site.Rmd`. The report includes:
 
@@ -334,7 +381,7 @@ The report includes data tables that allow searching for a specific protein and 
 
 When analyzing the interactive reports, different combinations of DPE and DPU results provide distinct biological insights that guide interpretation. For instance, **DPE+ only** indicates changes driven primarily by protein abundance alterations, where PTM increases reflect higher protein levels rather than enhanced modification efficiency (see Note 4.15).
 
-### 3.6.5 Exporting Results to Excel
+### 3.3.5 Exporting Results to Excel
 
 The integrated analysis results are exported to an Excel file for further analysis and sharing. The Excel file contains multiple worksheets:
 
@@ -344,7 +391,7 @@ The integrated analysis results are exported to an Excel file for further analys
 This Excel format facilitates downstream analysis, data sharing with collaborators, and integration with other bioinformatics tools. The file is automatically saved with a timestamped filename in the results directory.
 
 
-### 3.6.6 Sequence Motif Analysis
+### 3.3.6 Sequence Motif Analysis
 
 To identify potential kinases responsible for the observed phosphorylation changes, sequence motif analysis is performed on significantly regulated PTM sites identified in the DPU analysis.
 
@@ -357,47 +404,9 @@ When motif analysis yields weak or absent sequence patterns, several factors may
 
 # 4. Notes
 
+## 4.1 FragPipe workflow parameters
 
-## 4.1 Complete cell disruption
-
-Complete cell disruption is essential for reproducible protein extraction efficiency. Incomplete lysis leads to variable protein yields and can cause sample-to-sample variability that affects downstream quantitative analysis. Visual inspection should confirm no visible cell debris remains after centrifugation.
-
-## 4.2 Bead-to-protein ratio
-
-Bead-to-protein ratio of 10:1 (μg beads per μg protein) is critical for efficient protein binding in SP3 protocols. Lower ratios result in protein loss, while higher ratios can cause non-specific binding and increased background. Microsphere-based protein clean-up strategies exploit protein aggregation in organic solvents [10.1074/mcp.tir118.001270](https://doi.org/10.1074/mcp.tir118.001270).
-
-## 4.3 Digestion temperature and time
-
-Digestion temperature and time are critical for achieving optimal trypsin efficiency. The automated protocol typically yields ~20% digestion efficiency. If efficiency decreases, Lys-C pre-digestion can improve proteolytic efficiency and peptide recovery.
-
-## 4.4 TMT reagent handling
-
-TMT reagent handling requires careful attention to moisture control. Recent optimizations have reduced required TMT amounts [10.1074/mcp.tir119.001385](https://doi.org/10.1074/mcp.tir119.001385) by using lower reaction volumes and optimized peptide:TMT ratios. We typically aim for a 4:1 TMT:peptide ratio to ensure high labeling efficiency while minimizing costs.
-
-## 4.5 Antibody bead volume
-
-Antibody bead volume can be downscaled from manufacturer protocols, but peptide:bead ratios must be empirically tested for each sample type and antibody lot to maintain enrichment efficiency.
-
-## 4.6 Antibody incubation conditions
-
-Antibody incubation conditions require careful mixing to keep beads in suspension without splashing to tube walls. Loss of beads during washing significantly reduces enrichment efficiency.
-
-## 4.7 HPLC system equilibration
-
-HPLC system equilibration typically requires 20 minutes for backpressure stabilization. Monitor pressure trends across all injections to ensure optimal column performance and lifetime.
-
-## 4.8 Fraction concatenation strategy
-
-Fraction concatenation strategy can be programmed to omit fractions containing unreacted TMT reagent, typically observed as increased 260 nm UV absorbance. This optimization improves downstream enrichment efficiency.
-
-## 4.9 Buffer freshness
-
-Buffer freshness is crucial for phosphopeptide enrichment efficiency. Ti-IMAC buffer degradation, particularly glycolic acid oxidation, significantly reduces binding specificity and capacity.
-
-## 4.10 Bead preparation
-
-Bead preparation from 20% stock slurry requires thorough mixing before use. Alternative chemistries like Zr-IMAC HP can be substituted and will generate overlapping but complementary peptide pools compared to Ti-IMAC.
-
+FragPipe workflow parameters are stored in configuration files (`fragpipe.workflow`), which can be customized for different experimental designs. The exact configuration file used to process the data in this protocol is available for download from Zenodo [10.5281/zenodo.15850770](https://doi.org/10.5281/zenodo.15850770) or [gitlab.bfabric.org/wolski/PTM_example](https://gitlab.bfabric.org/wolski/PTM_example).
 
 ## 4.11 Automated QC reporting with FragPipe TMT QC script
 
