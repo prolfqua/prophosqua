@@ -74,7 +74,7 @@ do_dea <- params$dodea
 | Antje Dittmann     | FGCZ              | [antje.dittmann@fgcz.uzh.ch](mailto:antje.dittmann@fgcz.uzh.ch)  |
 | Laura Kunz         | FGCZ              |                                                        |
 | Christian Panse    | FGCZ, SIB         |                                                        |
-| Jonas Grossmann    | FGCZ, SIB         | [jonas.grossmann@fgcz.uzh](mailto:jonas.grossmann@fgcz.uzh.ch) |
+| Jonas Grossmann    | FGCZ, SIB         | [jonas.grossmann@fgcz.uzh.ch](mailto:jonas.grossmann@fgcz.uzh.ch) |
 
 
 - FGCZ - Functional Genomics Center Zurich, Winterthurerstrasse 190, CH-8057 Zurich, 
@@ -310,7 +310,7 @@ R --vanilla -e "library(prolfquapp); copy_shell_script(workdir = '.')"
 ```
 
 
-## Creating sample annotation
+## Creating sample annotation {#contrasts}
 
 Sample annotation is the foundation of any meaningful differential expression analysis, serving as the bridge between raw mass spectrometry files and biological interpretation. The annotation file maps each raw data file to its experimental conditions (WT or KO) and further explanatory variables, i.e., Time. 
 
@@ -778,7 +778,7 @@ ptm_data <- prolfqua::LFQData$new(ldata,config)
 
 ```
 
-We merge the data for the single site and total proteome protein abundances by the protein identifiers and sample. Then we subtract the total proteome protein abundances from the single site abundances. The Density plot (see \@ref(fig:densityCorrected)) shows the distribution of the corrected single-site abundances.
+We merge the data for the single site and total proteome protein abundances by the protein identifiers and sample. Then we subtract the total proteome protein abundances from the single site abundances. The Density plot (see Figure \@ref(fig:densityCorrected)) shows the distribution of the corrected single-site abundances.
 
 ```{r correctData, fig.cap="Density plot showing the total proteome corrected single site abudances."}
 ptm_data$data <- dplyr::inner_join(
@@ -795,14 +795,14 @@ pl$intensity_distribution_density()
 ```
 
 
-Next we for each PTM we fit a linear models, which explaines the corrected PTM site abundances using the grouping of the samples. The model is fitted for each site using the `prolfqua::build_model` function.
+Next, we for each PTM we fit a linear models, which explaines the corrected PTM site abundances using the grouping of the samples. The model is fitted for each site using the `prolfqua::build_model` function.
 
 ```{r fitModelToCorrected}
 strategy_lm <- prolfqua::strategy_lm("ptm_usage ~ G_")
 models <- prolfqua::build_model(data = ptm_data, model_strategy = strategy_lm)
 ```
 
-To compute the contrasts we construct an array of contrasts from the annotation table which we constructed in Section 3.4.
+To compute the contrasts we construct an array of contrasts from the annotation table which we constructed in Section \@ref(contrasts).
 
 ```{r ModelFoldChangesCorrect}
 contrasts <- annot2$Contrast 
@@ -810,7 +810,7 @@ names(contrasts) <- annot2$ContrastName
 contrasts <- contrasts[!is.na(contrasts)]
 ```
 
-The next code fragment computes contrasts from the linear models, as well as using the model with missing value inference (for more details see [@10.1021/acs.jproteome.2c00441]).
+The next code fragment computes contrasts from the linear models. In the presence of missing values, for some PTM's the model can not be fitted. Therefore we also estimate contrast using the `ContrastsMissing` method, which estimates using missing value inference (for more details see [@10.1021/acs.jproteome.2c00441]).
 
 ```{r computeTheContrasts}  
 ctr <- prolfqua::Contrasts$new(models, contrasts)
@@ -820,7 +820,7 @@ ctr_all <- prolfqua::merge_contrasts_results(ctr, ctr_m)$merged
 ctr_df <- ctr_all$get_contrasts()
 ```
 
-Finally we can create a volcano plot of the DPU results using the the `ctr_plotter` variable, which is an instance of the `prolfqua::ContrastsPlotter` class.
+Finally we can create a volcano plot of the DPU results using the the `ctr_plotter` variable, which is an instance of the `prolfqua::ContrastsPlotter` class (see Figure \@ref(fig:volcanoFDRcorrfirst)).
 
 ```{r volcanoFDRcorrfirst, fig.cap ="Volcano plot showing the -log10(FDR) as a function of the PTM site fold change."} 
 ctr_plotter <- ctr_all$get_Plotter()
@@ -858,11 +858,11 @@ knitr::kable(tableS, caption = "Consensus phosphorylation motifs of representati
 ```
 
 
-To identify potential kinases responsible for the observed phosphorylation changes, sequence motif analysis is performed on significantly regulated PTM sites identified in the DPU analysis. For each contrast, amino acid sequences flanking the significantly regulated sites (e.g., $FDR < 0.01$ and $fold change > 0.58$) are extracted and grouped by regulation status (upregulated or downregulated). The `ggseqlogo` `R` package is then used to generate sequence logo plots for each group. These plots visualize conserved amino acid patterns around the modification site, facilitating comparison to known kinase recognition motifs and enabling inference of upstream regulatory kinases (see Table \@ref(tab:tablesites)).
+To identify potential kinases responsible for the observed phosphorylation changes, sequence motif analysis is performed on significantly regulated PTM sites identified in the DPU analysis. For each contrast, amino acid sequences flanking the significantly regulated sites (e.g., $FDR < 0.01$ and $|log_2(FC)| > 0.58$) are extracted and grouped by regulation status (upregulated or downregulated). The `ggseqlogo` `R` package is then used to generate sequence logo plots for each group. These plots visualize conserved amino acid patterns around the modification site, facilitating comparison to known kinase recognition motifs and enabling inference of upstream regulatory kinases (see Table \@ref(tab:tablesites)).
 
 The analysis focuses on sites with strong statistical evidence to ensure that motif patterns reflect genuine biological changes rather than technical artifacts. While for this dataset, this stringent filtering yields many sites (see Table \@ref(tab:tableSignificantContrasts)), for other datasets the number of sites might be insufficient for creating sequence logos (see Note \@ref(nosignificantPTM)).
 
-We start by filtering the DPU data by $\|log_2(FC)\| > 0.58$ and $FDR \le 0.05$. The Table \@ref(tab:tableSignificantContrasts) summarizes the number of PTM-sites for each contrast, modification site, and up- or down-regulation. We observe that for serine (S) and threonine (T) there are many up and downregulated sites.
+We start by filtering the DPU data by $\|log_2(FC)\| > 0.58$ and $FDR \le 0.05$. The Table \@ref(tab:tableSignificantContrasts) summarizes the number of PTM-sites for each contrast, modification site, and up- or down-regulation. We observe that for serine (S) and threonine (T) there are many, while for tyrosine (Y) there are only few, up and downregulated sites.
 
 
 ```{r filterdataforseqlogoplotting}
@@ -889,11 +889,19 @@ significant_sites <- combined_test_diff |>
 
 
 ```{r tableSignificantContrasts}
-with(significant_sites, table(contrast, regulation, modAA)) |>
-  knitr::kable(caption = "Number of significantly regulated sites, for each contrast,
-               amino acid residue, and up- or down-regulation.")
-#|> 
+#with(significant_sites, table(contrast, regulation, modAA)) |>
+#  knitr::kable(caption = "Number of significantly regulated sites, for each contrast,
+#               amino acid residue, and up- or down-regulation.")
+# |> 
 #  kableExtra::kable_styling(font_size = 9, latex_options = "scale_down")
+
+library(huxtable)
+xt <- with(significant_sites, table(contrast, regulation, modAA))
+ht <- huxtable::as_hux(xt)
+huxtable::caption(ht) <- "Number of significantly regulated sites, for each contrast, amino acid residue, and up- or down-regulation."
+ht <- huxtable::theme_compact(ht)
+huxtable::font_size(ht) <- 9
+ht
 
 ```
 
