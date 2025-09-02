@@ -173,7 +173,7 @@ A robust solution involves matching stripped peptide sequences from the PTM data
 
 ## Chapter Overview and Learning Objectives
 
-This chapter introduces an analytical workflow that addresses the biological challenge of accurately distinguishing differntial PTM abundance (DPA) from Differential PTM Usage (DPU). Distinguishing between protein-level effects and genuine modification-specific changes is critical for meaningful interpretation of PTM data. The workflow emphasizes reproducibility, and automation, and biological interpretation.
+This chapter introduces an analytical workflow that addresses the biological challenge of accurately distinguishing differential PTM abundance (DPA) from Differential PTM Usage (DPU). Distinguishing between protein-level effects and genuine modification-specific changes is critical for meaningful interpretation of PTM data. The workflow emphasizes reproducibility, and automation, and biological interpretation.
 
 DPA tests raw PTM signal changes between experimental conditions, identifying any modification abundance changes regardless of underlying protein-level effects. This analysis captures the total effect of experimental perturbations on PTM levels, including both direct modification effects and indirect effects mediated through protein abundance changes.
 
@@ -278,7 +278,7 @@ The first step is to download the example PTM dataset, which serves as a compreh
 - Experimental design: $2\times 3$ factorial (Genotype: WT/KO; Timepoint: Uninfected/Early/Late infection)
 - Biological context: Macrophage responses to Shigella infection in wild-type vs Atg16l1-knockout cells
 - Technical approach: TMT 11-plex labeling for precise quantification across conditions
-- Data types: Total proteome protein-level and phospho-enriched phoshpo-site and phoshpo-multisite quantification results.
+- Data types: Total proteome protein-level and phospho-enriched phospho-site and phospho-multisite quantification results.
 
 This dataset is particularly valuable for demonstrating PTM analysis concepts because the Atg16l1 knockout creates both direct protein abundance changes (loss of Atg16l1 itself) and secondary effects on autophagy-related signaling pathways.
 
@@ -526,7 +526,7 @@ phospho_res <- prophosqua::filter_contaminants(phospho_res)
 
 The data integration step is critical for enabling DPU analysis and represents one of the most important technical aspects of the workflow. This step joins phosphorylation site data with total protein data to create a unified dataset where each PTM feature is linked to its corresponding protein-level measurements.
 
-The `left_join` operation used here ensures that all PTM features are retained in the analysis, even if their parent proteins were not detected in the total proteome experiment. This approach maximizes the information content by allowing protein normalization where possible while also reporting PTM-sites which can not be mapped to total proteome measurments.
+The `left_join` operation used here ensures that all PTM features are retained in the analysis, even if their parent proteins were not detected in the total proteome experiment. This approach maximizes the information content by allowing protein normalization where possible while also reporting PTM-sites which can not be mapped to total proteome measurements.
 
 ```{r b5combinedata}
 join_column <- c(
@@ -835,7 +835,7 @@ names(contrasts) <- annot2$ContrastName
 contrasts <- contrasts[!is.na(contrasts)]
 ```
 
-The next code fragment computes contrasts from the linear models. In the presence of missing values, for some PTM's the model can not be fitted. Therefore we also estimate contrast using the `ContrastsMissing` method, which estimates using missing value inference (for more details see [@10.1021/acs.jproteome.2c00441]).
+The next code fragment computes contrasts from the linear models. In the presence of missing values, for some PTMs the model cannot be fitted. Therefore we also estimate contrast using the `ContrastsMissing` method, which estimates using missing value inference (for more details see [@10.1021/acs.jproteome.2c00441]).
 
 ```{r computeTheContrasts}  
 ctr <- prolfqua::Contrasts$new(models, contrasts)
@@ -845,7 +845,7 @@ ctr_all <- prolfqua::merge_contrasts_results(ctr, ctr_m)$merged
 ctr_df <- ctr_all$get_contrasts()
 ```
 
-Finally we can create a volcano plot of the DPU results using the the `ctr_plotter` variable, which is an instance of the `prolfqua::ContrastsPlotter` class (see Figure \@ref(fig:volcanoFDRcorrfirst)).
+Finally we can create a volcano plot of the DPU results using the `ctr_plotter` variable, which is an instance of the `prolfqua::ContrastsPlotter` class (see Figure \@ref(fig:volcanoFDRcorrfirst)).
 
 ```{r volcanoFDRcorrfirst, fig.cap ="Volcano plot showing the -log10(FDR) as a function of the PTM site fold change."} 
 ctr_plotter <- ctr_all$get_Plotter()
