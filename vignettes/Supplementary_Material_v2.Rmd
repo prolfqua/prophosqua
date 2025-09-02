@@ -28,7 +28,7 @@ output:
     latex_engine: pdflatex
     number_sections: true
   bookdown::word_document2:
-    toc: false
+    toc: true
 df_print: default
 always_allow_html: true
 
@@ -66,6 +66,12 @@ suppressPackageStartupMessages({
 })
 
 do_dea <- params$dodea
+is_docx <- knitr::pandoc_to() == "docx"
+if(length(is_docx)==0) {
+  is_docx = TRUE
+}
+
+
 ```
 
 | Author             | Affiliation(s)    | Corresponding Author Email                             |
@@ -127,7 +133,7 @@ Among the analytical steps following peptide identification, PTM site localizati
 
 In data-dependent acquisition (DDA) workflows, _FragPipe_ [@10.1101/2025.05.27.656447] represents a widely adopted and integrated platform that comprehensively addresses PTM analysis, including site localization challenges. _FragPipe_ integrates the _MSFragger_ search engine [@10.1038/nmeth.4256], enabling highly sensitive peptide identification, and employs _PTMProphet_ [@10.1021/acs.jproteome.9b00205] functionality for site localization scoring. It also generates detailed quantitative outputs, including site-level quantification reports and multisite feature reports grouping peptides that share identical modification patterns. A detailed description of the _FragPipe_ workflow is provided in the experimental methods section (see Section \@ref(fragpipeparams)).
 
-While the above discussion has focused primarily on DDA workflows, data-independent acquisition (DIA)-based approaches represent alternative strategies with distinct computational considerations for PTM analysis. Specialized DIA platforms such as _Spectronaut_ [@10.1074/mcp.M114.044305;@10.1002/pmic.202300088] and _DIA-NN_ [@10.1038/s41592-019-0638-x] offer PTM support through dedicated site-localization scoring algorithms and site-level quantification capabilities. Unlike DDA, DIA workflows require specialized computational approaches to extract and quantify modification-specific information from highly multiplexed fragmentation spectra. Both _Spectronaut_ and _DIA-NN_ incorporate advanced statistical frameworks specifically designed for robust PTM identification and quantification in DIA workflows.
+While the above discussion has focused primarily on DDA workflows, data-independent acquisition (DIA)-based approaches represent alternative strategies with distinct computational considerations for PTM analysis. Specialized DIA platforms such as _Spectronaut_ [@10.1074/mcp.M114.044305], [@10.1002/pmic.202300088] and _DIA-NN_ [@10.1038/s41592-019-0638-x] offer PTM support through dedicated site-localization scoring algorithms and site-level quantification capabilities. Unlike DDA, DIA workflows require specialized computational approaches to extract and quantify modification-specific information from highly multiplexed fragmentation spectra. Both _Spectronaut_ and _DIA-NN_ incorporate advanced statistical frameworks specifically designed for robust PTM identification and quantification in DIA workflows.
 
 ## Data Analysis Frameworks
 
@@ -157,10 +163,10 @@ $\Delta_{adj} = \Delta_{PTM} - \Delta_{protein}$ with standard error combined in
 The three pipelines target the PTM-vs-protein effect through different modeling paths and make different assumptions about within-sample covariance, and differ in variance moderation. Therefore, even with the same raw data and contrasts, we can expect differences in estimated effects, standard errors, and p-values.
 
 To offer researchers additional flexibility, we developed `prophosqua` [@10.5281/zenodo.15845272], an `R` package designed to streamline statistical analysis of phosphoproteomics and other PTM datasets. Using `prophosqua` and the `prolfqua` package [@10.1021/acs.jproteome.2c00441], the `MStatsPTM` _model first_ and `msqrob2PTM` _correct first_ approaches can be executed to obtain protein-corrected PTM data and provide intuitive visualizations for comprehensive exploratory analysis.
- 
- 
+
+
 ## The Protein Assignment Problem in Differential PTM-feature Usage
- 
+
 Identification and quantification tools need to assign peptides to proteins, i.e., find the leading or representative protein ID. This assignment may be dataset-specific and may differ between the PTM and the total proteome dataset. Therefore, using protein IDs to match PTM features with proteins from the total run might lead to a loss of information because of differing representative IDs [@10.1093/bib/bbr065]. For example, a phosphopeptide might be assigned to protein isoform A in the PTM dataset. In contrast, in the total proteome dataset, the protein abundance is quantified under isoform B, preventing proper integration and DPU analysis.
 
 A robust solution involves matching stripped peptide sequences from the PTM dataset to peptide sequences of proteins quantified in the total proteome dataset, bypassing protein ID dependency entirely. When peptides are shared among multiple protein isoforms, the averaged protein abundance across all matching isoforms provides a more stable reference for normalization. While this sequence-based matching approach requires additional computational implementation, it reduces the loss of valuable  information due to protein assignment differences between datasets.
@@ -209,7 +215,7 @@ Most relevant `R` packages used for the analysis are:
 For detailed installation instructions, see the package documentation on 
 
 - [github.com/fgcz/prolfqua](https://github.com/fgcz/prolfqua), 
- - [github.com/prolfqua/prolfquapp](https://github.com/prolfqua/prolfquapp), 
+- [github.com/prolfqua/prolfquapp](https://github.com/prolfqua/prolfquapp), 
 - [github.com/prolfqua/prophosqua](https://github.com/prolfqua/prophosqua).
 
 
@@ -235,12 +241,12 @@ The TMT 11-plex phospho workflow in _FragPipe_ 22.0 [@10.1038/s41467-023-39891-7
 Database searching was performed against a species-specific protein sequence database supplemented with common contaminants and reversed decoy sequences. The search parameters included:
 
 - Fixed modifications:
-  - Carbamidomethylation of cysteine (+57.0215 Da)
-  - TMT labeling of lysine residues and peptide N-termini (+229.1629 Da)
+- Carbamidomethylation of cysteine (+57.0215 Da)
+- TMT labeling of lysine residues and peptide N-termini (+229.1629 Da)
 - Variable modifications:
-  - Phosphorylation on serine, threonine, and tyrosine residues (+79.9663 Da)
-  - Oxidation of methionine (+15.9949 Da)
-  - Acetylation at protein N-termini (+42.0106 Da)
+- Phosphorylation on serine, threonine, and tyrosine residues (+79.9663 Da)
+- Oxidation of methionine (+15.9949 Da)
+- Acetylation at protein N-termini (+42.0106 Da)
 
 Reporter ions are quantified by IonQuant (version 1.10.27), with downstream processing in TMTIntegrator (version 1.10.27). TMTIntegrator [@10.1101/2025.05.27.656447] performs quantification and normalization specifically tailored for multiplexed TMT experiments.
 
@@ -268,11 +274,11 @@ An important step of the data preprocessing is the quality control of the quanti
 The following sections demonstrate the computational workflow through R code snippets that implement each step of the integrated PTM analysis. All code examples are also available within the `prophosqua` package [@10.5281/zenodo.15845272] and can be easily adapted to different datasets by modifying file paths and experimental parameters.
 
 The first step is to download the example PTM dataset, which serves as a comprehensive demonstration of integrated PTM analysis. This dataset is derived from the Atg16l1 macrophage study by Maculins et al. [@10.7554/elife.62320], investigating the role of autophagy in bacterial infection responses. The dataset contains both total proteome and PTM-enriched measurements from a well-designed factorial experiment with the following characteristics:
-  
-  - Experimental design: $2\times 3$ factorial (Genotype: WT/KO; Timepoint: Uninfected/Early/Late infection)
-  - Biological context: Macrophage responses to Shigella infection in wild-type vs Atg16l1-knockout cells
-  - Technical approach: TMT 11-plex labeling for precise quantification across conditions
-  - Data types: Total proteome protein-level and phospho-enriched phoshpo-site and phoshpo-multisite quantification results.
+
+- Experimental design: $2\times 3$ factorial (Genotype: WT/KO; Timepoint: Uninfected/Early/Late infection)
+- Biological context: Macrophage responses to Shigella infection in wild-type vs Atg16l1-knockout cells
+- Technical approach: TMT 11-plex labeling for precise quantification across conditions
+- Data types: Total proteome protein-level and phospho-enriched phoshpo-site and phoshpo-multisite quantification results.
 
 This dataset is particularly valuable for demonstrating PTM analysis concepts because the Atg16l1 knockout creates both direct protein abundance changes (loss of Atg16l1 itself) and secondary effects on autophagy-related signaling pathways.
 
@@ -280,8 +286,8 @@ The first step involves obtaining the _FragPipe_ 22 mass spectrometry output fil
 
 - total proteome samples : `psm.tsv` files, containing peptide-spectrum match (PSM) information
 - phospho-enriched samples:
-  - `abundance_multi-site.tsv` files for multi-site feature analysis
-  - `abundance_single-site.tsv` files for individual modification site analysis
+- `abundance_multi-site.tsv` files for multi-site feature analysis
+- `abundance_single-site.tsv` files for individual modification site analysis
 
 This dataset is available from Zenodo [10.5281/zenodo.15879865](http://doi.org/10.5281/zenodo.15879865). The code below downloads the data, extracts it into a folder and removes the zip archive.
 
@@ -298,7 +304,7 @@ unlink(destfile)
 ```
 
 
-  
+
 ## Setting up `prolfquapp` scripts
 
 This section demonstrates how to perform **differential expression analysis (DEA)** on both total proteome and PTM-enriched proteome data using the `prolfquapp` package. The analysis provides the foundation for subsequent integration by preprocessing, and normalizing the data, and establishing which proteins and PTM features show significant changes between experimental conditions.
@@ -326,7 +332,7 @@ We start by reading the sample names from the _FragPipe_ output files using the 
 annot <- readr::read_tsv("PTM_example/data_total/dataset.tsv")
 knitr::kable(head(annot), caption = "Annotation table created from FragPipe outputs, with a set of columns required by prolfquapp")
 ```
-  
+
 We use `R` to extract experimental factors, the Genotype and Timepoint, from the channel labels using the `tidyr::separate` function.
 If the channel names do not encode the experimental conditions, the explanatory variables would need to be provided by adding columns to the annotation file in a text editor.
 
@@ -356,9 +362,28 @@ write_tsv(annot2, "dataset_with_contrasts.tsv")
 Note that setting the argument `interactions=FALSE` in the `annotation_add_contrasts` function disables the generation of interaction contrasts for factor level combinations. Interaction contrasts assess whether the effect of one factor depends on the level of another, thereby capturing non‑additive interplay between factors.
 The file `dataset_with_contrasts.tsv` is the final dataset file that will be used for the differential expression analysis (see Table \@ref(tab:showannotation)).
 
+
 ```{r showannotation, echo=FALSE}
-knitr::kable(head(annot2), caption = "Annotation table with explanatory variables and contrasts.") #|> 
-  #kableExtra::kable_styling(font_size = 9, latex_options = "scale_down")
+tx <- head(annot2)
+capt <- "Annotation table with explanatory variables and contrasts."
+if(!is_docx){
+  knitr::kable(tx, caption = capt) #|> 
+  kableExtra::kable_styling(font_size = 9, latex_options = "scale_down")
+} else {
+  ft <- flextable::flextable(tx) |>
+  flextable::fontsize(part = "all", size = 8) |>
+  flextable::theme_vanilla() |>
+  flextable::set_table_properties(
+    width = 1,
+    layout = "fixed"
+  ) |>
+  flextable::width(j = "Contrast", width = 3) |>  # Extra wide for long formulas
+  flextable::width(j = c("channel", "name", "Group"), width = 0.8) |>
+  flextable::width(j = "ContrastName", width = 1.2) |>
+  flextable::padding(padding = 2, part = "all") |>
+  flextable::set_caption(capt)
+  ft
+}
 ```
 
 For the experimental design in this protocol (2×3 factorial: Genotype [KO/WT] × Time [Uninfected/Early/Late]), the function generated four distinct contrasts:
@@ -435,7 +460,7 @@ For each data type, `prolfquapp` generates a comprehensive suite of outputs:
 - XLSX tables (DE_<datatype>.xlsx) summarizing fold changes, moderated t-statistics, raw p-values, and Benjamini–Hochberg–adjusted q-values
 - GSEA rank files (GSEA_<datatype>.rnk) for downstream gene-set enrichment analysis
 - SummarizedExperiment objects (<datatype>.rds) for seamless import into Shiny-based visualization tools
-  
+
 These results can be further integrated using the `prophosqua` package for combined analysis of total proteome and PTM data. However, it is important to note that there are scenarios where performing differential PTM feature abundance analysis is the only practical option (see Note \@ref(useofDPADPU)).
 
 
@@ -492,11 +517,11 @@ stopifnot(file.exists(ptm_file))
 Finally we load the differential expression results into the `R` session.
 
 ```{r b4loaddata}
-  required_cols <- c("protein_Id", "protein_length", "contrast")
-  tot_res <- prophosqua::load_and_preprocess_data(tot_file, required_cols)
-  tot_res <- prophosqua::filter_contaminants(tot_res)
-  phospho_res <- prophosqua::load_and_preprocess_data(ptm_file, required_cols)
-  phospho_res <- prophosqua::filter_contaminants(phospho_res)
+required_cols <- c("protein_Id", "protein_length", "contrast")
+tot_res <- prophosqua::load_and_preprocess_data(tot_file, required_cols)
+tot_res <- prophosqua::filter_contaminants(tot_res)
+phospho_res <- prophosqua::load_and_preprocess_data(ptm_file, required_cols)
+phospho_res <- prophosqua::filter_contaminants(phospho_res)
 ```
 
 The data integration step is critical for enabling DPU analysis and represents one of the most important technical aspects of the workflow. This step joins phosphorylation site data with total protein data to create a unified dataset where each PTM feature is linked to its corresponding protein-level measurements.
@@ -524,7 +549,7 @@ combined_site_prot <- dplyr::left_join(
 
 
 We also need to check the match rate between PTM sites and proteins, that is the number of PTM sites that have a protein match divided by the total number of PTM sites. Currently, `prolfquapp` matches PTM and protein features using exact protein IDs. This introduces a limitation: discrepancies in representative protein identifiers between the PTM-enriched and total proteome datasets may lead to loss of mapping information (see Note \@ref(matchrates)).
-    
+
 ```{r b5matchrate}
 
 # Calculate match rate by contrast
@@ -552,7 +577,7 @@ DPA tests the raw PTM-feature signal change between conditions, without any corr
 DPA results are visualized using N-to-C plots, generated by the `prophosqua` [@10.5281/zenodo.15845272] `n_to_c_expression` function. These plots map both the $\log_2$ fold changes of individual modification sites along the primary sequence of the protein and the $\log_2$ fold change of the protein abundance from the total proteome experiment. This provides a clear visual summary of both site-specific and overall protein expression changes. The N-to-C expression plot (see Figure \@ref(fig:b6plotQ64337)), shows that the protein SQSTM1 (UniProt id Q64337) and the phosphorylation sites are upregulated in the KO vs WT comparison.
 
 Because generating N-to-C plots is computationally intensive, we generate plots only for proteins with at least one significant phosphorylation site or multi-site feature. The FDR threshold for determining significance can be adjusted in the `n_to_c_expression` or `n_to_c_usage` functions, allowing researchers to balance computational efficiency with comprehensive visualization based on their specific considerations. When no significant PTM sites are detected despite biological expectations, one possible reason is insufficient statistical power, which can be mitigated by increasing the sample size (see Note 4.3).
-    
+
 ```{r b6makeplot, results='hide'}
 if (ptm_feature == "multisite") {
   combined_site_prot_long <- explode_multisites(combined_site_prot)
@@ -752,7 +777,7 @@ The produced XLSX file can be downloaded from [@10.5281/zenodo.15830988].  This 
 
 
 ## Estimating PTM feature usage by the correct first approach
-   
+
 Here we show how to estimate the DPU using the correct first approach. We first correct the PTM site abundances, using the total proteome protein abundances, and then model the differential usage changes.
 This analysis starts by loading the `prolfquapp` outputs, but this time we read the transformed and normalized total proteome protein abundances.
 
@@ -843,16 +868,16 @@ Protein kinases exhibit sequence specificity, preferentially phosphorylating sit
 
 ```{r tablesites, echo=FALSE}
 tableS <- data.frame(
-    Kinase = c("PKA/PKG", "PKC", "CK2", "MAPK"),
-    Consensus_motif = c("R-R-X-S/T", "R-X-S/T-X-R", "S/T-X-X-E/D", "P-X-S/T-P"),
-    Positional_notes = c(
-      "Arg at -3 and -2",
-      "Arg at -3 and +2",
-      "Acidic residue at +3",
-      "Pro at -2 and +1"
-    ),
-    stringsAsFactors = FALSE
-  )
+  Kinase = c("PKA/PKG", "PKC", "CK2", "MAPK"),
+  Consensus_motif = c("R-R-X-S/T", "R-X-S/T-X-R", "S/T-X-X-E/D", "P-X-S/T-P"),
+  Positional_notes = c(
+    "Arg at -3 and -2",
+    "Arg at -3 and +2",
+    "Acidic residue at +3",
+    "Pro at -2 and +1"
+  ),
+  stringsAsFactors = FALSE
+)
 knitr::kable(tableS, caption = "Consensus phosphorylation motifs of representative serine/threonine kinases. Motifs are defined relative to the phosphorylated residue (S/T at position 0). X = any residue; positions are relative to the phospho-acceptor serine/threonine (S/T).")
 
 ```
@@ -889,21 +914,24 @@ significant_sites <- combined_test_diff |>
 
 
 ```{r tableSignificantContrasts}
-#with(significant_sites, table(contrast, regulation, modAA)) |>
-#  knitr::kable(caption = "Number of significantly regulated sites, for each contrast,
-#               amino acid residue, and up- or down-regulation.")
-# |> 
-#  kableExtra::kable_styling(font_size = 9, latex_options = "scale_down")
-
-library(huxtable)
-xt <- with(significant_sites, table(contrast, regulation, modAA))
-ht <- huxtable::as_hux(xt)
-huxtable::caption(ht) <- "Number of significantly regulated sites, for each contrast, amino acid residue, and up- or down-regulation."
-ht <- huxtable::theme_compact(ht)
-huxtable::font_size(ht) <- 9
-ht
+tx <- as.data.frame(with(significant_sites, table(contrast, regulation, modAA)) )
+capt <- "Number of significantly regulated sites, for each contrast,
+  amino acid residue, and up- or down-regulation."
+if (is_docx) {
+  ft <- flextable::flextable(tx) |> 
+    flextable::fontsize(part = "all", size = 9) |> 
+    flextable::set_table_properties(width = 1, layout = "fixed", opts_word = list(split = FALSE)) |> 
+    flextable::width(width = c(2.5, 1.2, 0.8, 1.0)) |> 
+    flextable::set_caption(capt)
+  ft
+} else {
+  tx |>
+    knitr::kable(caption = capt) |> 
+    kableExtra::kable_styling(font_size = 9, latex_options = "scale_down")
+}
 
 ```
+
 
 Before generating sequence logos, we need to ensure the sequence windows are properly centered on the phosphorylation site. This code validates that the 8th character (center position) of each sequence window matches the reported modified amino acid (Note \@ref(seqwindow)).
 
@@ -915,7 +943,7 @@ significant_sites <- significant_sites |> filter(seventh_chars == modAA)
 
 
 We generate sequence logos for significantly regulated serine and threonine phosphorylation sites. The plots are organized by contrast and regulation direction (up/down) to identify kinase-specific motifs (see Figure \@ref(fig:c1makeseqlog2S).
-    
+
 (ref:c1makeseqlog2S) Sequence logo plots showing amino acid motifs surrounding significantly regulated phosphorylation at serine and threonine residues. Separate logos are generated for up- and downregulated sites within each experimental contrast. The height of each letter indicates the relative frequency of each amino acid at each position surrounding the phosphorylation site (position 8). The color indicates different amino acid types (hydrophobic, polar, charged, etc.). 
 
 
@@ -948,7 +976,7 @@ TMT-based quantification offers several advantages, including higher throughput,
 
 
 ## Automated QC reporting with FragPipe TMT QC script {#automatedqc}
-  
+
 The `prophosqua`[@10.5281/zenodo.15845272] package vignette `QCReport.qmd` can be used to generate a comprehensive TMT labeling efficiency report, directly from FragPipe PSM `psm.tsv` output file. The script evaluates labeling completeness at both peptide and PSM levels for N-terminal and lysine modifications, calculates missed cleavage rates for tryptic digestion efficiency, and provides quantitative balance assessment across all TMT channels. Key metrics include percentage of modified N-termini and lysine residues (expected $\ge 95\%$), missed cleavage rates for lysine and arginine residues, and relative abundance distributions across channels to detect loading imbalances. To asses labelling efficiency, the TMT labeling of lysine residues and peptide N-termini (+304.2071 Da) needs to be specified in the search as variable modification.
 
 
