@@ -2,7 +2,9 @@
 NULL
 
 get_significance <- function(fdr, thr_a = 0.05, thr_b = 0.2) {
-  if (fdr < thr_a) {
+  if (is.na(fdr)) {
+    return("")
+  } else if (fdr < thr_a) {
     return("**")
   } else if (fdr < thr_b) {
     return("*")
