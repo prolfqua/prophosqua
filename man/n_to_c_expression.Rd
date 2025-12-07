@@ -8,6 +8,7 @@ n_to_c_expression(
   combined_site_prot_long,
   contrast_name,
   FDR_threshold = 0.05,
+  fc_threshold = 0,
   impute_flag = "Imputed_Mean_moderated"
 )
 }
