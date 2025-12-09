@@ -345,17 +345,25 @@ n_to_c_usage  <- function(
 #' @param FDR_threshold FDR threshold for filtering significant sites (default 0.05)
 #' @param fc_threshold Fold change threshold for filtering (default 0)
 #' @param impute_flag Flag for imputed values (default "Imputed_Mean_moderated")
+#' @param max_plots Maximum number of plots to generate (default NULL = no limit).
+#'   If specified, only the first max_plots proteins will be plotted.
+#' @param include_proteins Character vector of protein IDs to always include in the output,
+#'   regardless of max_plots limit (default NULL). These proteins will be added even if
+#'   they exceed the max_plots limit.
 #' @return data frame with protein_Id, protein_length, n_contrasts, and multi-panel plot
 #' @export
 #' @examples
 #' # data(combined_site_prot_data)
-#' # result <- n_to_c_expression_multicontrast(combined_site_prot_data)
+#' # result <- n_to_c_expression_multicontrast(combined_site_prot_data,
+#' #   max_plots = 50, include_proteins = c("Q64337"))
 #' # print(result$plot[[1]])  # Display first protein's multi-contrast plot
 n_to_c_expression_multicontrast <- function(
     combined_site_prot_long,
     FDR_threshold = 0.05,
     fc_threshold = 0,
-    impute_flag = "Imputed_Mean_moderated") {
+    impute_flag = "Imputed_Mean_moderated",
+    max_plots = NULL,
+    include_proteins = NULL) {
 
   # Get all unique contrasts
   all_contrasts <- unique(combined_site_prot_long$contrast)
@@ -373,6 +381,27 @@ n_to_c_expression_multicontrast <- function(
   proteins_to_plot <- significant_proteins |>
     dplyr::select(protein_Id, protein_length) |>
     dplyr::distinct()
+
+  # Limit number of plots if max_plots is specified
+  n_total <- nrow(proteins_to_plot)
+  if (!is.null(max_plots) && n_total > max_plots) {
+    # Keep first max_plots proteins
+    proteins_limited <- proteins_to_plot[seq_len(max_plots), ]
+
+    # Add include_proteins if specified and not already in the set
+    if (!is.null(include_proteins)) {
+      missing_proteins <- setdiff(include_proteins, proteins_limited$protein_Id)
+      if (length(missing_proteins) > 0) {
+        extra_proteins <- proteins_to_plot |>
+          dplyr::filter(protein_Id %in% missing_proteins)
+        proteins_limited <- dplyr::bind_rows(proteins_limited, extra_proteins)
+        message("Added ", nrow(extra_proteins), " requested protein(s): ",
+                paste(missing_proteins, collapse = ", "))
+      }
+    }
+    proteins_to_plot <- proteins_limited
+    message("Limiting to ", nrow(proteins_to_plot), " plots (out of ", n_total, " significant proteins)")
+  }
 
   message("Creating multi-contrast plots for ", nrow(proteins_to_plot), " proteins...")
 
@@ -466,18 +495,26 @@ n_to_c_expression_multicontrast <- function(
 #' @param fc_threshold Fold change threshold for filtering (default 0)
 #' @param impute_flag Flag for imputed values (default "Imputed_Mean_moderated")
 #' @param protein_Id Column name for protein identifier (default "protein_Id")
+#' @param max_plots Maximum number of plots to generate (default NULL = no limit).
+#'   If specified, only the first max_plots proteins will be plotted.
+#' @param include_proteins Character vector of protein IDs to always include in the output,
+#'   regardless of max_plots limit (default NULL). These proteins will be added even if
+#'   they exceed the max_plots limit.
 #' @return data frame with protein_Id, protein_length, n_contrasts, and multi-panel plot
 #' @export
 #' @examples
 #' # data(combined_diff_data)
-#' # result <- n_to_c_usage_multicontrast(combined_diff_data)
+#' # result <- n_to_c_usage_multicontrast(combined_diff_data,
+#' #   max_plots = 50, include_proteins = c("Q64337"))
 #' # print(result$plot[[1]])  # Display first protein's multi-contrast plot
 n_to_c_usage_multicontrast <- function(
     data_combined_diff,
     FDR_threshold = 0.05,
     fc_threshold = 0,
     impute_flag = "Imputed_Mean_moderated",
-    protein_Id = "protein_Id") {
+    protein_Id = "protein_Id",
+    max_plots = NULL,
+    include_proteins = NULL) {
 
   # Get all unique contrasts
   all_contrasts <- unique(data_combined_diff$contrast)
@@ -495,6 +532,27 @@ n_to_c_usage_multicontrast <- function(
   proteins_to_plot <- significant_proteins |>
     dplyr::select(dplyr::all_of(c(protein_Id, "protein_length"))) |>
     dplyr::distinct()
+
+  # Limit number of plots if max_plots is specified
+  n_total <- nrow(proteins_to_plot)
+  if (!is.null(max_plots) && n_total > max_plots) {
+    # Keep first max_plots proteins
+    proteins_limited <- proteins_to_plot[seq_len(max_plots), ]
+
+    # Add include_proteins if specified and not already in the set
+    if (!is.null(include_proteins)) {
+      missing_proteins <- setdiff(include_proteins, proteins_limited[[protein_Id]])
+      if (length(missing_proteins) > 0) {
+        extra_proteins <- proteins_to_plot |>
+          dplyr::filter(!!dplyr::sym(protein_Id) %in% missing_proteins)
+        proteins_limited <- dplyr::bind_rows(proteins_limited, extra_proteins)
+        message("Added ", nrow(extra_proteins), " requested protein(s): ",
+                paste(missing_proteins, collapse = ", "))
+      }
+    }
+    proteins_to_plot <- proteins_limited
+    message("Limiting to ", nrow(proteins_to_plot), " plots (out of ", n_total, " significant proteins)")
+  }
 
   message("Creating multi-contrast plots for ", nrow(proteins_to_plot), " proteins...")
 
