@@ -149,7 +149,7 @@ Site-level reports collapse signals from all peptidoforms mapping to the same PT
 
 Statistical analysis of PTM data requires specialized methods due to confounding effects between PTM levels and protein abundances. Several statistical packages have emerged to address the critical issue of integrating PTM-feature quantifications with protein abundance data. Notable examples include `MSstatsPTM` [@10.1016/j.mcpro.2022.100477] and `msqrob2PTM` [@10.1016/j.mcpro.2023.100708], which explicitly model both modified peptide and protein-level changes to distinguish genuine PTM regulation from protein abundance effects accurately.
 
-The `msqrob2PTM` framework exemplifies the statistical approaches now available for PTM analysis, defining two complementary analytical strategies: Differential Peptidoform Abundance (DPA) and Differential Peptidoform Usage (DPU) [@10.1016/j.mcpro.2023.100708]. DPA directly models the $log^2$ intensities of each modified peptide (peptidoform), detecting absolute changes in PTM levels between experimental conditions. In contrast, DPU adjusts the PTM intensities by the corresponding protein-level changes, effectively testing for changes in the relative usage or stoichiometry of a modification site. This dual approach enables researchers to distinguish between PTM changes driven by protein abundance differences (DPA) versus those reflecting genuine changes in modification efficiency or regulatory activity (DPU).
+The `msqrob2PTM` framework exemplifies the statistical approaches now available for PTM analysis, defining two complementary analytical strategies: DPA and DPU [@10.1016/j.mcpro.2023.100708]. DPA directly models the $log^2$ intensities of each modified peptide (peptidoform), detecting absolute changes in PTM levels between experimental conditions. In contrast, DPU adjusts the PTM intensities by the corresponding protein-level changes, effectively testing for changes in the relative usage or stoichiometry of a modification site. This dual approach enables researchers to distinguish between PTM changes driven by protein abundance differences (DPA) versus those reflecting genuine changes in modification efficiency or regulatory activity (DPU).
 
 These two frameworks differ in their analytical approaches for addressing confounding between PTM and changes in protein abundance. `MSstatsPTM` employs a "model then correct" strategy, separately fitting linear models to modified and unmodified peptide data, and then combining statistical inferences post-modeling. In contrast, `msqrob2PTM` follows a "correct then model" approach, first adjusting PTM intensities by their corresponding protein abundances at the data level, and subsequently performing statistical testing on these normalized values. 
 
@@ -175,7 +175,7 @@ A robust solution involves matching stripped peptide sequences from the PTM data
 
 ## Chapter Overview and Learning Objectives
 
-This chapter introduces an analytical workflow that addresses the biological challenge of accurately distinguishing differential PTM abundance (DPA) from Differential PTM Usage (DPU). Distinguishing between protein-level effects and genuine modification-specific changes is critical for meaningful interpretation of PTM data. The workflow emphasizes reproducibility, automation, and biological interpretation.
+This chapter introduces an analytical workflow that addresses the biological challenge of accurately distinguishing DPA from DPU. Distinguishing between protein-level effects and genuine modification-specific changes is critical for meaningful interpretation of PTM data. The workflow emphasizes reproducibility, automation, and biological interpretation.
 
 DPA tests raw PTM signal changes between experimental conditions, identifying any modification abundance changes regardless of underlying protein-level effects. This analysis captures the total impact of experimental perturbations on PTM levels, including both direct modification effects and indirect effects mediated through changes in protein abundance.
 
@@ -223,7 +223,7 @@ For detailed installation instructions, see the package documentation on
 
 ## Mass Spectrometry Data Processing
 
-Raw mass spectrometry (MS) data acquired using data-dependent acquisition (DDA) combined with tandem mass tag (TMT) labeling are processed using specialized software to:
+Raw MS data acquired using DDA combined with TMT labeling are processed using specialized software to:
 
 1. Search spectra against a protein sequence database including species-specific sequences, common contaminants, and decoy sequences 
 2. to extract reporter ion intensities
@@ -234,7 +234,7 @@ The section (see Methods \@ref(fragpipeparams)) describes in detail how we param
 
 # Methods
 
-A key challenge, when analysing post-translational modifications (PTMs), is to distinguish changes in PTM abundance that are due to altered protein expression from those that reflect a change in the modification stoichiometry (i.e., the fraction of the protein pool that is modified). This protocol provides a step-by-step computational workflow to analyze PTM data in the context of total protein abundance changes. We leverage the *R* packages `prolfquapp` [@10.1021/acs.jproteome.4c00911] for streamlined differential expression analysis [@10.1021/acs.jproteome.2c00441] and `prophosqua` [@10.5281/zenodo.15845272] for the integration, analysis, and visualization of PTM and total proteome data. The workflow comprises three parts: 1) analysing the raw mass spectrometric data with _FragPipe_, 2) performing differential expression analysis for the PTM-enriched and total proteome datasets, and 3) integrating the PTM and total proteome data.  
+A key challenge, when analysing PTMs, is to distinguish changes in PTM abundance that are due to altered protein expression from those that reflect a change in the modification stoichiometry (i.e., the fraction of the protein pool that is modified). This protocol provides a step-by-step computational workflow to analyze PTM data in the context of total protein abundance changes. We leverage the *R* packages `prolfquapp` [@10.1021/acs.jproteome.4c00911] for streamlined differential expression analysis [@10.1021/acs.jproteome.2c00441] and `prophosqua` [@10.5281/zenodo.15845272] for the integration, analysis, and visualization of PTM and total proteome data. The workflow comprises three parts: 1) analysing the raw mass spectrometric data with _FragPipe_, 2) performing differential expression analysis for the PTM-enriched and total proteome datasets, and 3) integrating the PTM and total proteome data.  
 
 
 ## Analysing TMT raw data with _FragPipe_ {#fragpipeparams}
@@ -333,10 +333,6 @@ We start by reading the sample names from the _FragPipe_ output files using the 
 --software prolfquapp.FP_TMT
 ```
 
-```{r showAnnotTable}
-annot <- readr::read_tsv("PTM_example/data_total/dataset.tsv")
-knitr::kable(head(annot), caption = "Annotation table created from FragPipe outputs, with a set of columns required by prolfquapp")
-```
 
 We use *R* to extract experimental factors, the Genotype and Timepoint, from the channel labels using the `tidyr::separate` function. If the channel names do not encode the experimental conditions, the explanatory variables must be provided by adding columns to the annotation file using a text editor.
 
@@ -367,30 +363,8 @@ Note that setting the argument `interactions=FALSE` in the `annotation_add_contr
 The file `dataset_with_contrasts.tsv` is the final dataset file that will be used for the differential expression analysis (see Table \@ref(tab:showannotation)).
 
 
-```{r showannotation, echo=FALSE}
-tx <- head(annot2)
-capt <- "Annotation table with explanatory variables and contrasts."
-if(!is_docx){
-  knitr::kable(tx, caption = capt) |> 
-  kableExtra::kable_styling(font_size = 9, latex_options = "scale_down")
-} else {
-  ft <- flextable::flextable(tx) |>
-  flextable::fontsize(part = "all", size = 8) |>
-  flextable::theme_vanilla() |>
-  flextable::set_table_properties(
-    width = 1,
-    layout = "fixed"
-  ) |>
-  flextable::width(j = "Contrast", width = 3) |>  # Extra wide for long formulas
-  flextable::width(j = c("channel", "name", "Group"), width = 0.8) |>
-  flextable::width(j = "ContrastName", width = 1.2) |>
-  flextable::padding(padding = 2, part = "all") |>
-  flextable::set_caption(capt)
-  ft
-}
-```
 
-For the experimental design in this protocol (2×3 factorial: Genotype [KO/WT] × Time [Uninfected/Early/Late]), the function generated four distinct contrasts:
+For the experimental design in this protocol ($2\times3$ factorial: Genotype [KO/WT] $\times$ Time [Uninfected/Early/Late]), the function generated four distinct contrasts:
 
 1. `KO_vs_WT` (Main effect): `( (G_KO_Uninfect + G_KO_Late + G_KO_Early)/3 - (G_WT_Uninfect + G_WT_Late + G_WT_Early)/3 )` - Compares overall genotype effects across all timepoints
 2. `KO_vs_WT_at_Uninfect`: `G_KO_Uninfect - G_WT_Uninfect` - Compares genotypes specifically in the _uninfected_ condition
@@ -402,7 +376,7 @@ If we want to compare timepoints instead of genotypes, we set: `primary_col="Tim
 
 ## Execution of Differential Abundance Analysis
 
-Before performing differential expression analysis, we generate a YAML configuration file using the `prolfqua_yaml.sh` script. The configuration file (`config.yaml`) defines key analysis parameters, including the normalization method (variance stabilization normalization, VSN, by default), protein summarization strategy (Tukey's median polish by default), and quality-filtering thresholds such as q-value cutoffs for peptide or protein-level evidence.
+Before performing differential expression analysis, we generate a YAML configuration file using the `prolfqua_yaml.sh` script. The configuration file (`config.yaml`) defines key analysis parameters, including the normalization method (variance stabilization normalization (VSN) by default), protein summarization strategy (Tukey's median polish by default), and quality-filtering thresholds such as q-value cutoffs for peptide or protein-level evidence.
 
 ```{bash a4runDEAtotalConfig, echo=TRUE, results="hide", eval=do_dea}
 ./prolfqua_yaml.sh -y config.yaml
@@ -472,7 +446,7 @@ These results can be integrated using the `prophosqua` package for combined anal
 
 ## Integrated PTM Analysis using `prophosqua`
 
-The `prophosqua` package [@10.5281/zenodo.15845272] provides tools for integrating and analyzing post-translational modification (PTM) data with total proteome measurements. It enables researchers to distinguish between changes in protein abundance and changes in the usage of modification sites. This section explains how to load the results of the differential abundance analysis, integrate the PTM and total proteome data, and determine differential PTM-feature usage.
+The `prophosqua` package [@10.5281/zenodo.15845272] provides tools for integrating and analyzing PTM data with total proteome measurements. It enables researchers to distinguish between changes in protein abundance and changes in the usage of modification sites. This section explains how to load the results of the differential abundance analysis, integrate the PTM and total proteome data, and determine differential PTM-feature usage.
 
 Differential expression results from `prolfquapp`, provided in Excel format, for the total proteome and the multi- or single-site PTM analyses are imported into *R*. These datasets are then integrated by performing a left join on protein identifiers, merging PTM-level statistics with the corresponding protein-level values for each condition.
 
@@ -557,7 +531,7 @@ combined_site_prot <- dplyr::left_join(
 
 We also need to check the match rate between PTM sites and proteins, that is, the number of PTM sites that have a protein match divided by the total number of PTM sites. Currently, `prolfquapp` matches PTM and protein features using exact protein IDs, which introduces a limitation: discrepancies in representative protein identifiers between the PTM-enriched and total proteome datasets may result in the loss of mapping information (see Note \@ref(matchrates)).
 
-```{r b5matchrate}
+```{r b5matchrate_comp}
 
 # Calculate match rate by contrast
 match_rates <- combined_site_prot |>
@@ -568,12 +542,8 @@ match_rates <- combined_site_prot |>
     match_rate = round(matched_sites / total_sites * 100, 1)
   )
 
-knitr::kable(
-  match_rates,
-  col.names = c("Contrast", "Total Sites", "Matched Sites", "Match Rate"),
-  caption = "Match rates between PTM sites and proteins."
-)
 ```
+
 
 The Table \@ref(tab:b5matchrate) shows the match rates for each contrast.
 
@@ -596,11 +566,9 @@ if (ptm_feature == "multisite") {
 }
 ```
 
-(ref:fig1Q64337) Figure: N-to-C expression plot showing differential expression of total protein abundance (light yellow rectangle) and phosphorylation sites (vertical lines, color coded by type of residue) along protein sequences. The vertical lines are either dashed or solid, depending on the site's imputation status. The x-axis represents amino acid position from N to C terminus, while the y-axis shows $\log_2$ fold changes. Significantly regulated sites (FDR < 0.05 and FDR < 0.01) are highlighted with one or two red asterisks, respectively. The plot enables visualization of both overall protein regulation and site-specific phosphorylation changes in a single view.
-
-```{r fig1Q64337, fig.cap="(ref:fig1Q64337)"}
+```{r fig1Q64337_compute}
 x1 <- which(plot_data$protein_Id == "Q64337")
-plot_data$plot[[x1]]
+fig1_plot <- plot_data$plot[[x1]]
 ```
 
 ```{r plotTable, include = FALSE}
@@ -685,11 +653,9 @@ In the *Atg16l1* macrophage dataset [@10.7554/elife.62320], SQSTM1 (uniprot id Q
 
 Additionally, individual high-confidence DPA/DPU sites should be carefully inspected for technical quality, including verification of protein coverage and assessment of missing values across treatment groups (see Note \@ref(qcrecommend)).
 
-(ref:fig2usageQ64337) N-to-C usage plot showing differential usage of phosphorylation sites (vertical lines, color-coded by type of residue) along the protein sequences. The vertical lines are either dashed or solid, depending on the site's imputation status. The x-axis represents amino acid position from N to C terminus, while the y-axis shows $\log_2$ fold changes. Significantly regulated sites (FDR < 0.05 and FDR < 0.01) are highlighted with one or two red asterisks, respectively. The plot enables visualization of both overall protein regulation and site-specific phosphorylation changes in a single view.
-
-```{r fig2usageQ64337, fig.cap="(ref:fig2usageQ64337)"}
+```{r fig2usageQ64337_compute}
 x1 <- which(plot_data$protein_Id == "Q64337")
-plot_data$plot[[x1]]
+fig2_plot <- plot_data$plot[[x1]]
 ```
 
 ```{r fig2usageQ64337Table, include=FALSE}
@@ -812,7 +778,7 @@ ptm_data <- prolfqua::LFQData$new(ldata,config)
 
 We merge the data for the single-site and total proteome protein abundances by protein identifier and sample. Then we subtract the total proteome protein abundances from the single-site abundances. The Density plot (see Figure \@ref(fig:fig3densityCorrected)) shows the distribution of the corrected single-site abundances.
 
-```{r correctData, fig.cap="Density plot showing the total proteome corrected single-site abudances."}
+```{r correctData}
 ptm_data$data <- dplyr::inner_join(
   ptm_data$data, tot_d, 
   by = c("channel", protein_Id = "UniprotID"), suffix = c(".site",".total"))
@@ -820,10 +786,10 @@ ptm_data$data <- ptm_data$data |>
   dplyr::mutate(ptm_usage = normalized_abundance.site - normalized_abundance.total)
 ```
 
-```{r fig3densityCorrected, fig.cap="Density plot of the total proteome corrected PTM site abundances."}
+```{r fig3densityCorrected_compute}
 ptm_data$config$table$set_response("ptm_usage")
 pl <- ptm_data$get_Plotter()
-pl$intensity_distribution_density()
+fig3_plot <- pl$intensity_distribution_density()
 ```
 
 
@@ -856,9 +822,9 @@ ctr_df <- ctr_all$get_contrasts()
 
 Finally, we can create a volcano plot of the DPU results using the `ctr_plotter` variable, which is an instance of the `prolfqua::ContrastsPlotter` class (see Figure \@ref(fig:fig4FDRcorrfirst)).
 
-```{r fig4FDRcorrfirst, fig.cap ="Volcano plot showing the -log10(FDR) as a function of the PTM site fold change."} 
+```{r fig4FDRcorrfirst_compute}
 ctr_plotter <- ctr_all$get_Plotter()
-ctr_plotter$volcano()$FDR
+fig4_plot <- ctr_plotter$volcano()$FDR
 ```
 
 
@@ -875,21 +841,6 @@ Protein kinases exhibit sequence specificity, preferentially phosphorylating sit
 - Generate testable hypotheses: Motif predictions can guide follow-up experiments with kinase inhibitors or knockdowns
 
 
-```{r tablesites, echo=FALSE}
-tableS <- data.frame(
-  Kinase = c("PKA/PKG", "PKC", "CK2", "MAPK"),
-  Consensus_motif = c("R-R-X-S/T", "R-X-S/T-X-R", "S/T-X-X-E/D", "P-X-S/T-P"),
-  Positional_notes = c(
-    "Arg at -3 and -2",
-    "Arg at -3 and +2",
-    "Acidic residue at +3",
-    "Pro at -2 and +1"
-  ),
-  stringsAsFactors = FALSE
-)
-knitr::kable(tableS, caption = "Consensus phosphorylation motifs of representative serine/threonine kinases. Motifs are defined relative to the phosphorylated residue (S/T at position 0). X = any residue; positions are relative to the phospho-acceptor serine/threonine (S/T).")
-
-```
 
 
 To identify potential kinases responsible for the observed phosphorylation changes, sequence motif analysis is performed on significantly regulated PTM sites identified in the DPU analysis. For each contrast, amino acid sequences flanking the significantly regulated sites (i.e., $FDR < 0.01$ and $|log_2(FC)| > 0.58$) are extracted and grouped by regulation status (i.e., upregulated or downregulated). The `ggseqlogo` *R* package is then used to generate sequence logo plots for each group. These plots visualize conserved amino acid patterns around the modification site, facilitating comparison to known kinase recognition motifs and enabling inference of upstream regulatory kinases (see Table \@ref(tab:tablesites)).
@@ -922,24 +873,6 @@ significant_sites <- combined_test_diff |>
 ```
 
 
-```{r tableSignificantContrasts}
-tx <- as.data.frame(with(significant_sites, table(contrast, regulation, modAA)) )
-capt <- "Number of significantly regulated sites, for each contrast,
-  amino acid residue, and up- or down-regulation."
-if (is_docx) {
-  ft <- flextable::flextable(tx) |> 
-    flextable::fontsize(part = "all", size = 9) |> 
-    flextable::set_table_properties(width = 1, layout = "fixed", opts_word = list(split = FALSE)) |> 
-    flextable::width(width = c(2.5, 1.2, 0.8, 1.0)) |> 
-    flextable::set_caption(capt)
-  ft
-} else {
-  tx |>
-    knitr::kable(caption = capt) |> 
-    kableExtra::kable_styling(font_size = 9, latex_options = "scale_down")
-}
-
-```
 
 
 Before generating sequence logos, we must ensure that the sequence windows are properly centered on the phosphorylation site. This code validates that the 8th character (center position) of each sequence window matches the reported modified amino acid (Note \@ref(seqwindow)).
@@ -953,10 +886,7 @@ significant_sites <- significant_sites |> filter(seventh_chars == modAA)
 
 We generate sequence logos for sites of significantly regulated serine and threonine phosphorylation. The plots are organized by contrast and regulation direction (up/down) to identify kinase-specific motifs (see Figure \@ref(fig:fig5seqlogoST)).
 
-(ref:fig5seqlogoST) Sequence logo plots showing amino acid motifs surrounding significantly regulated phosphorylation at serine and threonine residues. Separate logos are generated for up- and downregulated sites within each experimental contrast. The height of each letter indicates the relative frequency of each amino acid at each position surrounding the phosphorylation site (position 8). The color indicates different types of amino acids (hydrophobic, polar, charged, etc.).
-
-
-```{r fig5seqlogoST, fig.width=9, fig.height=12, fig.cap="(ref:fig5seqlogoST)"}
+```{r fig5seqlogoST_compute, fig.width=9, fig.height=12}
 seq_list <- significant_sites |> filter(modAA == "S" | modAA == "T") |>
   mutate(.grp = paste(contrast, regulation,  sep = "_")) |>
   group_by(.grp) |>
@@ -966,10 +896,10 @@ seq_list <- significant_sites |> filter(modAA == "S" | modAA == "T") |>
   ) |>
   with(setNames(seqs, .grp))
 
-ggseqlogo(
+fig5_plot <- ggseqlogo(
   seq_list,
   ncol = 2,
-  seq_type = "aa", 
+  seq_type = "aa",
   method = "probability"
 )
 ```
@@ -1045,57 +975,47 @@ Weak or absent sequence motifs in significantly regulated sites can arise for se
 
 Overall, weak motif signals can result from an insufficient number of significant sites, the presence of multiple overlapping regulatory activities, or regulation by mechanisms that do not rely on canonical sequence motifs. To address these issues, one can lower the significance threshold for motif analysis to capture more sites. If no clear kinase sequence pattern emerges, keep in mind that regulation may involve non-kinase pathways, which underscores the importance of considering both statistical and biological explanations when interpreting motif analysis results.
 
-```{r abbreviations, echo=FALSE, results='asis'}
-if (params$abbreviations) {
-  cat("
-## Abbreviations
+```{r abbreviations, echo=FALSE, results='asis', include=params$abbreviations}
+# Abbreviation table - set params$abbreviations = TRUE to include in output
+# Note: Per journal guidelines (Note 4.13), abbreviations should be introduced
+# in parentheses after the full term at first use in the text.
+# This table is kept for reference but can be excluded with include=FALSE.
 
-| Abbreviation | Definition |
-|--------------|------------|
-| BSA | Bovine Serum Albumin |
-| ClAA | Chloroacetamide |
-| CV | Coefficient of Variation |
-| DDA | Data-Dependent Acquisition |
-| DEA | Differential Abundance Analysis |
-| DIA | Data-Independent Acquisition |
-| DPA | Differential Peptidoform Abundance |
-| DPA | Differential Post-Translational Modification Abundance |
-| DPU | Differential Post-Translational Modification Usage |
-| EtOH | Ethanol |
-| FC | Fraction Collector |
-| FDR | False Discovery Rate |
-| FGCZ | Functional Genomics Center Zurich |
-| HPLC | High-Performance Liquid Chromatography |
-| ID | Identification |
-| IMAC | Immobilized Metal Affinity Chromatography |
-| IP | Immunoprecipitation |
-| LC | Liquid Chromatography |
-| MOAC | Metal Oxide Affinity Chromatography |
-| MS | Mass Spectrometry |
-| N-to-C | N-terminus to C-terminus |
-| NTA | Nitrilotriacetic Acid |
-| PSM | Peptide-Spectrum Match |
-| PTM | Post-Translational Modification |
-| QC | Quality Control |
-| RT | Room Temperature / Retention Time |
-| SDS | Sodium Dodecyl Sulfate |
-| SIB | Swiss Institute of Bioinformatics |
-| SP3 | Single-Pot Solid-Phase-Enhanced Sample Preparation |
-| SPE | Solid-Phase Extraction |
-| TCEP | Tris(2-carboxyethyl)phosphine |
-| TEAB | Tetraethylammonium Bicarbonate |
-| TMT | Tandem Mass Tag |
-| UHPLC | Ultra-High-Performance Liquid Chromatography |
-| UV | Ultraviolet |
+abbreviation_table <- data.frame(
+  Abbreviation = c("BSA", "ClAA", "CV", "DDA", "DEA", "DIA", "DPA", "DPU",
+                   "EtOH", "FC", "FDR", "FGCZ", "HPLC", "ID", "IMAC", "IP",
+                   "LC", "MOAC", "MS", "N-to-C", "NTA", "PSM", "PTM", "QC",
+                   "RT", "SDS", "SIB", "SP3", "SPE", "TCEP", "TEAB", "TMT",
+                   "UHPLC", "UV", "VSN"),
+  Definition = c("Bovine Serum Albumin", "Chloroacetamide", "Coefficient of Variation",
+                 "Data-Dependent Acquisition", "Differential Expression Analysis",
+                 "Data-Independent Acquisition", "Differential Post-Translational Modification Abundance",
+                 "Differential Post-Translational Modification Usage", "Ethanol",
+                 "Fraction Collector", "False Discovery Rate",
+                 "Functional Genomics Center Zurich", "High-Performance Liquid Chromatography",
+                 "Identification", "Immobilized Metal Affinity Chromatography",
+                 "Immunoprecipitation", "Liquid Chromatography",
+                 "Metal Oxide Affinity Chromatography", "Mass Spectrometry",
+                 "N-terminus to C-terminus", "Nitrilotriacetic Acid",
+                 "Peptide-Spectrum Match", "Post-Translational Modification",
+                 "Quality Control", "Room Temperature / Retention Time",
+                 "Sodium Dodecyl Sulfate", "Swiss Institute of Bioinformatics",
+                 "Single-Pot Solid-Phase-Enhanced Sample Preparation",
+                 "Solid-Phase Extraction", "Tris(2-carboxyethyl)phosphine",
+                 "Tetraethylammonium Bicarbonate", "Tandem Mass Tag",
+                 "Ultra-High-Performance Liquid Chromatography", "Ultraviolet",
+                 "Variance Stabilization Normalization")
+)
 
-")
-}
+cat("## Abbreviations\n\n")
+knitr::kable(abbreviation_table, col.names = c("Abbreviation", "Definition"))
 ```
 
 
-## Software Versions and Session Information
 
 ```{r sessioninfo, include=FALSE}
+## Software Versions and Session Information
+
 # Display session information
 cat("R Session Information:\n")
 pander::pander(sessionInfo())
@@ -1103,6 +1023,113 @@ pander::pander(sessionInfo())
 
 # References
 
+<div id="refs"></div>
+
+# Figures {-}
+
+(ref:fig1Q64337) N-to-C expression plot showing differential expression of total protein abundance (light yellow rectangle) and phosphorylation sites (vertical lines, color coded by type of residue) along protein sequences. The vertical lines are either dashed or solid, depending on the site's imputation status. The x-axis represents amino acid position from N to C terminus, while the y-axis shows $\log_2$ fold changes. Significantly regulated sites (FDR < 0.05 and FDR < 0.01) are highlighted with one or two red asterisks, respectively. The plot enables visualization of both overall protein regulation and site-specific phosphorylation changes in a single view.
+
+```{r fig1Q64337, fig.cap="(ref:fig1Q64337)", echo=FALSE}
+fig1_plot
+```
+
+(ref:fig2usageQ64337) N-to-C usage plot showing differential usage of phosphorylation sites (vertical lines, color-coded by type of residue) along the protein sequences. The vertical lines are either dashed or solid, depending on the site's imputation status. The x-axis represents amino acid position from N to C terminus, while the y-axis shows $\log_2$ fold changes. Significantly regulated sites (FDR < 0.05 and FDR < 0.01) are highlighted with one or two red asterisks, respectively. The plot enables visualization of both overall protein regulation and site-specific phosphorylation changes in a single view.
+
+```{r fig2usageQ64337, fig.cap="(ref:fig2usageQ64337)", echo=FALSE}
+fig2_plot
+```
+
+(ref:fig3densityCorrected) Density plot of the total proteome corrected PTM site abundances.
+
+```{r fig3densityCorrected, fig.cap="(ref:fig3densityCorrected)", echo=FALSE}
+fig3_plot
+```
+
+(ref:fig4FDRcorrfirst) Volcano plot showing the -log10(FDR) as a function of the PTM site fold change.
+
+```{r fig4FDRcorrfirst, fig.cap="(ref:fig4FDRcorrfirst)", echo=FALSE}
+fig4_plot
+```
+
+(ref:fig5seqlogoST) Sequence logo plots showing amino acid motifs surrounding significantly regulated phosphorylation at serine and threonine residues. Separate logos are generated for up- and downregulated sites within each experimental contrast. The height of each letter indicates the relative frequency of each amino acid at each position surrounding the phosphorylation site (position 8). The color indicates different types of amino acids (hydrophobic, polar, charged, etc.).
+
+```{r fig5seqlogoST, fig.width=9, fig.height=12, fig.cap="(ref:fig5seqlogoST)", echo=FALSE}
+fig5_plot
+```
 
 
+# Tables {-}
 
+```{r showAnnotTable}
+annot <- readr::read_tsv("PTM_example/data_total/dataset.tsv")
+knitr::kable(head(annot), caption = "Annotation table created from FragPipe outputs, with a set of columns required by prolfquapp")
+```
+
+
+```{r showannotation, echo=FALSE}
+tx <- head(annot2)
+capt <- "Annotation table with explanatory variables and contrasts."
+if(!is_docx){
+  knitr::kable(tx, caption = capt) |> 
+  kableExtra::kable_styling(font_size = 9, latex_options = "scale_down")
+} else {
+  ft <- flextable::flextable(tx) |>
+  flextable::fontsize(part = "all", size = 8) |>
+  flextable::theme_vanilla() |>
+  flextable::set_table_properties(
+    width = 1,
+    layout = "fixed"
+  ) |>
+  flextable::width(j = "Contrast", width = 3) |>  # Extra wide for long formulas
+  flextable::width(j = c("channel", "name", "Group"), width = 0.8) |>
+  flextable::width(j = "ContrastName", width = 1.2) |>
+  flextable::padding(padding = 2, part = "all") |>
+  flextable::set_caption(capt)
+  ft
+}
+```
+
+```{r b5matchrate}
+knitr::kable(
+  match_rates,
+  col.names = c("Contrast", "Total Sites", "Matched Sites", "Match Rate"),
+  caption = "Match rates between PTM sites and proteins."
+)
+```
+
+
+```{r tablesites, echo=FALSE}
+tableS <- data.frame(
+  Kinase = c("PKA/PKG", "PKC", "CK2", "MAPK"),
+  Consensus_motif = c("R-R-X-S/T", "R-X-S/T-X-R", "S/T-X-X-E/D", "P-X-S/T-P"),
+  Positional_notes = c(
+    "Arg at -3 and -2",
+    "Arg at -3 and +2",
+    "Acidic residue at +3",
+    "Pro at -2 and +1"
+  ),
+  stringsAsFactors = FALSE
+)
+knitr::kable(tableS, caption = "Consensus phosphorylation motifs of representative serine/threonine kinases. Motifs are defined relative to the phosphorylated residue (S/T at position 0). X = any residue; positions are relative to the phospho-acceptor serine/threonine (S/T).")
+
+```
+
+
+```{r tableSignificantContrasts, echo=FALSE}
+tx <- as.data.frame(with(significant_sites, table(contrast, regulation, modAA)) )
+capt <- "Number of significantly regulated sites, for each contrast,
+  amino acid residue, and up- or down-regulation."
+if (is_docx) {
+  ft <- flextable::flextable(tx) |> 
+    flextable::fontsize(part = "all", size = 9) |> 
+    flextable::set_table_properties(width = 1, layout = "fixed", opts_word = list(split = FALSE)) |> 
+    flextable::width(width = c(2.5, 1.2, 0.8, 1.0)) |> 
+    flextable::set_caption(capt)
+  ft
+} else {
+  tx |>
+    knitr::kable(caption = capt) |> 
+    kableExtra::kable_styling(font_size = 9, latex_options = "scale_down")
+}
+
+```
