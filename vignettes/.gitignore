@@ -10,4 +10,5 @@
 *.fdb_latexmk
 *.fls
 *.fdb_latexmk
-./*
+*.knit.md
+Supplementary_*.docx
