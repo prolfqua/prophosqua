@@ -61,16 +61,17 @@ prepare_n_to_c_data <- function(poi_matrix_min, model_site = "model_site") {
 #' # Prepare data for plotting
 #' poi_matrix_min <- prepare_n_to_c_data(exampleN_C_dat)
 #'
-#' n_to_c_plot(poi_matrix_min, "A0A1I9LPZ1", 2160, "H1FC")
-#' n_to_c_plot(poi_matrix_min, "A0A178US29", 806, "H1FC")
+#' n_to_c_plot(subset(poi_matrix_min, protein_Id == "A0A1I9LPZ1"), "A0A1I9LPZ1", 2160, "H1FC")
+#' n_to_c_plot(subset(poi_matrix_min, protein_Id == "A0A178US29"), "A0A178US29", 806, "H1FC")
 n_to_c_plot <- function(
-    poi_matrix_min,
-    protein_name,
-    prot_length,
-    contrast,
-    thr_a = 0.05,
-    thr_b = 0.2,
-    color_protein = "yellow") {
+  poi_matrix_min,
+  protein_name,
+  prot_length,
+  contrast,
+  thr_a = 0.05,
+  thr_b = 0.2,
+  color_protein = "yellow"
+) {
   # Validate required columns
   required_cols <- c(
     "diff.protein", "diff.site", "FDR.site", "posInProtein",
@@ -104,11 +105,10 @@ n_to_c_plot <- function(
     scale_color_manual(values = c("S" = "blue", "T" = "green", Y = "brown", NotLoc = "pink")) +
     scale_x_continuous(limits = c(0, prot_length)) +
     geom_text(aes(x = .data$posInProtein, y = .data$diff.site, label = .data$significance),
-              vjust = 0.4, size = 7, color = "red"
+      vjust = 0.4, size = 7, color = "red"
     ) +
     labs(y = paste0("diff : ", contrast), title = plot_title) +
     theme_minimal()
-
 
 
   if (!is.na(mean_diff_prot)) {
@@ -125,7 +125,7 @@ n_to_c_plot <- function(
 
     p <- p + geom_rect(data = legend_data, aes(
       xmin = .data$xmin,
-      xmax = .data$ xmax, ymin = .data$ymin,
+      xmax = .data$xmax, ymin = .data$ymin,
       ymax = .data$ymax, fill = .data$fill
     ), alpha = 0.3) +
       scale_fill_manual(values = c("diff of protein" = color_protein)) +
@@ -133,13 +133,13 @@ n_to_c_plot <- function(
   } else {
     yext <- max(poi_matrix_min$diff.site, na.rm = TRUE)
     p <- p + annotate("rect",
-                      xmin = 0, xmax = prot_length,
-                      ymin = -yext / 2, ymax = +yext / 2, alpha = 0.3,
-                      fill = "white", color = "red", linetype = "dashed"
+      xmin = 0, xmax = prot_length,
+      ymin = -yext / 2, ymax = +yext / 2, alpha = 0.3,
+      fill = "white", color = "red", linetype = "dashed"
     ) +
       annotate("text",
-               x = prot_length / 2,
-               y = 0, label = "No estimate for diff of protein", color = "red", angle = 45, size = 6
+        x = prot_length / 2,
+        y = 0, label = "No estimate for diff of protein", color = "red", angle = 45, size = 6
       )
   }
   return(p)
@@ -154,13 +154,14 @@ n_to_c_plot <- function(
 #' n_c_integrated_df$imputation_status <- "observed"
 #' n_to_c_plot_integrated(n_c_integrated_df, "A0A1I9LT44", 539, "WTFC")
 n_to_c_plot_integrated <- function(
-    poi_matrix_min,
-    protein_name,
-    prot_length,
-    contrast,
-    thr_a = 0.05,
-    thr_b = 0.2,
-    color_protein = "yellow") {
+  poi_matrix_min,
+  protein_name,
+  prot_length,
+  contrast,
+  thr_a = 0.05,
+  thr_b = 0.2,
+  color_protein = "yellow"
+) {
   # Validate required columns
   required_cols <- c("diff_diff", "FDR_I", "posInProtein", "modAA")
   missing_cols <- setdiff(required_cols, colnames(poi_matrix_min))
@@ -173,12 +174,14 @@ n_to_c_plot_integrated <- function(
 
   poi_matrix_min$significance <- sapply(poi_matrix_min$FDR_I, get_significance, thr_a, thr_b)
 
-  plot_title <- paste0("Prot : ", protein_name,
-                       "; length: ",
-                       prot_length,
-                       "; # sites:", nrow(poi_matrix_min)
-                       ,"; # not localized sites:",
-                       sum(poi_matrix_min$modAA == "NotLoc"))
+  plot_title <- paste0(
+    "Prot : ", protein_name,
+    "; length: ",
+    prot_length,
+    "; # sites:", nrow(poi_matrix_min),
+    "; # not localized sites:",
+    sum(poi_matrix_min$modAA == "NotLoc")
+  )
 
 
   mean_diff_prot <- 0
@@ -196,7 +199,7 @@ n_to_c_plot_integrated <- function(
     annotate("text", x = 0, y = mean_diff_prot, label = "N", vjust = 0, hjust = 0) +
     annotate("text", x = prot_length, y = mean_diff_prot, label = "C", vjust = 0, hjust = 0) +
     geom_text(aes(x = .data$posInProtein, y = .data$diff_diff, label = .data$significance),
-              vjust = 0.4, size = 7, color = "red"
+      vjust = 0.4, size = 7, color = "red"
     ) +
     labs(y = paste0("diff : ", contrast), title = plot_title) +
     theme_minimal()
@@ -208,9 +211,7 @@ n_to_c_plot_integrated <- function(
 #' @param n_panels Number of panels to arrange
 #' @return List with ncol and nrow for grid layout
 #' @keywords internal
-#' @examples
-#' calculate_optimal_layout(6)  # Returns list(ncol=3, nrow=2)
-#' calculate_optimal_layout(8)  # Returns list(ncol=3, nrow=3)
+#' @keywords internal
 calculate_optimal_layout <- function(n_panels) {
   if (n_panels == 1) {
     return(list(ncol = 1, nrow = 1))
@@ -232,13 +233,14 @@ calculate_optimal_layout <- function(n_panels) {
 #' @param impute_flag Flag for imputed values (default "Imputed_Mean_moderated")
 #' @return data frame with protein_Id, protein_length, contrast, data, and plot
 #' @export
-n_to_c_expression  <- function(
-    combined_site_prot_long,
-    contrast_name,
-    FDR_threshold = 0.05,
-    fc_threshold = 0,
-    impute_flag = "Imputed_Mean_moderated") {
-  if(!contrast_name %in% unique(combined_site_prot_long$contrast)){
+n_to_c_expression <- function(
+  combined_site_prot_long,
+  contrast_name,
+  FDR_threshold = 0.05,
+  fc_threshold = 0,
+  impute_flag = "Imputed_Mean_moderated"
+) {
+  if (!contrast_name %in% unique(combined_site_prot_long$contrast)) {
     stop(contrast_name, " not in ", paste0(unique(combined_site_prot_long$contrast)))
   }
   combined_site_prot_long <- combined_site_prot_long |>
@@ -248,11 +250,12 @@ n_to_c_expression  <- function(
     dplyr::filter(any(FDR.site < FDR_threshold & abs(diff.site) > fc_threshold)) |>
     dplyr::ungroup()
 
-  required_cols <- c("protein_Id",
-                     "contrast",
-                     "protein_length",
-                     "site", "diff.protein", "diff.site", "FDR.site",
-                     "posInProtein", "modAA", "imputation_status"
+  required_cols <- c(
+    "protein_Id",
+    "contrast",
+    "protein_length",
+    "site", "diff.protein", "diff.site", "FDR.site",
+    "posInProtein", "modAA", "imputation_status"
   )
 
   plot_data <- combined_site_prot_long |>
@@ -272,11 +275,10 @@ n_to_c_expression  <- function(
       plot_data$protein_length[[i]],
       plot_data$contrast[[i]]
     )
-
   }
   close(pb)
 
-  return(plot_data=plot_data)
+  return(plot_data = plot_data)
 }
 
 
@@ -289,13 +291,14 @@ n_to_c_expression  <- function(
 #' @param protein_Id Column name for protein identifier (default "protein_Id")
 #' @return data frame with protein_Id, protein_length, contrast, data, and plot
 #' @export
-n_to_c_usage  <- function(
-    data_combined_diff,
-    contrast_name,
-    FDR_threshold = 0.05,
-    fc_threshold = 0,
-    impute_flag = "Imputed_Mean_moderated",
-    protein_Id = "protein_Id") {
+n_to_c_usage <- function(
+  data_combined_diff,
+  contrast_name,
+  FDR_threshold = 0.05,
+  fc_threshold = 0,
+  impute_flag = "Imputed_Mean_moderated",
+  protein_Id = "protein_Id"
+) {
   data_combined_diff <- data_combined_diff |>
     dplyr::filter(contrast == contrast_name)
   data_combined_diff <- data_combined_diff |>
@@ -303,15 +306,17 @@ n_to_c_usage  <- function(
     dplyr::filter(any(FDR_I < FDR_threshold & abs(diff_diff) > fc_threshold)) |>
     dplyr::ungroup()
 
-  required_columns <- c("protein_Id",
-                        "contrast",
-                        "protein_length",
-                        "site",
-                        "diff_diff",
-                        "FDR_I",
-                        "posInProtein",
-                        "modAA",
-                        "imputation_status")
+  required_columns <- c(
+    "protein_Id",
+    "contrast",
+    "protein_length",
+    "site",
+    "diff_diff",
+    "FDR_I",
+    "posInProtein",
+    "modAA",
+    "imputation_status"
+  )
   data_combined_diff$imputation_status <- ifelse(data_combined_diff$modelName.site == "Imputed_Mean_moderated" | data_combined_diff$modelName.protein == "Imputed_Mean_moderated", "imputed", "observed")
 
   # Create integrated N-to-C plots
@@ -358,13 +363,13 @@ n_to_c_usage  <- function(
 #' #   max_plots = 50, include_proteins = c("Q64337"))
 #' # print(result$plot[[1]])  # Display first protein's multi-contrast plot
 n_to_c_expression_multicontrast <- function(
-    combined_site_prot_long,
-    FDR_threshold = 0.05,
-    fc_threshold = 0,
-    impute_flag = "Imputed_Mean_moderated",
-    max_plots = NULL,
-    include_proteins = NULL) {
-
+  combined_site_prot_long,
+  FDR_threshold = 0.05,
+  fc_threshold = 0,
+  impute_flag = "Imputed_Mean_moderated",
+  max_plots = NULL,
+  include_proteins = NULL
+) {
   # Get all unique contrasts
   all_contrasts <- unique(combined_site_prot_long$contrast)
   n_contrasts <- length(all_contrasts)
@@ -395,8 +400,10 @@ n_to_c_expression_multicontrast <- function(
         extra_proteins <- proteins_to_plot |>
           dplyr::filter(protein_Id %in% missing_proteins)
         proteins_limited <- dplyr::bind_rows(proteins_limited, extra_proteins)
-        message("Added ", nrow(extra_proteins), " requested protein(s): ",
-                paste(missing_proteins, collapse = ", "))
+        message(
+          "Added ", nrow(extra_proteins), " requested protein(s): ",
+          paste(missing_proteins, collapse = ", ")
+        )
       }
     }
     proteins_to_plot <- proteins_limited
@@ -406,9 +413,11 @@ n_to_c_expression_multicontrast <- function(
   message("Creating multi-contrast plots for ", nrow(proteins_to_plot), " proteins...")
 
   # Prepare required columns
-  required_cols <- c("protein_Id", "contrast", "protein_length", "site",
-                     "diff.protein", "diff.site", "FDR.site",
-                     "posInProtein", "modAA", "imputation_status")
+  required_cols <- c(
+    "protein_Id", "contrast", "protein_length", "site",
+    "diff.protein", "diff.site", "FDR.site",
+    "posInProtein", "modAA", "imputation_status"
+  )
 
   # Add imputation status
   combined_site_prot_long <- combined_site_prot_long |>
@@ -461,9 +470,10 @@ n_to_c_expression_multicontrast <- function(
         # Create empty placeholder plot
         contrast_plots[[j]] <- ggplot2::ggplot() +
           ggplot2::annotate("text",
-                           x = 0.5, y = 0.5,
-                           label = paste0("No data for\n", contrast),
-                           size = 5, color = "gray50") +
+            x = 0.5, y = 0.5,
+            label = paste0("No data for\n", contrast),
+            size = 5, color = "gray50"
+          ) +
           ggplot2::theme_void() +
           ggplot2::labs(title = contrast)
       }
@@ -508,14 +518,14 @@ n_to_c_expression_multicontrast <- function(
 #' #   max_plots = 50, include_proteins = c("Q64337"))
 #' # print(result$plot[[1]])  # Display first protein's multi-contrast plot
 n_to_c_usage_multicontrast <- function(
-    data_combined_diff,
-    FDR_threshold = 0.05,
-    fc_threshold = 0,
-    impute_flag = "Imputed_Mean_moderated",
-    protein_Id = "protein_Id",
-    max_plots = NULL,
-    include_proteins = NULL) {
-
+  data_combined_diff,
+  FDR_threshold = 0.05,
+  fc_threshold = 0,
+  impute_flag = "Imputed_Mean_moderated",
+  protein_Id = "protein_Id",
+  max_plots = NULL,
+  include_proteins = NULL
+) {
   # Get all unique contrasts
   all_contrasts <- unique(data_combined_diff$contrast)
   n_contrasts <- length(all_contrasts)
@@ -546,8 +556,10 @@ n_to_c_usage_multicontrast <- function(
         extra_proteins <- proteins_to_plot |>
           dplyr::filter(!!dplyr::sym(protein_Id) %in% missing_proteins)
         proteins_limited <- dplyr::bind_rows(proteins_limited, extra_proteins)
-        message("Added ", nrow(extra_proteins), " requested protein(s): ",
-                paste(missing_proteins, collapse = ", "))
+        message(
+          "Added ", nrow(extra_proteins), " requested protein(s): ",
+          paste(missing_proteins, collapse = ", ")
+        )
       }
     }
     proteins_to_plot <- proteins_limited
@@ -557,9 +569,11 @@ n_to_c_usage_multicontrast <- function(
   message("Creating multi-contrast plots for ", nrow(proteins_to_plot), " proteins...")
 
   # Prepare required columns
-  required_columns <- c("protein_Id", "contrast", "protein_length", "site",
-                        "diff_diff", "FDR_I", "posInProtein", "modAA",
-                        "imputation_status")
+  required_columns <- c(
+    "protein_Id", "contrast", "protein_length", "site",
+    "diff_diff", "FDR_I", "posInProtein", "modAA",
+    "imputation_status"
+  )
 
   # Add imputation status
   data_combined_diff$imputation_status <- ifelse(
@@ -612,9 +626,10 @@ n_to_c_usage_multicontrast <- function(
         # Create empty placeholder plot
         contrast_plots[[j]] <- ggplot2::ggplot() +
           ggplot2::annotate("text",
-                           x = 0.5, y = 0.5,
-                           label = paste0("No data for\n", contrast),
-                           size = 5, color = "gray50") +
+            x = 0.5, y = 0.5,
+            label = paste0("No data for\n", contrast),
+            size = 5, color = "gray50"
+          ) +
           ggplot2::theme_void() +
           ggplot2::labs(title = contrast)
       }

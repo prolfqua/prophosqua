@@ -35,6 +35,6 @@ data(exampleN_C_dat)
 # Prepare data for plotting
 poi_matrix_min <- prepare_n_to_c_data(exampleN_C_dat)
 
-n_to_c_plot(poi_matrix_min, "A0A1I9LPZ1", 2160, "H1FC")
-n_to_c_plot(poi_matrix_min, "A0A178US29", 806, "H1FC")
+n_to_c_plot(subset(poi_matrix_min, protein_Id == "A0A1I9LPZ1"), "A0A1I9LPZ1", 2160, "H1FC")
+n_to_c_plot(subset(poi_matrix_min, protein_Id == "A0A178US29"), "A0A178US29", 806, "H1FC")
 }
