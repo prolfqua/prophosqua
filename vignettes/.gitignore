@@ -13,3 +13,6 @@
 *.knit.md
 Supplementary_*.docx
 *.docx
+.snakemake/
+temp/
+.package_installed
