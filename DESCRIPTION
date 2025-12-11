@@ -20,7 +20,9 @@ Depends:
     R (>= 4.1.0)
 Imports:
     dplyr,
+    fgsea,
     ggplot2,
     ggseqlogo,
     patchwork,
-    rlang
+    rlang,
+    writexl

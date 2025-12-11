@@ -1,0 +1,106 @@
+# Snakefile for rendering prophosqua vignettes
+#
+# Usage:
+#   snakemake -j1              # Build all outputs
+#   snakemake -j1 help         # Show this help
+#   snakemake -j1 clean        # Remove generated files
+#   snakemake -j1 <target>     # Build specific target
+#
+# Targets:
+#   all                        - Build all vignettes (default)
+#   render_supplementary       - Render Supplementary_Material_v3.docx
+#   render_ptmsea              - Render Analysis_PTMSEA.html
+#   render_motif               - Render Analysis_Motif_Enrichment.html
+#   install_package            - Reinstall prophosqua package
+#
+# Notes:
+#   - Package is automatically reinstalled when R/*.R or DESCRIPTION changes
+#   - Use 'rm .package_installed' to force package reinstall
+
+import glob
+
+# Get all R source files to track for package reinstallation
+R_FILES = glob.glob("../R/*.R")
+DESCRIPTION = "../DESCRIPTION"
+
+rule help:
+    """Show available targets and usage"""
+    run:
+        print("""
+Snakefile for rendering prophosqua vignettes
+
+Usage:
+  snakemake -j1              Build all outputs
+  snakemake -j1 help         Show this help
+  snakemake -j1 clean        Remove generated files
+  snakemake -j1 <target>     Build specific target
+
+Targets:
+  all                        Build all vignettes (default)
+  render_supplementary       Render Supplementary_Material_v3.docx
+  render_ptmsea              Render Analysis_PTMSEA.html
+  render_motif               Render Analysis_Motif_Enrichment.html
+  install_package            Reinstall prophosqua package
+
+Notes:
+  - Package is automatically reinstalled when R/*.R or DESCRIPTION changes
+  - Use 'rm .package_installed' to force package reinstall
+        """)
+
+rule all:
+    input:
+        "Supplementary_Material_v3.docx",
+        "Analysis_PTMSEA.html"
+
+rule clean:
+    """Remove generated files"""
+    shell:
+        """
+        rm -f .package_installed
+        rm -f Supplementary_Material_v3.docx Analysis_PTMSEA.html Analysis_Motif_Enrichment.html
+        rm -f *.knit.md *.utf8.md
+        """
+
+rule install_package:
+    input:
+        r_files=R_FILES,
+        description=DESCRIPTION
+    output:
+        touch(".package_installed")
+    shell:
+        """
+        Rscript -e "devtools::install('..')"
+        """
+
+rule render_supplementary:
+    input:
+        rmd="Supplementary_Material_v3.Rmd",
+        pkg=".package_installed"
+    output:
+        "Supplementary_Material_v3.docx"
+    shell:
+        """
+        Rscript -e "rmarkdown::render('{input.rmd}', output_format = 'bookdown::word_document2', clean = FALSE)"
+        """
+
+rule render_ptmsea:
+    input:
+        rmd="Analysis_PTMSEA.Rmd",
+        pkg=".package_installed"
+    output:
+        "Analysis_PTMSEA.html"
+    shell:
+        """
+        Rscript -e "rmarkdown::render('{input.rmd}', output_format = 'bookdown::html_document2', clean = FALSE)"
+        """
+
+rule render_motif:
+    input:
+        rmd="Analysis_Motif_Enrichment.Rmd",
+        pkg=".package_installed"
+    output:
+        "Analysis_Motif_Enrichment.html"
+    shell:
+        """
+        Rscript -e "rmarkdown::render('{input.rmd}', output_format = 'bookdown::html_document2', clean = FALSE)"
+        """

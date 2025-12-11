@@ -3,4 +3,8 @@
 .RData
 .Ruserdata
 bibliography.bib
-**/*_files/
+inst/ProphosquaMain/
+.DS_Store
+*_files/
+MiMB_submission*
+CLAUDE.md
