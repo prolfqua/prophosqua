@@ -9,6 +9,7 @@
 # Targets:
 #   all                        - Build all vignettes (default)
 #   render_supplementary       - Render Supplementary_Material_v3.docx
+#   renumber_references        - Renumber Notes/Figures/Tables in DOCX
 #   render_ptmsea              - Render Analysis_PTMSEA.html
 #   render_motif               - Render Analysis_Motif_Enrichment.html
 #   install_package            - Reinstall prophosqua package
@@ -38,6 +39,7 @@ Usage:
 Targets:
   all                        Build all vignettes (default)
   render_supplementary       Render Supplementary_Material_v3.docx
+  renumber_references        Renumber Notes/Figures/Tables in DOCX
   render_ptmsea              Render Analysis_PTMSEA.html
   render_motif               Render Analysis_Motif_Enrichment.html
   install_package            Reinstall prophosqua package
@@ -49,7 +51,7 @@ Notes:
 
 rule all:
     input:
-        "Supplementary_Material_v3.docx",
+        "Supplementary_Material_v3_renumbered.docx",
         "Analysis_PTMSEA.html"
 
 rule clean:
@@ -57,7 +59,8 @@ rule clean:
     shell:
         """
         rm -f .package_installed
-        rm -f Supplementary_Material_v3.docx Analysis_PTMSEA.html Analysis_Motif_Enrichment.html
+        rm -f Supplementary_Material_v3.docx Supplementary_Material_v3_renumbered.docx
+        rm -f Analysis_PTMSEA.html Analysis_Motif_Enrichment.html
         rm -f *.knit.md *.utf8.md
         """
 
@@ -81,6 +84,18 @@ rule render_supplementary:
     shell:
         """
         Rscript -e "rmarkdown::render('{input.rmd}', output_format = 'bookdown::word_document2', clean = FALSE)"
+        """
+
+rule renumber_references:
+    """Renumber Note 4.X -> X, Figure 5.X -> X, Table 5.X -> X in DOCX"""
+    input:
+        docx="Supplementary_Material_v3.docx",
+        script="rename_notes.py"
+    output:
+        "Supplementary_Material_v3_renumbered.docx"
+    shell:
+        """
+        uv run --with python-docx python {input.script}
         """
 
 rule render_ptmsea:
