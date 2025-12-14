@@ -34,15 +34,15 @@ library(tidyr)
 ```
 
 ```{r load_data}
-# Load all MEA results
-data_dir <- here::here("vignettes")
-mea_files <- list.files(data_dir, pattern = "^mea_.*\\.csv$", full.names = TRUE)
+# Load all MEA results from zip file in inst/extdata
+zip_path <- system.file("extdata", "mea_results.zip", package = "prophosqua")
+mea_files <- unzip(zip_path, list = TRUE)$Name
 
 # Read and combine all MEA results
 mea_results <- mea_files |>
   map_dfr(function(f) {
-    contrast_name <- gsub("^mea_|\\.csv$", "", basename(f))
-    read.csv(f) |>
+    contrast_name <- gsub("^mea_|\\.csv$", "", f)
+    read.csv(unz(zip_path, f)) |>
       mutate(contrast = contrast_name)
   })
 
