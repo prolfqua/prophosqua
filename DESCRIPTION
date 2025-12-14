@@ -16,6 +16,7 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.3.3
+VignetteBuilder: knitr
 Depends:
     R (>= 4.1.0)
 Imports:
@@ -26,3 +27,12 @@ Imports:
     patchwork,
     rlang,
     writexl
+Suggests:
+    knitr,
+    rmarkdown,
+    bookdown,
+    clusterProfiler,
+    enrichplot,
+    here,
+    purrr,
+    testthat (>= 3.0.0)

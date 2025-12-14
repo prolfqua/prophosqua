@@ -15,3 +15,5 @@
 # Miscellaneous
 \.DS_Store$
 ^ptm_example-main\.zip$
+^doc$
+^Meta$
