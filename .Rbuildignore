@@ -11,6 +11,8 @@
 ^vignettes/.*_files$
 ^vignettes/MiMB_submission$
 ^vignettes/\.snakemake$
+^vignettes/temp$
+^vignettes/Supplementary_Material_v3\.Rmd$
 
 # Miscellaneous
 \.DS_Store$

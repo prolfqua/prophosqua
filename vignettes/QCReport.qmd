@@ -131,7 +131,7 @@ fasta <- prozor::readPeptideFasta(pathtoZip$fasta)
 fastaWithRev <- length(fasta)
 fasta <- fasta[!grepl("REV_", names(fasta))]
 fastaNoRev <- length(fasta)
-x <- prozor::make_fasta_summary(fasta,as_string = TRUE)
+x <- prophosqua::make_fasta_summary(fasta, as_string = TRUE)
 
 ```
 

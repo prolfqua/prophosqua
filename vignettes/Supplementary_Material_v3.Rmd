@@ -10,7 +10,7 @@ date: 2025-07-15
 running_head: "Integrated Phosphoproteome Analysis"
 params:
   wd: ""
-  dodea: false
+  dodea: true
   abbreviations: false
 output:
   bookdown::pdf_document2:
@@ -464,7 +464,8 @@ In the code below, we define the paths to the DEA results in the XLSX files stor
 We need to specify the workunit names and the date when the DEA analysis was run.
 
 ```{r definePaths}
-datedea <- "20251207"
+# Use today's date if running DEA, otherwise use existing results
+datedea <- if(do_dea) datetoday else "20251207"
 
 tot_file <- prophosqua::dea_xlsx_path(project_dir, "total_proteome", datedea)
 ptm_file <- prophosqua::dea_xlsx_path(project_dir, "singlesite_PTM", datedea)
@@ -684,15 +685,17 @@ rmarkdown::render(
   ),
   envir = new.env(parent = globalenv())
 )
+```
 
-# Copy HTML report to results directory
-file.copy(
-  from = "_Overview_PhosphoAndIntegration_site.html",
-  to = file.path(
-    res_dir,
-    "Result_phosphoAndTotalIntegration.html"
+```{r copyIntegrationHtml}
+# Copy HTML report to results directory (uses existing if not re-rendered)
+if (file.exists("_Overview_PhosphoAndIntegration_site.html")) {
+  file.copy(
+    from = "_Overview_PhosphoAndIntegration_site.html",
+    to = file.path(res_dir, "Result_phosphoAndTotalIntegration.html"),
+    overwrite = TRUE
   )
-)
+}
 ```
 
 In addition, the analysis results are exported to an Excel file for further analysis and sharing. The Excel file contains two worksheets:

@@ -19,3 +19,6 @@ temp/
 *.tsv
 *.csv
 *.rnk
+
+/.quarto/
+**/*.quarto_ipynb
