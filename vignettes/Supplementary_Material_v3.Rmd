@@ -28,7 +28,7 @@ output:
     keep_tex: true
     latex_engine: pdflatex
     number_sections: false
-  html_document:
+  bookdown::html_document2:
     toc: false
     number_sections: false
     global_numbering: false
