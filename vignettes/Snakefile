@@ -9,12 +9,15 @@
 # Targets:
 #   all                        - Build all vignettes (default)
 #   mea                        - Build 4 kinase/motif enrichment vignettes
-#   render_supplementary       - Render Supplementary_Material_v3.docx
+#   render_supplementary       - Render Supplementary_Material_v3.docx (dodea=false)
+#   render_supplementary_full  - Render with full DEA (dodea=true, slow!)
+#   render_supplementary_html  - Render Supplementary_Material_v3.html
 #   renumber_references        - Renumber Notes/Figures/Tables in DOCX
 #   render_ptmsea              - Render Analysis_PTMSEA.html
 #   render_motif               - Render Analysis_Motif_Enrichment.html
 #   render_kl                  - Render Analysis_KinaseLibrary.html
 #   render_vis                 - Render Vis_MEA.html
+#   render_qc                  - Render QCReport.html with mouse example data
 #   kl                         - Run kinase-library + render KL/Vis vignettes
 #   install_package            - Reinstall prophosqua package
 #
@@ -46,12 +49,14 @@ Usage:
 Targets:
   all                        Build all vignettes (default)
   mea                        Build 4 kinase/motif enrichment vignettes
-  render_supplementary       Render Supplementary_Material_v3.docx
+  render_supplementary       Render Supplementary_Material_v3.docx (dodea=false)
+  render_supplementary_full  Render with full DEA (dodea=true, slow!)
   renumber_references        Renumber Notes/Figures/Tables in DOCX
   render_ptmsea              Render Analysis_PTMSEA.html
   render_motif               Render Analysis_Motif_Enrichment.html
   render_kl                  Render Analysis_KinaseLibrary.html
   render_vis                 Render Vis_MEA.html
+  render_qc                  Render QCReport.html with mouse example data
   kl                         Run kinase-library + render KL/Vis vignettes
   install_package            Reinstall prophosqua package
 
@@ -102,9 +107,35 @@ rule render_supplementary:
         pkg=".package_installed"
     output:
         "Supplementary_Material_v3.docx"
+    params:
+        dodea="false"
     shell:
         """
-        Rscript -e "rmarkdown::render('{input.rmd}', output_format = 'bookdown::word_document2', clean = FALSE)"
+        Rscript -e "rmarkdown::render('{input.rmd}', output_format = 'bookdown::word_document2', params = list(dodea = {params.dodea}), clean = FALSE)"
+        """
+
+rule render_supplementary_full:
+    """Render Supplementary_Material_v3 with full DEA (dodea=true)"""
+    input:
+        rmd="Supplementary_Material_v3.Rmd",
+        pkg=".package_installed"
+    output:
+        "Supplementary_Material_v3_full.docx"
+    shell:
+        """
+        Rscript -e "rmarkdown::render('{input.rmd}', output_format = 'bookdown::word_document2', output_file = 'Supplementary_Material_v3_full.docx', params = list(dodea = TRUE), clean = FALSE)"
+        """
+
+rule render_supplementary_html:
+    """Render Supplementary_Material_v3 as HTML (with full DEA)"""
+    input:
+        rmd="Supplementary_Material_v3.Rmd",
+        pkg=".package_installed"
+    output:
+        "Supplementary_Material_v3.html"
+    shell:
+        """
+        Rscript -e "rmarkdown::render('{input.rmd}', output_format = 'bookdown::html_document2', output_file = 'Supplementary_Material_v3.html', params = list(dodea = TRUE), clean = FALSE)"
         """
 
 rule renumber_references:
@@ -246,4 +277,22 @@ rule run_mea:
             --threshold 95 \
             --permutations 1000 \
             --threads {threads}
+        """
+
+# QC Report rule
+
+rule render_qc:
+    """Render QCReport with mouse example data"""
+    input:
+        qmd="QCReport.qmd",
+        pkg=".package_installed",
+        psm="../inst/PTM_example_analysis_v2/PTM_example/data_total/FP_22/p1/psm.tsv"
+    output:
+        "../inst/PTM_example_analysis_v2/QCReport.html"
+    params:
+        dest="../inst/PTM_example_analysis_v2"
+    shell:
+        """
+        cp {input.qmd} {params.dest}/
+        cd {params.dest} && Rscript -e "rmarkdown::render('QCReport.qmd', output_format = 'html_document', params = list(wd = '.', psm = 'PTM_example/data_total/FP_22/p1/psm.tsv', fasta = 'PTM_example/data_total/FP_22/p37688_db3_MusNShigella_20250219.fasta', workunit = 'mouse_example', projectid = 'Maculins2020'))"
         """
