@@ -16,3 +16,6 @@ Supplementary_*.docx
 .snakemake/
 temp/
 .package_installed
+*.tsv
+*.csv
+*.rnk

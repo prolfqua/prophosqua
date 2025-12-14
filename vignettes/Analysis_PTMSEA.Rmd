@@ -1,6 +1,10 @@
 ---
 title: "PTM-SEA: Kinase Activity Inference from Phosphoproteomics Data"
-output: rmarkdown::html_vignette
+output:
+  bookdown::html_document2:
+    code_folding: hide
+    toc: true
+    toc_float: true
 vignette: >
   %\VignetteIndexEntry{PTM-SEA: Kinase Activity Inference from Phosphoproteomics Data}
   %\VignetteEngine{knitr::rmarkdown}
@@ -10,7 +14,7 @@ vignette: >
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
   echo = TRUE,
-  message = TRUE,
+  message = FALSE,
   warning = FALSE
 )
 ```
@@ -29,16 +33,22 @@ We analyze both DPA (Differential PTM Abundance) and DPU (Differential PTM Usage
 
 ```{r load_data}
 library(prophosqua)
-library(fgsea)
 library(clusterProfiler)
+library(dplyr)
 library(enrichplot)
+library(fgsea)
+library(purrr)
 
 # Load example data
 example_path <- here::here("data", "combined_test_diff_example.rds")
 example_data <- readRDS(example_path)
 
-cat("Data dimensions:", nrow(example_data), "rows x", ncol(example_data), "columns\n")
-cat("Contrasts:", paste(unique(example_data$contrast), collapse = ", "), "\n")
+data_info <- tibble(
+  Property = c("Rows", "Columns", "Contrasts"),
+  Value = c(nrow(example_data), ncol(example_data),
+            paste(unique(example_data$contrast), collapse = ", "))
+)
+knitr::kable(data_info, caption = "Example Data")
 ```
 
 ```{r download_ptmsigdb}
@@ -48,7 +58,6 @@ pathways_raw <- fgsea::gmtPathways(gmt_path)
 
 # Trim pathways to 11-mer (default) to increase overlap with our data
 pathways <- trim_ptmsigdb_pathways(pathways_raw, trim_to = "11")
-cat("Loaded", length(pathways), "PTMsigDB signatures (trimmed to 11-mer)\n")
 ```
 
 ## Overlap Statistics
@@ -57,26 +66,37 @@ Understanding the overlap between our data and PTMsigDB is crucial for interpret
 
 ```{r overlap_stats}
 # Our data: unique flanking sequences (trimmed to 11-mer to match pathways)
-our_sequences <- unique(toupper(trimws(example_data$SequenceWindow)))
-our_sequences_trimmed <- sapply(our_sequences, prophosqua:::trim_flanking_seq, trim_to = 11L)
+our_sequences <- example_data |>
+  pull(SequenceWindow) |>
+  trimws() |>
+  toupper() |>
+  unique()
+our_sequences_trimmed <- our_sequences |>
+  map_chr(~prophosqua:::trim_flanking_seq(.x, trim_to = 11L))
 our_site_ids <- paste0(our_sequences_trimmed, "-p")
-n_our_sites <- length(unique(our_site_ids))
+n_our_sites <- n_distinct(our_site_ids)
 
 # PTMsigDB: unique site IDs (strip ;u/;d for comparison)
-ptmsigdb_ids_raw <- unique(unlist(pathways))
-ptmsigdb_ids_stripped <- unique(gsub(";[ud]$", "", ptmsigdb_ids_raw))
+ptmsigdb_ids_raw <- pathways |>
+  unlist() |>
+  unique()
+ptmsigdb_ids_stripped <- ptmsigdb_ids_raw |>
+  gsub(";[ud]$", "", x = _) |>
+  unique()
 n_ptmsigdb_sites <- length(ptmsigdb_ids_stripped)
 
 # Overlap
 overlap_ids <- intersect(unique(our_site_ids), ptmsigdb_ids_stripped)
 n_overlap <- length(overlap_ids)
 
-cat("=== Overlap Statistics (11-mer) ===\n")
-cat("Our data:", n_our_sites, "unique flanking sequences\n")
-cat("PTMsigDB:", n_ptmsigdb_sites, "unique site IDs\n")
-cat("Overlap:", n_overlap, "sites\n")
-cat("  -", round(100 * n_overlap / n_our_sites, 2), "% of our sites\n")
-cat("  -", round(100 * n_overlap / n_ptmsigdb_sites, 2), "% of PTMsigDB sites\n")
+overlap_stats <- tibble(
+  Metric = c("Our data (unique sequences)", "PTMsigDB (unique site IDs)", "Overlap",
+             "% of our sites", "% of PTMsigDB sites"),
+  Value = c(n_our_sites, n_ptmsigdb_sites, n_overlap,
+            round(100 * n_overlap / n_our_sites, 2),
+            round(100 * n_overlap / n_ptmsigdb_sites, 2))
+)
+knitr::kable(overlap_stats, caption = "Overlap Statistics (11-mer)")
 ```
 
 The low overlap is expected because:
@@ -85,13 +105,11 @@ The low overlap is expected because:
 2. Our phosphoproteomics data measures ~20,000+ sites
 3. Most measured sites have no known kinase annotation
 
----
-
-# DPA Analysis (Differential PTM Abundance)
+## DPA Analysis (Differential PTM Abundance)
 
 DPA uses raw phosphosite fold changes, which include both true signaling changes and protein abundance effects.
 
-## Prepare DPA Data
+### Prepare DPA Data
 
 ```{r prep_dpa}
 # Use t-statistic for ranking
@@ -102,13 +120,14 @@ prep_dpa <- ptmsea_data_prep(
   contrast_col = "contrast"
 )
 
-cat("Contrasts prepared:\n")
-for (name in names(prep_dpa$ranks)) {
-  cat("  ", name, ":", length(prep_dpa$ranks[[name]]), "sites\n")
-}
+dpa_prep_info <- tibble(
+  Contrast = names(prep_dpa$ranks),
+  Sites = map_int(prep_dpa$ranks, length)
+)
+knitr::kable(dpa_prep_info, caption = "DPA Contrasts Prepared")
 ```
 
-## DPA: GSEA without Direction
+### DPA: GSEA without Direction
 
 Standard GSEA ignoring the ;u/;d direction suffixes in PTMsigDB.
 
@@ -122,10 +141,11 @@ results_dpa_nodir <- run_ptmsea(
   pvalueCutoff = 0.1
 )
 
-cat("Results per contrast:\n")
-for (name in names(results_dpa_nodir)) {
-  cat("  ", name, ":", nrow(results_dpa_nodir[[name]]@result), "significant (FDR < 0.1)\n")
-}
+dpa_nodir_info <- tibble(
+  Contrast = names(results_dpa_nodir),
+  `Significant (FDR < 0.1)` = map_int(results_dpa_nodir, ~nrow(.x@result))
+)
+knitr::kable(dpa_nodir_info, caption = "DPA GSEA (no direction) Results")
 ```
 
 ```{r dpa_gsea_nodir_plot, fig.width=12, fig.height=8}
@@ -135,7 +155,7 @@ dotplot(merged_dpa_nodir, showCategory = 10,
   ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
 ```
 
-## DPA: GSEA with Direction
+### DPA: GSEA with Direction
 
 Splits pathways into _up and _down sets, runs ascending and descending.
 
@@ -149,10 +169,11 @@ results_dpa_dir <- run_ptmsea_up_down(
   pvalueCutoff = 0.1
 )
 
-cat("Results:\n")
-for (name in names(results_dpa_dir)) {
-  cat("  ", name, ":", nrow(results_dpa_dir[[name]]@result), "significant (FDR < 0.1)\n")
-}
+dpa_dir_info <- tibble(
+  Contrast = names(results_dpa_dir),
+  `Significant (FDR < 0.1)` = map_int(results_dpa_dir, ~nrow(.x@result))
+)
+knitr::kable(dpa_dir_info, caption = "DPA GSEA (with direction) Results")
 ```
 
 ```{r dpa_gsea_dir_plot, fig.width=14, fig.height=10}
@@ -162,13 +183,11 @@ dotplot(merged_dpa_dir, showCategory = 10,
   ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
 ```
 
----
-
-# DPU Analysis (Differential PTM Usage)
+## DPU Analysis (Differential PTM Usage)
 
 DPU uses protein-normalized phosphosite fold changes, representing true stoichiometry changes independent of protein abundance.
 
-## Prepare DPU Data
+### Prepare DPU Data
 
 ```{r prep_dpu}
 # Use t-statistic for DPU ranking
@@ -179,13 +198,14 @@ prep_dpu <- ptmsea_data_prep(
   contrast_col = "contrast"
 )
 
-cat("Contrasts prepared:\n")
-for (name in names(prep_dpu$ranks)) {
-  cat("  ", name, ":", length(prep_dpu$ranks[[name]]), "sites\n")
-}
+dpu_prep_info <- tibble(
+  Contrast = names(prep_dpu$ranks),
+  Sites = map_int(prep_dpu$ranks, length)
+)
+knitr::kable(dpu_prep_info, caption = "DPU Contrasts Prepared")
 ```
 
-## DPU: GSEA without Direction
+### DPU: GSEA without Direction
 
 ```{r dpu_gsea_nodirection}
 results_dpu_nodir <- run_ptmsea(
@@ -197,10 +217,11 @@ results_dpu_nodir <- run_ptmsea(
   pvalueCutoff = 0.1
 )
 
-cat("Results per contrast:\n")
-for (name in names(results_dpu_nodir)) {
-  cat("  ", name, ":", nrow(results_dpu_nodir[[name]]@result), "significant (FDR < 0.1)\n")
-}
+dpu_nodir_info <- tibble(
+  Contrast = names(results_dpu_nodir),
+  `Significant (FDR < 0.1)` = map_int(results_dpu_nodir, ~nrow(.x@result))
+)
+knitr::kable(dpu_nodir_info, caption = "DPU GSEA (no direction) Results")
 ```
 
 ```{r dpu_gsea_nodir_plot, fig.width=12, fig.height=8}
@@ -210,7 +231,7 @@ dotplot(merged_dpu_nodir, showCategory = 10,
   ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
 ```
 
-## DPU: GSEA with Direction
+### DPU: GSEA with Direction
 
 ```{r dpu_gsea_direction}
 results_dpu_dir <- run_ptmsea_up_down(
@@ -222,10 +243,11 @@ results_dpu_dir <- run_ptmsea_up_down(
   pvalueCutoff = 0.1
 )
 
-cat("Results:\n")
-for (name in names(results_dpu_dir)) {
-  cat("  ", name, ":", nrow(results_dpu_dir[[name]]@result), "significant (FDR < 0.1)\n")
-}
+dpu_dir_info <- tibble(
+  Contrast = names(results_dpu_dir),
+  `Significant (FDR < 0.1)` = map_int(results_dpu_dir, ~nrow(.x@result))
+)
+knitr::kable(dpu_dir_info, caption = "DPU GSEA (with direction) Results")
 ```
 
 ```{r dpu_gsea_dir_plot, fig.width=14, fig.height=10}
@@ -235,63 +257,90 @@ dotplot(merged_dpu_dir, showCategory = 10,
   ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
 ```
 
-## DPU: ORA with Direction
+### DPU: ORA with Direction
 
 Over-representation analysis on significant sites for all contrasts. When `fc_col` is provided, sites are split into up-regulated and down-regulated sets for separate ORA tests.
 
 ```{r dpu_ora}
 # Convert pathways to TERM2GENE format and strip direction suffixes
-term2gene <- ptmsigdb_to_term2gene(pathways)
-term2gene$gene <- gsub(";[ud]$", "", term2gene$gene)
+term2gene <- ptmsigdb_to_term2gene(pathways) |>
+  mutate(gene = gsub(";[ud]$", "", gene))
 
 # Get all PTMsigDB site IDs (stripped, without ;u/;d)
 ptmsigdb_sites <- unique(term2gene$gene)
 
 # Run ORA for each contrast (up and down separately)
 contrasts <- unique(example_data$contrast)
-ora_results <- list()
 
-for (contrast_name in contrasts) {
-  contrast_data <- example_data[example_data$contrast == contrast_name, ]
+ora_prep_list <- contrasts |>
+  set_names() |>
+  map(function(contrast_name) {
+    contrast_data <- example_data |>
+      filter(contrast == contrast_name)
 
-  prep_ora <- ptmsea_ora_prep(
-    data = contrast_data,
-    ptmsigdb_sites = ptmsigdb_sites,
-    score_col = "FDR_I",
-    fc_col = "diff_diff",
-    threshold = 0.1
-  )
-
-  cat(contrast_name, "- Up:", length(prep_ora$enriched_up),
-      "Down:", length(prep_ora$enriched_down),
-      "Background:", length(prep_ora$background), "\n")
-
-  # ORA for up-regulated sites
-  if (length(prep_ora$enriched_up) > 0) {
-    ora_up <- enricher(
-      gene = prep_ora$enriched_up,
-      universe = prep_ora$background,
-      TERM2GENE = term2gene,
-      pvalueCutoff = 0.1
+    prep_ora <- ptmsea_ora_prep(
+      data = contrast_data,
+      ptmsigdb_sites = ptmsigdb_sites,
+      score_col = "FDR_I",
+      fc_col = "diff_diff",
+      threshold = 0.1
     )
-    if (!is.null(ora_up) && nrow(ora_up@result) > 0) {
-      ora_results[[paste0(contrast_name, "_up")]] <- ora_up
-    }
-  }
 
-  # ORA for down-regulated sites
-  if (length(prep_ora$enriched_down) > 0) {
-    ora_down <- enricher(
-      gene = prep_ora$enriched_down,
-      universe = prep_ora$background,
-      TERM2GENE = term2gene,
-      pvalueCutoff = 0.1
+    tibble(
+      Contrast = contrast_name,
+      Up = length(prep_ora$enriched_up),
+      Down = length(prep_ora$enriched_down),
+      Background = length(prep_ora$background)
     )
-    if (!is.null(ora_down) && nrow(ora_down@result) > 0) {
-      ora_results[[paste0(contrast_name, "_down")]] <- ora_down
+  }) |>
+  bind_rows()
+
+ora_results <- contrasts |>
+  map(function(contrast_name) {
+    contrast_data <- example_data |>
+      filter(contrast == contrast_name)
+
+    prep_ora <- ptmsea_ora_prep(
+      data = contrast_data,
+      ptmsigdb_sites = ptmsigdb_sites,
+      score_col = "FDR_I",
+      fc_col = "diff_diff",
+      threshold = 0.1
+    )
+
+    results <- list()
+
+    # ORA for up-regulated sites
+    if (length(prep_ora$enriched_up) > 0) {
+      ora_up <- enricher(
+        gene = prep_ora$enriched_up,
+        universe = prep_ora$background,
+        TERM2GENE = term2gene,
+        pvalueCutoff = 0.1
+      )
+      if (!is.null(ora_up) && nrow(ora_up@result) > 0) {
+        results[[paste0(contrast_name, "_up")]] <- ora_up
+      }
     }
-  }
-}
+
+    # ORA for down-regulated sites
+    if (length(prep_ora$enriched_down) > 0) {
+      ora_down <- enricher(
+        gene = prep_ora$enriched_down,
+        universe = prep_ora$background,
+        TERM2GENE = term2gene,
+        pvalueCutoff = 0.1
+      )
+      if (!is.null(ora_down) && nrow(ora_down@result) > 0) {
+        results[[paste0(contrast_name, "_down")]] <- ora_down
+      }
+    }
+
+    results
+  }) |>
+  list_flatten()
+
+knitr::kable(ora_prep_list, caption = "ORA Preparation Summary")
 ```
 
 ```{r dpu_ora_plot, fig.width=14, fig.height=10}
@@ -301,15 +350,9 @@ if (length(ora_results) > 0) {
     print(dotplot(merged_ora, showCategory = 10,
             title = "DPU ORA (up/down separate) - Significant (FDR < 0.1)") +
       ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)))
-  } else {
-    cat("No significant ORA results at FDR < 0.1\n")
   }
-} else {
-  cat("No significant ORA results at FDR < 0.1\n")
 }
 ```
-
----
 
 ## Interpretation
 
