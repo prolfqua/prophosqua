@@ -1,0 +1,19 @@
+url: https://prolfqua.github.io/prophosqua/
+
+template:
+  bootstrap: 5
+
+articles:
+  - title: Complete Workflow
+    navbar: ~
+    contents:
+    - Supplementary_Material_v3
+  - title: Kinase/Motif Enrichment Analysis
+    contents:
+    - Analysis_PTMSEA
+    - Analysis_Motif_Enrichment
+    - Analysis_KinaseLibrary
+    - Vis_MEA
+  - title: Quality Control
+    contents:
+    - QCReport
