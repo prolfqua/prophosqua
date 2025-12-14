@@ -1,0 +1,14 @@
+pandoc: 3.8.2.1
+pkgdown: 2.2.0
+pkgdown_sha: ~
+articles:
+  Analysis_KinaseLibrary: Analysis_KinaseLibrary.html
+  Analysis_Motif_Enrichment: Analysis_Motif_Enrichment.html
+  Analysis_PTMSEA: Analysis_PTMSEA.html
+  QCReport: QCReport.html
+  Supplementary_Material_v3: Supplementary_Material_v3.html
+  Vis_MEA: Vis_MEA.html
+last_built: 2025-12-14T19:41Z
+urls:
+  reference: https://prolfqua.github.io/prophosqua/reference
+  article: https://prolfqua.github.io/prophosqua/articles
