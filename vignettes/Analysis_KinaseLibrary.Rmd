@@ -50,8 +50,8 @@ knitr::kable(data_info, caption = "Example Data")
 ```
 
 ```{r load_kinase_library}
-term2gene_path <- here::here("vignettes", "term2gene.csv")
-term2gene <- read.csv(term2gene_path)
+zip_path <- system.file("extdata", "term2gene.csv.zip", package = "prophosqua")
+term2gene <- read.csv(unz(zip_path, "term2gene.csv"))
 
 kl_info <- tibble(
   Property = c("Total assignments", "Unique kinases", "Unique sequences"),
