@@ -8,10 +8,14 @@
 #
 # Targets:
 #   all                        - Build all vignettes (default)
+#   mea                        - Build 4 kinase/motif enrichment vignettes
 #   render_supplementary       - Render Supplementary_Material_v3.docx
 #   renumber_references        - Renumber Notes/Figures/Tables in DOCX
 #   render_ptmsea              - Render Analysis_PTMSEA.html
 #   render_motif               - Render Analysis_Motif_Enrichment.html
+#   render_kl                  - Render Analysis_KinaseLibrary.html
+#   render_vis                 - Render Vis_MEA.html
+#   kl                         - Run kinase-library + render KL/Vis vignettes
 #   install_package            - Reinstall prophosqua package
 #
 # Notes:
@@ -23,6 +27,9 @@ import glob
 # Get all R source files to track for package reinstallation
 R_FILES = glob.glob("../R/*.R")
 DESCRIPTION = "../DESCRIPTION"
+RDS_FILE = "../data/combined_test_diff_example.rds"
+CONTRASTS = ["KO_vs_WT", "KO_vs_WT_at_Early", "KO_vs_WT_at_Late", "KO_vs_WT_at_Uninfect"]
+KL_REPO = "git+https://github.com/wolski/kinase-library"
 
 rule help:
     """Show available targets and usage"""
@@ -38,10 +45,14 @@ Usage:
 
 Targets:
   all                        Build all vignettes (default)
+  mea                        Build 4 kinase/motif enrichment vignettes
   render_supplementary       Render Supplementary_Material_v3.docx
   renumber_references        Renumber Notes/Figures/Tables in DOCX
   render_ptmsea              Render Analysis_PTMSEA.html
   render_motif               Render Analysis_Motif_Enrichment.html
+  render_kl                  Render Analysis_KinaseLibrary.html
+  render_vis                 Render Vis_MEA.html
+  kl                         Run kinase-library + render KL/Vis vignettes
   install_package            Reinstall prophosqua package
 
 Notes:
@@ -54,6 +65,14 @@ rule all:
         "Supplementary_Material_v3_renumbered.docx",
         "Analysis_PTMSEA.html"
 
+rule mea:
+    """Build all 4 kinase/motif enrichment vignettes"""
+    input:
+        "Analysis_PTMSEA.html",
+        "Analysis_Motif_Enrichment.html",
+        "Analysis_KinaseLibrary.html",
+        "Vis_MEA.html"
+
 rule clean:
     """Remove generated files"""
     shell:
@@ -61,7 +80,9 @@ rule clean:
         rm -f .package_installed
         rm -f Supplementary_Material_v3.docx Supplementary_Material_v3_renumbered.docx
         rm -f Analysis_PTMSEA.html Analysis_Motif_Enrichment.html
+        rm -f Analysis_KinaseLibrary.html Vis_MEA.html
         rm -f *.knit.md *.utf8.md
+        rm -f seqwindows.tsv *.rnk term2gene.csv mea_*.csv
         """
 
 rule install_package:
@@ -106,7 +127,7 @@ rule render_ptmsea:
         "Analysis_PTMSEA.html"
     shell:
         """
-        Rscript -e "rmarkdown::render('{input.rmd}', output_format = 'bookdown::html_document2', clean = FALSE)"
+        Rscript -e "rmarkdown::render('{input.rmd}', clean = FALSE)"
         """
 
 rule render_motif:
@@ -117,5 +138,112 @@ rule render_motif:
         "Analysis_Motif_Enrichment.html"
     shell:
         """
-        Rscript -e "rmarkdown::render('{input.rmd}', output_format = 'bookdown::html_document2', clean = FALSE)"
+        Rscript -e "rmarkdown::render('{input.rmd}', clean = FALSE)"
+        """
+
+rule render_kl:
+    input:
+        rmd="Analysis_KinaseLibrary.Rmd",
+        pkg=".package_installed",
+        term2gene="term2gene.csv"
+    output:
+        "Analysis_KinaseLibrary.html"
+    shell:
+        """
+        Rscript -e "rmarkdown::render('{input.rmd}', clean = FALSE)"
+        """
+
+rule render_vis:
+    input:
+        rmd="Vis_MEA.Rmd",
+        pkg=".package_installed",
+        mea=expand("mea_{contrast}.csv", contrast=CONTRASTS)
+    output:
+        "Vis_MEA.html"
+    shell:
+        """
+        Rscript -e "rmarkdown::render('{input.rmd}', clean = FALSE)"
+        """
+
+# Kinase-library integration rules
+
+rule kl:
+    """Run kinase-library analysis + render KL/Vis vignettes"""
+    input:
+        "term2gene.csv",
+        expand("mea_{contrast}.csv", contrast=CONTRASTS),
+        "Analysis_KinaseLibrary.html",
+        "Vis_MEA.html"
+
+rule extract_seqs:
+    """Extract unique sequences from RDS for motif scanning"""
+    input:
+        RDS_FILE
+    output:
+        "seqwindows.tsv"
+    shell:
+        """
+        Rscript -e "
+        data <- readRDS('{input}')
+        seqs <- unique(data[, 'SequenceWindow', drop=FALSE])
+        write.table(seqs, '{output}', sep='\t', row.names=FALSE, quote=FALSE)
+        "
+        """
+
+rule extract_rnk:
+    """Extract ranked sequences per contrast for MEA"""
+    input:
+        RDS_FILE
+    output:
+        expand("{contrast}.rnk", contrast=CONTRASTS)
+    shell:
+        """
+        Rscript -e "
+        data <- readRDS('{input}')
+        for (ct in unique(data\\$contrast)) {{
+            sub <- data[data\\$contrast == ct, c('SequenceWindow', 'statistic.site')]
+            sub <- sub[!is.na(sub\\$statistic.site), ]
+            fname <- paste0(ct, '.rnk')
+            write.table(sub, fname, sep='\t', row.names=FALSE, quote=FALSE)
+        }}
+        "
+        """
+
+rule scan_motifs:
+    """Run kinase-library scan-motifs to generate term2gene.csv"""
+    input:
+        "seqwindows.tsv"
+    output:
+        "term2gene.csv"
+    params:
+        repo=KL_REPO
+    shell:
+        """
+        uv tool run --from {params.repo} scan-motifs {input} \
+            --seq-col SequenceWindow \
+            --output {output} \
+            --kin-type ser_thr \
+            --threshold 95 \
+            --term2gene
+        """
+
+rule run_mea:
+    """Run kinase-library MEA for a single contrast"""
+    input:
+        "{contrast}.rnk"
+    output:
+        "mea_{contrast}.csv"
+    threads: 4
+    params:
+        repo=KL_REPO
+    shell:
+        """
+        uv tool run --from {params.repo} run-mea {input} \
+            --seq-col SequenceWindow \
+            --rank-col statistic.site \
+            --output {output} \
+            --kin-type ser_thr \
+            --threshold 95 \
+            --permutations 1000 \
+            --threads {threads}
         """

@@ -203,8 +203,8 @@ plot_diff_logo <- function(sig_sites) {
 #' @export
 plot_seqlogo_with_diff <- function(sig_sites) {
   contrasts_list <- unique(sig_sites$contrast)
-  up_list <- list()
-  down_list <- list()
+  up_seq_list <- list()
+  down_seq_list <- list()
   diff_list <- list()
 
   for (cont in contrasts_list) {
@@ -219,30 +219,36 @@ plot_seqlogo_with_diff <- function(sig_sites) {
       toupper()
 
     if (length(up_seqs) > 0 && length(down_seqs) > 0) {
+      # Store sequences directly for up/down (ggseqlogo handles scaling correctly)
+      up_seq_list[[paste0(cont, "_up")]] <- up_seqs
+      down_seq_list[[paste0(cont, "_down")]] <- down_seqs
+
+      # Compute difference PWM for diff plot
       pwm_up <- get_pwm(up_seqs)
       pwm_down <- get_pwm(down_seqs)
-      diff_pwm <- pwm_up - pwm_down
-
-      up_list[[paste0(cont, "_up")]] <- pwm_up
-      down_list[[paste0(cont, "_down")]] <- pwm_down
-      diff_list[[paste0(cont, "_diff")]] <- diff_pwm
+      diff_list[[paste0(cont, "_diff")]] <- pwm_up - pwm_down
     }
   }
 
-  if (length(up_list) > 0) {
-    # Calculate symmetric y-axis limits for diff plots
-    max_diff <- max(sapply(diff_list, function(x) max(abs(x))))
+  if (length(up_seq_list) > 0) {
+    # Up/Down plots: use sequences with probability method (correct scaling)
+    p_up <- ggseqlogo::ggseqlogo(up_seq_list, ncol = 1, method = "probability", seq_type = "aa") +
+      ggplot2::ggtitle("Upregulated") +
+      ggplot2::theme(legend.position = "none")
+    p_down <- ggseqlogo::ggseqlogo(down_seq_list, ncol = 1, method = "probability", seq_type = "aa") +
+      ggplot2::ggtitle("Downregulated") +
+      ggplot2::theme(legend.position = "none")
 
-    # Create separate plots with appropriate y-axis limits
-    p_up <- ggseqlogo::ggseqlogo(up_list, ncol = 1, method = "custom") +
-      ggplot2::coord_cartesian(ylim = c(0, 1))
-    p_down <- ggseqlogo::ggseqlogo(down_list, ncol = 1, method = "custom") +
-      ggplot2::coord_cartesian(ylim = c(0, 1))
+    # Diff plot: use custom matrix but with proper y-axis expansion
+    # Keep legend only on this plot
     p_diff <- ggseqlogo::ggseqlogo(diff_list, ncol = 1, method = "custom") +
-      ggplot2::coord_cartesian(ylim = c(-max_diff, max_diff))
+      ggplot2::ggtitle("Difference (Up-Down)") +
+      ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = 0.1))
 
-    # Combine with patchwork
-    p <- patchwork::wrap_plots(p_up, p_down, p_diff, ncol = 3)
+    # Combine with patchwork, collect legend at bottom
+    p <- patchwork::wrap_plots(p_up, p_down, p_diff, ncol = 3) +
+      patchwork::plot_layout(guides = "collect") &
+      ggplot2::theme(legend.position = "bottom")
     return(p)
   } else {
     return(NULL)
