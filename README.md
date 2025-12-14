@@ -147,6 +147,25 @@ If you use this package in your research, please cite:
 }
 ```
 
+## Building and Deploying Documentation
+
+### Build pkgdown site locally
+
+```r
+pkgdown::build_site()
+```
+
+### Deploy to GitHub Pages
+
+```bash
+# Using ghp-import (via uv)
+uvx ghp-import -n -p -f docs
+```
+
+Then enable GitHub Pages in repo settings (Settings → Pages → Source: `gh-pages` branch).
+
+Site: https://prolfqua.github.io/prophosqua
+
 ## Contributing
 
 Contributions are welcome! Please visit our [GitHub repository](https://github.com/prolfqua/prophosqua) for:
