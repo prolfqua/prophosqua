@@ -5,14 +5,14 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>prophosqua does analyze and combine TMTlabeled phospho-proteomics data and total proteomics data • prophosqua</title>
+<title>Integrate TMT-Labeled Phosphoproteomics and Total Proteomics Data • prophosqua</title>
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="prophosqua does analyze and combine TMTlabeled phospho-proteomics data and total proteomics data">
-<meta name="description" content="Prophosqua implements a workflow for e.g. TMT-labeled samples where two datasets are acquired and individually searched with FragPipe-MS-Fragger for example. The abundances are individually statistically evaluated for both datasets as a first step. While for the total proteome the abundance data is rolled-up to protein level the phospho-enriched dataset is kept phospho-site centric and statistically evaluated at this level. For differential expression calling we use the prolfqua R-package which handles all important steps starting from normalising and transforming quantitative channels, to aggregating site-centric phospho-enriched dataset, to rolling-up peptide quantities to protein level as well as using linear models and contrasting different conditions also with multiple factors. Doing this for both datasets in the same way we can join these together. This allows then further phospho-site adjustment with respect to the protein change in a simple way but also efficiently identifying phospho-sites that are differentially phosphorylated.">
-<meta property="og:description" content="Prophosqua implements a workflow for e.g. TMT-labeled samples where two datasets are acquired and individually searched with FragPipe-MS-Fragger for example. The abundances are individually statistically evaluated for both datasets as a first step. While for the total proteome the abundance data is rolled-up to protein level the phospho-enriched dataset is kept phospho-site centric and statistically evaluated at this level. For differential expression calling we use the prolfqua R-package which handles all important steps starting from normalising and transforming quantitative channels, to aggregating site-centric phospho-enriched dataset, to rolling-up peptide quantities to protein level as well as using linear models and contrasting different conditions also with multiple factors. Doing this for both datasets in the same way we can join these together. This allows then further phospho-site adjustment with respect to the protein change in a simple way but also efficiently identifying phospho-sites that are differentially phosphorylated.">
+<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Integrate TMT-Labeled Phosphoproteomics and Total Proteomics Data">
+<meta name="description" content="Implements a workflow for TMT-labeled samples where phospho-enriched and total proteome datasets are acquired and searched separately (e.g., with FragPipe/MSFragger). Both datasets are statistically evaluated individually: total proteome data is rolled up to protein level while phospho-enriched data is kept phospho-site centric. Differential expression analysis uses the prolfqua R package for normalization, transformation, aggregation, and linear modeling with contrasts. By joining both datasets, the package enables Differential PTM Abundance (DPA) and Differential PTM Usage (DPU) analysis, distinguishing true phosphorylation changes from protein expression effects.">
+<meta property="og:description" content="Implements a workflow for TMT-labeled samples where phospho-enriched and total proteome datasets are acquired and searched separately (e.g., with FragPipe/MSFragger). Both datasets are statistically evaluated individually: total proteome data is rolled up to protein level while phospho-enriched data is kept phospho-site centric. Differential expression analysis uses the prolfqua R package for normalization, transformation, aggregation, and linear modeling with contrasts. By joining both datasets, the package enables Differential PTM Abundance (DPA) and Differential PTM Usage (DPU) analysis, distinguishing true phosphorylation changes from protein expression effects.">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -45,6 +45,7 @@
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="search.json">
 </form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/prolfqua/prophosqua/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
       </ul>
 </div>
 
@@ -121,7 +122,7 @@
 <h3 id="example">Example<a class="anchor" aria-label="anchor" href="#example"></a>
 </h3>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">prophosqua</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://prolfqua.github.io/prophosqua">prophosqua</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Load your data</span></span>
 <span><span class="va">tot_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/load_and_preprocess_data.html">load_and_preprocess_data</a></span><span class="op">(</span><span class="va">total_proteome_file</span>, <span class="va">required_cols</span><span class="op">)</span></span>
@@ -232,6 +233,24 @@
 <span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>}</span></code></pre></div>
 </div>
 <div class="section level2">
+<h2 id="building-and-deploying-documentation">Building and Deploying Documentation<a class="anchor" aria-label="anchor" href="#building-and-deploying-documentation"></a>
+</h2>
+<div class="section level3">
+<h3 id="build-pkgdown-site-locally">Build pkgdown site locally<a class="anchor" aria-label="anchor" href="#build-pkgdown-site-locally"></a>
+</h3>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">pkgdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgdown.r-lib.org/reference/build_site.html" class="external-link">build_site</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="deploy-to-github-pages">Deploy to GitHub Pages<a class="anchor" aria-label="anchor" href="#deploy-to-github-pages"></a>
+</h3>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># Using ghp-import (via uv)</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="ex">uvx</span> ghp-import <span class="at">-n</span> <span class="at">-p</span> <span class="at">-f</span> docs</span></code></pre></div>
+<p>Then enable GitHub Pages in repo settings (Settings → Pages → Source: <code>gh-pages</code> branch).</p>
+<p>Site: <a href="https://prolfqua.github.io/prophosqua" class="uri">https://prolfqua.github.io/prophosqua</a></p>
+</div>
+</div>
+<div class="section level2">
 <h2 id="contributing">Contributing<a class="anchor" aria-label="anchor" href="#contributing"></a>
 </h2>
 <p>Contributions are welcome! Please visit our <a href="https://github.com/prolfqua/prophosqua" class="external-link">GitHub repository</a> for: - Issue reporting - Feature requests - Code contributions - Documentation improvements</p>
@@ -243,7 +262,15 @@
 </div>
 </div>
 
-  </main><aside class="col-md-3"><div class="license">
+  </main><aside class="col-md-3"><div class="links">
+<h2 data-toc-skip>Links</h2>
+<ul class="list-unstyled">
+<li><a href="https://github.com/prolfqua/prophosqua/" class="external-link">Browse source code</a></li>
+<li><a href="https://github.com/prolfqua/prophosqua/issues" class="external-link">Report a bug</a></li>
+</ul>
+</div>
+
+<div class="license">
 <h2 data-toc-skip>License</h2>
 <ul class="list-unstyled">
 <li>
@@ -263,7 +290,8 @@
 <div class="developers">
 <h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
-<li>Witold Wolski <br><small class="roles"> Maintainer </small>   </li>
+<li>Jonas Grossmann <br><small class="roles"> Author </small>   </li>
+<li>Witold Wolski <br><small class="roles"> Author, maintainer </small>   </li>
 </ul>
 </div>
 
@@ -279,7 +307,7 @@
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Witold Wolski.</p>
+  <p>Developed by Jonas Grossmann, Witold Wolski.</p>
 </div>
 
 <div class="pkgdown-footer-right">
