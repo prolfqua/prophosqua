@@ -38,8 +38,8 @@ library(dplyr)
 library(enrichplot)
 library(purrr)
 
-example_path <- here::here("data", "combined_test_diff_example.rds")
-example_data <- readRDS(example_path)
+data("combined_test_diff_example", package = "prophosqua")
+example_data <- combined_test_diff_example
 
 data_info <- tibble(
   Property = c("Rows", "Columns", "Contrasts"),

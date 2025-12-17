@@ -16,7 +16,7 @@ output:
   bookdown::pdf_document2:
     toc: false
     keep_tex: true
-    latex_engine: pdflatexç
+    latex_engine: pdflatex
     number_sections: true
   bookdown::word_document2:
     toc: false
@@ -465,7 +465,7 @@ We need to specify the workunit names and the date when the DEA analysis was run
 
 ```{r definePaths}
 # Use today's date if running DEA, otherwise use existing results
-datedea <- if(do_dea) datetoday else "20251207"
+datedea <- if(do_dea) datetoday else "20251214"
 
 tot_file <- prophosqua::dea_xlsx_path(project_dir, "total_proteome", datedea)
 ptm_file <- prophosqua::dea_xlsx_path(project_dir, "singlesite_PTM", datedea)
@@ -719,9 +719,11 @@ writexl::write_xlsx(
   )
 )
 
-# Save example data for PTM-SEA
-saveRDS(combined_test_diff,
-        here::here("data", "combined_test_diff_example.rds"))
+# Save example data for package (as .rda for data() loading)
+combined_test_diff_example <- combined_test_diff
+save(combined_test_diff_example,
+     file = here::here("data", "combined_test_diff_example.rda"),
+     compress = "xz")
 ```
 
 The produced XLSX file can be downloaded from [@10.5281/zenodo.15830988].  This comprehensive integrated analysis framework provides key advantages for PTM research, including the ability to distinguish genuine signaling changes from protein abundance effects (see Note \@ref(keyinsight)).
@@ -832,6 +834,9 @@ ctr_df_annotated <- ctr_df_annotated |>
     FDR_I = FDR
   )
 
+# Save correct-first results alongside model-first output
+saveRDS(ctr_df_annotated,
+        file.path(res_dir, "ctr_df_annotated_correctfirst.rds"))
 ```
 
 The `ctr_df_annotated` dataframe now contains both the DPU statistics ($\log_2$ fold changes, p-values, FDR) and the sequence annotations needed for motif analysis and kinase activity inference.
