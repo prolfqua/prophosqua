@@ -28,7 +28,7 @@ library(devtools)
 devtools::install_github('protviz/prozor', dependencies = TRUE)
 devtools::install_github('prolfqua/prolfqua', dependencies = TRUE)
 # Install prolfquapp (proteomics analysis workflow package)
-devtools::install_github('prolfqua/prolfquapp', dependencies = TRUE)
+devtools::install_github('prolfqua/prolfquapp', dependencies = TRUE, build_vignettes=TRUE)
 ```
 
 For detailed installation instructions and system requirements, see:
