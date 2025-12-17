@@ -39,7 +39,7 @@ For detailed installation instructions and system requirements, see:
 
 ```r
 library(devtools)
-devtools::install_github('prolfqua/prophosqua', dependencies = TRUE)
+devtools::install_github('prolfqua/prophosqua', dependencies = TRUE, build_vignettes=TRUE)
 ```
 
 ## Usage
