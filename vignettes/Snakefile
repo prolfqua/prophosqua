@@ -30,7 +30,7 @@ import glob
 # Get all R source files to track for package reinstallation
 R_FILES = glob.glob("../R/*.R")
 DESCRIPTION = "../DESCRIPTION"
-RDS_FILE = "../data/combined_test_diff_example.rds"
+RDA_FILE = "../data/combined_test_diff_example.rda"
 CONTRASTS = ["KO_vs_WT", "KO_vs_WT_at_Early", "KO_vs_WT_at_Late", "KO_vs_WT_at_Uninfect"]
 KL_REPO = "git+https://github.com/wolski/kinase-library"
 
@@ -207,15 +207,16 @@ rule kl:
         "Vis_MEA.html"
 
 rule extract_seqs:
-    """Extract unique sequences from RDS for motif scanning"""
+    """Extract unique sequences from RDA for motif scanning"""
     input:
-        RDS_FILE
+        RDA_FILE
     output:
         "seqwindows.tsv"
     shell:
         """
         Rscript -e "
-        data <- readRDS('{input}')
+        load('{input}')
+        data <- combined_test_diff_example
         seqs <- unique(data[, 'SequenceWindow', drop=FALSE])
         write.table(seqs, '{output}', sep='\t', row.names=FALSE, quote=FALSE)
         "
@@ -224,13 +225,14 @@ rule extract_seqs:
 rule extract_rnk:
     """Extract ranked sequences per contrast for MEA"""
     input:
-        RDS_FILE
+        RDA_FILE
     output:
         expand("{contrast}.rnk", contrast=CONTRASTS)
     shell:
         """
         Rscript -e "
-        data <- readRDS('{input}')
+        load('{input}')
+        data <- combined_test_diff_example
         for (ct in unique(data\\$contrast)) {{
             sub <- data[data\\$contrast == ct, c('SequenceWindow', 'statistic.site')]
             sub <- sub[!is.na(sub\\$statistic.site), ]

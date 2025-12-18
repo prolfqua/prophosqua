@@ -21,13 +21,14 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-PTM-SEA (Post-Translational Modification Signature Enrichment Analysis) uses curated phosphosite signatures from PTMsigDB to infer kinase activities from phosphoproteomics data. This vignette demonstrates three approaches:
+PTM-SEA (Post-Translational Modification Signature Enrichment Analysis) uses curated phosphosite signatures from PTMsigDB to infer kinase activities from phosphoproteomics data. This vignette demonstrates GSEA analysis ignoring the ;u/;d suffixes in PTMsigDB.
 
-1. **GSEA without direction** - ignores ;u/;d suffixes in PTMsigDB
-2. **GSEA with direction** - splits pathways into _up and _down sets
-3. **ORA with direction** - over-representation analysis on significant sites
+We analyze both DPA (Differential PTM Abundance) and DPU (Differential PTM Usage) results:
 
-We analyze both DPA (Differential PTM Abundance) and DPU (Differential PTM Usage) results.
+- **DPA results** show kinase activity changes including protein abundance effects
+- **DPU results** show kinase activity changes independent of protein abundance
+
+Comparing the two analyses helps identify whether observed kinase activity changes are driven by genuine signaling changes (DPU) or protein abundance effects (DPA only).
 
 ## Load Data and PTMsigDB
 
@@ -148,39 +149,28 @@ dpa_nodir_info <- tibble(
 knitr::kable(dpa_nodir_info, caption = "DPA GSEA (no direction) Results")
 ```
 
-```{r dpa_gsea_nodir_plot, fig.width=12, fig.height=8}
+```{r dpa_gsea_nodir_plot, fig.width=14, fig.height=10}
 merged_dpa_nodir <- merge_result(results_dpa_nodir)
-dotplot(merged_dpa_nodir, showCategory = 10,
-        title = "DPA GSEA (no direction) - Significant (FDR < 0.1)") +
+dotplot(merged_dpa_nodir, showCategory = 15,
+        title = "DPA GSEA - PTM-SEA (FDR < 0.1)") +
   ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
 ```
 
-### DPA: GSEA with Direction
-
-Splits pathways into _up and _down sets, runs ascending and descending.
-
-```{r dpa_gsea_direction}
-results_dpa_dir <- run_ptmsea_up_down(
-  ranks_list = prep_dpa$ranks,
-  pathways = pathways,
-  min_size = 3,
-  max_size = 500,
-  n_perm = 1000,
-  pvalueCutoff = 0.1
-)
-
-dpa_dir_info <- tibble(
-  Contrast = names(results_dpa_dir),
-  `Significant (FDR < 0.1)` = map_int(results_dpa_dir, ~nrow(.x@result))
-)
-knitr::kable(dpa_dir_info, caption = "DPA GSEA (with direction) Results")
-```
-
-```{r dpa_gsea_dir_plot, fig.width=14, fig.height=10}
-merged_dpa_dir <- merge_result(results_dpa_dir)
-dotplot(merged_dpa_dir, showCategory = 10,
-        title = "DPA GSEA (with direction) - Significant (FDR < 0.1)") +
-  ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
+```{r dpa_gsea_individual, fig.width=14, fig.height=10}
+dpa_plots <- names(results_dpa_nodir) |>
+  map(function(ct) {
+    res <- results_dpa_nodir[[ct]]
+    if (nrow(res@result) > 0) {
+      dotplot(res, showCategory = 15, title = ct) +
+        ggplot2::theme(axis.text.y = ggplot2::element_text(size = 8))
+    } else {
+      ggplot2::ggplot() +
+        ggplot2::annotate("text", x = 0.5, y = 0.5, label = paste("No results for", ct)) +
+        ggplot2::theme_void() +
+        ggplot2::ggtitle(ct)
+    }
+  })
+patchwork::wrap_plots(dpa_plots, ncol = 2)
 ```
 
 ## DPU Analysis (Differential PTM Usage)
@@ -224,143 +214,90 @@ dpu_nodir_info <- tibble(
 knitr::kable(dpu_nodir_info, caption = "DPU GSEA (no direction) Results")
 ```
 
-```{r dpu_gsea_nodir_plot, fig.width=12, fig.height=8}
+```{r dpu_gsea_nodir_plot, fig.width=14, fig.height=10}
 merged_dpu_nodir <- merge_result(results_dpu_nodir)
-dotplot(merged_dpu_nodir, showCategory = 10,
-        title = "DPU GSEA (no direction) - Significant (FDR < 0.1)") +
+dotplot(merged_dpu_nodir, showCategory = 15,
+        title = "DPU GSEA - PTM-SEA (FDR < 0.1)") +
   ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
 ```
 
-### DPU: GSEA with Direction
-
-```{r dpu_gsea_direction}
-results_dpu_dir <- run_ptmsea_up_down(
-  ranks_list = prep_dpu$ranks,
-  pathways = pathways,
-  min_size = 3,
-  max_size = 500,
-  n_perm = 1000,
-  pvalueCutoff = 0.1
-)
-
-dpu_dir_info <- tibble(
-  Contrast = names(results_dpu_dir),
-  `Significant (FDR < 0.1)` = map_int(results_dpu_dir, ~nrow(.x@result))
-)
-knitr::kable(dpu_dir_info, caption = "DPU GSEA (with direction) Results")
+```{r dpu_gsea_individual, fig.width=14, fig.height=10}
+dpu_plots <- names(results_dpu_nodir) |>
+  map(function(ct) {
+    res <- results_dpu_nodir[[ct]]
+    if (nrow(res@result) > 0) {
+      dotplot(res, showCategory = 15, title = ct) +
+        ggplot2::theme(axis.text.y = ggplot2::element_text(size = 8))
+    } else {
+      ggplot2::ggplot() +
+        ggplot2::annotate("text", x = 0.5, y = 0.5, label = paste("No results for", ct)) +
+        ggplot2::theme_void() +
+        ggplot2::ggtitle(ct)
+    }
+  })
+patchwork::wrap_plots(dpu_plots, ncol = 2)
 ```
 
-```{r dpu_gsea_dir_plot, fig.width=14, fig.height=10}
-merged_dpu_dir <- merge_result(results_dpu_dir)
-dotplot(merged_dpu_dir, showCategory = 10,
-        title = "DPU GSEA (with direction) - Significant (FDR < 0.1)") +
-  ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
-```
+## Diagnostics
 
-### DPU: ORA with Direction
-
-Over-representation analysis on significant sites for all contrasts. When `fc_col` is provided, sites are split into up-regulated and down-regulated sets for separate ORA tests.
-
-```{r dpu_ora}
-# Convert pathways to TERM2GENE format and strip direction suffixes
-term2gene <- ptmsigdb_to_term2gene(pathways) |>
-  mutate(gene = gsub(";[ud]$", "", gene))
-
-# Get all PTMsigDB site IDs (stripped, without ;u/;d)
-ptmsigdb_sites <- unique(term2gene$gene)
-
-# Run ORA for each contrast (up and down separately)
-contrasts <- unique(example_data$contrast)
-
-ora_prep_list <- contrasts |>
-  set_names() |>
-  map(function(contrast_name) {
-    contrast_data <- example_data |>
-      filter(contrast == contrast_name)
-
-    prep_ora <- ptmsea_ora_prep(
-      data = contrast_data,
-      ptmsigdb_sites = ptmsigdb_sites,
-      score_col = "FDR_I",
-      fc_col = "diff_diff",
-      threshold = 0.1
-    )
-
+```{r diagnostic_pvalues}
+pval_diag <- names(results_dpa_nodir) |>
+  map_dfr(function(ct) {
+    res <- results_dpa_nodir[[ct]]@result
     tibble(
-      Contrast = contrast_name,
-      Up = length(prep_ora$enriched_up),
-      Down = length(prep_ora$enriched_down),
-      Background = length(prep_ora$background)
+      Contrast = ct,
+      `Min p-value` = signif(min(res$pvalue), 3),
+      `p < 0.05` = sum(res$pvalue < 0.05),
+      `p < 0.01` = sum(res$pvalue < 0.01),
+      Total = nrow(res)
     )
-  }) |>
-  bind_rows()
-
-ora_results <- contrasts |>
-  map(function(contrast_name) {
-    contrast_data <- example_data |>
-      filter(contrast == contrast_name)
-
-    prep_ora <- ptmsea_ora_prep(
-      data = contrast_data,
-      ptmsigdb_sites = ptmsigdb_sites,
-      score_col = "FDR_I",
-      fc_col = "diff_diff",
-      threshold = 0.1
-    )
-
-    results <- list()
-
-    # ORA for up-regulated sites
-    if (length(prep_ora$enriched_up) > 0) {
-      ora_up <- enricher(
-        gene = prep_ora$enriched_up,
-        universe = prep_ora$background,
-        TERM2GENE = term2gene,
-        pvalueCutoff = 0.1
-      )
-      if (!is.null(ora_up) && nrow(ora_up@result) > 0) {
-        results[[paste0(contrast_name, "_up")]] <- ora_up
-      }
-    }
-
-    # ORA for down-regulated sites
-    if (length(prep_ora$enriched_down) > 0) {
-      ora_down <- enricher(
-        gene = prep_ora$enriched_down,
-        universe = prep_ora$background,
-        TERM2GENE = term2gene,
-        pvalueCutoff = 0.1
-      )
-      if (!is.null(ora_down) && nrow(ora_down@result) > 0) {
-        results[[paste0(contrast_name, "_down")]] <- ora_down
-      }
-    }
-
-    results
-  }) |>
-  list_flatten()
-
-knitr::kable(ora_prep_list, caption = "ORA Preparation Summary")
+  })
+knitr::kable(pval_diag, caption = "Raw p-value Distribution (DPA)")
 ```
 
-```{r dpu_ora_plot, fig.width=14, fig.height=10}
-if (length(ora_results) > 0) {
-  merged_ora <- merge_result(ora_results)
-  if (nrow(merged_ora@compareClusterResult) > 0) {
-    print(dotplot(merged_ora, showCategory = 10,
-            title = "DPU ORA (up/down separate) - Significant (FDR < 0.1)") +
-      ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)))
-  }
+```{r show_top_pathways}
+if (length(results_dpa_nodir) > 0) {
+  top_res <- results_dpa_nodir[[1]]@result |>
+    as_tibble() |>
+    arrange(pvalue) |>
+    head(10) |>
+    select(ID, enrichmentScore, NES, pvalue, p.adjust, setSize) |>
+    mutate(
+      enrichmentScore = round(enrichmentScore, 3),
+      NES = round(NES, 3),
+      pvalue = signif(pvalue, 3),
+      p.adjust = signif(p.adjust, 3)
+    )
+  knitr::kable(top_res,
+    caption = paste("Top 10 Pathways by P-value (DPA,",
+                    names(results_dpa_nodir)[1], ")"))
 }
 ```
 
-## Interpretation
+### GSEA Enrichment Plot (Example)
 
-- **DPA results** show kinase activity changes including protein abundance effects
-- **DPU results** show kinase activity changes independent of protein abundance
+```{r gsea_plots_dpa, fig.width=10, fig.height=6}
+# Show single example for illustration
+ct <- names(results_dpa_nodir)[1]
+res <- results_dpa_nodir[[ct]]
 
-Kinases appearing significant in **DPU but not DPA** represent genuine signaling changes.
-Kinases appearing in **DPA but not DPU** may be driven by protein abundance changes.
+if (nrow(res@result) > 0) {
+  top_pathway <- res@result |>
+    as_tibble() |>
+    arrange(pvalue) |>
+    slice(1) |>
+    pull(ID)
+
+  row <- res@result |>
+    as_tibble() |>
+    filter(ID == top_pathway)
+  nes_val <- round(row$NES, 2)
+  fdr <- signif(row$p.adjust, 2)
+
+  gseaplot2(res, geneSetID = top_pathway,
+    title = paste0(ct, " - ", top_pathway, " (NES=", nes_val, ", FDR=", fdr, ")"))
+}
+```
 
 ## Session Info
 
