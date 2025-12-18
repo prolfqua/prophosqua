@@ -266,6 +266,40 @@ geom_point(aes(color = significant), alpha = 0.6, size = 2) +
   )
 ```
 
+## Diagnostics
+
+```{r diagnostic_pvalues}
+pval_diag <- mea_clean |>
+  group_by(contrast) |>
+  summarise(
+    `Min p-value` = signif(min(pvalue), 3),
+    `p < 0.05` = sum(pvalue < 0.05),
+    `p < 0.01` = sum(pvalue < 0.01),
+    Total = n(),
+    .groups = "drop"
+  ) |>
+  rename(Contrast = contrast)
+knitr::kable(pval_diag, caption = "Raw p-value Distribution")
+```
+
+```{r show_top_kinases}
+# Top 10 kinases by p-value for the first contrast
+first_contrast <- unique(mea_clean$contrast)[1]
+top_res <- mea_clean |>
+  filter(contrast == first_contrast) |>
+  arrange(pvalue) |>
+  head(10) |>
+  select(kinase, ES, NES, pvalue, FDR) |>
+  mutate(
+    ES = round(ES, 3),
+    NES = round(NES, 3),
+    pvalue = signif(pvalue, 3),
+    FDR = signif(FDR, 3)
+  ) |>
+  rename(Kinase = kinase, `p-value` = pvalue)
+knitr::kable(top_res, caption = paste("Top 10 Kinases by P-value (", first_contrast, ")"))
+```
+
 ## Summary Table
 
 ```{r summary_table}
