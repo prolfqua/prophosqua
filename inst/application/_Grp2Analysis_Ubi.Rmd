@@ -122,8 +122,6 @@ This number can only be estimated if a decoy database is searched, decoys are re
 
 The percentage of contaminant peptides is : `r grp2$RES$Summary$percentOfContaminants` %. The percentage of false positive identifications (decoy sequences) is `r grp2$RES$Summary$percentOfFalsePositives` %.
 
-To identify a high number of ubi-peptides an enrichment strategy was used. The ratio of ubi-peptides versus non-ubi peptides identified was:  __`r round(enrichment_ratio, 2)` percent__.
-
 
 We keep the contaminant peptides because, for some experiments, these contaminants are relevant. However, they can be recognized since their identifiers start with __zz__ or __CON__.
 We also keep the decoy sequences because they allow us to re-estimate the proportion of falsely identified peptides in the list of differentially expressed peptides, which might differ from that of the entire dataset. The identifiers of the decoy peptides start with __REV__ or __rev__.
@@ -254,7 +252,7 @@ The peptide abundance heatmap (Figure \@ref(fig:heatmap)) groups the peptide and
 
 
 
-```{r heatmap, fig.width=7, fig.height=8, dpi=300, fig.cap="(ref:heatmap)", eval=TRUE}
+```{r heatmap, fig.width=7, fig.height=8, dpi=300, fig.cap="(ref:heatmap)", fig.alt="", eval=TRUE}
 ph
 ```
 
@@ -429,7 +427,7 @@ cat(paste("Furthermore, Figure \\@ref(fig:sigpeptides) shows a heatmap of log2 t
 
 (ref:sigpeptides) Heatmap showing the $\log_2$ transformed peptide abundances for peptides which pass the FDR and difference thresholds.
 
-```{r sigpeptides, fig.cap="(ref:sigpeptides)", eval = showSignificant}
+```{r sigpeptides, fig.cap="(ref:sigpeptides)", fig.alt="", eval = showSignificant}
 sigheat
 ```
 
