@@ -150,9 +150,7 @@ allNas <- nrow(res)
 
 ```{r prepHeatmap}
 pl <- grp2$RES$lfqData$get_Plotter()
-
 nah <- pl$NA_heatmap()
-
 
 ```
 
@@ -249,8 +247,7 @@ The peptide abundance heatmap (Figure \@ref(fig:heatmap)) groups the peptide and
 (ref:heatmap) Peptide abundance heatmap (rows indicate peptides, columns indicate samples) showing the row scaled $\log_2$ transformed peptide abundance value. Co-clustering (hierarchical complete linkage, euclidean distance) of samples and peptides was used.
 
 
-
-```{r heatmap, fig.width=7, fig.height=8, dpi=300, fig.cap="(ref:heatmap)", eval=TRUE}
+```{r heatmap, fig.width=7, fig.height=8, dpi=300, fig.cap="(ref:heatmap)",fig.alt="", eval=TRUE}
 ph
 ```
 
@@ -425,7 +422,8 @@ cat(paste("Furthermore, Figure \\@ref(fig:sigpeptides) shows a heatmap of log2 t
 
 (ref:sigpeptides) Heatmap showing the $\log_2$ transformed peptide abundances for peptides which pass the FDR and difference thresholds.
 
-```{r sigpeptides, fig.cap="(ref:sigpeptides)", eval = showSignificant}
+
+```{r sigpeptides, fig.cap="(ref:sigpeptides)", fig.alt="", eval = showSignificant}
 sigheat
 ```
 
