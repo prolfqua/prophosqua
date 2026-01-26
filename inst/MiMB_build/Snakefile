@@ -1,4 +1,7 @@
-# Snakefile for rendering prophosqua vignettes
+# Snakefile for building MiMB (Methods in Molecular Biology) submission
+#
+# Location: inst/MiMB_build/
+# Run from this directory: cd inst/MiMB_build && snakemake -j1 <target>
 #
 # Usage:
 #   snakemake -j1              # Build all outputs
@@ -7,11 +10,11 @@
 #   snakemake -j1 <target>     # Build specific target
 #
 # Targets:
-#   all                        - Build all vignettes (default)
+#   all                        - Build main submission (docx + ptmsea)
 #   mea                        - Build 4 kinase/motif enrichment vignettes
-#   render_supplementary       - Render Supplementary_Material_v3.docx (dodea=false)
+#   render_supplementary       - Render MiMBIntegratedPTM.docx (dodea=false)
 #   render_supplementary_full  - Render with full DEA (dodea=true, slow!)
-#   render_supplementary_html  - Render Supplementary_Material_v3.html
+#   render_supplementary_html  - Render MiMBIntegratedPTM.html
 #   renumber_references        - Renumber Notes/Figures/Tables in DOCX
 #   render_ptmsea              - Render Analysis_PTMSEA.html
 #   render_motif               - Render Analysis_Motif_Enrichment.html
@@ -20,17 +23,24 @@
 #   render_qc                  - Render QCReport.html with mouse example data
 #   kl                         - Run kinase-library + render KL/Vis vignettes
 #   install_package            - Reinstall prophosqua package
+#   archive                    - Create dated submission zip (MiMB_submission_YYYYMMDD.zip)
 #
 # Notes:
 #   - Package is automatically reinstalled when R/*.R or DESCRIPTION changes
 #   - Use 'rm .package_installed' to force package reinstall
+#   - Vignette sources are in ../../vignettes/
+#   - Outputs are written to this directory (inst/MiMB_build/)
 
 import glob
+import datetime
 
-# Get all R source files to track for package reinstallation
-R_FILES = glob.glob("../R/*.R")
-DESCRIPTION = "../DESCRIPTION"
-RDA_FILE = "../data/combined_test_diff_example.rda"
+# Path configuration (relative to inst/MiMB_build/)
+PKG_ROOT = "../.."
+VIGNETTES = f"{PKG_ROOT}/vignettes"
+R_FILES = glob.glob(f"{PKG_ROOT}/R/*.R")
+DESCRIPTION = f"{PKG_ROOT}/DESCRIPTION"
+RDA_FILE = f"{PKG_ROOT}/data/combined_test_diff_example.rda"
+
 CONTRASTS = ["KO_vs_WT", "KO_vs_WT_at_Early", "KO_vs_WT_at_Late", "KO_vs_WT_at_Uninfect"]
 KL_REPO = "git+https://github.com/wolski/kinase-library"
 
@@ -38,7 +48,8 @@ rule help:
     """Show available targets and usage"""
     run:
         print("""
-Snakefile for rendering prophosqua vignettes
+Snakefile for building MiMB submission
+Location: inst/MiMB_build/
 
 Usage:
   snakemake -j1              Build all outputs
@@ -47,9 +58,9 @@ Usage:
   snakemake -j1 <target>     Build specific target
 
 Targets:
-  all                        Build all vignettes (default)
+  all                        Build main submission (docx + ptmsea)
   mea                        Build 4 kinase/motif enrichment vignettes
-  render_supplementary       Render Supplementary_Material_v3.docx (dodea=false)
+  render_supplementary       Render MiMBIntegratedPTM.docx (dodea=false)
   render_supplementary_full  Render with full DEA (dodea=true, slow!)
   renumber_references        Renumber Notes/Figures/Tables in DOCX
   render_ptmsea              Render Analysis_PTMSEA.html
@@ -59,6 +70,7 @@ Targets:
   render_qc                  Render QCReport.html with mouse example data
   kl                         Run kinase-library + render KL/Vis vignettes
   install_package            Reinstall prophosqua package
+  archive                    Create dated submission zip (MiMB_submission_YYYYMMDD.zip)
 
 Notes:
   - Package is automatically reinstalled when R/*.R or DESCRIPTION changes
@@ -67,7 +79,7 @@ Notes:
 
 rule all:
     input:
-        "Supplementary_Material_v3_renumbered.docx",
+        "MiMBIntegratedPTM_renumbered.docx",
         "Analysis_PTMSEA.html"
 
 rule mea:
@@ -83,11 +95,13 @@ rule clean:
     shell:
         """
         rm -f .package_installed
-        rm -f Supplementary_Material_v3.docx Supplementary_Material_v3_renumbered.docx
+        rm -f MiMBIntegratedPTM.docx MiMBIntegratedPTM_renumbered.docx MiMBIntegratedPTM_full.docx
+        rm -f MiMBIntegratedPTM.html MiMBIntegratedPTM.pdf
         rm -f Analysis_PTMSEA.html Analysis_Motif_Enrichment.html
         rm -f Analysis_KinaseLibrary.html Vis_MEA.html
         rm -f *.knit.md *.utf8.md
         rm -f seqwindows.tsv *.rnk term2gene.csv mea_*.csv
+        rm -rf MiMBIntegratedPTM_files
         """
 
 rule install_package:
@@ -98,102 +112,139 @@ rule install_package:
         touch(".package_installed")
     shell:
         """
-        Rscript -e "devtools::install('..')"
+        Rscript -e "devtools::install('{PKG_ROOT}')"
         """
 
 rule render_supplementary:
     input:
-        rmd="Supplementary_Material_v3.Rmd",
+        rmd=f"{VIGNETTES}/MiMBIntegratedPTM.Rmd",
         pkg=".package_installed"
     output:
-        "Supplementary_Material_v3.docx"
+        "MiMBIntegratedPTM.docx"
     params:
-        dodea="false"
+        dodea="FALSE"
     shell:
         """
-        Rscript -e "rmarkdown::render('{input.rmd}', output_format = 'bookdown::word_document2', params = list(dodea = {params.dodea}), clean = FALSE)"
+        Rscript -e "rmarkdown::render('{input.rmd}', output_format = 'bookdown::word_document2', output_dir = '.', params = list(dodea = {params.dodea}), clean = FALSE)"
         """
 
 rule render_supplementary_full:
-    """Render Supplementary_Material_v3 with full DEA (dodea=true)"""
+    """Render MiMBIntegratedPTM with full DEA (dodea=true)"""
     input:
-        rmd="Supplementary_Material_v3.Rmd",
+        rmd=f"{VIGNETTES}/MiMBIntegratedPTM.Rmd",
         pkg=".package_installed"
     output:
-        "Supplementary_Material_v3_full.docx"
+        "MiMBIntegratedPTM_full.docx"
     shell:
         """
-        Rscript -e "rmarkdown::render('{input.rmd}', output_format = 'bookdown::word_document2', output_file = 'Supplementary_Material_v3_full.docx', params = list(dodea = TRUE), clean = FALSE)"
+        Rscript -e "rmarkdown::render('{input.rmd}', output_format = 'bookdown::word_document2', output_dir = '.', output_file = 'MiMBIntegratedPTM_full.docx', params = list(dodea = TRUE), clean = FALSE)"
         """
 
 rule render_supplementary_html:
-    """Render Supplementary_Material_v3 as HTML (with full DEA)"""
+    """Render MiMBIntegratedPTM as HTML (with full DEA)"""
     input:
-        rmd="Supplementary_Material_v3.Rmd",
+        rmd=f"{VIGNETTES}/MiMBIntegratedPTM.Rmd",
         pkg=".package_installed"
     output:
-        "Supplementary_Material_v3.html"
+        "MiMBIntegratedPTM.html"
     shell:
         """
-        Rscript -e "rmarkdown::render('{input.rmd}', output_format = 'bookdown::html_document2', output_file = 'Supplementary_Material_v3.html', params = list(dodea = TRUE), clean = FALSE)"
+        Rscript -e "rmarkdown::render('{input.rmd}', output_format = 'bookdown::html_document2', output_dir = '.', output_file = 'MiMBIntegratedPTM.html', params = list(dodea = TRUE), clean = FALSE)"
         """
 
 rule renumber_references:
     """Renumber Note 4.X -> X, Figure 5.X -> X, Table 5.X -> X in DOCX"""
     input:
-        docx="Supplementary_Material_v3.docx",
+        docx="MiMBIntegratedPTM.docx",
         script="rename_notes.py"
     output:
-        "Supplementary_Material_v3_renumbered.docx"
+        "MiMBIntegratedPTM_renumbered.docx"
     shell:
         """
         uv run --with python-docx python {input.script}
         """
 
+rule render_supplementary_pdf:
+    """Render MiMBIntegratedPTM as PDF"""
+    input:
+        rmd=f"{VIGNETTES}/MiMBIntegratedPTM.Rmd",
+        pkg=".package_installed"
+    output:
+        "MiMBIntegratedPTM.pdf"
+    shell:
+        """
+        Rscript -e "rmarkdown::render('{input.rmd}', output_format = 'bookdown::pdf_document2', output_dir = '.', params = list(dodea = FALSE), clean = FALSE)"
+        """
+
+rule archive:
+    """Create dated submission zip for MiMB journal"""
+    input:
+        docx="MiMBIntegratedPTM_renumbered.docx",
+        pdf="MiMBIntegratedPTM.pdf",
+        bib=f"{VIGNETTES}/doi_references_key.bib",
+        csl=f"{VIGNETTES}/springer-basic-brackets.csl"
+    output:
+        "MiMB_submission_{date}.zip".format(date=datetime.datetime.now().strftime("%Y%m%d"))
+    params:
+        dirname="MiMB_submission_{date}".format(date=datetime.datetime.now().strftime("%Y%m%d"))
+    shell:
+        """
+        rm -rf {params.dirname}
+        mkdir -p {params.dirname}
+        cp {input.docx} {params.dirname}/
+        cp {input.pdf} {params.dirname}/
+        cp {input.bib} {params.dirname}/
+        cp {input.csl} {params.dirname}/
+        cp -r MiMBIntegratedPTM_files/figure-docx {params.dirname}/ 2>/dev/null || true
+        cp -r MiMBIntegratedPTM_files/figure-latex {params.dirname}/ 2>/dev/null || true
+        zip -r {output} {params.dirname}
+        rm -rf {params.dirname}
+        """
+
 rule render_ptmsea:
     input:
-        rmd="Analysis_PTMSEA.Rmd",
+        rmd=f"{VIGNETTES}/Analysis_PTMSEA.Rmd",
         pkg=".package_installed"
     output:
         "Analysis_PTMSEA.html"
     shell:
         """
-        Rscript -e "rmarkdown::render('{input.rmd}', clean = FALSE)"
+        Rscript -e "rmarkdown::render('{input.rmd}', output_dir = '.', clean = FALSE)"
         """
 
 rule render_motif:
     input:
-        rmd="Analysis_Motif_Enrichment.Rmd",
+        rmd=f"{VIGNETTES}/Analysis_Motif_Enrichment.Rmd",
         pkg=".package_installed"
     output:
         "Analysis_Motif_Enrichment.html"
     shell:
         """
-        Rscript -e "rmarkdown::render('{input.rmd}', clean = FALSE)"
+        Rscript -e "rmarkdown::render('{input.rmd}', output_dir = '.', clean = FALSE)"
         """
 
 rule render_kl:
     input:
-        rmd="Analysis_KinaseLibrary.Rmd",
+        rmd=f"{VIGNETTES}/Analysis_KinaseLibrary.Rmd",
         pkg=".package_installed",
         term2gene="term2gene.csv"
     output:
         "Analysis_KinaseLibrary.html"
     shell:
         """
-        Rscript -e "rmarkdown::render('{input.rmd}', clean = FALSE)"
+        Rscript -e "rmarkdown::render('{input.rmd}', output_dir = '.', clean = FALSE)"
         """
 
 rule render_vis:
     input:
-        rmd="Vis_MEA.Rmd",
+        rmd=f"{VIGNETTES}/Vis_MEA.Rmd",
         pkg=".package_installed",
         mea=expand("mea_{contrast}.csv", contrast=CONTRASTS)
     output:
         "Vis_MEA.html"
     shell:
         """
-        Rscript -e "rmarkdown::render('{input.rmd}', clean = FALSE)"
+        Rscript -e "rmarkdown::render('{input.rmd}', output_dir = '.', clean = FALSE)"
         """
 
 # Kinase-library integration rules
@@ -286,13 +337,13 @@ rule run_mea:
 rule render_qc:
     """Render QCReport with mouse example data"""
     input:
-        qmd="QCReport.qmd",
+        qmd=f"{VIGNETTES}/QCReport.qmd",
         pkg=".package_installed",
-        psm="../inst/PTM_example_analysis_v2/PTM_example/data_total/FP_22/p1/psm.tsv"
+        psm=f"{PKG_ROOT}/inst/PTM_example_analysis_v2/PTM_example/data_total/FP_22/p1/psm.tsv"
     output:
-        "../inst/PTM_example_analysis_v2/QCReport.html"
+        f"{PKG_ROOT}/inst/PTM_example_analysis_v2/QCReport.html"
     params:
-        dest="../inst/PTM_example_analysis_v2"
+        dest=f"{PKG_ROOT}/inst/PTM_example_analysis_v2"
     shell:
         """
         cp {input.qmd} {params.dest}/

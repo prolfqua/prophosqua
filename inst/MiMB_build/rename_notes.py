@@ -90,6 +90,6 @@ def rename_references(input_path, output_path):
 
 
 if __name__ == "__main__":
-    input_file = "Supplementary_Material_v3.docx"
-    output_file = "Supplementary_Material_v3_renumbered.docx"
+    input_file = "MiMBIntegratedPTM.docx"
+    output_file = "MiMBIntegratedPTM_renumbered.docx"
     rename_references(input_file, output_file)

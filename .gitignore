@@ -14,3 +14,4 @@ CLAUDE.md
 temp_backup/
 vignettes/QCReport_cache/
 vignettes/ptm_example-main/
+*.tar.gz

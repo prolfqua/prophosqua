@@ -477,7 +477,6 @@ ptmsea_ora_prep <- function(data,
 #' @export
 #'
 #' @examples
-#' @examples
 #' # Mock pathways
 #' pathways <- list(
 #'   PathwayA = c("AAAAAAASAAAAAAA-p", "BBBBBBBSBBBBBBB-p"),
