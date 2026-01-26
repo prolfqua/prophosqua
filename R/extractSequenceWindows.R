@@ -45,11 +45,11 @@ get_sequence_windows <- function(unique_prot_pep_seq,
 
   unique_prot_pep_seq_2 <- unique_prot_pep_seq |>
     dplyr::mutate(
-      padded_sequence = paste0(strrep("X", half_window), !!sym(sequence), strrep("X", half_window)),
-      pos_in_padded_seq = !!sym(pos_in_protein) + half_window,
-      pos_start = !!sym("pos_in_padded_seq") - half_window,
-      pos_end = !!sym("pos_in_padded_seq") + half_window,  # -1 because we want window_size chars
-      sequence_window = substr(!!sym("padded_sequence"), start = pos_start, stop = pos_end)
+      padded_sequence = paste0(strrep("X", half_window), !!rlang::sym(sequence), strrep("X", half_window)),
+      pos_in_padded_seq = !!rlang::sym(pos_in_protein) + half_window,
+      pos_start = !!rlang::sym("pos_in_padded_seq") - half_window,
+      pos_end = !!rlang::sym("pos_in_padded_seq") + half_window,  # -1 because we want window_size chars
+      sequence_window = substr(!!rlang::sym("padded_sequence"), start = pos_start, stop = pos_end)
     )
   unique_prot_pep_seq <- unique_prot_pep_seq_2 |>
     dplyr::select(-.data$padded_sequence, -.data$pos_in_padded_seq, -.data$pos_start, -.data$pos_end)

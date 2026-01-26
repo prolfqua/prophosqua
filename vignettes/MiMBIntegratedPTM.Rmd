@@ -797,7 +797,9 @@ ctr <- prolfqua::Contrasts$new(models, contrasts)
 x <- ctr$get_contrasts()
 ctr_m <- prolfqua::ContrastsMissing$new(ptm_data, contrasts)
 ctr_all <- prolfqua::merge_contrasts_results(ctr, ctr_m)$merged
-ctr_df <- ctr_all$get_contrasts()
+ctr_mod <- prolfqua::ContrastsModerated$new(ctr_all)
+ctr_df <- ctr_mod$get_contrasts()
+
 ```
 
 Finally, we can create a volcano plot of the DPU results using the `ctr_plotter` variable, which is an instance of the `prolfqua::ContrastsPlotter` class (see Figure \@ref(fig:fig4FDRcorrfirst)).
@@ -885,8 +887,6 @@ significant_sites <- combined_test_diff |>
 ```
 
 
-
-
 Before generating sequence logos, we must ensure that the sequence windows are properly centered on the phosphorylation site. This code validates that the 8th character (center position) of each sequence window matches the reported modified amino acid (Note \@ref(seqwindow)).
 
 
@@ -908,22 +908,20 @@ fig5_plot <- plot_seqlogo_with_diff(sig_sites_ST)
 This analysis helps identify the signaling pathways and kinases responsible for the observed changes in phosphorylation under your experimental conditions. When motif analysis yields weak or absent sequence patterns, several factors may require optimization, including the number of significant sites, the sequence window size used for motif extraction (see Note \@ref(motiflimit)).
 
 
-## Kinase Activity Inference Using PTM-SEA
+## Kinase Activity Inference Using `ptm-pipeline`
 
-Beyond sequence logo visualization, kinase activity can be inferred quantitatively using PTM-SEA (Post-Translational Modification Signature Enrichment Analysis) [@10.1074/mcp.TIR118.000943]. This approach applies the Gene Set Enrichment Analysis (GSEA) methodology [@10.1073/pnas.0506580102] to phosphoproteomics data, treating phosphosites (or their flanking sequence windows) as "genes" and kinase substrate signatures as "gene sets."
+Kinase activity can be inferred from phosphoproteomics data by testing whether known or predicted substrates of a kinase are coordinately shifted in a ranked list of regulated phosphosites. Two complementary resources for defining kinase–substrate sets are (i) curated signatures from PTMsigDB (distributed via MSigDB’s PTMsig collection) and (ii) motif specificity models from The Kinase Library.
+
+PTMsigDB / MSigDB PTMsig collection. The PTMsig collection (PTMsigDB) provides literature-curated, PTM site–specific signature sets for site-centric enrichment analysis, including kinase–substrate signatures, perturbation signatures (e.g., growth factor or inhibitor treatment), and pathway-related site signatures. Here, a “signature” refers to a named set of many phosphosites (analogous to a gene set in classic GSEA), not to a single sequence window. To maximize compatibility across search engines and protein database versions, PTMsigDB distributes signatures using multiple site identifier schemes, most commonly phosphosite-centered flanking sequences (typically $\pm 7$ amino acids around the modified residue; 15-mers) as well as UniProt-centric residue identifiers (and optionally PhosphoSitePlus site-group IDs). PTMsigDB provides organism-specific releases for human, mouse, and rat; in the original PTMsigDB publication, the total number of available signature sets was on the order of hundreds (reported as $\approx 490$), and counts vary by database version and organism.
+
+The Kinase Library. A more comprehensive, model-based resource is The Kinase Library [@10.1038/s41586-022-05575-3], which profiled substrate sequence preferences for 303 human Ser/Thr kinases (covering >84% of those predicted to be active) and provides position-specific scoring matrices (PSSMs). Unlike curated substrate lists that require exact matches to previously observed sites, PSSMs assign a quantitative compatibility score to any observed sequence window, enabling kinase–substrate relationships to be inferred without perfect matching. This makes it straightforward to construct “kinase substrate sets” by applying a score threshold or selecting the top-ranked sites per kinase, which can then be used as input signatures for enrichment testing.
+
+PTM Signature Enrichment Analysis (PTM-SEA) using GSEA. Once kinase–substrate sets are defined (from PTMsigDB, motif/PSSM scoring, or both), kinase activity can be inferred quantitatively using PTM-SEA [@10.1074/mcp.TIR118.000943], which adapts the Gene Set Enrichment Analysis (GSEA) framework [@10.1073/pnas.0506580102] to site-centric data. Phosphosites (or their sequence-window identifiers) are ranked by a differential signal (e.g., $\log_2$ fold change or a t-statistic). GSEA then tests whether members of a kinase’s substrate set tend to occur near the top or bottom of this ranked list more than expected under a null model of uniform distribution. The enrichment score is computed by walking down the ranked list, increasing a running sum when a set member is encountered and decreasing it otherwise. Positive enrichment is consistent with increased kinase activity (substrates preferentially upregulated), while negative enrichment is consistent with reduced activity.
+
+Practical considerations and coverage. PTMsigDB signatures provide high-confidence, literature-supported kinase assignments, but they are constrained by database coverage and identifier matching (including the need for consistent site definitions and sequence context). These constraints become more pronounced outside human (and to a lesser extent mouse/rat). In contrast, motif-based scanning (e.g., basophilic motifs such as R-x-x-S/T for PKA/CaMKII-like kinases) and Kinase Library PSSMs generalize to any observed sequence window, enabling broader application across datasets where curated substrate evidence is sparse—while trading off direct experimental validation at the individual site level.
 
 
-GSEA tests whether members of a defined set tend to appear toward the top or bottom of a ranked list rather than being randomly distributed. In PTM-SEA, phosphosites are ranked by their differential abundance (e.g., $\log_2$ fold change or t-statistic), and the null hypothesis states that sites associated with a given kinase are uniformly distributed across this ranked list. The algorithm calculates an enrichment score by walking down the ranked list and incrementing a running sum when encountering a set member, decrementing otherwise. Significant positive enrichment is consistent with increased kinase activity (substrates are preferentially upregulated), while negative enrichment is consistent with reduced activity.
-
-
-Defining kinase-substrate relationships, i.e., determining whether a phosphosite belongs to a particular kinase, can be achieved through several complementary approaches. The Broad Institute's PTMsigDB provides curated phosphosite-centered sequence windows (typically 15-mers) with experimentally validated kinase assignments. However, this requires exact sequence matching and provides limited organism coverage: approximately 20,000 annotated sites for human, only about 2,000 for mouse, and essentially none for other species.
-
-As an alternative, motif-based analysis uses regular expressions derived from consensus phosphorylation motifs to scan observed sequences. These motifs are typically derived by aligning known kinase substrates and identifying conserved residue positions. For example, the basophilic motif R-x-x-S/T characteristic of PKA and CaMKII emerges from the positively charged substrate-binding groove in these kinases.
-
-A more comprehensive resource is The Kinase Library [@10.1038/s41586-022-05575-3], which provides an atlas of substrate specificities for the human serine/threonine kinome. This resource used synthetic peptide libraries to profile the substrate sequence specificity of 303 Ser/Thr kinases, comprising more than $84\%$ of those predicted to be active in humans. The Kinase Library enables position-specific scoring matrix (PSSM)-based prediction of kinase-substrate relationships and is freely accessible at [kinase-library.phosphosite.org](https://kinase-library.phosphosite.org).
-
-The combination of curated PTMsigDB signatures, motif-based scanning, and comprehensive kinase specificity atlases like The Kinase Library provides robust inference of kinase activity. PTMsigDB offers high confidence for well-studied kinases with experimentally validated substrates, while motif analysis and The Kinase Library extend coverage to the broader phosphoproteome and enable quantitative scoring of kinase-substrate relationships. Detailed implementation examples are provided in the `prophosqua` package vignettes `Analysis_PTMSEA` and `Analysis_Motif_Enrichment`.
-
+In `ptm-pipeline` [@10.5281/zenodo.18349420], kinase activity inference is implemented as an automated workflow that uses `prolfquapp`/`prophosqua` to generate differential phosphorylation abundance (DPA) and differential phosphorylation usage (DPU) results under both the "model" and "correct-first" strategies. It then performs GSEA-based PTM-SEA using kinase substrate signatures from PTMsigDB as well as Kinase Library–derived sets generated by PSSM scoring of phosphosite sequence windows. The workflow is provided as a command-line tool and executed via a _Snakemake_ pipeline. The source code is available at [github.com/wolski/ptm-pipeline](https://github.com/wolski/ptm-pipeline).
 
 # Notes
 
@@ -1077,7 +1075,7 @@ fig5_plot
 
 # Tables {-}
 
-```{r showAnnotTable}
+```{r showAnnotTable, echo=FALSE}
 annot <- readr::read_tsv("PTM_example/data_total/dataset.tsv")
 knitr::kable(head(annot), caption = "Annotation table created from FragPipe outputs, with a set of columns required by prolfquapp")
 ```
