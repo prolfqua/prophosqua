@@ -41,9 +41,11 @@ Imports:
 Suggests:
     bookdown,
     clusterProfiler,
+    DT,
     enrichplot,
     fgsea,
     here,
+    htmltools,
     knitr,
     rmarkdown,
     testthat (>= 3.0.0),
