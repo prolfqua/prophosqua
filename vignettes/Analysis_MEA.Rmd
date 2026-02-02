@@ -1,0 +1,238 @@
+---
+title: "Motif Enrichment Analysis (MEA) Visualization"
+output:
+  bookdown::html_document2:
+    code_folding: hide
+    toc: true
+    toc_float: true
+vignette: >
+  %\VignetteIndexEntry{Motif Enrichment Analysis (MEA) Visualization}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 10,
+  fig.height = 8
+)
+
+library(dplyr)
+library(DT)
+library(tidyr)
+library(ggplot2)
+library(purrr)
+library(forcats)
+library(prophosqua)
+```
+
+# Overview
+
+**Motif Enrichment Analysis (MEA)** results visualization using the kinase-library
+package output. MEA identifies kinases whose known substrate motifs are enriched
+at the extremes of ranked phosphoproteomics data, indicating altered kinase activity.
+
+This vignette demonstrates how to visualize pre-computed MEA results from the
+Kinase Library CLI tools.
+
+# Load MEA Results
+
+```{r loadMEA}
+# Load all MEA results from bundled zip file
+zip_path <- system.file("extdata", "mea_results.zip", package = "prophosqua")
+mea_files <- unzip(zip_path, list = TRUE)$Name
+
+# Read and combine all MEA results
+mea_results <- mea_files |>
+  map_dfr(function(f) {
+    contrast_name <- gsub("^mea_|\\.csv$", "", f)
+    read.csv(unz(zip_path, f)) |>
+      mutate(contrast = contrast_name)
+  })
+
+cat("Loaded", nrow(mea_results), "results from", length(mea_files), "contrasts\n")
+cat("Contrasts:", paste(unique(mea_results$contrast), collapse = ", "), "\n")
+```
+
+```{r cleanResults}
+# Standardize column names (MEA output uses Kinase, we need kinase)
+if ("Kinase" %in% names(mea_results)) {
+  mea_results <- mea_results |> rename(kinase = Kinase)
+}
+if ("p.value" %in% names(mea_results)) {
+  mea_results <- mea_results |> rename(pvalue = `p.value`)
+} else if ("p-value" %in% names(mea_results)) {
+  mea_results <- mea_results |> rename(pvalue = `p-value`)
+}
+# Rename size column if present
+if ("Subs.fraction" %in% names(mea_results)) {
+  mea_results <- mea_results |> mutate(size = as.numeric(sub("/.*", "", `Subs.fraction`)))
+} else if ("Subs fraction" %in% names(mea_results)) {
+  mea_results <- mea_results |> mutate(size = as.numeric(sub("/.*", "", `Subs fraction`)))
+}
+
+# Clean and prepare results using shared helper
+mea_clean <- prepare_enrichment_data(mea_results, "FDR", 0.1)
+
+# Summary
+summary_df <- mea_clean |>
+  group_by(contrast) |>
+  summarize(
+    total_kinases = n(),
+    sig_up = sum(FDR < 0.1 & NES > 0, na.rm = TRUE),
+    sig_down = sum(FDR < 0.1 & NES < 0, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+knitr::kable(summary_df, caption = "MEA Summary")
+```
+
+# Results by Contrast {.tabset .tabset-pills}
+
+```{r contrastPlots, results='asis', fig.height=8}
+for (ctr in unique(mea_clean$contrast)) {
+  cat("\n\n## ", ctr, "\n\n")
+
+  ctr_data <- mea_clean |> filter(contrast == ctr)
+  n_sig <- sum(ctr_data$FDR < 0.1, na.rm = TRUE)
+  cat("**Significant kinases (FDR < 0.1):** ", n_sig, "\n\n")
+
+  # Top kinases dotplot using shared function
+  p <- plot_enrichment_dotplot(
+    ctr_data,
+    item_col = "kinase",
+    fdr_col = "FDR",
+    title = paste0("MEA - ", ctr),
+    subtitle = "Top 30 kinases by FDR"
+  )
+  print(p)
+  cat("\n\n")
+
+  # Significant kinases table
+  cat("### Significant Kinases\n\n")
+  sig_table <- ctr_data |>
+    filter(FDR < 0.1) |>
+    select(kinase, NES, pvalue, FDR, n_substrates = size) |>
+    arrange(FDR) |>
+    mutate(across(where(is.numeric), ~round(.x, 4)))
+
+  if (nrow(sig_table) > 0) {
+    print(htmltools::tagList(
+      DT::datatable(sig_table,
+                    extensions = 'Buttons',
+                    options = list(pageLength = 15, scrollX = TRUE,
+                                   dom = 'Bfrtip', buttons = c('copy', 'csv', 'excel')))
+    ))
+  } else {
+    cat("No significant kinases at FDR < 0.1\n\n")
+  }
+  cat("\n\n")
+}
+```
+
+# Summary Heatmap
+
+```{r heatmap, fig.height=10, fig.width=12}
+# Using shared heatmap function
+plot_enrichment_heatmap(
+  mea_clean,
+  item_col = "kinase",
+  fdr_col = "FDR",
+  n_top = 30,
+  title = "MEA Summary Heatmap"
+)
+```
+
+# Volcano Plot
+
+```{r volcano, fig.height=8, fig.width=12}
+# Using shared volcano function
+plot_enrichment_volcano(
+  mea_clean,
+  item_col = "kinase",
+  fdr_col = "FDR",
+  title = "MEA Volcano Plots"
+)
+```
+
+# Diagnostics
+
+```{r diagnosticPvalues}
+pval_diag <- mea_clean |>
+  group_by(contrast) |>
+  summarise(
+    `Min p-value` = signif(min(pvalue, na.rm = TRUE), 3),
+    `p < 0.05` = sum(pvalue < 0.05, na.rm = TRUE),
+    `p < 0.01` = sum(pvalue < 0.01, na.rm = TRUE),
+    Total = n(),
+    .groups = "drop"
+  ) |>
+  rename(Contrast = contrast)
+knitr::kable(pval_diag, caption = "Raw p-value Distribution")
+```
+
+```{r showTopKinases}
+# Top 10 kinases by p-value for the first contrast
+first_contrast <- unique(mea_clean$contrast)[1]
+top_res <- mea_clean |>
+  filter(contrast == first_contrast) |>
+  arrange(pvalue) |>
+  head(10) |>
+  select(kinase, ES, NES, pvalue, FDR) |>
+  mutate(
+    ES = round(ES, 3),
+    NES = round(NES, 3),
+    pvalue = signif(pvalue, 3),
+    FDR = signif(FDR, 3)
+  ) |>
+  rename(Kinase = kinase, `p-value` = pvalue)
+knitr::kable(top_res, caption = paste("Top 10 Kinases by P-value (", first_contrast, ")"))
+```
+
+# All Results
+
+```{r allResults}
+# All kinases across all contrasts
+all_results_dt <- mea_clean |>
+  select(contrast, kinase, NES, pvalue, FDR, size) |>
+  arrange(contrast, FDR) |>
+  mutate(across(where(is.numeric), ~round(.x, 4)))
+
+DT::datatable(all_results_dt,
+  filter = "top",
+  extensions = 'Buttons',
+  options = list(pageLength = 15, scrollX = TRUE,
+                 dom = 'Bfrtip', buttons = c('copy', 'csv', 'excel')),
+  caption = "All kinases across all contrasts")
+```
+
+# Summary Table
+
+```{r summaryTable}
+# Summary of significant kinases
+summary_table <- mea_clean |>
+  filter(FDR < 0.1) |>
+  select(contrast, kinase, NES, FDR) |>
+  arrange(contrast, FDR) |>
+  mutate(
+    NES = round(NES, 3),
+    FDR = signif(FDR, 3)
+  )
+
+if (nrow(summary_table) > 0) {
+  knitr::kable(
+    summary_table,
+    caption = "Significant Kinases (FDR < 0.1)",
+    col.names = c("Contrast", "Kinase", "NES", "FDR")
+  )
+}
+```
+
+# Session Info
+
+```{r sessionInfo}
+sessionInfo()
+```

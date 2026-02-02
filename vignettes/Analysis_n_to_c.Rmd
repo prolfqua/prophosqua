@@ -1,0 +1,232 @@
+---
+title: "PTM Analysis - N-to-C Plots"
+subtitle: "`r if (!is.null(params$xlsx_file)) paste0(toupper(params$analysis_type), ' Analysis') else 'Example Data'`"
+output:
+  bookdown::html_document2:
+    code_folding: hide
+    toc: true
+    toc_float: true
+params:
+  xlsx_file: NULL
+  sheet: "DPA"
+  analysis_type: "dpa"
+  output_dir: NULL
+  fdr: 0.05
+  fc: 0.6
+  max_fig: 10
+vignette: >
+  %\VignetteIndexEntry{PTM Analysis - N-to-C Plots}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 10,
+  fig.height = 6,
+  dpi = 300
+)
+
+suppressPackageStartupMessages({
+  library(prophosqua)
+  library(dplyr)
+  library(ggplot2)
+  library(patchwork)
+})
+```
+
+# Introduction
+
+This vignette generates N-to-C terminal plots for phosphoproteomics analysis.
+N-to-C plots visualize the position of phosphorylation sites along the protein
+sequence, showing both the location and the magnitude of changes.
+
+```{r analysis_description, results='asis'}
+if (is.null(params$xlsx_file)) {
+  cat("**Vignette mode:** Using bundled example data.\n\n")
+  cat("We generate plots for both DPA and DPU analyses:\n\n")
+  cat("- **DPA (Differential PTM Abundance)**: Raw PTM signal changes without protein abundance correction. Shows both site-level and protein-level fold changes.\n")
+  cat("- **DPU (Differential PTM Usage)**: Protein-normalized PTM changes (model-first approach). Reflects genuine modification stoichiometry changes.\n")
+} else {
+  desc <- switch(params$analysis_type,
+    "dpa" = "**DPA (Differential PTM Abundance)**: Raw PTM signal changes without protein abundance correction. Shows both site-level and protein-level fold changes.",
+    "dpu" = "**DPU (Differential PTM Usage)**: Protein-normalized PTM changes (model-first approach). Reflects genuine modification stoichiometry changes.",
+    "cf" = "**CF (CorrectFirst)**: Alternative protein-correction approach where abundances are normalized before statistical modeling.",
+    paste0("**", toupper(params$analysis_type), "** analysis")
+  )
+  cat("**Pipeline mode:** Loading from Excel file.\n\n")
+  cat(desc, "\n")
+}
+```
+
+# Data Loading
+
+```{r load_data}
+# Dual-mode data loading
+if (is.null(params$xlsx_file)) {
+  # Vignette mode: use bundled example data
+  data("combined_test_diff_example", package = "prophosqua")
+  data <- combined_test_diff_example
+  message("Loaded example data: combined_test_diff_example")
+} else {
+  # Pipeline mode: load from file
+  data <- readxl::read_xlsx(params$xlsx_file, sheet = params$sheet)
+  message("Loaded data from: ", params$xlsx_file, " (sheet: ", params$sheet, ")")
+}
+
+# Analysis parameters from params
+fdr_threshold <- params$fdr
+fc_threshold <- params$fc
+max_fig <- params$max_fig
+
+data_info <- tibble(
+  Property = c("Data Source", "Sheet", "Rows", "Contrasts"),
+  Value = c(
+    if (is.null(params$xlsx_file)) "Example data" else basename(params$xlsx_file),
+    if (is.null(params$xlsx_file)) "N/A" else params$sheet,
+    nrow(data),
+    paste(unique(data$contrast), collapse = ", ")
+  )
+)
+knitr::kable(data_info, caption = "Data Summary")
+```
+
+# DPA Analysis (Differential PTM Abundance)
+
+DPA shows both protein-level and site-level fold changes, helping to distinguish
+whether site changes are driven by protein abundance effects.
+
+## Generate DPA N-to-C Plots
+
+**Filtering criteria:** Proteins are included if they contain at least one PTM
+site with FDR < `r fdr_threshold` and |log2 fold change| > `r fc_threshold`.
+
+```{r generate_dpa_plots, results='hide'}
+# DPA: Use expression plotting (shows protein + site)
+plot_result_dpa <- n_to_c_expression_multicontrast(
+  data,
+  FDR_threshold = fdr_threshold,
+  fc_threshold = fc_threshold,
+  max_plots = max_fig
+)
+
+n_plots_dpa <- nrow(plot_result_dpa)
+stopifnot("No significant DPA sites found. Adjust fdr/log2fc thresholds." = n_plots_dpa > 0)
+cat("Generated", n_plots_dpa, "DPA multi-contrast plots\n")
+```
+
+## DPA Example Plots
+
+Showing up to `r min(3, n_plots_dpa)` example plots in the HTML report.
+
+```{r display_dpa_examples, fig.width=12, fig.height=10, results='asis'}
+n_examples_dpa <- min(3, n_plots_dpa)
+
+if (n_plots_dpa > 0) {
+  for (i in seq_len(n_examples_dpa)) {
+    cat("\n\n### ", plot_result_dpa$protein_Id[i], " (DPA)\n\n")
+    print(plot_result_dpa$plot[[i]])
+    cat("\n\n")
+  }
+} else {
+  cat("No significant proteins found with the current filtering criteria.\n")
+}
+```
+
+# DPU Analysis (Differential PTM Usage)
+
+DPU shows protein-normalized site changes, representing true stoichiometry changes
+independent of protein abundance.
+
+## Prepare DPU Data
+
+For DPU analysis, we need to rename columns to match what the usage plotting
+function expects.
+
+```{r prepare_dpu_data}
+# DPU/CF: n_to_c_usage_multicontrast expects diff_diff, FDR_I
+# The example data already has these columns
+# We just need to ensure modelName columns are present
+
+dpu_data <- data |>
+  dplyr::mutate(
+    modelName.site = if ("modelName.site" %in% names(data)) modelName.site else "observed",
+    modelName.protein = if ("modelName.protein" %in% names(data)) modelName.protein else "observed"
+  )
+```
+
+## Generate DPU N-to-C Plots
+
+```{r generate_dpu_plots, results='hide'}
+# DPU: Use usage plotting (shows site only)
+plot_result_dpu <- n_to_c_usage_multicontrast(
+  dpu_data,
+  FDR_threshold = fdr_threshold,
+  fc_threshold = fc_threshold,
+  max_plots = max_fig
+)
+
+n_plots_dpu <- nrow(plot_result_dpu)
+if (n_plots_dpu > 0) {
+  cat("Generated", n_plots_dpu, "DPU multi-contrast plots\n")
+} else {
+  cat("No significant DPU sites found.\n")
+}
+```
+
+## DPU Example Plots
+
+```{r display_dpu_examples, fig.width=12, fig.height=10, results='asis'}
+if (n_plots_dpu > 0) {
+  n_examples_dpu <- min(3, n_plots_dpu)
+
+  for (i in seq_len(n_examples_dpu)) {
+    cat("\n\n### ", plot_result_dpu$protein_Id[i], " (DPU)\n\n")
+    print(plot_result_dpu$plot[[i]])
+    cat("\n\n")
+  }
+} else {
+  cat("No significant proteins found with the current filtering criteria.\n")
+}
+```
+
+# Results Summary
+
+```{r summary}
+summary_info <- tibble(
+  Metric = c("FDR Threshold", "FC Threshold",
+             "DPA: Proteins with Significant Sites", "DPA: Plots Generated",
+             "DPU: Proteins with Significant Sites", "DPU: Plots Generated"),
+  Value = c(fdr_threshold, fc_threshold,
+            n_plots_dpa, min(n_plots_dpa, max_fig),
+            n_plots_dpu, min(n_plots_dpu, max_fig))
+)
+knitr::kable(summary_info, caption = "Analysis Summary")
+```
+
+# Understanding N-to-C Plots
+
+N-to-C plots display:
+
+1. **X-axis**: Position along the protein sequence (N-terminus to C-terminus)
+2. **Y-axis**: Log2 fold change
+3. **Points**: Individual phosphorylation sites
+4. **Colors**: Modified amino acid type (S, T, Y)
+5. **Shapes**: Significance level (filled = significant, open = non-significant)
+
+For DPA plots:
+- A horizontal bar shows the protein-level fold change
+- Site changes above/below this bar indicate site-specific effects beyond protein abundance
+
+For DPU plots:
+- Only site-level changes are shown (protein-normalized)
+- All changes represent genuine stoichiometry differences
+
+# Session Info
+
+```{r sessionInfo}
+sessionInfo()
+```

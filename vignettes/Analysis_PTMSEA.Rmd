@@ -15,65 +15,93 @@ vignette: >
 knitr::opts_chunk$set(
   echo = TRUE,
   message = FALSE,
-  warning = FALSE
+  warning = FALSE,
+  fig.width = 12,
+  fig.height = 8
 )
 ```
 
-## Introduction
+# Overview
 
-PTM-SEA (Post-Translational Modification Signature Enrichment Analysis) uses curated phosphosite signatures from PTMsigDB to infer kinase activities from phosphoproteomics data. This vignette demonstrates GSEA analysis ignoring the ;u/;d suffixes in PTMsigDB.
+**PTM-SEA** (Post-Translational Modification Signature Enrichment Analysis) uses
+flanking sequences and PTMsigDB signatures to infer kinase activities from
+phosphoproteomics data via ClusterProfiler's GSEA.
+
+PTM-SEA uses curated phosphosite signatures from PTMsigDB to infer kinase activities.
+This vignette demonstrates GSEA analysis ignoring the `;u/;d` direction suffixes in PTMsigDB.
 
 We analyze both DPA (Differential PTM Abundance) and DPU (Differential PTM Usage) results:
 
-- **DPA results** show kinase activity changes including protein abundance effects
-- **DPU results** show kinase activity changes independent of protein abundance
+- **DPA**: Differential PTM Abundance - raw phosphosite changes (includes protein abundance effects)
+- **DPU**: Differential PTM Usage - protein-normalized changes (true stoichiometry changes)
 
-Comparing the two analyses helps identify whether observed kinase activity changes are driven by genuine signaling changes (DPU) or protein abundance effects (DPA only).
+Comparing the two analyses helps identify whether observed kinase activity changes
+are driven by genuine signaling changes (DPU) or protein abundance effects (DPA only).
 
-## Load Data and PTMsigDB
+# Load Libraries and Data
 
-```{r load_data}
+```{r load_libraries}
 library(prophosqua)
 library(clusterProfiler)
 library(dplyr)
+library(DT)
 library(enrichplot)
 library(fgsea)
+library(forcats)
 library(purrr)
+library(ggplot2)
+```
 
+```{r load_data}
 # Load example data
 data("combined_test_diff_example", package = "prophosqua")
-example_data <- combined_test_diff_example
+data <- combined_test_diff_example
 
 data_info <- tibble(
   Property = c("Rows", "Columns", "Contrasts"),
-  Value = c(nrow(example_data), ncol(example_data),
-            paste(unique(example_data$contrast), collapse = ", "))
+  Value = c(nrow(data), ncol(data),
+            paste(unique(data$contrast), collapse = ", "))
 )
-knitr::kable(data_info, caption = "Example Data")
+knitr::kable(data_info, caption = "Input Data Summary")
 ```
 
-```{r download_ptmsigdb}
+# Load PTMsigDB Signatures
+
+```{r load_ptmsigdb}
 # Download PTMsigDB signatures
 gmt_path <- download_ptmsigdb(species = "mouse", output_dir = tempdir())
 pathways_raw <- fgsea::gmtPathways(gmt_path)
 
 # Trim pathways to 11-mer (default) to increase overlap with our data
-pathways <- trim_ptmsigdb_pathways(pathways_raw, trim_to = "11")
+trim_to <- 11
+pathways <- trim_ptmsigdb_pathways(pathways_raw, trim_to = as.character(trim_to))
+
+# Count categories
+n_kinase <- sum(grepl("^KINASE-", names(pathways)))
+n_path <- sum(grepl("^PATH-", names(pathways)))
+
+# Summary table
+ptmsigdb_summary <- tibble(
+  Property = c("Source", "Total Signatures", "KINASE signatures", "PATH signatures", "Unique Sites"),
+  Value = c("PTMsigDB (downloaded)", length(pathways), n_kinase, n_path,
+            length(unique(unlist(pathways))))
+)
+knitr::kable(ptmsigdb_summary, caption = "PTMsigDB Signature Database Summary")
 ```
 
-## Overlap Statistics
+# Overlap Statistics
 
 Understanding the overlap between our data and PTMsigDB is crucial for interpreting results.
 
 ```{r overlap_stats}
-# Our data: unique flanking sequences (trimmed to 11-mer to match pathways)
-our_sequences <- example_data |>
+# Our data: unique flanking sequences (trimmed to match pathways)
+our_sequences <- data |>
   pull(SequenceWindow) |>
   trimws() |>
   toupper() |>
   unique()
 our_sequences_trimmed <- our_sequences |>
-  map_chr(~prophosqua:::trim_flanking_seq(.x, trim_to = 11L))
+  map_chr(~prophosqua:::trim_flanking_seq(.x, trim_to = trim_to))
 our_site_ids <- paste0(our_sequences_trimmed, "-p")
 n_our_sites <- n_distinct(our_site_ids)
 
@@ -92,194 +120,262 @@ n_overlap <- length(overlap_ids)
 
 overlap_stats <- tibble(
   Metric = c("Our data (unique sequences)", "PTMsigDB (unique site IDs)", "Overlap",
-             "% of our sites", "% of PTMsigDB sites"),
+             "% of our sites in PTMsigDB", "% of PTMsigDB sites in our data"),
   Value = c(n_our_sites, n_ptmsigdb_sites, n_overlap,
             round(100 * n_overlap / n_our_sites, 2),
             round(100 * n_overlap / n_ptmsigdb_sites, 2))
 )
-knitr::kable(overlap_stats, caption = "Overlap Statistics (11-mer)")
+knitr::kable(overlap_stats, caption = paste0("Overlap Statistics (", trim_to, "-mer)"))
 ```
 
 The low overlap is expected because:
 
 1. PTMsigDB contains curated kinase-substrate relationships (~1,700 unique sites)
-2. Our phosphoproteomics data measures ~20,000+ sites
+2. Our phosphoproteomics data measures many more sites
 3. Most measured sites have no known kinase annotation
 
-## DPA Analysis (Differential PTM Abundance)
+# DPA Analysis (Differential PTM Abundance)
 
-DPA uses raw phosphosite fold changes, which include both true signaling changes and protein abundance effects.
+DPA uses raw phosphosite fold changes, which include both true signaling changes
+and protein abundance effects.
 
-### Prepare DPA Data
+## Prepare DPA Data
 
 ```{r prep_dpa}
-# Use t-statistic for ranking
+# Prepare ranks using prophosqua (trim_to must match pathways)
 prep_dpa <- ptmsea_data_prep(
-  data = example_data,
+  data = data,
   stat_column = "statistic.site",
   seq_window_col = "SequenceWindow",
-  contrast_col = "contrast"
+  contrast_col = "contrast",
+  trim_to = as.character(trim_to)
 )
 
-dpa_prep_info <- tibble(
+prep_dpa_info <- tibble(
   Contrast = names(prep_dpa$ranks),
   Sites = map_int(prep_dpa$ranks, length)
 )
-knitr::kable(dpa_prep_info, caption = "DPA Contrasts Prepared")
+knitr::kable(prep_dpa_info, caption = "DPA Contrasts Prepared")
 ```
 
-### DPA: GSEA without Direction
+## Run PTM-SEA (GSEA)
 
-Standard GSEA ignoring the ;u/;d direction suffixes in PTMsigDB.
-
-```{r dpa_gsea_nodirection}
-results_dpa_nodir <- run_ptmsea(
+```{r run_ptmsea_dpa}
+results_dpa <- run_ptmsea(
   ranks_list = prep_dpa$ranks,
   pathways = pathways,
-  min_size = 3,
+  min_size = 3,  # Require at least 3 matches between rank file and geneset
   max_size = 500,
   n_perm = 1000,
-  pvalueCutoff = 0.1
+  pvalueCutoff = 0.25  # Relaxed for visualization; filter later
 )
 
-dpa_nodir_info <- tibble(
-  Contrast = names(results_dpa_nodir),
-  `Significant (FDR < 0.1)` = map_int(results_dpa_nodir, ~nrow(.x@result))
+results_dpa_info <- tibble(
+  Contrast = names(results_dpa),
+  `Total Pathways` = map_int(results_dpa, ~nrow(.x@result)),
+  `FDR < 0.1` = map_int(results_dpa, ~sum(.x@result$p.adjust < 0.1, na.rm = TRUE)),
+  `FDR < 0.05` = map_int(results_dpa, ~sum(.x@result$p.adjust < 0.05, na.rm = TRUE))
 )
-knitr::kable(dpa_nodir_info, caption = "DPA GSEA (no direction) Results")
+knitr::kable(results_dpa_info, caption = "DPA PTM-SEA Results Summary")
 ```
 
-```{r dpa_gsea_nodir_plot, fig.width=14, fig.height=10}
-merged_dpa_nodir <- merge_result(results_dpa_nodir)
-dotplot(merged_dpa_nodir, showCategory = 15,
-        title = "DPA GSEA - PTM-SEA (FDR < 0.1)") +
-  ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
+## DPA Results {.tabset .tabset-pills}
+
+```{r dpa_contrast_plots, results='asis', fig.height=8}
+# Extract all results into data frame using shared function
+all_clean_dpa <- extract_gsea_results(results_dpa) |>
+  mutate(
+    pathway = ID,
+    pathway_short = gsub("^(KINASE|PERT|PATH|DISEASE)-PSP_", "", ID) |>
+      substr(1, 40)
+  )
+
+for (ctr in unique(all_clean_dpa$contrast)) {
+  cat("\n\n### ", ctr, "\n\n")
+
+  ctr_data <- all_clean_dpa |> filter(contrast == ctr)
+  n_sig <- sum(ctr_data$p.adjust < 0.1, na.rm = TRUE)
+  cat("**Significant pathways (FDR < 0.1):** ", n_sig, "\n\n")
+
+  # Using shared dotplot function
+  p <- plot_enrichment_dotplot(
+    ctr_data,
+    item_col = "pathway_short",
+    fdr_col = "p.adjust",
+    title = paste0("DPA - ", ctr),
+    subtitle = "Top 30 pathways by FDR"
+  )
+  print(p)
+  cat("\n\n")
+}
 ```
 
-```{r dpa_gsea_individual, fig.width=14, fig.height=10}
-dpa_plots <- names(results_dpa_nodir) |>
+## DPA clusterProfiler Dotplot
+
+```{r dpa_combined_dotplot, fig.width=14, fig.height=10}
+merged_results_dpa <- merge_result(results_dpa)
+dotplot(merged_results_dpa, showCategory = 15,
+        title = "DPA PTM-SEA (All Contrasts)") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r dpa_individual_plots, fig.width=14, fig.height=10}
+dpa_plots <- names(results_dpa) |>
   map(function(ct) {
-    res <- results_dpa_nodir[[ct]]
+    res <- results_dpa[[ct]]
     if (nrow(res@result) > 0) {
       dotplot(res, showCategory = 15, title = ct) +
-        ggplot2::theme(axis.text.y = ggplot2::element_text(size = 8))
+        theme(axis.text.y = element_text(size = 8))
     } else {
-      ggplot2::ggplot() +
-        ggplot2::annotate("text", x = 0.5, y = 0.5, label = paste("No results for", ct)) +
-        ggplot2::theme_void() +
-        ggplot2::ggtitle(ct)
+      ggplot() +
+        annotate("text", x = 0.5, y = 0.5, label = paste("No results for", ct)) +
+        theme_void() +
+        ggtitle(ct)
     }
   })
 patchwork::wrap_plots(dpa_plots, ncol = 2)
 ```
 
-## DPU Analysis (Differential PTM Usage)
+# DPU Analysis (Differential PTM Usage)
 
-DPU uses protein-normalized phosphosite fold changes, representing true stoichiometry changes independent of protein abundance.
+DPU uses protein-normalized phosphosite fold changes, representing true
+stoichiometry changes independent of protein abundance.
 
-### Prepare DPU Data
+## Prepare DPU Data
 
 ```{r prep_dpu}
 # Use t-statistic for DPU ranking
 prep_dpu <- ptmsea_data_prep(
-  data = example_data,
+  data = data,
   stat_column = "tstatistic_I",
   seq_window_col = "SequenceWindow",
-  contrast_col = "contrast"
+  contrast_col = "contrast",
+  trim_to = as.character(trim_to)
 )
 
-dpu_prep_info <- tibble(
+prep_dpu_info <- tibble(
   Contrast = names(prep_dpu$ranks),
   Sites = map_int(prep_dpu$ranks, length)
 )
-knitr::kable(dpu_prep_info, caption = "DPU Contrasts Prepared")
+knitr::kable(prep_dpu_info, caption = "DPU Contrasts Prepared")
 ```
 
-### DPU: GSEA without Direction
+## Run PTM-SEA (GSEA)
 
-```{r dpu_gsea_nodirection}
-results_dpu_nodir <- run_ptmsea(
+```{r run_ptmsea_dpu}
+results_dpu <- run_ptmsea(
   ranks_list = prep_dpu$ranks,
   pathways = pathways,
   min_size = 3,
   max_size = 500,
   n_perm = 1000,
-  pvalueCutoff = 0.1
+  pvalueCutoff = 0.25
 )
 
-dpu_nodir_info <- tibble(
-  Contrast = names(results_dpu_nodir),
-  `Significant (FDR < 0.1)` = map_int(results_dpu_nodir, ~nrow(.x@result))
+results_dpu_info <- tibble(
+  Contrast = names(results_dpu),
+  `Total Pathways` = map_int(results_dpu, ~nrow(.x@result)),
+  `FDR < 0.1` = map_int(results_dpu, ~sum(.x@result$p.adjust < 0.1, na.rm = TRUE)),
+  `FDR < 0.05` = map_int(results_dpu, ~sum(.x@result$p.adjust < 0.05, na.rm = TRUE))
 )
-knitr::kable(dpu_nodir_info, caption = "DPU GSEA (no direction) Results")
+knitr::kable(results_dpu_info, caption = "DPU PTM-SEA Results Summary")
 ```
 
-```{r dpu_gsea_nodir_plot, fig.width=14, fig.height=10}
-merged_dpu_nodir <- merge_result(results_dpu_nodir)
-dotplot(merged_dpu_nodir, showCategory = 15,
-        title = "DPU GSEA - PTM-SEA (FDR < 0.1)") +
-  ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
+## DPU Results {.tabset .tabset-pills}
+
+```{r dpu_contrast_plots, results='asis', fig.height=8}
+all_clean_dpu <- extract_gsea_results(results_dpu) |>
+  mutate(
+    pathway = ID,
+    pathway_short = gsub("^(KINASE|PERT|PATH|DISEASE)-PSP_", "", ID) |>
+      substr(1, 40)
+  )
+
+for (ctr in unique(all_clean_dpu$contrast)) {
+  cat("\n\n### ", ctr, "\n\n")
+
+  ctr_data <- all_clean_dpu |> filter(contrast == ctr)
+  n_sig <- sum(ctr_data$p.adjust < 0.1, na.rm = TRUE)
+  cat("**Significant pathways (FDR < 0.1):** ", n_sig, "\n\n")
+
+  p <- plot_enrichment_dotplot(
+    ctr_data,
+    item_col = "pathway_short",
+    fdr_col = "p.adjust",
+    title = paste0("DPU - ", ctr),
+    subtitle = "Top 30 pathways by FDR"
+  )
+  print(p)
+  cat("\n\n")
+}
 ```
 
-```{r dpu_gsea_individual, fig.width=14, fig.height=10}
-dpu_plots <- names(results_dpu_nodir) |>
+## DPU clusterProfiler Dotplot
+
+```{r dpu_combined_dotplot, fig.width=14, fig.height=10}
+merged_results_dpu <- merge_result(results_dpu)
+dotplot(merged_results_dpu, showCategory = 15,
+        title = "DPU PTM-SEA (All Contrasts)") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r dpu_individual_plots, fig.width=14, fig.height=10}
+dpu_plots <- names(results_dpu) |>
   map(function(ct) {
-    res <- results_dpu_nodir[[ct]]
+    res <- results_dpu[[ct]]
     if (nrow(res@result) > 0) {
       dotplot(res, showCategory = 15, title = ct) +
-        ggplot2::theme(axis.text.y = ggplot2::element_text(size = 8))
+        theme(axis.text.y = element_text(size = 8))
     } else {
-      ggplot2::ggplot() +
-        ggplot2::annotate("text", x = 0.5, y = 0.5, label = paste("No results for", ct)) +
-        ggplot2::theme_void() +
-        ggplot2::ggtitle(ct)
+      ggplot() +
+        annotate("text", x = 0.5, y = 0.5, label = paste("No results for", ct)) +
+        theme_void() +
+        ggtitle(ct)
     }
   })
 patchwork::wrap_plots(dpu_plots, ncol = 2)
 ```
 
-## Diagnostics
+# Summary Heatmap
 
-```{r diagnostic_pvalues}
-pval_diag <- names(results_dpa_nodir) |>
-  map_dfr(function(ct) {
-    res <- results_dpa_nodir[[ct]]@result
-    tibble(
-      Contrast = ct,
-      `Min p-value` = signif(min(res$pvalue), 3),
-      `p < 0.05` = sum(res$pvalue < 0.05),
-      `p < 0.01` = sum(res$pvalue < 0.01),
-      Total = nrow(res)
-    )
-  })
-knitr::kable(pval_diag, caption = "Raw p-value Distribution (DPA)")
-```
+```{r summary_heatmap, fig.width=12, fig.height=10}
+# Combine DPA and DPU results for comparison
+all_clean_dpa <- all_clean_dpa |> mutate(analysis = "DPA")
+all_clean_dpu <- all_clean_dpu |> mutate(analysis = "DPU")
 
-```{r show_top_pathways}
-if (length(results_dpa_nodir) > 0) {
-  top_res <- results_dpa_nodir[[1]]@result |>
-    as_tibble() |>
-    arrange(pvalue) |>
-    head(10) |>
-    select(ID, enrichmentScore, NES, pvalue, p.adjust, setSize) |>
-    mutate(
-      enrichmentScore = round(enrichmentScore, 3),
-      NES = round(NES, 3),
-      pvalue = signif(pvalue, 3),
-      p.adjust = signif(p.adjust, 3)
-    )
-  knitr::kable(top_res,
-    caption = paste("Top 10 Pathways by P-value (DPA,",
-                    names(results_dpa_nodir)[1], ")"))
+all_combined <- bind_rows(all_clean_dpa, all_clean_dpu)
+
+if (nrow(all_combined) > 0) {
+  # Using shared heatmap function with pathway_short labels
+  plot_enrichment_heatmap(
+    all_clean_dpa,
+    item_col = "ID",
+    fdr_col = "p.adjust",
+    n_top = 25,
+    item_label_col = "pathway_short",
+    title = "PTM-SEA Summary - DPA"
+  )
 }
 ```
 
-### GSEA Enrichment Plot (Example)
+# Volcano Plot
 
-```{r gsea_plots_dpa, fig.width=10, fig.height=6}
+```{r volcano_plot, fig.width=12, fig.height=8}
+# Using shared volcano function
+plot_enrichment_volcano(
+  all_clean_dpa,
+  item_col = "pathway_short",
+  fdr_col = "p.adjust",
+  title = "DPA - PTM-SEA Volcano Plots"
+)
+```
+
+# GSEA Enrichment Plot (Example)
+
+```{r gsea_plots_example, fig.width=10, fig.height=6}
 # Show single example for illustration
-ct <- names(results_dpa_nodir)[1]
-res <- results_dpa_nodir[[ct]]
+ct <- names(results_dpa)[1]
+res <- results_dpa[[ct]]
 
 if (nrow(res@result) > 0) {
   top_pathway <- res@result |>
@@ -294,13 +390,67 @@ if (nrow(res@result) > 0) {
   nes_val <- round(row$NES, 2)
   fdr <- signif(row$p.adjust, 2)
 
+  pathway_short <- gsub("^(KINASE|PERT|PATH|DISEASE)-PSP_", "", top_pathway)
   gseaplot2(res, geneSetID = top_pathway,
-    title = paste0(ct, " - ", top_pathway, " (NES=", nes_val, ", FDR=", fdr, ")"))
+    title = paste0(ct, " - ", pathway_short, " (NES=", nes_val, ", FDR=", fdr, ")"))
 }
 ```
 
-## Session Info
+# Diagnostics
 
-```{r session_info}
+```{r diagnostic_pvalues}
+pval_diag <- names(results_dpa) |>
+  map_dfr(function(ct) {
+    res <- results_dpa[[ct]]@result
+    tibble(
+      Contrast = ct,
+      `Min p-value` = signif(min(res$pvalue, na.rm = TRUE), 3),
+      `p < 0.05` = sum(res$pvalue < 0.05, na.rm = TRUE),
+      `p < 0.01` = sum(res$pvalue < 0.01, na.rm = TRUE),
+      Total = nrow(res)
+    )
+  })
+knitr::kable(pval_diag, caption = "Raw p-value Distribution (DPA)")
+```
+
+```{r show_top_pathways}
+if (length(results_dpa) > 0) {
+  top_res <- results_dpa[[1]]@result |>
+    as_tibble() |>
+    arrange(pvalue) |>
+    head(10) |>
+    select(ID, enrichmentScore, NES, pvalue, p.adjust, setSize) |>
+    mutate(
+      enrichmentScore = round(enrichmentScore, 3),
+      NES = round(NES, 3),
+      pvalue = signif(pvalue, 3),
+      p.adjust = signif(p.adjust, 3)
+    )
+  knitr::kable(top_res,
+    caption = paste("Top 10 Pathways by P-value (DPA,",
+                    names(results_dpa)[1], ")"))
+}
+```
+
+# All Results
+
+```{r allResults}
+# All pathways across all contrasts
+all_clean_dt <- all_clean_dpa |>
+  select(contrast, pathway = ID, NES, pvalue, FDR = p.adjust, setSize) |>
+  arrange(contrast, FDR) |>
+  mutate(across(where(is.numeric), ~round(.x, 4)))
+
+DT::datatable(all_clean_dt,
+  filter = "top",
+  extensions = 'Buttons',
+  options = list(pageLength = 15, scrollX = TRUE,
+                 dom = 'Bfrtip', buttons = c('copy', 'csv', 'excel')),
+  caption = "All pathways across all contrasts (DPA)")
+```
+
+# Session Info
+
+```{r sessionInfo}
 sessionInfo()
 ```
