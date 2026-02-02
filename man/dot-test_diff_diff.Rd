@@ -2,7 +2,7 @@
 % Please edit documentation in R/test_diff_diff.R
 \name{.test_diff_diff}
 \alias{.test_diff_diff}
-\title{Test if differences of differences are significant}
+\title{Test if differences of differences are significant (internal)}
 \usage{
 .test_diff_diff(
   dataframe_a,
@@ -15,6 +15,27 @@
   suffix_b = ".protein"
 )
 }
-\description{
-Test if differences of differences are significant
+\arguments{
+\item{dataframe_a}{First data frame (e.g., site-level results)}
+
+\item{dataframe_b}{Second data frame (e.g., protein-level results)}
+
+\item{by}{Columns to join by}
+
+\item{diff}{Column name for difference values}
+
+\item{std_err}{Column name for standard error values}
+
+\item{df}{Column name for degrees of freedom}
+
+\item{suffix_a}{Suffix for columns from dataframe_a}
+
+\item{suffix_b}{Suffix for columns from dataframe_b}
 }
+\value{
+Data frame with diff_diff test results
+}
+\description{
+Test if differences of differences are significant (internal)
+}
+\keyword{internal}

@@ -2,10 +2,18 @@
 % Please edit documentation in R/helper_functions.r
 \name{filter_contaminants}
 \alias{filter_contaminants}
-\title{filter contaminants}
+\title{Filter contaminant proteins from data}
 \usage{
 filter_contaminants(data, protein_id_col = "protein_Id")
 }
+\arguments{
+\item{data}{Data frame with protein data}
+
+\item{protein_id_col}{Name of the protein ID column (default: "protein_Id")}
+}
+\value{
+Filtered data frame
+}
 \description{
-filter contaminants
+Removes rows matching FGCZ contaminants, contam_ prefix, or rev_ prefix.
 }

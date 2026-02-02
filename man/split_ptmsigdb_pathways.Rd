@@ -2,41 +2,17 @@
 % Please edit documentation in R/ptmsea.R
 \name{split_ptmsigdb_pathways}
 \alias{split_ptmsigdb_pathways}
-\title{Run PTM-SEA analysis}
+\title{Split PTMsigDB pathways by direction}
 \usage{
 split_ptmsigdb_pathways(pathways)
 }
 \arguments{
-\item{pathways}{Named list of pathway definitions (e.g., from fgsea::gmtPathways()).}
-
-\item{ranks_list}{Named list of named numeric vectors from ptmsea_data_prep().}
-
-\item{min_size}{Integer. Minimum pathway size. Default 3.}
-
-\item{max_size}{Integer. Maximum pathway size. Default 500.}
-
-\item{n_perm}{Integer. Number of permutations. Default 1000.}
+\item{pathways}{Named list of pathway gene vectors with ;u/;d suffixes}
 }
 \value{
-Named list of fgsea result data.frames, one per contrast.
+Named list with _up and _down pathway subsets
 }
 \description{
-Applies fgsea to each contrast's ranked site list against PTMsigDB pathways.
-}
-\examples{
-# Mock ranked lists
-# Must have > 10 overlap with pathways to run
-seqs <- paste0("SEQ", 1:15, "-p")
-rank_vec <- setNames(rnorm(15), seqs)
-ranks_list <- list(contrast1 = sort(rank_vec, decreasing = TRUE))
-
-# Mock pathways
-# Create pathways that overlap with the sequences
-pathways <- list(
-  PathwayA = seqs[1:10],
-  PathwayB = seqs[6:15]
-)
-
-# Run PTM-SEA (adjusting min_size for small mock data)
-results <- run_ptmsea(ranks_list, pathways, min_size = 1, pvalueCutoff = 1.0)
+Splits pathway gene sets into up- and down-regulated subsets based on
+direction suffixes (;u and ;d) used in PTMsigDB.
 }

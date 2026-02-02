@@ -6,6 +6,7 @@
 ^inst/Supplements$
 ^inst/ProphosquaMain$
 ^inst/application/QCReport_files$
+^inst/MiMB_build/\.snakemake$
 
 # Rendered vignette output files
 ^vignettes/.*_files$
@@ -13,6 +14,43 @@
 ^vignettes/\.snakemake$
 ^vignettes/temp$
 ^vignettes/Supplementary_Material_v3\.Rmd$
+^vignettes/\.package_installed$
+^vignettes/\.quarto$
+^vignettes/Vis_Ksea\.Rmd$
+^vignettes/MiMBIntegratedPTM\.Rmd$
+^vignettes/.*\.xlsx$
+^vignettes/kinase_lib_cli_error\.log$
+^vignettes/ptm_example-main$
+^vignettes/.*\.html$
+^vignettes/.*\.knit\.md$
+^vignettes/.*\.docx$
+^vignettes/.*\.pdf$
+^vignettes/.*\.tex$
+^vignettes/.*\.zip$
+^vignettes/.*\.tsv$
+^vignettes/.*\.bib$
+^vignettes/.*\.csl$
+^vignettes/.*\.log$
+^vignettes/header\.tex$
+^vignettes/reference\.docx$
+^vignettes/logs$
+^vignettes/QCReport_cache$
+^vignettes/QCReport\.qmd$
+
+# Hidden files and directories
+^\.editorconfig$
+^\.lintr$
+^\.claude$
+^\.vscode$
+
+# Non-standard top-level files
+^CLAUDE\.md$
+^Makefile$
+^Rplots\.pdf$
+^TODO\.md$
+^_pkgdown\.yml$
+^air\.toml$
+^docs$
 
 # Miscellaneous
 \.DS_Store$

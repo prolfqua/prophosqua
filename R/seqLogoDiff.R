@@ -103,6 +103,7 @@ get_pwm <- function(sequences) {
 #' @importFrom ggseqlogo ggseqlogo
 #' @importFrom ggplot2 ggtitle
 #' @importFrom dplyr filter pull
+#' @importFrom rlang .data
 #' @export
 plot_diff_logo <- function(sig_sites) {
   # Iterate over contrasts
@@ -111,13 +112,13 @@ plot_diff_logo <- function(sig_sites) {
 
   for (cont in contrasts_list) {
     up_seqs <- sig_sites |>
-      dplyr::filter(contrast == cont, regulation == "upregulated") |>
-      dplyr::pull(SequenceWindow) |>
+      dplyr::filter(.data$contrast == cont, .data$regulation == "upregulated") |>
+      dplyr::pull(.data$SequenceWindow) |>
       toupper()
 
     down_seqs <- sig_sites |>
-      dplyr::filter(contrast == cont, regulation == "downregulated") |>
-      dplyr::pull(SequenceWindow) |>
+      dplyr::filter(.data$contrast == cont, .data$regulation == "downregulated") |>
+      dplyr::pull(.data$SequenceWindow) |>
       toupper()
 
     # Only compute if we have sequences
@@ -209,13 +210,13 @@ plot_seqlogo_with_diff <- function(sig_sites) {
 
   for (cont in contrasts_list) {
     up_seqs <- sig_sites |>
-      dplyr::filter(contrast == cont, regulation == "upregulated") |>
-      dplyr::pull(SequenceWindow) |>
+      dplyr::filter(.data$contrast == cont, .data$regulation == "upregulated") |>
+      dplyr::pull(.data$SequenceWindow) |>
       toupper()
 
     down_seqs <- sig_sites |>
-      dplyr::filter(contrast == cont, regulation == "downregulated") |>
-      dplyr::pull(SequenceWindow) |>
+      dplyr::filter(.data$contrast == cont, .data$regulation == "downregulated") |>
+      dplyr::pull(.data$SequenceWindow) |>
       toupper()
 
     if (length(up_seqs) > 0 && length(down_seqs) > 0) {

@@ -2,10 +2,20 @@
 % Please edit documentation in R/helper_functions.r
 \name{dea_res_dir}
 \alias{dea_res_dir}
-\title{get xlsx path}
+\title{Get DEA results directory path}
 \usage{
 dea_res_dir(project_dir, WU, date)
 }
+\arguments{
+\item{project_dir}{Path to the project directory}
+
+\item{WU}{Work unit identifier (e.g., "phospho", "prot")}
+
+\item{date}{Date string used in folder naming (e.g., "20240101")}
+}
+\value{
+Character string with full path to the results directory
+}
 \description{
-get xlsx path
+Constructs the path to a DEA results directory based on project structure.
 }
