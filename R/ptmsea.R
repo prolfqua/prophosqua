@@ -88,6 +88,108 @@ trim_flanking_seq <- function(seq, trim_to = 15L) {
 }
 
 
+#' Prepare ranked lists for GSEA analysis
+#'
+#' Creates named numeric vectors suitable for clusterProfiler::GSEA from
+#' phosphoproteomics data with multiple contrasts. This is a general-purpose
+#' function that works with any GSEA analysis (Kinase Library, motif enrichment,
+#' etc.). For PTMsigDB-specific preparation with trimming and "-p" suffix,
+#' see \code{\link{ptmsea_data_prep}}.
+#'
+#' @param data Data frame with phosphosite data containing statistics per contrast
+#' @param stat_col Character. Column name for ranking statistic (e.g., "statistic.site"
+#'   for DPA or "tstatistic_I" for DPU)
+#' @param seq_col Character. Column name for sequence windows. Default "SequenceWindow"
+#' @param contrast_col Character. Column name for contrasts. Default "contrast"
+#' @param to_uppercase Logical. Convert sequences to uppercase. Default TRUE
+#' @param add_suffix Character or NULL. Suffix to add to sequences (e.g., "-p" for
+#'   PTMsigDB format). Default NULL (no suffix)
+#'
+#' @return Named list of named numeric vectors, one per contrast. Each vector
+#'   contains statistics named by sequence, sorted in descending order.
+#'
+#' @details
+#' For each contrast, the function:
+#' \enumerate{
+#'   \item Filters to the specified contrast
+#'   \item Processes sequences (uppercase, trim whitespace)
+#'   \item Removes rows with NA statistics
+#'   \item Keeps first occurrence of duplicate sequences
+#'   \item Sorts by statistic (descending) for GSEA
+#' }
+#'
+#' @export
+#'
+#' @examples
+#' # Example with mock data
+#' data <- data.frame(
+#'   contrast = rep(c("A_vs_B", "C_vs_D"), each = 5),
+#'   SequenceWindow = c("AAASAAAA", "BBBSBBB", "CCCSCCCC", "DDDSDDDD", "EEESEEEE",
+#'                      "AAASAAAA", "FFFSFFF", "GGGSGGGG", "HHHSHHHH", "IIISIII"),
+#'   statistic.site = c(2.5, 1.8, -0.5, -1.2, 0.3, 1.9, 2.1, -0.8, 0.1, -1.5),
+#'   stringsAsFactors = FALSE
+#' )
+#'
+#' # Prepare ranks for Kinase Library GSEA (no suffix needed)
+#' ranks <- prepare_gsea_ranks(data, stat_col = "statistic.site")
+#' names(ranks)  # contrast names
+#' head(ranks[[1]])  # ranked sequences for first contrast
+#'
+#' # Prepare ranks for PTMsigDB (with "-p" suffix)
+#' ranks_ptm <- prepare_gsea_ranks(data, stat_col = "statistic.site", add_suffix = "-p")
+#'
+#' @seealso \code{\link{ptmsea_data_prep}} for PTMsigDB-specific preparation with trimming
+prepare_gsea_ranks <- function(data,
+                               stat_col,
+                               seq_col = "SequenceWindow",
+                               contrast_col = "contrast",
+                               to_uppercase = TRUE,
+                               add_suffix = NULL) {
+  # Validate input columns
+
+required_cols <- c(seq_col, stat_col, contrast_col)
+  missing_cols <- setdiff(required_cols, colnames(data))
+  if (length(missing_cols) > 0) {
+    stop("Missing required columns: ", paste(missing_cols, collapse = ", "))
+  }
+
+  contrasts <- unique(data[[contrast_col]])
+
+  ranks_list <- purrr::set_names(contrasts) |>
+    purrr::map(function(ct) {
+      # Filter to contrast
+      ct_data <- data[data[[contrast_col]] == ct, ]
+
+      # Process sequences
+      seqs <- as.character(ct_data[[seq_col]])
+      if (to_uppercase) {
+        seqs <- toupper(trimws(seqs))
+      }
+      if (!is.null(add_suffix)) {
+        seqs <- paste0(seqs, add_suffix)
+      }
+
+      # Get statistics
+      stats <- as.numeric(ct_data[[stat_col]])
+
+      # Create named vector
+      names(stats) <- seqs
+
+      # Remove NA entries
+      valid_idx <- !is.na(stats) & !is.na(names(stats)) & names(stats) != ""
+      stats <- stats[valid_idx]
+
+      # Handle duplicates - keep first occurrence
+      stats <- stats[!duplicated(names(stats))]
+
+      # Sort descending for GSEA
+      sort(stats, decreasing = TRUE)
+    })
+
+  return(ranks_list)
+}
+
+
 #' Prepare data for PTM-SEA analysis
 #'
 #' Converts phosphosite data to a list of named vectors suitable for GSEA.

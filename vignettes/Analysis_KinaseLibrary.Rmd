@@ -126,19 +126,12 @@ DPA uses raw phosphosite fold changes, which include both true signaling changes
 # Prepare ranked lists using t-statistic
 # Names must match sequences in term2gene
 
-contrasts <- unique(example_data$contrast)
-
-dpa_ranks <- contrasts |>
-  set_names() |>
-  map(function(ct) {
-    example_data |>
-      filter(contrast == ct) |>
-      mutate(seq = toupper(trimws(SequenceWindow))) |>
-      filter(!is.na(statistic.site)) |>
-      distinct(seq, .keep_all = TRUE) |>
-      arrange(desc(statistic.site)) |>
-      (\(df) setNames(df$statistic.site, df$seq))()
-  })
+dpa_ranks <- prepare_gsea_ranks(
+  example_data,
+  stat_col = "statistic.site",
+  seq_col = "SequenceWindow",
+  contrast_col = "contrast"
+)
 
 dpa_ranks_info <- tibble(
   Contrast = names(dpa_ranks),
@@ -198,17 +191,12 @@ DPU uses protein-normalized phosphosite fold changes, representing true stoichio
 ### Prepare DPU Data
 
 ```{r prep_dpu}
-dpu_ranks <- contrasts |>
-  set_names() |>
-  map(function(ct) {
-    example_data |>
-      filter(contrast == ct) |>
-      mutate(seq = toupper(trimws(SequenceWindow))) |>
-      filter(!is.na(tstatistic_I)) |>
-      distinct(seq, .keep_all = TRUE) |>
-      arrange(desc(tstatistic_I)) |>
-      (\(df) setNames(df$tstatistic_I, df$seq))()
-  })
+dpu_ranks <- prepare_gsea_ranks(
+  example_data,
+  stat_col = "tstatistic_I",
+  seq_col = "SequenceWindow",
+  contrast_col = "contrast"
+)
 
 dpu_ranks_info <- tibble(
   Contrast = names(dpu_ranks),
