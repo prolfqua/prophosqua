@@ -20,18 +20,24 @@ URL: https://prolfqua.github.io/prophosqua, https://github.com/prolfqua/prophosq
 BugReports: https://github.com/prolfqua/prophosqua/issues
 Encoding: UTF-8
 LazyData: true
+LazyDataCompression: xz
 RoxygenNote: 7.3.3
 VignetteBuilder: knitr
 Depends:
     R (>= 4.1.0)
 Imports:
     dplyr,
+    forcats,
     ggplot2,
     ggseqlogo,
     patchwork,
+    prolfqua,
+    purrr,
+    readxl,
     rlang,
     seqinr,
-    writexl
+    tidyr,
+    tidyselect
 Suggests:
     bookdown,
     clusterProfiler,
@@ -39,6 +45,6 @@ Suggests:
     fgsea,
     here,
     knitr,
-    purrr,
     rmarkdown,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    writexl

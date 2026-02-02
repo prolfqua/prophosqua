@@ -15,17 +15,19 @@ n_to_c_plot(
 )
 }
 \arguments{
+\item{poi_matrix_min}{data.frame with phosphorylation data}
+
 \item{protein_name}{name of protein}
+
+\item{prot_length}{protein length}
 
 \item{contrast}{name of contrast}
 
-\item{POI_matrixMin}{data.frame}
+\item{thr_a}{significance threshold (strict), default 0.05}
 
-\item{protLength}{protein length}
+\item{thr_b}{significance threshold (lenient), default 0.20}
 
-\item{thrA}{significance threshold small default 0.05}
-
-\item{thrB}{significance threshold small large default 0.20}
+\item{color_protein}{color for protein-level bar (default: "yellow")}
 }
 \description{
 N to C plot using ggplot2

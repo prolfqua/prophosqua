@@ -2,10 +2,16 @@
 % Please edit documentation in R/helper_functions.r
 \name{explode_multisites}
 \alias{explode_multisites}
-\title{each site goes into own row, if more then on site per multisite}
+\title{Explode multisites into individual rows}
 \usage{
 explode_multisites(combined_site)
 }
+\arguments{
+\item{combined_site}{Data frame with PhosSites column (semicolon-delimited)}
+}
+\value{
+Data frame with one row per site, with modAA and posInProtein columns
+}
 \description{
-each site goes into own row, if more then on site per multisite
+Each phosphosite goes into its own row when multiple sites are present.
 }

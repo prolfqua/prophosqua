@@ -32,3 +32,18 @@ Named list of clusterProfiler gseaResult objects (one per contrast).
 \description{
 Runs GSEA on PTMsigDB pathways, ignoring direction suffixes (;u/;d).
 }
+\examples{
+# Mock ranked lists
+seqs <- paste0("SEQ", 1:15, "-p")
+rank_vec <- setNames(rnorm(15), seqs)
+ranks_list <- list(contrast1 = sort(rank_vec, decreasing = TRUE))
+
+# Mock pathways
+pathways <- list(
+  PathwayA = seqs[1:10],
+  PathwayB = seqs[6:15]
+)
+
+# Run PTM-SEA (adjusting min_size for small mock data)
+results <- run_ptmsea(ranks_list, pathways, min_size = 1, pvalueCutoff = 1.0)
+}

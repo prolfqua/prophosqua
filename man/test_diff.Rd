@@ -2,7 +2,7 @@
 % Please edit documentation in R/test_diff_diff.R
 \name{test_diff}
 \alias{test_diff}
-\title{compute MSstats like test statsitics}
+\title{Compute MSstats-like test statistics for differential PTM usage}
 \usage{
 test_diff(
   phos_res,
@@ -11,6 +11,17 @@ test_diff(
     "nr_tryptic_peptides")
 )
 }
+\arguments{
+\item{phos_res}{Data frame with phospho site-level results}
+
+\item{tot_res}{Data frame with protein-level results}
+
+\item{join_column}{Character vector of columns to join by}
+}
+\value{
+Data frame with combined results including diff_diff test statistics
+}
 \description{
-compute MSstats like test statsitics
+Joins site-level and protein-level results, computes difference-of-differences,
+and performs t-tests for differential PTM usage.
 }

@@ -1,5 +1,19 @@
-#' Test if differences of differences are significant
+#' @importFrom stats pt p.adjust
+#' @importFrom rlang .data
+NULL
+
+#' Test if differences of differences are significant (internal)
 #'
+#' @param dataframe_a First data frame (e.g., site-level results)
+#' @param dataframe_b Second data frame (e.g., protein-level results)
+#' @param by Columns to join by
+#' @param diff Column name for difference values
+#' @param std_err Column name for standard error values
+#' @param df Column name for degrees of freedom
+#' @param suffix_a Suffix for columns from dataframe_a
+#' @param suffix_b Suffix for columns from dataframe_b
+#' @return Data frame with diff_diff test results
+#' @keywords internal
 .test_diff_diff <- function(dataframe_a, dataframe_b,
                             by,
                             diff = c("diff"),
@@ -49,9 +63,16 @@
 }
 
 
-#' compute MSstats like test statsitics
-#' @export
+#' Compute MSstats-like test statistics for differential PTM usage
 #'
+#' Joins site-level and protein-level results, computes difference-of-differences,
+#' and performs t-tests for differential PTM usage.
+#'
+#' @param phos_res Data frame with phospho site-level results
+#' @param tot_res Data frame with protein-level results
+#' @param join_column Character vector of columns to join by
+#' @return Data frame with combined results including diff_diff test statistics
+#' @export
 test_diff <- function(phos_res,
                       tot_res,
                       join_column = c(

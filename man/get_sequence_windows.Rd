@@ -25,7 +25,6 @@ extract sequence windows, from sequence at pos in protein
 }
 \examples{
 # Create sample data
-library(tidyverse)
 sample_data <- data.frame(
   protein_id = c("P12345", "P12345", "Q67890"),
   sequence = c("MKFLVLLFNILCLFPVLAADNH", "MKFLVLLFNILCLFPVLAADNH", "AEQKLISEEDLLRKRREQLKHKLEQL"),
@@ -35,7 +34,8 @@ sample_data <- data.frame(
 
 # Extract sequence windows with default flank size (7)
 result <- get_sequence_windows(sample_data)
-stopifnot(all(result$sequence_window == c( "XXXMKFLVLLFNILC", "VLLFNILCLFPVLAA", "AEQKLISEEDLLRKR")))
+expected <- c("XXXMKFLVLLFNILC", "VLLFNILCLFPVLAA", "AEQKLISEEDLLRKR")
+stopifnot(all(result$sequence_window == expected))
 
 # Extract sequence windows with custom flank size
 result_small <- get_sequence_windows(sample_data, flank_size = 3)

@@ -110,7 +110,6 @@ trim_flanking_seq <- function(seq, trim_to = 15L) {
 #' @export
 #'
 #' @examples
-#' @examples
 #' # Prepare mock data
 #' data <- data.frame(
 #'   contrast = c("A", "A", "B", "B"),
@@ -184,36 +183,14 @@ ptmsea_data_prep <- function(data,
 }
 
 
-#' Run PTM-SEA analysis
+#' Split PTMsigDB pathways by direction
 #'
-#' Applies fgsea to each contrast's ranked site list against PTMsigDB pathways.
+#' Splits pathway gene sets into up- and down-regulated subsets based on
+#' direction suffixes (;u and ;d) used in PTMsigDB.
 #'
-#' @param ranks_list Named list of named numeric vectors from ptmsea_data_prep().
-#' @param pathways Named list of pathway definitions (e.g., from fgsea::gmtPathways()).
-#' @param min_size Integer. Minimum pathway size. Default 3.
-#' @param max_size Integer. Maximum pathway size. Default 500.
-#' @param n_perm Integer. Number of permutations. Default 1000.
-#'
-#' @return Named list of fgsea result data.frames, one per contrast.
+#' @param pathways Named list of pathway gene vectors with ;u/;d suffixes
+#' @return Named list with _up and _down pathway subsets
 #' @export
-#'
-#' @examples
-#' # Mock ranked lists
-#' # Must have > 10 overlap with pathways to run
-#' seqs <- paste0("SEQ", 1:15, "-p")
-#' rank_vec <- setNames(rnorm(15), seqs)
-#' ranks_list <- list(contrast1 = sort(rank_vec, decreasing = TRUE))
-#'
-#' # Mock pathways
-#' # Create pathways that overlap with the sequences
-#' pathways <- list(
-#'   PathwayA = seqs[1:10],
-#'   PathwayB = seqs[6:15]
-#' )
-#'
-#' # Run PTM-SEA (adjusting min_size for small mock data)
-#' results <- run_ptmsea(ranks_list, pathways, min_size = 1, pvalueCutoff = 1.0)
-# Internal function to split pathways by direction
 split_ptmsigdb_pathways <- function(pathways) {
   result <- list()
   for (name in names(pathways)) {
@@ -325,6 +302,20 @@ run_ptmsea_up_down <- function(ranks_list,
 #'
 #' @return Named list of clusterProfiler gseaResult objects (one per contrast).
 #' @export
+#' @examples
+#' # Mock ranked lists
+#' seqs <- paste0("SEQ", 1:15, "-p")
+#' rank_vec <- setNames(rnorm(15), seqs)
+#' ranks_list <- list(contrast1 = sort(rank_vec, decreasing = TRUE))
+#'
+#' # Mock pathways
+#' pathways <- list(
+#'   PathwayA = seqs[1:10],
+#'   PathwayB = seqs[6:15]
+#' )
+#'
+#' # Run PTM-SEA (adjusting min_size for small mock data)
+#' results <- run_ptmsea(ranks_list, pathways, min_size = 1, pvalueCutoff = 1.0)
 run_ptmsea <- function(ranks_list,
                        pathways,
                        min_size = 3,
@@ -404,6 +395,7 @@ run_ptmsea <- function(ranks_list,
 #' @return List with enriched (or enriched_up/enriched_down if fc_col) and background.
 #' @export
 #' @importFrom dplyr mutate filter distinct pull
+#' @importFrom rlang .data
 ptmsea_ora_prep <- function(data,
                             ptmsigdb_sites,
                             score_col,
@@ -433,8 +425,8 @@ ptmsea_ora_prep <- function(data,
 
   # Background: all sites intersecting with PTMsigDB
   background <- data |>
-    dplyr::distinct(.site_id) |>
-    dplyr::pull(.site_id) |>
+    dplyr::distinct(.data$.site_id) |>
+    dplyr::pull(.data$.site_id) |>
     intersect(ptmsigdb_sites)
 
   if (!is.null(fc_col)) {
@@ -442,22 +434,22 @@ ptmsea_ora_prep <- function(data,
 
     enriched_up <- data |>
       dplyr::filter(.data[[score_col]] < threshold, .data[[fc_col]] > 0) |>
-      dplyr::distinct(.site_id) |>
-      dplyr::pull(.site_id) |>
+      dplyr::distinct(.data$.site_id) |>
+      dplyr::pull(.data$.site_id) |>
       intersect(ptmsigdb_sites)
 
     enriched_down <- data |>
       dplyr::filter(.data[[score_col]] < threshold, .data[[fc_col]] < 0) |>
-      dplyr::distinct(.site_id) |>
-      dplyr::pull(.site_id) |>
+      dplyr::distinct(.data$.site_id) |>
+      dplyr::pull(.data$.site_id) |>
       intersect(ptmsigdb_sites)
 
     return(list(enriched_up = enriched_up, enriched_down = enriched_down, background = background))
   } else {
     enriched <- data |>
       dplyr::filter(.data[[score_col]] < threshold) |>
-      dplyr::distinct(.site_id) |>
-      dplyr::pull(.site_id) |>
+      dplyr::distinct(.data$.site_id) |>
+      dplyr::pull(.data$.site_id) |>
       intersect(ptmsigdb_sites)
 
     return(list(enriched = enriched, background = background))

@@ -1,4 +1,5 @@
 #' @importFrom rlang .data
+#' @importFrom utils txtProgressBar setTxtProgressBar
 NULL
 
 get_significance <- function(fdr, thr_a = 0.05, thr_b = 0.2) {
@@ -48,12 +49,13 @@ prepare_n_to_c_data <- function(poi_matrix_min, model_site = "model_site") {
 }
 
 #' N to C plot using ggplot2
-#' @param POI_matrixMin data.frame
+#' @param poi_matrix_min data.frame with phosphorylation data
 #' @param protein_name name of protein
-#' @param protLength protein length
+#' @param prot_length protein length
 #' @param contrast name of contrast
-#' @param thrA significance threshold small default 0.05
-#' @param thrB significance threshold small large default 0.20
+#' @param thr_a significance threshold (strict), default 0.05
+#' @param thr_b significance threshold (lenient), default 0.20
+#' @param color_protein color for protein-level bar (default: "yellow")
 #'
 #' @export
 #' @examples
@@ -146,8 +148,15 @@ n_to_c_plot <- function(
 }
 
 
-#' N to C for integrated results
-#' @param POI_matrixMin data.frame
+#' N to C plot for integrated (DPU) results
+#'
+#' @param poi_matrix_min data.frame with integrated phospho/protein data
+#' @param protein_name name of protein
+#' @param prot_length protein length
+#' @param contrast name of contrast
+#' @param thr_a significance threshold (strict), default 0.05
+#' @param thr_b significance threshold (lenient), default 0.20
+#' @param color_protein color for protein-level bar (default: "yellow")
 #' @export
 #' @examples
 #' data(n_c_integrated_df)
@@ -244,10 +253,10 @@ n_to_c_expression <- function(
     stop(contrast_name, " not in ", paste0(unique(combined_site_prot_long$contrast)))
   }
   combined_site_prot_long <- combined_site_prot_long |>
-    dplyr::filter(contrast == contrast_name)
+    dplyr::filter(.data$contrast == contrast_name)
   combined_site_prot_long <- combined_site_prot_long |>
-    dplyr::group_by(protein_Id) |>
-    dplyr::filter(any(FDR.site < FDR_threshold & abs(diff.site) > fc_threshold)) |>
+    dplyr::group_by(.data$protein_Id) |>
+    dplyr::filter(any(.data$FDR.site < FDR_threshold & abs(.data$diff.site) > fc_threshold)) |>
     dplyr::ungroup()
 
   required_cols <- c(
@@ -300,10 +309,10 @@ n_to_c_usage <- function(
   protein_Id = "protein_Id"
 ) {
   data_combined_diff <- data_combined_diff |>
-    dplyr::filter(contrast == contrast_name)
+    dplyr::filter(.data$contrast == contrast_name)
   data_combined_diff <- data_combined_diff |>
     dplyr::group_by(!!dplyr::sym(protein_Id)) |>
-    dplyr::filter(any(FDR_I < FDR_threshold & abs(diff_diff) > fc_threshold)) |>
+    dplyr::filter(any(.data$FDR_I < FDR_threshold & abs(.data$diff_diff) > fc_threshold)) |>
     dplyr::ungroup()
 
   required_columns <- c(
@@ -378,13 +387,13 @@ n_to_c_expression_multicontrast <- function(
 
   # Filter proteins that have at least one significant site in ANY contrast
   significant_proteins <- combined_site_prot_long |>
-    dplyr::group_by(protein_Id) |>
-    dplyr::filter(any(FDR.site < FDR_threshold & abs(diff.site) > fc_threshold)) |>
+    dplyr::group_by(.data$protein_Id) |>
+    dplyr::filter(any(.data$FDR.site < FDR_threshold & abs(.data$diff.site) > fc_threshold)) |>
     dplyr::ungroup()
 
   # Get unique proteins with their lengths
   proteins_to_plot <- significant_proteins |>
-    dplyr::select(protein_Id, protein_length) |>
+    dplyr::select("protein_Id", "protein_length") |>
     dplyr::distinct()
 
   # Limit number of plots if max_plots is specified
@@ -398,7 +407,7 @@ n_to_c_expression_multicontrast <- function(
       missing_proteins <- setdiff(include_proteins, proteins_limited$protein_Id)
       if (length(missing_proteins) > 0) {
         extra_proteins <- proteins_to_plot |>
-          dplyr::filter(protein_Id %in% missing_proteins)
+          dplyr::filter(.data$protein_Id %in% missing_proteins)
         proteins_limited <- dplyr::bind_rows(proteins_limited, extra_proteins)
         message(
           "Added ", nrow(extra_proteins), " requested protein(s): ",
@@ -422,7 +431,7 @@ n_to_c_expression_multicontrast <- function(
   # Add imputation status
   combined_site_prot_long <- combined_site_prot_long |>
     dplyr::mutate(imputation_status = dplyr::case_when(
-      modelName.site == impute_flag ~ "imputed",
+      .data$modelName.site == impute_flag ~ "imputed",
       TRUE ~ "observed"
     ))
 
@@ -445,17 +454,17 @@ n_to_c_expression_multicontrast <- function(
 
     # Get data for this protein across all contrasts
     protein_data <- combined_site_prot_long |>
-      dplyr::filter(protein_Id == current_protein)
+      dplyr::filter(.data$protein_Id == current_protein)
 
     # Create individual plots for each contrast
     contrast_plots <- list()
 
     for (j in seq_along(all_contrasts)) {
-      contrast <- all_contrasts[j]
+      contrast_val <- all_contrasts[j]
 
       # Get data for this specific contrast
       contrast_data <- protein_data |>
-        dplyr::filter(contrast == !!contrast) |>
+        dplyr::filter(.data$contrast == contrast_val) |>
         dplyr::select(dplyr::all_of(required_cols))
 
       # Create plot if data exists
@@ -464,18 +473,18 @@ n_to_c_expression_multicontrast <- function(
           contrast_data,
           current_protein,
           current_length,
-          contrast
+          contrast_val
         )
       } else {
         # Create empty placeholder plot
         contrast_plots[[j]] <- ggplot2::ggplot() +
           ggplot2::annotate("text",
             x = 0.5, y = 0.5,
-            label = paste0("No data for\n", contrast),
+            label = paste0("No data for\n", contrast_val),
             size = 5, color = "gray50"
           ) +
           ggplot2::theme_void() +
-          ggplot2::labs(title = contrast)
+          ggplot2::labs(title = contrast_val)
       }
     }
 
@@ -535,7 +544,7 @@ n_to_c_usage_multicontrast <- function(
   # Filter proteins that have at least one significant site in ANY contrast
   significant_proteins <- data_combined_diff |>
     dplyr::group_by(!!dplyr::sym(protein_Id)) |>
-    dplyr::filter(any(FDR_I < FDR_threshold & abs(diff_diff) > fc_threshold)) |>
+    dplyr::filter(any(.data$FDR_I < FDR_threshold & abs(.data$diff_diff) > fc_threshold)) |>
     dplyr::ungroup()
 
   # Get unique proteins with their lengths
@@ -607,11 +616,11 @@ n_to_c_usage_multicontrast <- function(
     contrast_plots <- list()
 
     for (j in seq_along(all_contrasts)) {
-      contrast <- all_contrasts[j]
+      contrast_val <- all_contrasts[j]
 
       # Get data for this specific contrast
       contrast_data <- protein_data |>
-        dplyr::filter(contrast == !!contrast) |>
+        dplyr::filter(.data$contrast == contrast_val) |>
         dplyr::select(dplyr::all_of(required_columns))
 
       # Create plot if data exists
@@ -620,18 +629,18 @@ n_to_c_usage_multicontrast <- function(
           contrast_data,
           current_protein,
           current_length,
-          contrast
+          contrast_val
         )
       } else {
         # Create empty placeholder plot
         contrast_plots[[j]] <- ggplot2::ggplot() +
           ggplot2::annotate("text",
             x = 0.5, y = 0.5,
-            label = paste0("No data for\n", contrast),
+            label = paste0("No data for\n", contrast_val),
             size = 5, color = "gray50"
           ) +
           ggplot2::theme_void() +
-          ggplot2::labs(title = contrast)
+          ggplot2::labs(title = contrast_val)
       }
     }
 

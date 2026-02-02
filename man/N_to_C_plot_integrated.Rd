@@ -2,7 +2,7 @@
 % Please edit documentation in R/plotNtoC.R
 \name{n_to_c_plot_integrated}
 \alias{n_to_c_plot_integrated}
-\title{N to C for integrated results}
+\title{N to C plot for integrated (DPU) results}
 \usage{
 n_to_c_plot_integrated(
   poi_matrix_min,
@@ -15,10 +15,22 @@ n_to_c_plot_integrated(
 )
 }
 \arguments{
-\item{POI_matrixMin}{data.frame}
+\item{poi_matrix_min}{data.frame with integrated phospho/protein data}
+
+\item{protein_name}{name of protein}
+
+\item{prot_length}{protein length}
+
+\item{contrast}{name of contrast}
+
+\item{thr_a}{significance threshold (strict), default 0.05}
+
+\item{thr_b}{significance threshold (lenient), default 0.20}
+
+\item{color_protein}{color for protein-level bar (default: "yellow")}
 }
 \description{
-N to C for integrated results
+N to C plot for integrated (DPU) results
 }
 \examples{
 data(n_c_integrated_df)
