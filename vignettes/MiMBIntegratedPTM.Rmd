@@ -511,7 +511,7 @@ combined_site_prot <- dplyr::left_join(
 
 We also need to check the match rate between PTM sites and proteins, that is, the number of PTM sites that have a protein match divided by the total number of PTM sites. Currently, `prolfquapp` matches PTM and protein features using exact protein IDs, which introduces a limitation: discrepancies in representative protein identifiers between the PTM-enriched and total proteome datasets may result in the loss of mapping information (see Note \@ref(matchrates)).
 
-```{r b5matchrate_comp}
+```{r b5matchrateComp}
 
 # Calculate match rate by contrast
 match_rates <- combined_site_prot |>
@@ -541,7 +541,7 @@ plot_data <- n_to_c_expression_multicontrast(
   max_plots = 100, include_proteins = c("Q64337"))
 ```
 
-```{r fig1Q64337_compute}
+```{r fig1Q64337Compute}
 x1 <- which(plot_data$protein_Id == "Q64337")
 fig1_plot <- plot_data$plot[[x1]]
 ```
@@ -622,7 +622,7 @@ In the *Atg16l1* macrophage dataset [@10.7554/elife.62320], SQSTM1 (uniprot id Q
 
 Additionally, individual high-confidence DPA/DPU sites should be carefully inspected for technical quality, including verification of protein coverage and assessment of missing values across treatment groups (see Note \@ref(qcrecommend)).
 
-```{r fig2usageQ64337_compute}
+```{r fig2usageQ64337Compute}
 x1_usage <- which(plot_data_usage$protein_Id == "Q64337")
 fig2_plot <- plot_data_usage$plot[[x1_usage]]
 ```
@@ -766,7 +766,7 @@ ptm_data$data <- ptm_data$data |>
   dplyr::mutate(ptm_usage = normalized_abundance.site - normalized_abundance.total)
 ```
 
-```{r fig3densityCorrected_compute}
+```{r fig3densityCorrectedCompute}
 ptm_data$config$table$set_response("ptm_usage")
 pl <- ptm_data$get_Plotter()
 fig3_plot <- pl$intensity_distribution_density()
@@ -804,7 +804,7 @@ ctr_df <- ctr_mod$get_contrasts()
 
 Finally, we can create a volcano plot of the DPU results using the `ctr_plotter` variable, which is an instance of the `prolfqua::ContrastsPlotter` class (see Figure \@ref(fig:fig4FDRcorrfirst)).
 
-```{r fig4FDRcorrfirst_compute}
+```{r fig4FDRcorrfirstCompute}
 ctr_plotter <- ctr_all$get_Plotter()
 fig4_plot <- ctr_plotter$volcano()$FDR
 ```
@@ -898,7 +898,7 @@ significant_sites <- significant_sites |> filter(seventh_chars == modAA)
 
 We generate sequence logos for sites of significantly regulated serine and threonine phosphorylation. The plots are organized by contrast in a 3-column layout showing upregulated sites, downregulated sites, and their difference (Up - Down). The difference column highlights amino acids that are enriched in upregulated sites (positive, above baseline) versus downregulated sites (negative, below baseline), helping to identify kinase-specific motifs (see Figure \@ref(fig:fig5seqlogoST)).
 
-```{r fig5seqlogoST_compute, fig.width=12, fig.height=12}
+```{r fig5seqlogoSTCompute, fig.width=12, fig.height=12}
 sig_sites_ST <- significant_sites |>
   dplyr::filter(modAA == "S" | modAA == "T")
 

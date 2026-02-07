@@ -1,12 +1,19 @@
 ---
 title: "Motif Enrichment Analysis (MEA) Visualization"
+subtitle: "`r params$analysis_type`"
+author: "FGCZ"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+params:
+  kinaselib_dir: NULL
+  analysis_type: "DPA"
 output:
   bookdown::html_document2:
-    code_folding: hide
     toc: true
     toc_float: true
+    code_folding: hide
+    self_contained: true
 vignette: >
-  %\VignetteIndexEntry{Motif Enrichment Analysis (MEA) Visualization}
+  %\VignetteIndexEntry{Motif Enrichment Analysis}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -26,38 +33,56 @@ library(tidyr)
 library(ggplot2)
 library(purrr)
 library(forcats)
+library(writexl)
 library(prophosqua)
+
+# Detect pipeline vs vignette mode
+pipeline_mode <- !is.null(params$kinaselib_dir)
 ```
 
 # Overview
 
-**Motif Enrichment Analysis (MEA)** results visualization using the kinase-library
-package output. MEA identifies kinases whose known substrate motifs are enriched
-at the extremes of ranked phosphoproteomics data, indicating altered kinase activity.
+**Motif Enrichment Analysis (MEA)** results for **`r params$analysis_type`** analysis using the kinase-library package.
 
-This vignette demonstrates how to visualize pre-computed MEA results from the
-Kinase Library CLI tools.
+MEA identifies kinases whose known substrate motifs are enriched at the extremes of ranked phosphoproteomics data, indicating altered kinase activity.
 
 # Load MEA Results
 
 ```{r loadMEA}
-# Load all MEA results from bundled zip file
-zip_path <- system.file("extdata", "mea_results.zip", package = "prophosqua")
-mea_files <- unzip(zip_path, list = TRUE)$Name
+if (pipeline_mode) {
+  # Pipeline mode: load from kinaselib directory
+  mea_files <- list.files(params$kinaselib_dir, pattern = "^mea_.*\\.csv$", full.names = TRUE)
 
-# Read and combine all MEA results
-mea_results <- mea_files |>
-  map_dfr(function(f) {
-    contrast_name <- gsub("^mea_|\\.csv$", "", f)
-    read.csv(unz(zip_path, f)) |>
-      mutate(contrast = contrast_name)
-  })
+  if (length(mea_files) == 0) {
+    stop("No MEA result files found in: ", params$kinaselib_dir)
+  }
 
-cat("Loaded", nrow(mea_results), "results from", length(mea_files), "contrasts\n")
-cat("Contrasts:", paste(unique(mea_results$contrast), collapse = ", "), "\n")
-```
+  # Load all MEA results
+  mea_results <- mea_files |>
+    set_names(gsub("^mea_|\\.csv$", "", basename(mea_files))) |>
+    map_dfr(~ read.csv(.x, stringsAsFactors = FALSE), .id = "contrast")
 
-```{r cleanResults}
+  output_dir <- params$kinaselib_dir
+} else {
+  # Vignette mode: use bundled example data
+  bundled_zip <- system.file("extdata", "mea_results.zip", package = "prophosqua")
+
+  if (!file.exists(bundled_zip)) {
+    stop("Bundled MEA example data not found. Run in pipeline mode with actual data.")
+  }
+
+  temp_dir <- tempdir()
+  unzip(bundled_zip, exdir = temp_dir)
+  mea_files <- list.files(temp_dir, pattern = "^mea_.*\\.csv$", full.names = TRUE)
+
+  mea_results <- mea_files |>
+    set_names(gsub("^mea_|\\.csv$", "", basename(mea_files))) |>
+    map_dfr(~ read.csv(.x, stringsAsFactors = FALSE), .id = "contrast")
+
+  output_dir <- tempdir()
+  message("Using bundled MEA example data from prophosqua package")
+}
+
 # Standardize column names (MEA output uses Kinase, we need kinase)
 if ("Kinase" %in% names(mea_results)) {
   mea_results <- mea_results |> rename(kinase = Kinase)
@@ -74,6 +99,11 @@ if ("Subs.fraction" %in% names(mea_results)) {
   mea_results <- mea_results |> mutate(size = as.numeric(sub("/.*", "", `Subs fraction`)))
 }
 
+cat("Loaded", nrow(mea_results), "results from", length(mea_files), "contrasts\n")
+cat("Contrasts:", paste(unique(mea_results$contrast), collapse = ", "), "\n")
+```
+
+```{r cleanResults}
 # Clean and prepare results using shared helper
 mea_clean <- prepare_enrichment_data(mea_results, "FDR", 0.1)
 
@@ -87,7 +117,7 @@ summary_df <- mea_clean |>
     .groups = "drop"
   )
 
-knitr::kable(summary_df, caption = "MEA Summary")
+knitr::kable(summary_df, caption = paste("MEA Summary -", params$analysis_type))
 ```
 
 # Results by Contrast {.tabset .tabset-pills}
@@ -105,7 +135,7 @@ for (ctr in unique(mea_clean$contrast)) {
     ctr_data,
     item_col = "kinase",
     fdr_col = "FDR",
-    title = paste0("MEA - ", ctr),
+    title = paste0(params$analysis_type, " - ", ctr),
     subtitle = "Top 30 kinases by FDR"
   )
   print(p)
@@ -118,17 +148,12 @@ for (ctr in unique(mea_clean$contrast)) {
     select(kinase, NES, pvalue, FDR, n_substrates = size) |>
     arrange(FDR) |>
     mutate(across(where(is.numeric), ~round(.x, 4)))
-
-  if (nrow(sig_table) > 0) {
-    print(htmltools::tagList(
-      DT::datatable(sig_table,
-                    extensions = 'Buttons',
-                    options = list(pageLength = 15, scrollX = TRUE,
-                                   dom = 'Bfrtip', buttons = c('copy', 'csv', 'excel')))
-    ))
-  } else {
-    cat("No significant kinases at FDR < 0.1\n\n")
-  }
+  print(htmltools::tagList(
+    DT::datatable(sig_table,
+                  extensions = 'Buttons',
+                  options = list(pageLength = 15, scrollX = TRUE,
+                                 dom = 'Bfrtip', buttons = c('copy', 'csv', 'excel')))
+  ))
   cat("\n\n")
 }
 ```
@@ -142,7 +167,7 @@ plot_enrichment_heatmap(
   item_col = "kinase",
   fdr_col = "FDR",
   n_top = 30,
-  title = "MEA Summary Heatmap"
+  title = paste0("MEA Summary Heatmap - ", params$analysis_type)
 )
 ```
 
@@ -154,7 +179,7 @@ plot_enrichment_volcano(
   mea_clean,
   item_col = "kinase",
   fdr_col = "FDR",
-  title = "MEA Volcano Plots"
+  title = paste0("MEA Volcano Plots - ", params$analysis_type)
 )
 ```
 
@@ -171,25 +196,7 @@ pval_diag <- mea_clean |>
     .groups = "drop"
   ) |>
   rename(Contrast = contrast)
-knitr::kable(pval_diag, caption = "Raw p-value Distribution")
-```
-
-```{r showTopKinases}
-# Top 10 kinases by p-value for the first contrast
-first_contrast <- unique(mea_clean$contrast)[1]
-top_res <- mea_clean |>
-  filter(contrast == first_contrast) |>
-  arrange(pvalue) |>
-  head(10) |>
-  select(kinase, ES, NES, pvalue, FDR) |>
-  mutate(
-    ES = round(ES, 3),
-    NES = round(NES, 3),
-    pvalue = signif(pvalue, 3),
-    FDR = signif(FDR, 3)
-  ) |>
-  rename(Kinase = kinase, `p-value` = pvalue)
-knitr::kable(top_res, caption = paste("Top 10 Kinases by P-value (", first_contrast, ")"))
+knitr::kable(pval_diag, caption = paste("Raw p-value Distribution -", params$analysis_type))
 ```
 
 # All Results
@@ -209,26 +216,32 @@ DT::datatable(all_results_dt,
   caption = "All kinases across all contrasts")
 ```
 
-# Summary Table
+# Export Results
 
-```{r summaryTable}
-# Summary of significant kinases
-summary_table <- mea_clean |>
-  filter(FDR < 0.1) |>
-  select(contrast, kinase, NES, FDR) |>
-  arrange(contrast, FDR) |>
-  mutate(
-    NES = round(NES, 3),
-    FDR = signif(FDR, 3)
-  )
+```{r export, eval=pipeline_mode}
+# Export to Excel
+export_list <- list(
+  all_results = mea_clean |>
+    select(contrast, kinase, NES, pvalue, FDR, size) |>
+    arrange(contrast, FDR),
+  significant = mea_clean |>
+    filter(FDR < 0.1) |>
+    select(contrast, kinase, NES, pvalue, FDR, size) |>
+    arrange(contrast, FDR),
+  summary = summary_df
+)
 
-if (nrow(summary_table) > 0) {
-  knitr::kable(
-    summary_table,
-    caption = "Significant Kinases (FDR < 0.1)",
-    col.names = c("Contrast", "Kinase", "NES", "FDR")
-  )
-}
+xlsx_file <- file.path(output_dir, paste0("MEA_", params$analysis_type, "_results.xlsx"))
+writexl::write_xlsx(export_list, xlsx_file)
+
+rds_file <- file.path(output_dir, paste0("MEA_", params$analysis_type, "_results.rds"))
+saveRDS(mea_clean, rds_file)
+
+cat("Exported:\n -", xlsx_file, "\n -", rds_file, "\n")
+```
+
+```{r export-vignette, eval=!pipeline_mode}
+message("Vignette mode: File export skipped.")
 ```
 
 # Session Info

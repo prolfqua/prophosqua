@@ -1,12 +1,24 @@
 ---
-title: "PTM-SEA: Kinase Activity Inference from Phosphoproteomics Data"
+title: "PTM-SEA Analysis"
+subtitle: "`r params$analysis_type`"
+author: "FGCZ"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+params:
+  xlsx_file: NULL
+  sheet: "combinedSiteProteinData"
+  stat_column: "statistic.site"
+  analysis_type: "DPA"
+  output_dir: NULL
+  trim_to: 15
+  ptmsigdb_file: NULL
 output:
   bookdown::html_document2:
-    code_folding: hide
     toc: true
     toc_float: true
+    code_folding: hide
+    self_contained: true
 vignette: >
-  %\VignetteIndexEntry{PTM-SEA: Kinase Activity Inference from Phosphoproteomics Data}
+  %\VignetteIndexEntry{PTM-SEA Analysis}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -19,28 +31,26 @@ knitr::opts_chunk$set(
   fig.width = 12,
   fig.height = 8
 )
+
+# Detect pipeline vs vignette mode
+pipeline_mode <- !is.null(params$xlsx_file)
 ```
 
 # Overview
 
-**PTM-SEA** (Post-Translational Modification Signature Enrichment Analysis) uses
-flanking sequences and PTMsigDB signatures to infer kinase activities from
-phosphoproteomics data via ClusterProfiler's GSEA.
+**PTM-SEA** (Post-Translational Modification Signature Enrichment Analysis) for **`r params$analysis_type`** analysis.
 
-PTM-SEA uses curated phosphosite signatures from PTMsigDB to infer kinase activities.
-This vignette demonstrates GSEA analysis ignoring the `;u/;d` direction suffixes in PTMsigDB.
+PTM-SEA uses flanking sequences and PTMsigDB signatures to infer kinase activities from phosphoproteomics data via ClusterProfiler's GSEA.
 
-We analyze both DPA (Differential PTM Abundance) and DPU (Differential PTM Usage) results:
+**Analysis Type:** `r params$analysis_type`
 
 - **DPA**: Differential PTM Abundance - raw phosphosite changes (includes protein abundance effects)
 - **DPU**: Differential PTM Usage - protein-normalized changes (true stoichiometry changes)
-
-Comparing the two analyses helps identify whether observed kinase activity changes
-are driven by genuine signaling changes (DPU) or protein abundance effects (DPA only).
+- **CF**: CorrectFirst - alternative protein-correction approach
 
 # Load Libraries and Data
 
-```{r load_libraries}
+```{r loadLibraries}
 library(prophosqua)
 library(clusterProfiler)
 library(dplyr)
@@ -49,32 +59,64 @@ library(enrichplot)
 library(fgsea)
 library(forcats)
 library(purrr)
+library(readxl)
+library(writexl)
 library(ggplot2)
 ```
 
-```{r load_data}
-# Load example data
-data("combined_test_diff_example", package = "prophosqua")
-data <- combined_test_diff_example
+```{r loadData}
+if (pipeline_mode) {
+  # Pipeline mode: load from Excel file
+  data <- readxl::read_xlsx(params$xlsx_file, sheet = params$sheet)
+  output_dir <- if (!is.null(params$output_dir)) params$output_dir else dirname(params$xlsx_file)
+} else {
+  # Vignette mode: use example data
+  data("combined_test_diff_example", package = "prophosqua")
+  data <- combined_test_diff_example
+  output_dir <- tempdir()
+}
 
 data_info <- tibble(
-  Property = c("Rows", "Columns", "Contrasts"),
-  Value = c(nrow(data), ncol(data),
-            paste(unique(data$contrast), collapse = ", "))
+  Property = c("Mode", "Sheet", "Stat Column", "Rows", "Columns", "Contrasts"),
+  Value = c(
+    if (pipeline_mode) basename(params$xlsx_file) else "Example data",
+    params$sheet, params$stat_column,
+    nrow(data), ncol(data),
+    paste(unique(data$contrast), collapse = ", ")
+  )
 )
 knitr::kable(data_info, caption = "Input Data Summary")
 ```
 
 # Load PTMsigDB Signatures
 
-```{r load_ptmsigdb}
-# Download PTMsigDB signatures
-gmt_path <- download_ptmsigdb(species = "mouse", output_dir = tempdir())
-pathways_raw <- fgsea::gmtPathways(gmt_path)
+```{r loadPtmsigdb}
+# Load PTMsigDB - try multiple sources
+ptmsigdb_file <- params$ptmsigdb_file
 
-# Trim pathways to 11-mer (default) to increase overlap with our data
-trim_to <- 11
-pathways <- trim_ptmsigdb_pathways(pathways_raw, trim_to = as.character(trim_to))
+if (is.null(ptmsigdb_file) || !file.exists(ptmsigdb_file)) {
+  # Try bundled resource (compressed)
+  bundled_zip <- system.file("extdata", "ptmsigdb_kinase.rds.zip", package = "prophosqua")
+  if (file.exists(bundled_zip)) {
+    temp_dir <- tempdir()
+    unzip(bundled_zip, exdir = temp_dir)
+    ptmsigdb_file <- file.path(temp_dir, "ptmsigdb_filtered_KINASE_15mer.rds")
+    message("Using bundled PTMsigDB from prophosqua package")
+  }
+}
+
+if (is.null(ptmsigdb_file) || !file.exists(ptmsigdb_file)) {
+  stop("PTMsigDB file not found. Provide via params$ptmsigdb_file or install prophosqua with bundled data.")
+}
+
+# Load pathways
+if (grepl("\\.rds$", ptmsigdb_file)) {
+  pathways <- readRDS(ptmsigdb_file)
+  message("Loaded ", length(pathways), " pathways from RDS")
+} else {
+  pathways <- fgsea::gmtPathways(ptmsigdb_file)
+  message("Loaded ", length(pathways), " pathways from GMT")
+}
 
 # Count categories
 n_kinase <- sum(grepl("^KINASE-", names(pathways)))
@@ -82,8 +124,8 @@ n_path <- sum(grepl("^PATH-", names(pathways)))
 
 # Summary table
 ptmsigdb_summary <- tibble(
-  Property = c("Source", "Total Signatures", "KINASE signatures", "PATH signatures", "Unique Sites"),
-  Value = c("PTMsigDB (downloaded)", length(pathways), n_kinase, n_path,
+  Property = c("Source File", "Total Signatures", "KINASE signatures", "PATH signatures", "Unique Sites"),
+  Value = c(basename(ptmsigdb_file), length(pathways), n_kinase, n_path,
             length(unique(unlist(pathways))))
 )
 knitr::kable(ptmsigdb_summary, caption = "PTMsigDB Signature Database Summary")
@@ -91,9 +133,7 @@ knitr::kable(ptmsigdb_summary, caption = "PTMsigDB Signature Database Summary")
 
 # Overlap Statistics
 
-Understanding the overlap between our data and PTMsigDB is crucial for interpreting results.
-
-```{r overlap_stats}
+```{r overlapStats}
 # Our data: unique flanking sequences (trimmed to match pathways)
 our_sequences <- data |>
   pull(SequenceWindow) |>
@@ -101,7 +141,7 @@ our_sequences <- data |>
   toupper() |>
   unique()
 our_sequences_trimmed <- our_sequences |>
-  map_chr(~prophosqua:::trim_flanking_seq(.x, trim_to = trim_to))
+  map_chr(~prophosqua:::trim_flanking_seq(.x, trim_to = params$trim_to))
 our_site_ids <- paste0(our_sequences_trimmed, "-p")
 n_our_sites <- n_distinct(our_site_ids)
 
@@ -125,75 +165,78 @@ overlap_stats <- tibble(
             round(100 * n_overlap / n_our_sites, 2),
             round(100 * n_overlap / n_ptmsigdb_sites, 2))
 )
-knitr::kable(overlap_stats, caption = paste0("Overlap Statistics (", trim_to, "-mer)"))
+knitr::kable(overlap_stats, caption = paste0("Overlap Statistics (", params$trim_to, "-mer)"))
 ```
 
-The low overlap is expected because:
+# Prepare Rank Data
 
-1. PTMsigDB contains curated kinase-substrate relationships (~1,700 unique sites)
-2. Our phosphoproteomics data measures many more sites
-3. Most measured sites have no known kinase annotation
-
-# DPA Analysis (Differential PTM Abundance)
-
-DPA uses raw phosphosite fold changes, which include both true signaling changes
-and protein abundance effects.
-
-## Prepare DPA Data
-
-```{r prep_dpa}
+```{r prepData}
 # Prepare ranks using prophosqua (trim_to must match pathways)
-prep_dpa <- ptmsea_data_prep(
+prep <- ptmsea_data_prep(
   data = data,
-  stat_column = "statistic.site",
+  stat_column = params$stat_column,
   seq_window_col = "SequenceWindow",
   contrast_col = "contrast",
-  trim_to = as.character(trim_to)
+  trim_to = as.character(params$trim_to)
 )
 
-prep_dpa_info <- tibble(
-  Contrast = names(prep_dpa$ranks),
-  Sites = map_int(prep_dpa$ranks, length)
+prep_info <- tibble(
+  Contrast = names(prep$ranks),
+  Sites = map_int(prep$ranks, length)
 )
-knitr::kable(prep_dpa_info, caption = "DPA Contrasts Prepared")
+knitr::kable(prep_info, caption = paste(params$analysis_type, "Contrasts Prepared"))
+
+# Count dropped sequences (handle empty lists/NULL values)
+n_dropped <- 0
+if (length(prep$dropped) > 0) {
+  n_dropped <- sum(map_int(prep$dropped, ~{
+    if (is.null(.x) || length(.x) == 0) return(0L)
+    if (is.data.frame(.x)) return(nrow(.x))
+    return(length(.x))
+  }))
+}
+
+if (n_dropped > 0) {
+  message("Note: ", n_dropped, " duplicate sequences were dropped.")
+}
 ```
 
-## Run PTM-SEA (GSEA)
+# Run PTM-SEA (GSEA)
 
-```{r run_ptmsea_dpa}
-results_dpa <- run_ptmsea(
-  ranks_list = prep_dpa$ranks,
+```{r runPtmsea}
+results <- run_ptmsea(
+  ranks_list = prep$ranks,
   pathways = pathways,
-  min_size = 3,  # Require at least 3 matches between rank file and geneset
+  min_size = 10,  # Require at least 10 matches between rank file and geneset
   max_size = 500,
-  n_perm = 1000,
+  n_perm = 500,
   pvalueCutoff = 0.25  # Relaxed for visualization; filter later
 )
 
-results_dpa_info <- tibble(
-  Contrast = names(results_dpa),
-  `Total Pathways` = map_int(results_dpa, ~nrow(.x@result)),
-  `FDR < 0.1` = map_int(results_dpa, ~sum(.x@result$p.adjust < 0.1, na.rm = TRUE)),
-  `FDR < 0.05` = map_int(results_dpa, ~sum(.x@result$p.adjust < 0.05, na.rm = TRUE))
+results_info <- tibble(
+  Contrast = names(results),
+  `Total Pathways` = map_int(results, ~nrow(.x@result)),
+  `FDR < 0.1` = map_int(results, ~sum(.x@result$p.adjust < 0.1, na.rm = TRUE)),
+  `FDR < 0.05` = map_int(results, ~sum(.x@result$p.adjust < 0.05, na.rm = TRUE))
 )
-knitr::kable(results_dpa_info, caption = "DPA PTM-SEA Results Summary")
+knitr::kable(results_info, caption = paste(params$analysis_type, "PTM-SEA Results Summary"))
 ```
 
-## DPA Results {.tabset .tabset-pills}
+# Results by Contrast {.tabset .tabset-pills}
 
-```{r dpa_contrast_plots, results='asis', fig.height=8}
+```{r contrastPlots, results='asis', fig.height=8}
 # Extract all results into data frame using shared function
-all_clean_dpa <- extract_gsea_results(results_dpa) |>
+all_clean <- extract_gsea_results(results) |>
   mutate(
     pathway = ID,
     pathway_short = gsub("^(KINASE|PERT|PATH|DISEASE)-PSP_", "", ID) |>
       substr(1, 40)
   )
 
-for (ctr in unique(all_clean_dpa$contrast)) {
-  cat("\n\n### ", ctr, "\n\n")
+for (ctr in unique(all_clean$contrast)) {
+  cat("\n\n## ", ctr, "\n\n")
 
-  ctr_data <- all_clean_dpa |> filter(contrast == ctr)
+  ctr_data <- all_clean |> filter(contrast == ctr)
   n_sig <- sum(ctr_data$p.adjust < 0.1, na.rm = TRUE)
   cat("**Significant pathways (FDR < 0.1):** ", n_sig, "\n\n")
 
@@ -202,233 +245,162 @@ for (ctr in unique(all_clean_dpa$contrast)) {
     ctr_data,
     item_col = "pathway_short",
     fdr_col = "p.adjust",
-    title = paste0("DPA - ", ctr),
+    title = paste0(params$analysis_type, " - ", ctr),
     subtitle = "Top 30 pathways by FDR"
   )
   print(p)
   cat("\n\n")
-}
-```
 
-## DPA clusterProfiler Dotplot
-
-```{r dpa_combined_dotplot, fig.width=14, fig.height=10}
-merged_results_dpa <- merge_result(results_dpa)
-dotplot(merged_results_dpa, showCategory = 15,
-        title = "DPA PTM-SEA (All Contrasts)") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-
-```{r dpa_individual_plots, fig.width=14, fig.height=10}
-dpa_plots <- names(results_dpa) |>
-  map(function(ct) {
-    res <- results_dpa[[ct]]
-    if (nrow(res@result) > 0) {
-      dotplot(res, showCategory = 15, title = ct) +
-        theme(axis.text.y = element_text(size = 8))
-    } else {
-      ggplot() +
-        annotate("text", x = 0.5, y = 0.5, label = paste("No results for", ct)) +
-        theme_void() +
-        ggtitle(ct)
-    }
-  })
-patchwork::wrap_plots(dpa_plots, ncol = 2)
-```
-
-# DPU Analysis (Differential PTM Usage)
-
-DPU uses protein-normalized phosphosite fold changes, representing true
-stoichiometry changes independent of protein abundance.
-
-## Prepare DPU Data
-
-```{r prep_dpu}
-# Use t-statistic for DPU ranking
-prep_dpu <- ptmsea_data_prep(
-  data = data,
-  stat_column = "tstatistic_I",
-  seq_window_col = "SequenceWindow",
-  contrast_col = "contrast",
-  trim_to = as.character(trim_to)
-)
-
-prep_dpu_info <- tibble(
-  Contrast = names(prep_dpu$ranks),
-  Sites = map_int(prep_dpu$ranks, length)
-)
-knitr::kable(prep_dpu_info, caption = "DPU Contrasts Prepared")
-```
-
-## Run PTM-SEA (GSEA)
-
-```{r run_ptmsea_dpu}
-results_dpu <- run_ptmsea(
-  ranks_list = prep_dpu$ranks,
-  pathways = pathways,
-  min_size = 3,
-  max_size = 500,
-  n_perm = 1000,
-  pvalueCutoff = 0.25
-)
-
-results_dpu_info <- tibble(
-  Contrast = names(results_dpu),
-  `Total Pathways` = map_int(results_dpu, ~nrow(.x@result)),
-  `FDR < 0.1` = map_int(results_dpu, ~sum(.x@result$p.adjust < 0.1, na.rm = TRUE)),
-  `FDR < 0.05` = map_int(results_dpu, ~sum(.x@result$p.adjust < 0.05, na.rm = TRUE))
-)
-knitr::kable(results_dpu_info, caption = "DPU PTM-SEA Results Summary")
-```
-
-## DPU Results {.tabset .tabset-pills}
-
-```{r dpu_contrast_plots, results='asis', fig.height=8}
-all_clean_dpu <- extract_gsea_results(results_dpu) |>
-  mutate(
-    pathway = ID,
-    pathway_short = gsub("^(KINASE|PERT|PATH|DISEASE)-PSP_", "", ID) |>
-      substr(1, 40)
-  )
-
-for (ctr in unique(all_clean_dpu$contrast)) {
-  cat("\n\n### ", ctr, "\n\n")
-
-  ctr_data <- all_clean_dpu |> filter(contrast == ctr)
-  n_sig <- sum(ctr_data$p.adjust < 0.1, na.rm = TRUE)
-  cat("**Significant pathways (FDR < 0.1):** ", n_sig, "\n\n")
-
-  p <- plot_enrichment_dotplot(
-    ctr_data,
-    item_col = "pathway_short",
-    fdr_col = "p.adjust",
-    title = paste0("DPU - ", ctr),
-    subtitle = "Top 30 pathways by FDR"
-  )
-  print(p)
+  # Significant pathways table
+  cat("### Significant Pathways\n\n")
+  sig_table <- ctr_data |>
+    filter(p.adjust < 0.1) |>
+    select(pathway_short, NES, pvalue, FDR = p.adjust, setSize) |>
+    arrange(FDR) |>
+    mutate(across(where(is.numeric), ~round(.x, 4)))
+  print(htmltools::tagList(
+    DT::datatable(sig_table,
+                  extensions = 'Buttons',
+                  options = list(pageLength = 15, scrollX = TRUE,
+                                 dom = 'Bfrtip', buttons = c('copy', 'csv', 'excel')))
+  ))
   cat("\n\n")
 }
 ```
 
-## DPU clusterProfiler Dotplot
+# clusterProfiler Dotplots {.tabset .tabset-pills}
 
-```{r dpu_combined_dotplot, fig.width=14, fig.height=10}
-merged_results_dpu <- merge_result(results_dpu)
-dotplot(merged_results_dpu, showCategory = 15,
-        title = "DPU PTM-SEA (All Contrasts)") +
+## Combined Dotplot
+
+```{r combinedDotplot, fig.width=14, fig.height=10}
+merged_results <- merge_result(results)
+dotplot(merged_results, showCategory = 15,
+        title = paste(params$analysis_type, "PTM-SEA (All Contrasts)")) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-```{r dpu_individual_plots, fig.width=14, fig.height=10}
-dpu_plots <- names(results_dpu) |>
-  map(function(ct) {
-    res <- results_dpu[[ct]]
-    if (nrow(res@result) > 0) {
-      dotplot(res, showCategory = 15, title = ct) +
-        theme(axis.text.y = element_text(size = 8))
-    } else {
-      ggplot() +
-        annotate("text", x = 0.5, y = 0.5, label = paste("No results for", ct)) +
-        theme_void() +
-        ggtitle(ct)
-    }
-  })
-patchwork::wrap_plots(dpu_plots, ncol = 2)
-```
+## Individual Contrasts
 
-# Summary Heatmap
+```{r individualPlots, fig.width=14, fig.height=10, results='asis'}
+for (ct in names(results)) {
+  cat("\n\n### ", ct, "\n\n")
 
-```{r summary_heatmap, fig.width=12, fig.height=10}
-# Combine DPA and DPU results for comparison
-all_clean_dpa <- all_clean_dpa |> mutate(analysis = "DPA")
-all_clean_dpu <- all_clean_dpu |> mutate(analysis = "DPU")
+  res <- results[[ct]]
 
-all_combined <- bind_rows(all_clean_dpa, all_clean_dpu)
+  # Check if there are any results to plot (dotplot fails on empty data)
+  n_results <- nrow(res@result)
+  if (n_results == 0) {
+    cat("No pathways met the pvalue cutoff for this contrast.\n\n")
+    next
+  }
 
-if (nrow(all_combined) > 0) {
-  # Using shared heatmap function with pathway_short labels
-  plot_enrichment_heatmap(
-    all_clean_dpa,
-    item_col = "ID",
-    fdr_col = "p.adjust",
-    n_top = 25,
-    item_label_col = "pathway_short",
-    title = "PTM-SEA Summary - DPA"
-  )
-}
-```
+  p <- dotplot(res, showCategory = 15, title = ct) +
+    theme(axis.text.y = element_text(size = 8))
+  print(p)
 
-# Volcano Plot
-
-```{r volcano_plot, fig.width=12, fig.height=8}
-# Using shared volcano function
-plot_enrichment_volcano(
-  all_clean_dpa,
-  item_col = "pathway_short",
-  fdr_col = "p.adjust",
-  title = "DPA - PTM-SEA Volcano Plots"
-)
-```
-
-# GSEA Enrichment Plot (Example)
-
-```{r gsea_plots_example, fig.width=10, fig.height=6}
-# Show single example for illustration
-ct <- names(results_dpa)[1]
-res <- results_dpa[[ct]]
-
-if (nrow(res@result) > 0) {
-  top_pathway <- res@result |>
+  # Show top pathways table
+  top_res <- res@result |>
     as_tibble() |>
-    arrange(pvalue) |>
-    slice(1) |>
-    pull(ID)
-
-  row <- res@result |>
-    as_tibble() |>
-    filter(ID == top_pathway)
-  nes_val <- round(row$NES, 2)
-  fdr <- signif(row$p.adjust, 2)
-
-  pathway_short <- gsub("^(KINASE|PERT|PATH|DISEASE)-PSP_", "", top_pathway)
-  gseaplot2(res, geneSetID = top_pathway,
-    title = paste0(ct, " - ", pathway_short, " (NES=", nes_val, ", FDR=", fdr, ")"))
-}
-```
-
-# Diagnostics
-
-```{r diagnostic_pvalues}
-pval_diag <- names(results_dpa) |>
-  map_dfr(function(ct) {
-    res <- results_dpa[[ct]]@result
-    tibble(
-      Contrast = ct,
-      `Min p-value` = signif(min(res$pvalue, na.rm = TRUE), 3),
-      `p < 0.05` = sum(res$pvalue < 0.05, na.rm = TRUE),
-      `p < 0.01` = sum(res$pvalue < 0.01, na.rm = TRUE),
-      Total = nrow(res)
-    )
-  })
-knitr::kable(pval_diag, caption = "Raw p-value Distribution (DPA)")
-```
-
-```{r show_top_pathways}
-if (length(results_dpa) > 0) {
-  top_res <- results_dpa[[1]]@result |>
-    as_tibble() |>
+    filter(p.adjust < 0.25) |>
     arrange(pvalue) |>
     head(10) |>
-    select(ID, enrichmentScore, NES, pvalue, p.adjust, setSize) |>
+    select(ID, NES, pvalue, p.adjust, setSize) |>
     mutate(
-      enrichmentScore = round(enrichmentScore, 3),
       NES = round(NES, 3),
       pvalue = signif(pvalue, 3),
       p.adjust = signif(p.adjust, 3)
     )
-  knitr::kable(top_res,
-    caption = paste("Top 10 Pathways by P-value (DPA,",
-                    names(results_dpa)[1], ")"))
+  print(htmltools::tagList(
+    DT::datatable(top_res,
+                  extensions = 'Buttons',
+                  options = list(pageLength = 10, scrollX = TRUE,
+                                 dom = 'Bfrtip', buttons = c('copy', 'csv', 'excel')),
+                  caption = paste("Top Pathways -", ct))
+  ))
+  cat("\n\n")
+}
+```
+
+
+# Summary Heatmap
+
+```{r summaryHeatmap, fig.width=12, fig.height=10}
+stopifnot(
+ "No GSEA results - check min_size parameter and sequence overlap" = nrow(all_clean) > 0
+)
+
+# Using shared heatmap function with pathway_short labels
+plot_enrichment_heatmap(
+  all_clean,
+  item_col = "ID",
+  fdr_col = "p.adjust",
+  n_top = 25,
+  item_label_col = "pathway_short",
+  title = paste0("PTM-SEA Summary - ", params$analysis_type)
+)
+```
+
+# Volcano Plot
+
+```{r volcanoPlot, fig.width=12, fig.height=8}
+# Using shared volcano function
+plot_enrichment_volcano(
+  all_clean,
+  item_col = "pathway_short",
+  fdr_col = "p.adjust",
+  title = paste(params$analysis_type, "- PTM-SEA Volcano Plots")
+)
+```
+
+# Export All GSEA Plots to PDF
+
+```{r exportGseaPdf, results='hide', eval=pipeline_mode}
+# Export all GSEA enrichment plots to PDF using shared function
+pdf_file <- file.path(output_dir, paste0("GSEA_plots_", params$analysis_type, ".pdf"))
+n_gsea_plots <- export_gsea_plots_pdf(
+  results, pdf_file,
+  prefix_pattern = "^(KINASE|PERT|PATH|DISEASE)-PSP_"
+)
+cat("Exported", n_gsea_plots, "GSEA plots to:", pdf_file, "\n")
+```
+
+```{r exportGseaPdfVignette, results='hide', eval=!pipeline_mode}
+# Vignette mode: skip PDF export
+n_gsea_plots <- sum(map_int(results, ~nrow(.x@result)))
+message("Vignette mode: PDF export skipped. Would export ", n_gsea_plots, " plots.")
+```
+
+# GSEA Enrichment Plots {.tabset .tabset-pills}
+
+Showing top 10 plots per contrast. `r if(pipeline_mode) paste0("**All ", n_gsea_plots, " plots exported to PDF.**")`
+
+```{r gseaExamplePlots, results='asis', fig.width=10, fig.height=6}
+for (ct in names(results)) {
+  cat("\n\n## ", ct, " {.tabset}\n\n")
+
+  res <- results[[ct]]
+  top10 <- res@result |>
+    as_tibble() |>
+    arrange(pvalue) |>
+    head(10) |>
+    pull(ID)
+
+  for (i in seq_along(top10)) {
+    geneset <- top10[i]
+    pathway_short <- gsub("^(KINASE|PERT|PATH|DISEASE)-PSP_", "", geneset)
+    cat("\n\n### ", pathway_short, "\n\n")
+
+    row <- res@result |>
+      as_tibble() |>
+      filter(ID == geneset)
+    nes_val <- round(row$NES, 2)
+    fdr <- signif(row$p.adjust, 2)
+
+    p <- gseaplot2(res, geneSetID = geneset,
+      title = paste0(pathway_short, " (NES=", nes_val, ", FDR=", fdr, ")"))
+    print(p)
+    cat("\n\n")
+  }
 }
 ```
 
@@ -436,7 +408,7 @@ if (length(results_dpa) > 0) {
 
 ```{r allResults}
 # All pathways across all contrasts
-all_clean_dt <- all_clean_dpa |>
+all_clean_dt <- all_clean |>
   select(contrast, pathway = ID, NES, pvalue, FDR = p.adjust, setSize) |>
   arrange(contrast, FDR) |>
   mutate(across(where(is.numeric), ~round(.x, 4)))
@@ -446,7 +418,51 @@ DT::datatable(all_clean_dt,
   extensions = 'Buttons',
   options = list(pageLength = 15, scrollX = TRUE,
                  dom = 'Bfrtip', buttons = c('copy', 'csv', 'excel')),
-  caption = "All pathways across all contrasts (DPA)")
+  caption = "All pathways across all contrasts")
+```
+
+# Export Results
+
+```{r export, eval=pipeline_mode}
+# Create output directory
+dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+
+# Prepare export data
+export_data <- all_clean |> arrange(contrast, pvalue)
+
+export_list <- list(all_clean = export_data)
+
+# Add per-contrast sheets
+for (ct in unique(export_data$contrast)) {
+  sheet_name <- gsub("[^a-zA-Z0-9_]", "_", substr(ct, 1, 31))
+  export_list[[sheet_name]] <- export_data |> filter(contrast == ct)
+}
+
+# Add significant results sheet
+export_list[["significant_FDR10"]] <- export_data |> filter(p.adjust < 0.1)
+
+# Write Excel
+xlsx_file <- file.path(output_dir, paste0("PTMSEA_", params$analysis_type, "_results.xlsx"))
+writexl::write_xlsx(export_list, xlsx_file)
+
+# Save RDS with full results objects
+rds_file <- file.path(output_dir, paste0("PTMSEA_", params$analysis_type, "_results.rds"))
+saveRDS(results, rds_file)
+
+# Export summary
+export_summary <- tibble(
+  Output = c("Excel results", "RDS object"),
+  File = c(xlsx_file, rds_file),
+  Size = c(
+    paste(round(file.size(xlsx_file) / 1024, 1), "KB"),
+    paste(round(file.size(rds_file) / 1024, 1), "KB")
+  )
+)
+knitr::kable(export_summary, caption = "Exported Files")
+```
+
+```{r exportVignette, eval=!pipeline_mode}
+message("Vignette mode: File export skipped.")
 ```
 
 # Session Info
