@@ -49,10 +49,6 @@ if (pipeline_mode && file.exists("src/feature_preparation.R")) {
   source("src/feature_preparation.R")
 }
 
-is_docx <- knitr::pandoc_to() == "docx"
-if (length(is_docx) == 0) {
-  is_docx <- TRUE
-}
 ```
 
 # Introduction
@@ -117,18 +113,7 @@ stopifnot("No significant sites found. Adjust fdr/log2fc thresholds in config." 
 tx <- as.data.frame(with(significant_sites, table(contrast, regulation, modAA)))
 capt <- paste0("Number of significantly regulated sites by contrast, residue, and regulation direction (", params$sheet, ").")
 
-if (is_docx) {
-  ft <- flextable::flextable(tx) |>
-    flextable::fontsize(part = "all", size = 9) |>
-    flextable::set_table_properties(width = 1, layout = "fixed", opts_word = list(split = FALSE)) |>
-    flextable::width(width = c(2.5, 1.2, 0.8, 1.0)) |>
-    flextable::set_caption(capt)
-  ft
-} else {
-  tx |>
-    knitr::kable(caption = capt) |>
-    kableExtra::kable_styling(font_size = 9, latex_options = "scale_down")
-}
+knitr::kable(tx, caption = capt)
 ```
 
 ## Validate Sequence Window
