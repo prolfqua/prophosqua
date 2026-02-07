@@ -1,20 +1,27 @@
 ---
 title: "PTM Analysis - Sequence Logo"
-subtitle: "`r if (!is.null(params$xlsx_file)) paste0(params$sheet, ' Analysis') else 'Example Data'`"
-output:
-  bookdown::html_document2:
-    code_folding: hide
-    toc: true
-    toc_float: true
+subtitle: "`r params$sheet` Analysis"
+author: "FGCZ"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
 params:
   xlsx_file: NULL
   sheet: "DPA"
   fdr: 0.05
   fc: 0.6
+output:
+  bookdown::html_document2:
+    toc: true
+    toc_float: true
+    code_folding: hide
+    self_contained: true
+  pdf_document:
+    toc: true
 vignette: >
-  %\VignetteIndexEntry{PTM Analysis - Sequence Logo}
+  %\VignetteIndexEntry{Sequence Logo Analysis}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+editor_options:
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -29,246 +36,149 @@ knitr::opts_chunk$set(
 
 suppressPackageStartupMessages({
   library(dplyr)
-  library(ggplot2)
   library(ggseqlogo)
+  library(readxl)
   library(prophosqua)
 })
+
+# Detect pipeline vs vignette mode
+pipeline_mode <- !is.null(params$xlsx_file)
+
+# Load shared utilities if in pipeline mode
+if (pipeline_mode && file.exists("src/feature_preparation.R")) {
+  source("src/feature_preparation.R")
+}
+
+is_docx <- knitr::pandoc_to() == "docx"
+if (length(is_docx) == 0) {
+  is_docx <- TRUE
+}
 ```
 
 # Introduction
 
-This vignette performs sequence logo analysis on significantly regulated sites from
-phosphoproteomics data. Sequence motifs help identify active kinases driving PTM changes.
+This document performs sequence logo analysis on significantly regulated sites from **`r params$sheet`** analysis. Sequence motifs help identify active kinases driving PTM changes.
 
-```{r analysis_description, results='asis'}
-if (is.null(params$xlsx_file)) {
-  cat("**Vignette mode:** Using bundled example data.\n\n")
-  cat("We analyze both DPA (Differential PTM Abundance) and DPU (Differential PTM Usage) results:\n\n")
-  cat("- **DPA (Differential PTM Abundance)**: Raw PTM signal changes. Sequence motifs may reflect both abundance and stoichiometry effects.\n")
-  cat("- **DPU (Differential PTM Usage)**: Protein-normalized changes. Sequence motifs reflect genuine kinase activity changes.\n")
-} else {
-  desc <- switch(params$sheet,
-    "DPA" = "**DPA (Differential PTM Abundance)**: Raw PTM signal changes. Sequence motifs may reflect both abundance and stoichiometry effects.",
-    "DPU" = "**DPU (Differential PTM Usage)**: Protein-normalized changes. Sequence motifs reflect genuine kinase activity changes.",
-    "CF" = "**CF (CorrectFirst)**: Alternative normalization. Sequence motifs reflect activity changes with different correction approach.",
-    paste0("**", params$sheet, "** analysis")
-  )
-  cat("**Pipeline mode:** Loading from Excel file.\n\n")
-  cat(desc, "\n")
-}
+```{r analysisDescription, results='asis'}
+desc <- switch(params$sheet,
+  "DPA" = "**DPA (Differential PTM Abundance)**: Raw PTM signal changes. Sequence motifs may reflect both abundance and stoichiometry effects.",
+  "DPU" = "**DPU (Differential PTM Usage)**: Protein-normalized changes. Sequence motifs reflect genuine kinase activity changes.",
+  "CF" = "**CF (CorrectFirst)**: Alternative normalization. Sequence motifs reflect activity changes with different correction approach."
+)
+cat(desc)
 ```
 
 # Data Loading
 
-```{r load_data}
-# Dual-mode data loading
-if (is.null(params$xlsx_file)) {
-  # Vignette mode: use bundled example data
+```{r loadData}
+if (pipeline_mode) {
+  message("Loading data from: ", params$xlsx_file, " (sheet: ", params$sheet, ")")
+  data <- readxl::read_xlsx(params$xlsx_file, sheet = params$sheet)
+} else {
+  # Vignette mode: use example data
   data("combined_test_diff_example", package = "prophosqua")
   data <- combined_test_diff_example
-  message("Loaded example data: combined_test_diff_example")
-} else {
-  # Pipeline mode: load from file
-  data <- readxl::read_xlsx(params$xlsx_file, sheet = params$sheet)
-  message("Loaded data from: ", params$xlsx_file, " (sheet: ", params$sheet, ")")
+  message("Using example data from prophosqua package")
 }
 
-# Analysis parameters from params
-fdr_threshold <- params$fdr
-fc_threshold <- params$fc
-
 data_info <- tibble(
-  Property = c("Data Source", "Sheet", "Rows", "Contrasts"),
+  Property = c("Mode", "Sheet", "Rows", "Contrasts"),
   Value = c(
-    if (is.null(params$xlsx_file)) "Example data" else basename(params$xlsx_file),
-    if (is.null(params$xlsx_file)) "N/A" else params$sheet,
-    nrow(data),
-    paste(unique(data$contrast), collapse = ", ")
+    if (pipeline_mode) basename(params$xlsx_file) else "Example data",
+    params$sheet,
+    nrow(data), paste(unique(data$contrast), collapse = ", ")
   )
 )
 knitr::kable(data_info, caption = "Data Summary")
 ```
 
-# DPA Analysis (Differential PTM Abundance)
+# Filter Significant Sites
 
-## Filter DPA Significant Sites
+Filter sites with |log2FC| > `r params$fc` and FDR < `r params$fdr`.
 
-Filter sites with |log2FC| > `r fc_threshold` and FDR < `r fdr_threshold` using DPA statistics.
-
-```{r filter_dpa_significant}
+```{r filterSignificant}
 # Use shared filtering function with sequence validation
-significant_sites_dpa <- data |>
+significant_sites <- data |>
   dplyr::filter(!is.na(posInProtein)) |>
   filter_significant_sites(
-    fdr_col = "FDR.site",
-    diff_col = "diff.site",
-    fdr_threshold = fdr_threshold,
-    fc_threshold = fc_threshold,
+    fdr_threshold = params$fdr,
+    fc_threshold = params$fc,
     require_sequence = TRUE
   )
 
-cat("Found", nrow(significant_sites_dpa), "significant DPA sites\n")
+cat("Found", nrow(significant_sites), "significant sites\n")
 ```
 
-## DPA Significant Site Counts
+## Count Significant Sites
 
-```{r table_dpa_significant}
-if (nrow(significant_sites_dpa) > 0) {
-  tx_dpa <- as.data.frame(with(significant_sites_dpa, table(contrast, regulation, modAA)))
-  knitr::kable(tx_dpa,
-    caption = "Number of significantly regulated DPA sites by contrast, residue, and regulation direction.")
+```{r tableSignificant}
+stopifnot("No significant sites found. Adjust fdr/log2fc thresholds in config." = nrow(significant_sites) > 0)
+
+tx <- as.data.frame(with(significant_sites, table(contrast, regulation, modAA)))
+capt <- paste0("Number of significantly regulated sites by contrast, residue, and regulation direction (", params$sheet, ").")
+
+if (is_docx) {
+  ft <- flextable::flextable(tx) |>
+    flextable::fontsize(part = "all", size = 9) |>
+    flextable::set_table_properties(width = 1, layout = "fixed", opts_word = list(split = FALSE)) |>
+    flextable::width(width = c(2.5, 1.2, 0.8, 1.0)) |>
+    flextable::set_caption(capt)
+  ft
 } else {
-  cat("No significant DPA sites found with current thresholds.\n")
+  tx |>
+    knitr::kable(caption = capt) |>
+    kableExtra::kable_styling(font_size = 9, latex_options = "scale_down")
 }
 ```
 
-## Validate DPA Sequence Window
+## Validate Sequence Window
 
 Ensure the central residue matches the modified amino acid.
 
-```{r validate_dpa_seq_window}
-if (nrow(significant_sites_dpa) > 0 && "modAA" %in% names(significant_sites_dpa)) {
-  # Validate that central residue (position 8 in 15-mer) matches modAA
-  significant_sites_dpa <- significant_sites_dpa |>
-    dplyr::mutate(
-      .central_aa = toupper(substr(SequenceWindow, 8, 8))
-    ) |>
-    dplyr::filter(.central_aa == modAA) |>
-    dplyr::select(-.central_aa)
+```{r validateSeqWindow}
+# Use shared validation function
+significant_sites <- validate_sequence_window(significant_sites)
 
-  cat("After validation:", nrow(significant_sites_dpa), "DPA sites remain\n")
-}
+cat("After validation:", nrow(significant_sites), "sites remain\n")
 ```
 
-## DPA Sequence Logos
+# Sequence Logo Analysis
 
-```{r fig_dpa_seqlogo, fig.width=9, fig.height=12, fig.cap="Sequence logos for significantly regulated DPA sites by contrast and regulation direction."}
-if (nrow(significant_sites_dpa) > 0) {
-  seq_list_dpa <- significant_sites_dpa |>
-    dplyr::mutate(.grp = paste(contrast, regulation, sep = "_")) |>
-    dplyr::group_by(.grp) |>
-    dplyr::summarize(
-      seqs = list(toupper(SequenceWindow)),
-      .groups = "drop"
-    ) |>
-    with(setNames(seqs, .grp))
+## Generate Sequence Logos
 
-  if (length(seq_list_dpa) > 0) {
-    ggseqlogo(
-      seq_list_dpa,
-      ncol = 2,
-      seq_type = "aa",
-      method = "probability"
-    ) +
-      ggtitle("DPA Sequence Logos")
-  }
+```{r figSeqlogo, fig.width=9, fig.height=12, fig.cap="Sequence logos for significantly regulated sites by contrast and regulation direction."}
+seq_list <- significant_sites |>
+  dplyr::mutate(.grp = paste(contrast, regulation, sep = "_")) |>
+  dplyr::group_by(.grp) |>
+  dplyr::summarize(
+    seqs = list(toupper(SequenceWindow)),
+    .groups = "drop"
+  ) |>
+  with(setNames(seqs, .grp))
+
+if (length(seq_list) > 0) {
+  ggseqlogo(
+    seq_list,
+    ncol = 2,
+    seq_type = "aa",
+    method = "probability"
+  )
 } else {
-  cat("No significant DPA sites found for sequence logo generation.\n")
+  cat("No significant sites found for sequence logo generation.\n")
 }
 ```
 
-## DPA Difference Logo Analysis
+# Difference Logo Analysis
 
 Visualize the difference in amino acid enrichment between upregulated and downregulated sites.
 
-```{r fig_dpa_difflogo, fig.width=10, fig.height=10, fig.cap="DPA Difference Logos (Upregulated - Downregulated)"}
-if (nrow(significant_sites_dpa) > 0) {
-  p_diff_dpa <- prophosqua::plot_diff_logo(significant_sites_dpa)
+```{r figDifflogo, fig.width=10, fig.height=10, fig.cap="Difference Logos (Upregulated - Downregulated)"}
+p_diff <- prophosqua::plot_diff_logo(significant_sites)
 
-  if (!is.null(p_diff_dpa)) {
-    print(p_diff_dpa)
-  } else {
-    cat("No contrasts with both upregulated and downregulated DPA sites found for difference logo.\n")
-  }
-}
-```
-
-# DPU Analysis (Differential PTM Usage)
-
-## Filter DPU Significant Sites
-
-Filter sites with |log2FC| > `r fc_threshold` and FDR < `r fdr_threshold` using DPU statistics.
-
-```{r filter_dpu_significant}
-# Use DPU columns (protein-normalized)
-significant_sites_dpu <- data |>
-  dplyr::filter(!is.na(posInProtein)) |>
-  filter_significant_sites(
-    fdr_col = "FDR_I",
-    diff_col = "diff_diff",
-    fdr_threshold = fdr_threshold,
-    fc_threshold = fc_threshold,
-    require_sequence = TRUE
-  )
-
-cat("Found", nrow(significant_sites_dpu), "significant DPU sites\n")
-```
-
-## DPU Significant Site Counts
-
-```{r table_dpu_significant}
-if (nrow(significant_sites_dpu) > 0) {
-  tx_dpu <- as.data.frame(with(significant_sites_dpu, table(contrast, regulation, modAA)))
-  knitr::kable(tx_dpu,
-    caption = "Number of significantly regulated DPU sites by contrast, residue, and regulation direction.")
+if (!is.null(p_diff)) {
+  print(p_diff)
 } else {
-  cat("No significant DPU sites found with current thresholds.\n")
-}
-```
-
-## Validate DPU Sequence Window
-
-```{r validate_dpu_seq_window}
-if (nrow(significant_sites_dpu) > 0 && "modAA" %in% names(significant_sites_dpu)) {
-  significant_sites_dpu <- significant_sites_dpu |>
-    dplyr::mutate(
-      .central_aa = toupper(substr(SequenceWindow, 8, 8))
-    ) |>
-    dplyr::filter(.central_aa == modAA) |>
-    dplyr::select(-.central_aa)
-
-  cat("After validation:", nrow(significant_sites_dpu), "DPU sites remain\n")
-}
-```
-
-## DPU Sequence Logos
-
-```{r fig_dpu_seqlogo, fig.width=9, fig.height=12, fig.cap="Sequence logos for significantly regulated DPU sites by contrast and regulation direction."}
-if (nrow(significant_sites_dpu) > 0) {
-  seq_list_dpu <- significant_sites_dpu |>
-    dplyr::mutate(.grp = paste(contrast, regulation, sep = "_")) |>
-    dplyr::group_by(.grp) |>
-    dplyr::summarize(
-      seqs = list(toupper(SequenceWindow)),
-      .groups = "drop"
-    ) |>
-    with(setNames(seqs, .grp))
-
-  if (length(seq_list_dpu) > 0) {
-    ggseqlogo(
-      seq_list_dpu,
-      ncol = 2,
-      seq_type = "aa",
-      method = "probability"
-    ) +
-      ggtitle("DPU Sequence Logos")
-  }
-} else {
-  cat("No significant DPU sites found for sequence logo generation.\n")
-}
-```
-
-## DPU Difference Logo Analysis
-
-```{r fig_dpu_difflogo, fig.width=10, fig.height=10, fig.cap="DPU Difference Logos (Upregulated - Downregulated)"}
-if (nrow(significant_sites_dpu) > 0) {
-  p_diff_dpu <- prophosqua::plot_diff_logo(significant_sites_dpu)
-
-  if (!is.null(p_diff_dpu)) {
-    print(p_diff_dpu)
-  } else {
-    cat("No contrasts with both upregulated and downregulated DPU sites found for difference logo.\n")
-  }
+  cat("No contrasts with both upregulated and downregulated sites found for difference logo.\n")
 }
 ```
 
@@ -276,16 +186,12 @@ if (nrow(significant_sites_dpu) > 0) {
 
 ```{r summary}
 summary_info <- tibble(
-  Metric = c("FDR Threshold", "FC Threshold",
-             "DPA Significant Sites", "DPA Upregulated", "DPA Downregulated",
-             "DPU Significant Sites", "DPU Upregulated", "DPU Downregulated"),
-  Value = c(fdr_threshold, fc_threshold,
-            nrow(significant_sites_dpa),
-            sum(significant_sites_dpa$regulation == "upregulated", na.rm = TRUE),
-            sum(significant_sites_dpa$regulation == "downregulated", na.rm = TRUE),
-            nrow(significant_sites_dpu),
-            sum(significant_sites_dpu$regulation == "upregulated", na.rm = TRUE),
-            sum(significant_sites_dpu$regulation == "downregulated", na.rm = TRUE))
+  Metric = c("Analysis Type", "FDR Threshold", "FC Threshold",
+             "Total Significant Sites", "Upregulated", "Downregulated"),
+  Value = c(params$sheet, params$fdr, params$fc,
+            nrow(significant_sites),
+            sum(significant_sites$regulation == "upregulated"),
+            sum(significant_sites$regulation == "downregulated"))
 )
 knitr::kable(summary_info, caption = "Analysis Summary")
 ```
