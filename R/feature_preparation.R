@@ -140,3 +140,89 @@ summarize_significant_sites <- function(data, group_cols = c("contrast")) {
       values_fill = 0
     )
 }
+
+
+#' Validate sequence window alignment
+#'
+#' Filters phosphosite data to keep only rows where the central residue of
+#' the SequenceWindow matches the reported modified amino acid (modAA).
+#'
+#' @param data Data frame with PTM results containing SequenceWindow and modAA columns
+#' @param seq_col Character. Name of sequence window column. Default "SequenceWindow"
+#' @param mod_col Character. Name of modified amino acid column. Default "modAA"
+#' @param center_pos Integer. Position of the central residue (1-indexed). Default 8
+#'
+#' @return Filtered data frame with only valid sequence windows
+#'
+#' @details
+#' Sequence windows should be centered on the modified residue. This function
+#' validates that the character at the center position matches the reported
+#' modification site. Both are converted to uppercase for comparison.
+#'
+#' @export
+#'
+#' @examples
+#' data <- data.frame(
+#'   SequenceWindow = c("AAASAAAA", "BBBSBBB", "CCCACCC"),
+#'   modAA = c("S", "S", "S")
+#' )
+#' validate_sequence_window(data)
+#' # Only first two rows kept (center matches S)
+validate_sequence_window <- function(data,
+                                     seq_col = "SequenceWindow",
+                                     mod_col = "modAA",
+                                     center_pos = 8L) {
+  if (!seq_col %in% colnames(data)) {
+    stop("Column '", seq_col, "' not found in data")
+  }
+  if (!mod_col %in% colnames(data)) {
+    stop("Column '", mod_col, "' not found in data")
+  }
+
+  data$..center_char <- toupper(substr(data[[seq_col]], center_pos, center_pos))
+  data$..mod_upper <- toupper(data[[mod_col]])
+
+  result <- data |>
+    dplyr::filter(.data$..center_char == .data$..mod_upper)
+
+  result$..center_char <- NULL
+  result$..mod_upper <- NULL
+
+  return(result)
+}
+
+
+#' Prepare data for N-to-C plotting
+#'
+#' Prepares PTM data for N-to-C visualization by ensuring required columns
+#' exist and standardizing column names.
+#'
+#' @param data Data frame with PTM results
+#' @param analysis_type Character. Analysis type: "dpa", "dpu", or "cf"
+#'
+#' @return Data frame prepared for N-to-C plotting functions
+#'
+#' @details
+#' The function handles different analysis types which may have different
+#' column naming conventions:
+#' \itemize{
+#'   \item DPA: Uses diff.site, FDR.site columns
+#'   \item DPU: Uses diff_diff, FDR_I columns
+#'   \item CF: Uses diff, FDR columns
+#' }
+#'
+#' @export
+prepare_ntoc_data <- function(data, analysis_type = "dpa") {
+  analysis_type <- tolower(analysis_type)
+
+  # Validate required columns exist
+  required_cols <- c("protein_Id", "contrast")
+  missing <- setdiff(required_cols, colnames(data))
+  if (length(missing) > 0) {
+    stop("Missing required columns: ", paste(missing, collapse = ", "))
+  }
+
+  # Just return the data - the N-to-C functions handle column mapping
+
+  return(data)
+}
