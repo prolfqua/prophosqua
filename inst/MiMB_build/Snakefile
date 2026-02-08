@@ -10,26 +10,29 @@
 #   snakemake -j1 <target>     # Build specific target
 #
 # Targets:
-#   all                        - Build main submission (docx + ptmsea)
-#   mea                        - Build 4 kinase/motif enrichment vignettes
+#   all                        - Build main submission (renumbered DOCX)
 #   render_supplementary       - Render MiMBIntegratedPTM.docx (dodea=false)
 #   render_supplementary_full  - Render with full DEA (dodea=true, slow!)
 #   render_supplementary_html  - Render MiMBIntegratedPTM.html
+#   render_supplementary_pdf   - Render MiMBIntegratedPTM.pdf
 #   renumber_references        - Renumber Notes/Figures/Tables in DOCX
-#   render_ptmsea              - Render Analysis_PTMSEA.html
-#   render_motif               - Render Analysis_Motif_Enrichment.html
-#   render_kl                  - Render Analysis_KinaseLibrary.html
-#   render_vis                 - Render Vis_MEA.html
 #   render_qc                  - Render QCReport.html with mouse example data
-#   kl                         - Run kinase-library + render KL/Vis vignettes
 #   install_package            - Reinstall prophosqua package
 #   archive                    - Create dated submission zip (MiMB_submission_YYYYMMDD.zip)
+#
+# Developer-only (kinase-library pipeline):
+#   extract_seqs               - Extract sequences for KL scanning
+#   extract_rnk                - Extract ranked sequences per contrast
+#   scan_motifs                - Run kinase-library motif scan
+#   run_mea                    - Run kinase-library MEA
 #
 # Notes:
 #   - Package is automatically reinstalled when R/*.R or DESCRIPTION changes
 #   - Use 'rm .package_installed' to force package reinstall
 #   - Vignette sources are in ../../vignettes/
 #   - Outputs are written to this directory (inst/MiMB_build/)
+#   - Analysis vignettes (PTMSEA, KinaseLibrary, MEA, seqlogo, n_to_c)
+#     are now standard package vignettes built via devtools::build_vignettes()
 
 import glob
 import datetime
@@ -58,37 +61,32 @@ Usage:
   snakemake -j1 <target>     Build specific target
 
 Targets:
-  all                        Build main submission (docx + ptmsea)
-  mea                        Build 4 kinase/motif enrichment vignettes
+  all                        Build main submission (renumbered DOCX)
   render_supplementary       Render MiMBIntegratedPTM.docx (dodea=false)
   render_supplementary_full  Render with full DEA (dodea=true, slow!)
+  render_supplementary_html  Render MiMBIntegratedPTM.html
+  render_supplementary_pdf   Render MiMBIntegratedPTM.pdf
   renumber_references        Renumber Notes/Figures/Tables in DOCX
-  render_ptmsea              Render Analysis_PTMSEA.html
-  render_motif               Render Analysis_Motif_Enrichment.html
-  render_kl                  Render Analysis_KinaseLibrary.html
-  render_vis                 Render Vis_MEA.html
   render_qc                  Render QCReport.html with mouse example data
-  kl                         Run kinase-library + render KL/Vis vignettes
   install_package            Reinstall prophosqua package
   archive                    Create dated submission zip (MiMB_submission_YYYYMMDD.zip)
+
+Developer-only (kinase-library pipeline):
+  extract_seqs               Extract sequences for KL scanning
+  extract_rnk                Extract ranked sequences per contrast
+  scan_motifs                Run kinase-library motif scan
+  run_mea                    Run kinase-library MEA
 
 Notes:
   - Package is automatically reinstalled when R/*.R or DESCRIPTION changes
   - Use 'rm .package_installed' to force package reinstall
+  - Analysis vignettes (PTMSEA, KinaseLibrary, etc.) are now standard
+    package vignettes — build them with devtools::build_vignettes()
         """)
 
 rule all:
     input:
-        "MiMBIntegratedPTM_renumbered.docx",
-        "Analysis_PTMSEA.html"
-
-rule mea:
-    """Build all 4 kinase/motif enrichment vignettes"""
-    input:
-        "Analysis_PTMSEA.html",
-        "Analysis_Motif_Enrichment.html",
-        "Analysis_KinaseLibrary.html",
-        "Vis_MEA.html"
+        "MiMBIntegratedPTM_renumbered.docx"
 
 rule clean:
     """Remove generated files"""
@@ -97,11 +95,10 @@ rule clean:
         rm -f .package_installed
         rm -f MiMBIntegratedPTM.docx MiMBIntegratedPTM_renumbered.docx MiMBIntegratedPTM_full.docx
         rm -f MiMBIntegratedPTM.html MiMBIntegratedPTM.pdf
-        rm -f Analysis_PTMSEA.html Analysis_Motif_Enrichment.html
-        rm -f Analysis_KinaseLibrary.html Vis_MEA.html
         rm -f *.knit.md *.utf8.md
         rm -f seqwindows.tsv *.rnk term2gene.csv mea_*.csv
         rm -rf MiMBIntegratedPTM_files
+        rm -rf ../../inst/PTM_example_analysis_v2
         """
 
 rule install_package:
@@ -112,7 +109,7 @@ rule install_package:
         touch(".package_installed")
     shell:
         """
-        Rscript -e "devtools::install('{PKG_ROOT}')"
+        Rscript -e "unlink(file.path(.libPaths()[1], '00LOCK-prophosqua'), recursive = TRUE); devtools::install('{PKG_ROOT}')"
         """
 
 rule render_supplementary:
@@ -201,61 +198,13 @@ rule archive:
         rm -rf {params.dirname}
         """
 
-rule render_ptmsea:
-    input:
-        rmd=f"{VIGNETTES}/Analysis_PTMSEA.Rmd",
-        pkg=".package_installed"
-    output:
-        "Analysis_PTMSEA.html"
-    shell:
-        """
-        Rscript -e "rmarkdown::render('{input.rmd}', output_dir = '.', clean = FALSE)"
-        """
-
-rule render_motif:
-    input:
-        rmd=f"{VIGNETTES}/Analysis_Motif_Enrichment.Rmd",
-        pkg=".package_installed"
-    output:
-        "Analysis_Motif_Enrichment.html"
-    shell:
-        """
-        Rscript -e "rmarkdown::render('{input.rmd}', output_dir = '.', clean = FALSE)"
-        """
-
-rule render_kl:
-    input:
-        rmd=f"{VIGNETTES}/Analysis_KinaseLibrary.Rmd",
-        pkg=".package_installed",
-        term2gene="term2gene.csv"
-    output:
-        "Analysis_KinaseLibrary.html"
-    shell:
-        """
-        Rscript -e "rmarkdown::render('{input.rmd}', output_dir = '.', clean = FALSE)"
-        """
-
-rule render_vis:
-    input:
-        rmd=f"{VIGNETTES}/Vis_MEA.Rmd",
-        pkg=".package_installed",
-        mea=expand("mea_{contrast}.csv", contrast=CONTRASTS)
-    output:
-        "Vis_MEA.html"
-    shell:
-        """
-        Rscript -e "rmarkdown::render('{input.rmd}', output_dir = '.', clean = FALSE)"
-        """
-
-# Kinase-library integration rules
-
-rule kl:
-    """Run kinase-library analysis + render KL/Vis vignettes"""
-    input:
-        "term2gene.csv",
-        expand("mea_{contrast}.csv", contrast=CONTRASTS),
-        "Analysis_KinaseLibrary.html",
-        "Vis_MEA.html"
+# ===========================================================================
+# Developer-only: Kinase-library pipeline
+#
+# These rules extract data from the package's example RDA, run kinase-library
+# motif scanning and MEA analysis. The resulting CSVs are committed to the
+# repo and consumed by package vignettes built via devtools::build_vignettes().
+# ===========================================================================
 
 rule extract_seqs:
     """Extract unique sequences from RDA for motif scanning"""
