@@ -334,7 +334,7 @@ We use *R* to extract experimental factors, the Genotype and Timepoint, from the
 
 ```{r a3createcontrasts}
 annot <- readr::read_tsv("PTM_example/data_total/dataset.tsv")
-annot <- annot |> tidyr::separate("name", c("Genotype", "Timepoint", NA),
+annot <- annot |> tidyr::separate("Name", c("Genotype", "Timepoint", NA),
                                   sep = "_", remove = FALSE)
 annot$group <- NULL
 annot$subject <- NULL
@@ -414,7 +414,7 @@ The DEA of the single-site output of enriched phosphoproteome examines changes a
 ./prolfqua_dea.sh -i PTM_example/data_ptm/FP_22 \
 -d dataset_with_contrasts.tsv \
 -y config.yaml \
--w singlesite_PTM \
+-w phospho_STY \
 -s prolfquappPTMreaders.FP_singlesite
 ```
 
@@ -468,7 +468,7 @@ We need to specify the workunit names and the date when the DEA analysis was run
 datedea <- if(do_dea) datetoday else "20251214"
 
 tot_file <- prophosqua::dea_xlsx_path(project_dir, "total_proteome", datedea)
-ptm_file <- prophosqua::dea_xlsx_path(project_dir, "singlesite_PTM", datedea)
+ptm_file <- prophosqua::dea_xlsx_path(project_dir, "phospho_STY", datedea)
 
 # Directory paths
 stopifnot(file.exists(tot_file))
@@ -491,10 +491,10 @@ The `left_join` operation used here ensures that all PTM-features are retained i
 
 ```{r b5combinedata}
 join_column <- c(
-  "fasta.id" = "protein_Id", 
-  "contrast", 
-  "description", 
-  "protein_length"
+  "protein_Id" = "protein_Id",
+  "contrast" = "contrast",
+  "description" = "description",
+  "protein_length" = "protein_length"
 )
 suffix_a <- ".site"
 suffix_b <- ".protein"
@@ -542,8 +542,8 @@ plot_data <- n_to_c_expression_multicontrast(
 ```
 
 ```{r fig1Q64337Compute}
-x1 <- which(plot_data$protein_Id == "Q64337")
-fig1_plot <- plot_data$plot[[x1]]
+x1 <- which(grepl("Q64337", plot_data$protein_Id))
+fig1_plot <- plot_data$plot[[x1[1]]]
 ```
 
 
@@ -623,8 +623,8 @@ In the *Atg16l1* macrophage dataset [@10.7554/elife.62320], SQSTM1 (uniprot id Q
 Additionally, individual high-confidence DPA/DPU sites should be carefully inspected for technical quality, including verification of protein coverage and assessment of missing values across treatment groups (see Note \@ref(qcrecommend)).
 
 ```{r fig2usageQ64337Compute}
-x1_usage <- which(plot_data_usage$protein_Id == "Q64337")
-fig2_plot <- plot_data_usage$plot[[x1_usage]]
+x1_usage <- which(grepl("Q64337", plot_data_usage$protein_Id))
+fig2_plot <- plot_data_usage$plot[[x1_usage[1]]]
 ```
 
 ```{r fig2usageQ64337Table, include=FALSE, eval = FALSE}
@@ -738,9 +738,8 @@ Here we show how to estimate the DPU using the correct first approach. We first 
 tot_res_dir <- prophosqua::dea_res_dir(project_dir, "total_proteome", datedea)
 ldata <- arrow::read_parquet(file.path(tot_res_dir,"lfqdata_normalized.parquet"))
 ldata <- ldata |> filter(!grepl("^rev_",protein_Id) )
-ldata <- prolfqua::get_UniprotID_from_fasta_header(ldata )
-tot_d <- ldata |> 
-  dplyr::select(channel, UniprotID, normalized_abundance)
+tot_d <- ldata |>
+  dplyr::select(channel, protein_Id, normalized_abundance)
 
 ```
 
@@ -748,7 +747,7 @@ We are also loading normalized single-site abundances. In addition to loading th
 
 
 ```{r loadNormalizedSiteAbundances}
-ptm_res_dir <- prophosqua::dea_res_dir(project_dir, "singlesite_PTM", datedea)
+ptm_res_dir <- prophosqua::dea_res_dir(project_dir, "phospho_STY", datedea)
 ldata <- arrow::read_parquet(file.path(ptm_res_dir,"lfqdata_normalized.parquet"))
 list <- yaml::read_yaml(file.path(ptm_res_dir,"lfqdata.yaml"))
 config <- prolfqua::list_to_AnalysisConfiguration(list)
@@ -760,8 +759,8 @@ We merge the data for the single-site and total proteome protein abundances by p
 
 ```{r correctData}
 ptm_data$data <- dplyr::inner_join(
-  ptm_data$data, tot_d, 
-  by = c("channel", protein_Id = "UniprotID"), suffix = c(".site",".total"))
+  ptm_data$data, tot_d,
+  by = c("channel", "protein_Id"), suffix = c(".site",".total"))
 ptm_data$data <- ptm_data$data |> 
   dplyr::mutate(ptm_usage = normalized_abundance.site - normalized_abundance.total)
 ```
@@ -819,7 +818,6 @@ site_annotations <- phospho_res |>
     SequenceWindow,
     posInProtein,
     modAA,
-    fasta.id,
     description,
     protein_length
   ) |>
@@ -1096,7 +1094,7 @@ if(!is_docx){
     layout = "fixed"
   ) |>
   flextable::width(j = "Contrast", width = 3) |>  # Extra wide for long formulas
-  flextable::width(j = c("channel", "name", "Group"), width = 0.8) |>
+  flextable::width(j = c("channel", "Name", "Group"), width = 0.8) |>
   flextable::width(j = "ContrastName", width = 1.2) |>
   flextable::padding(padding = 2, part = "all") |>
   flextable::set_caption(capt)
