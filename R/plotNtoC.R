@@ -404,14 +404,16 @@ n_to_c_expression_multicontrast <- function(
 
     # Add include_proteins if specified and not already in the set
     if (!is.null(include_proteins)) {
-      missing_proteins <- setdiff(include_proteins, proteins_limited$protein_Id)
-      if (length(missing_proteins) > 0) {
+      pattern <- paste(include_proteins, collapse = "|")
+      already_included <- grepl(pattern, proteins_limited$protein_Id)
+      if (!all(sapply(include_proteins, function(p) any(grepl(p, proteins_limited$protein_Id))))) {
         extra_proteins <- proteins_to_plot |>
-          dplyr::filter(.data$protein_Id %in% missing_proteins)
+          dplyr::filter(grepl(pattern, .data$protein_Id)) |>
+          dplyr::filter(!.data$protein_Id %in% proteins_limited$protein_Id)
         proteins_limited <- dplyr::bind_rows(proteins_limited, extra_proteins)
         message(
-          "Added ", nrow(extra_proteins), " requested protein(s): ",
-          paste(missing_proteins, collapse = ", ")
+          "Added ", nrow(extra_proteins), " requested protein(s) matching: ",
+          paste(include_proteins, collapse = ", ")
         )
       }
     }
@@ -560,14 +562,15 @@ n_to_c_usage_multicontrast <- function(
 
     # Add include_proteins if specified and not already in the set
     if (!is.null(include_proteins)) {
-      missing_proteins <- setdiff(include_proteins, proteins_limited[[protein_Id]])
-      if (length(missing_proteins) > 0) {
+      pattern <- paste(include_proteins, collapse = "|")
+      if (!all(sapply(include_proteins, function(p) any(grepl(p, proteins_limited[[protein_Id]]))))) {
         extra_proteins <- proteins_to_plot |>
-          dplyr::filter(!!dplyr::sym(protein_Id) %in% missing_proteins)
+          dplyr::filter(grepl(pattern, !!dplyr::sym(protein_Id))) |>
+          dplyr::filter(!.data[[protein_Id]] %in% proteins_limited[[protein_Id]])
         proteins_limited <- dplyr::bind_rows(proteins_limited, extra_proteins)
         message(
-          "Added ", nrow(extra_proteins), " requested protein(s): ",
-          paste(missing_proteins, collapse = ", ")
+          "Added ", nrow(extra_proteins), " requested protein(s) matching: ",
+          paste(include_proteins, collapse = ", ")
         )
       }
     }
