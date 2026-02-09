@@ -8,13 +8,20 @@ The `prophosqua` package provides tools for integrating and analyzing post-trans
 
 ## Overview
 
-`prophosqua` builds upon the `prolfqua` and `prolfquapp` packages to provide:
+The integrated PTM analysis is carried out using `prophosqua`, which implements three complementary statistical approaches:
 
-- **Differential PTM Feature Expression (DPE)** - Analysis of modification site abundance changes
-- **Differential PTM Feature Usage (DPU)** - Analysis of modification site usage relative to total protein
+- **DPA** (Differential PTM Abundance): tests for changes in PTM-site intensity between conditions.
+- **DPU** (Differential PTM Usage): tests whether the ratio of PTM-site to total protein intensity changes, identifying regulation independent of protein abundance.
+- **CorrectFirst**: applies protein-level correction before testing PTM sites, an alternative approach to distinguish PTM-specific regulation from protein expression changes.
+
+Building on the [prolfqua](https://github.com/prolfqua/prolfqua) and [prolfquapp](https://github.com/prolfqua/prolfquapp) packages, `prophosqua` additionally provides:
+
 - **N-to-C plots** - Visualization of phosphorylation sites along protein backbones
 - **Sequence logo analysis** - Identification of kinase recognition motifs
-- **Statistical integration** - Combined analysis of phosphoproteome and total proteome data
+- **PTM-SEA** - Post-translational modification set enrichment analysis
+- **Kinase activity inference** - Kinase library-based analysis from phosphoproteomics data
+- **Motif enrichment analysis** - MEA visualization
+- **Enrichment visualization** - Dot plots, heatmaps, and volcano plots for enrichment results
 
 ## Installation
 
@@ -67,85 +74,34 @@ combined_test_diff <- test_diff(phospho_res, tot_res, join_column = join_column)
 plot_data <- n_to_c_usage(combined_test_diff, contrast_name, FDR_threshold = 0.05)
 ```
 
-## Vignettes and Documentation
+## Vignettes
 
-The package includes comprehensive vignettes that demonstrate the complete analysis workflow:
+The package includes vignettes demonstrating the analysis workflow:
 
-### Rendering Vignettes
-
-The following code renders the vignettes and copies them to the example directory:
-
-```r
-# Render the differential expression analysis vignette
-
-wd <- "inst/PTM_analysis_example"
-
-
-rmarkdown::render("vignettes/QCReport.qmd",
-params=list(wd=wd,
-psm="ptm_example-main/qc_example_data/QCmini/psm.tsv",
-fasta="ptm_example-main/qc_example_data/fgcz_3702_UP000006548_AraUniprot_1spg_d_20231024.fasta",
-workunit="exampleQC",
-projectid="ABCD1234"))
-file.copy("vignettes/QCReport.html", file.path(wd,"QCReport.html"))
-
-# Render the PTM integration and visualization vignette  
-rmarkdown::render("vignettes/Supplementary_Material_v2.Rmd",
-params=list(wd = wd, dodea = TRUE), output_format=bookdown::pdf_document2())
-file.copy("vignettes/Supplementary_Material_v2.pdf", file.path(wd,"Supplementary_Material_v2.pdf"))
-
-rmarkdown::render("vignettes/Supplementary_Material_v2.Rmd",
-params=list(wd = wd, dodea = FALSE), output_format=bookdown::html_document2())
-file.copy("vignettes/Supplementary_Material_v2.html", file.path(wd,"Supplementary_Material_v2.html"))
-
-
-```
-
-This code:
-1. **Renders R Markdown files** to HTML using `rmarkdown::render()`
-2. **Copies the HTML files** to the `inst/PTM_analysis_example/` directory for easy access
-3. **Creates interactive reports** with code folding and navigation
-
-### Available Vignettes
-
-- **`Run_DEA_prolfquapp.Rmd`** - Complete workflow for differential expression analysis
-- **`Visualize_PTM_features.Rmd`** - Integration and visualization of PTM data
-- **Interactive reports** - Available in the `inst/PTM_analysis_example/` directory
-
-## Related Publications
-
-### Core Dependencies
-
-- **prolfqua**: [Proteomics data analysis in R](https://www.sciencedirect.com/science/article/pii/S1535947622002857) - MSstatsPTM publication
-- **prolfquapp**: [Proteomics analysis workflow package](https://www.sciencedirect.com/science/article/pii/S1535947623002190) - msqrob2PTM publication
-
-### Related Work
-
-- [MSstatsPTM](https://www.sciencedirect.com/science/article/pii/S1535947622002857) - Statistical analysis of PTM data
-- [msqrob2PTM](https://www.sciencedirect.com/science/article/pii/S1535947623002190) - Robust statistical methods for PTM analysis
-
-## GitHub Repositories
-
-- [prolfqua](https://github.com/prolfqua/prolfqua) - Core proteomics analysis package
-- [prolfquapp](https://github.com/prolfqua/prolfquapp) - Proteomics analysis workflow package
-- [prophosqua](https://github.com/prolfqua/prophosqua) - PTM integration and analysis package
-
-## Poster
-
-[Prophosqua Poster from SIBDays 2024](img/SIBDays24_Poster_Prophosqua_Grossmann.pdf)
+- **`MiMBIntegratedPTM.Rmd`** - Integrated analysis of PTM and total proteome (DPA, DPU, CorrectFirst)
+- **`Analysis_n_to_c.Rmd`** - N-to-C plots for PTM site visualization
+- **`Analysis_seqlogo.Rmd`** - Sequence logo analysis
+- **`Analysis_PTMSEA.Rmd`** - PTM-SEA analysis
+- **`Analysis_KinaseLibrary.Rmd`** - Kinase activity inference from phosphoproteomics data
+- **`Analysis_MEA.Rmd`** - Motif enrichment analysis visualization
+- **`QCReport.qmd`** - FragPipe TMT quality control report
 
 ## Citation
 
 If you use this package in your research, please cite:
 
-```bibtex
-@article{prophosqua2024,
-  title={prophosqua: Integration of phosphoproteome and total proteome data},
-  author={Functional Genomics Center Zurich},
-  journal={Bioinformatics},
-  year={2024}
-}
-```
+> Wolski W, Dittmann A, Panse C, Kunz L, Grossmann J.
+> "Integrated Analysis of Post-Translational Modifications and Total Proteome: Methods for Distinguishing Abundance from Usage Changes."
+> *Methods in Molecular Biology*, 2025 (submitted).
+
+> Grossmann J, Wolski W.
+> "prolfqua/prophosqua: 0.1.0." Zenodo, 2025.
+> DOI: [10.5281/zenodo.15845272](https://doi.org/10.5281/zenodo.15845272)
+
+## Related Packages
+
+- [prolfqua](https://github.com/prolfqua/prolfqua) - Core proteomics analysis package
+- [prolfquapp](https://github.com/prolfqua/prolfquapp) - Proteomics analysis workflow package
 
 ## Building and Deploying Documentation
 
@@ -162,7 +118,7 @@ pkgdown::build_site()
 uvx ghp-import -n -p -f docs
 ```
 
-Then enable GitHub Pages in repo settings (Settings → Pages → Source: `gh-pages` branch).
+Then enable GitHub Pages in repo settings (Settings -> Pages -> Source: `gh-pages` branch).
 
 Site: https://prolfqua.github.io/prophosqua
 
@@ -172,9 +128,7 @@ Contributions are welcome! Please visit our [GitHub repository](https://github.c
 - Issue reporting
 - Feature requests
 - Code contributions
-- Documentation improvements
 
 ## License
 
 This package is released under the [MIT License](LICENSE).
-
