@@ -1,7 +1,7 @@
 Package: prophosqua
 Type: Package
 Title: Integrate TMT-Labeled Phosphoproteomics and Total Proteomics Data
-Version: 0.2.0
+Version: 0.3.0
 Authors@R: c(
     person("Jonas", "Grossmann", role = "aut"),
     person("Witold", "Wolski", email = "witold.wolski@fgcz.uzh.ch", role = c("aut", "cre"))
