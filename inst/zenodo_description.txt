@@ -1,0 +1,18 @@
+prophosqua — Integration of phosphoproteome and total proteome data for comprehensive PTM analysis.
+
+Implements three complementary statistical approaches:
+- DPA (Differential PTM Abundance): tests for changes in PTM-site intensity between conditions.
+- DPU (Differential PTM Usage): tests whether the ratio of PTM-site to total protein intensity changes, identifying regulation independent of protein abundance.
+- CorrectFirst: applies protein-level correction before testing PTM sites.
+
+Additional features: N-to-C plots, sequence logo analysis, PTM-SEA, kinase activity inference (Kinase Library), and motif enrichment analysis (MEA).
+
+Built on prolfqua (https://github.com/prolfqua/prolfqua) and prolfquapp (https://github.com/prolfqua/prolfquapp).
+
+Installation:
+  devtools::install_github('prolfqua/prophosqua', dependencies = TRUE, build_vignettes = TRUE)
+
+Citation:
+  Wolski W, Dittmann A, Panse C, Kunz L, Grossmann J. "Integrated Analysis of Post-Translational Modifications and Total Proteome: Methods for Distinguishing Abundance from Usage Changes." Methods in Molecular Biology, 2025 (submitted).
+
+License: MIT

@@ -4,16 +4,9 @@ template:
   bootstrap: 5
 
 articles:
-  - title: Complete Workflow
-    navbar: ~
+  - title: Methods Paper
     contents:
-    - Supplementary_Material_v3
-  - title: Kinase/Motif Enrichment Analysis
+    - MiMBIntegratedPTM
+  - title: Analysis Vignettes
     contents:
-    - Analysis_PTMSEA
-    - Analysis_Motif_Enrichment
-    - Analysis_KinaseLibrary
-    - Vis_MEA
-  - title: Quality Control
-    contents:
-    - QCReport
+    - starts_with("Analysis")

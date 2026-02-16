@@ -9,6 +9,10 @@ params:
   analysis_type: "DPA"
   sheet: NULL
   output_dir: NULL
+  min_size: 15
+  max_size: 5000
+  n_perm: 100
+  top_genesets: 3
 output:
   bookdown::html_document2:
     toc: true
@@ -88,9 +92,10 @@ if (pipeline_mode) {
     stat_col = "statistic.site"
   )
 } else {
-  # Vignette mode: use example data
+  # Vignette mode: use example data (subset to 1 contrast for speed)
   data("combined_test_diff_example", package = "prophosqua")
-  data <- combined_test_diff_example
+  data <- combined_test_diff_example |>
+    filter(contrast == unique(contrast)[1])
   output_dir <- tempdir()
 
   # Define config for vignette mode
@@ -149,6 +154,14 @@ term2gene <- term2gene |>
 # Keep as TERM2GENE format for clusterProfiler GSEA
 term2gene_df <- term2gene |>
   select(term, gene)
+
+# Vignette mode: subsample to 50 kinase sets for speed
+if (!pipeline_mode) {
+  set.seed(42)
+  keep_sets <- sample(unique(term2gene_df$term), min(50, n_distinct(term2gene_df$term)))
+  term2gene_df <- term2gene_df |> filter(term %in% keep_sets)
+  message("Vignette mode: subsampled to ", length(keep_sets), " kinase sets")
+}
 ```
 
 ## Kinase-Substrate Assignment Statistics
@@ -225,10 +238,10 @@ gsea_results <- names(ranks) |>
     GSEA(
       geneList = ranks[[ct]],
       TERM2GENE = term2gene_df,
-      minGSSize = 15,
-      maxGSSize = 5000,
+      minGSSize = params$min_size,
+      maxGSSize = params$max_size,
       pvalueCutoff = 0.25,
-      nPermSimple = 500,
+      nPermSimple = params$n_perm,
       verbose = FALSE
     )
   })
@@ -238,11 +251,20 @@ gsea_info <- tibble(
   `Significant Kinases (FDR < 0.25)` = map_int(gsea_results, ~sum(.x@result$p.adjust < 0.25, na.rm = TRUE))
 )
 knitr::kable(gsea_info, caption = paste(params$analysis_type, "GSEA Results Summary"))
+
+has_gsea_results <- sum(map_int(gsea_results, ~nrow(.x@result))) > 0
+```
+
+```{r noGseaResults, eval=!has_gsea_results, results='asis'}
+cat("\n\n# No GSEA Results\n\n")
+cat("No kinase gene sets passed the size filter (min_size=", params$min_size, ").\n")
+cat("This typically means too few phosphosites overlap with kinase library assignments.\n\n")
+cat("**Coverage was:", length(overlap_seqs), "sites out of", length(our_sequences), "**\n\n")
 ```
 
 # Results by Contrast {.tabset .tabset-pills}
 
-```{r contrastPlots, results='asis', fig.height=8}
+```{r contrastPlots, results='asis', fig.height=8, eval=has_gsea_results}
 # Extract all results into data frame using shared function
 all_clean <- extract_gsea_results(gsea_results) |>
   mutate(kinase = ID)
@@ -286,7 +308,7 @@ for (ctr in unique(all_clean$contrast)) {
 
 ### Merged Dotplot
 
-```{r merged-dotplot, fig.width=14, fig.height=10}
+```{r merged-dotplot, fig.width=14, fig.height=10, eval=has_gsea_results}
 merged <- merge_result(gsea_results)
 dotplot(merged, showCategory = 15,
         title = paste(params$analysis_type, "GSEA - Kinase Library (FDR < 0.25)")) +
@@ -295,7 +317,7 @@ dotplot(merged, showCategory = 15,
 
 ### Individual Contrasts
 
-```{r individual-dotplots, fig.width=14, fig.height=10}
+```{r individual-dotplots, fig.width=14, fig.height=10, eval=has_gsea_results}
 plots <- names(gsea_results) |>
   map(function(ct) {
     res <- gsea_results[[ct]]@result
@@ -313,7 +335,7 @@ wrap_plots(plots, ncol = 2)
 
 ### NES Heatmap
 
-```{r nes-heatmap, fig.width=12, fig.height=10}
+```{r nes-heatmap, fig.width=12, fig.height=10, eval=has_gsea_results}
 # Using shared heatmap function
 plot_enrichment_heatmap(
   all_clean,
@@ -327,7 +349,7 @@ plot_enrichment_heatmap(
 
 # Volcano Plot
 
-```{r volcano-plot, fig.width=12, fig.height=8}
+```{r volcano-plot, fig.width=12, fig.height=8, eval=has_gsea_results}
 # Using shared volcano function
 plot_enrichment_volcano(
   all_clean,
@@ -339,7 +361,7 @@ plot_enrichment_volcano(
 
 # Diagnostics
 
-```{r diagnostic-pvalues}
+```{r diagnostic-pvalues, eval=has_gsea_results}
 pval_diag <- names(gsea_results) |>
   map_dfr(function(ct) {
     res <- gsea_results[[ct]]@result
@@ -356,14 +378,14 @@ knitr::kable(pval_diag, caption = paste("Raw p-value Distribution (", params$ana
 
 # Export All GSEA Plots to PDF
 
-```{r export-gsea-pdf, results='hide', eval=pipeline_mode}
+```{r export-gsea-pdf, results='hide', eval=pipeline_mode && has_gsea_results}
 # Export all GSEA enrichment plots to PDF using shared function
 pdf_file <- file.path(output_dir, paste0("GSEA_plots_", params$analysis_type, ".pdf"))
 n_plots <- export_gsea_plots_pdf(gsea_results, pdf_file)
 cat("Exported", n_plots, "GSEA plots to:", pdf_file, "\n")
 ```
 
-```{r export-gsea-pdf-vignette, results='hide', eval=!pipeline_mode}
+```{r export-gsea-pdf-vignette, results='hide', eval=!pipeline_mode && has_gsea_results}
 # Vignette mode: skip PDF export
 n_plots <- sum(map_int(gsea_results, ~nrow(.x@result)))
 message("Vignette mode: PDF export skipped. Would export ", n_plots, " plots.")
@@ -371,9 +393,9 @@ message("Vignette mode: PDF export skipped. Would export ", n_plots, " plots.")
 
 # GSEA Enrichment Plots {.tabset .tabset-pills}
 
-Showing top 10 plots per contrast. `r if(pipeline_mode) paste0("**All ", n_plots, " plots exported to PDF.**")`
+Showing top `r params$top_genesets` plots per contrast. `r if(pipeline_mode && has_gsea_results) paste0("**All ", n_plots, " plots exported to PDF.**")`
 
-```{r gsea-example-plots, results='asis', fig.width=10, fig.height=6}
+```{r gsea-example-plots, results='asis', fig.width=10, fig.height=6, eval=has_gsea_results}
 for (ct in names(gsea_results)) {
   cat("\n\n### ", ct, " {.tabset}\n\n")
 
@@ -381,7 +403,7 @@ for (ct in names(gsea_results)) {
   top10 <- res@result |>
     as_tibble() |>
     arrange(pvalue) |>
-    head(10) |>
+    head(params$top_genesets) |>
     pull(ID)
 
   for (i in seq_along(top10)) {
@@ -404,7 +426,7 @@ for (ct in names(gsea_results)) {
 
 # All Results
 
-```{r allResults}
+```{r allResults, eval=has_gsea_results}
 # All kinases across all contrasts
 all_results_dt <- names(gsea_results) |>
   map_dfr(function(ct) {
@@ -426,7 +448,7 @@ DT::datatable(all_results_dt,
 
 # Export Results
 
-```{r export, eval=pipeline_mode}
+```{r export, eval=pipeline_mode && has_gsea_results}
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 
 # Combine all results
@@ -455,7 +477,7 @@ saveRDS(gsea_results, rds_file)
 cat("Exported RDS:", rds_file, "\n")
 ```
 
-```{r export-vignette, eval=!pipeline_mode}
+```{r export-vignette, eval=!pipeline_mode && has_gsea_results}
 message("Vignette mode: File export skipped.")
 ```
 
