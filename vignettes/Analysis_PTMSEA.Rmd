@@ -11,6 +11,10 @@ params:
   output_dir: NULL
   trim_to: 15
   ptmsigdb_file: NULL
+  min_size: 10
+  max_size: 500
+  n_perm: 100
+  top_genesets: 3
 output:
   bookdown::html_document2:
     toc: true
@@ -70,9 +74,10 @@ if (pipeline_mode) {
   data <- readxl::read_xlsx(params$xlsx_file, sheet = params$sheet)
   output_dir <- if (!is.null(params$output_dir)) params$output_dir else dirname(params$xlsx_file)
 } else {
-  # Vignette mode: use example data
+  # Vignette mode: use example data (subset to 1 contrast for speed)
   data("combined_test_diff_example", package = "prophosqua")
-  data <- combined_test_diff_example
+  data <- combined_test_diff_example |>
+    dplyr::filter(contrast == unique(contrast)[1])
   output_dir <- tempdir()
 }
 
@@ -129,6 +134,14 @@ ptmsigdb_summary <- tibble(
             length(unique(unlist(pathways))))
 )
 knitr::kable(ptmsigdb_summary, caption = "PTMsigDB Signature Database Summary")
+
+# Vignette mode: subsample to 50 pathway sets for speed
+if (!pipeline_mode) {
+  set.seed(42)
+  keep_sets <- sample(names(pathways), min(50, length(pathways)))
+  pathways <- pathways[keep_sets]
+  message("Vignette mode: subsampled to ", length(keep_sets), " pathway sets")
+}
 ```
 
 # Overlap Statistics
@@ -207,9 +220,9 @@ if (n_dropped > 0) {
 results <- run_ptmsea(
   ranks_list = prep$ranks,
   pathways = pathways,
-  min_size = 10,  # Require at least 10 matches between rank file and geneset
-  max_size = 500,
-  n_perm = 500,
+  min_size = params$min_size,
+  max_size = params$max_size,
+  n_perm = params$n_perm,
   pvalueCutoff = 0.25  # Relaxed for visualization; filter later
 )
 
@@ -220,11 +233,21 @@ results_info <- tibble(
   `FDR < 0.05` = map_int(results, ~sum(.x@result$p.adjust < 0.05, na.rm = TRUE))
 )
 knitr::kable(results_info, caption = paste(params$analysis_type, "PTM-SEA Results Summary"))
+
+has_ptmsea_results <- sum(results_info$`Total Pathways`) > 0
+```
+
+```{r noPtmseaResults, eval=!has_ptmsea_results, results='asis'}
+cat("\n\n# No PTM-SEA Results\n\n")
+cat("No pathways passed the size filter (min_size=10). This typically means too few\n")
+cat("phosphosites in the input data overlap with PTMsigDB signatures.\n\n")
+cat("**Overlap was:", n_overlap, "sites out of", n_our_sites, "**\n\n")
+cat("Consider using a larger dataset or lowering `min_size`.\n\n")
 ```
 
 # Results by Contrast {.tabset .tabset-pills}
 
-```{r contrastPlots, results='asis', fig.height=8}
+```{r contrastPlots, results='asis', fig.height=8, eval=has_ptmsea_results}
 # Extract all results into data frame using shared function
 all_clean <- extract_gsea_results(results) |>
   mutate(
@@ -272,7 +295,7 @@ for (ctr in unique(all_clean$contrast)) {
 
 ## Combined Dotplot
 
-```{r combinedDotplot, fig.width=14, fig.height=10}
+```{r combinedDotplot, fig.width=14, fig.height=10, eval=has_ptmsea_results}
 merged_results <- merge_result(results)
 dotplot(merged_results, showCategory = 15,
         title = paste(params$analysis_type, "PTM-SEA (All Contrasts)")) +
@@ -281,7 +304,7 @@ dotplot(merged_results, showCategory = 15,
 
 ## Individual Contrasts
 
-```{r individualPlots, fig.width=14, fig.height=10, results='asis'}
+```{r individualPlots, fig.width=14, fig.height=10, results='asis', eval=has_ptmsea_results}
 for (ct in names(results)) {
   cat("\n\n### ", ct, "\n\n")
 
@@ -324,7 +347,7 @@ for (ct in names(results)) {
 
 # Summary Heatmap
 
-```{r summaryHeatmap, fig.width=12, fig.height=10}
+```{r summaryHeatmap, fig.width=12, fig.height=10, eval=has_ptmsea_results}
 stopifnot(
  "No GSEA results - check min_size parameter and sequence overlap" = nrow(all_clean) > 0
 )
@@ -342,7 +365,7 @@ plot_enrichment_heatmap(
 
 # Volcano Plot
 
-```{r volcanoPlot, fig.width=12, fig.height=8}
+```{r volcanoPlot, fig.width=12, fig.height=8, eval=has_ptmsea_results}
 # Using shared volcano function
 plot_enrichment_volcano(
   all_clean,
@@ -354,7 +377,7 @@ plot_enrichment_volcano(
 
 # Export All GSEA Plots to PDF
 
-```{r exportGseaPdf, results='hide', eval=pipeline_mode}
+```{r exportGseaPdf, results='hide', eval=pipeline_mode && has_ptmsea_results}
 # Export all GSEA enrichment plots to PDF using shared function
 pdf_file <- file.path(output_dir, paste0("GSEA_plots_", params$analysis_type, ".pdf"))
 n_gsea_plots <- export_gsea_plots_pdf(
@@ -364,7 +387,7 @@ n_gsea_plots <- export_gsea_plots_pdf(
 cat("Exported", n_gsea_plots, "GSEA plots to:", pdf_file, "\n")
 ```
 
-```{r exportGseaPdfVignette, results='hide', eval=!pipeline_mode}
+```{r exportGseaPdfVignette, results='hide', eval=!pipeline_mode && has_ptmsea_results}
 # Vignette mode: skip PDF export
 n_gsea_plots <- sum(map_int(results, ~nrow(.x@result)))
 message("Vignette mode: PDF export skipped. Would export ", n_gsea_plots, " plots.")
@@ -372,9 +395,9 @@ message("Vignette mode: PDF export skipped. Would export ", n_gsea_plots, " plot
 
 # GSEA Enrichment Plots {.tabset .tabset-pills}
 
-Showing top 10 plots per contrast. `r if(pipeline_mode) paste0("**All ", n_gsea_plots, " plots exported to PDF.**")`
+Showing top `r params$top_genesets` plots per contrast. `r if(pipeline_mode && has_ptmsea_results) paste0("**All ", n_gsea_plots, " plots exported to PDF.**")`
 
-```{r gseaExamplePlots, results='asis', fig.width=10, fig.height=6}
+```{r gseaExamplePlots, results='asis', fig.width=10, fig.height=6, eval=has_ptmsea_results}
 for (ct in names(results)) {
   cat("\n\n## ", ct, " {.tabset}\n\n")
 
@@ -382,7 +405,7 @@ for (ct in names(results)) {
   top10 <- res@result |>
     as_tibble() |>
     arrange(pvalue) |>
-    head(10) |>
+    head(params$top_genesets) |>
     pull(ID)
 
   for (i in seq_along(top10)) {
@@ -406,7 +429,7 @@ for (ct in names(results)) {
 
 # All Results
 
-```{r allResults}
+```{r allResults, eval=has_ptmsea_results}
 # All pathways across all contrasts
 all_clean_dt <- all_clean |>
   select(contrast, pathway = ID, NES, pvalue, FDR = p.adjust, setSize) |>
@@ -423,7 +446,7 @@ DT::datatable(all_clean_dt,
 
 # Export Results
 
-```{r export, eval=pipeline_mode}
+```{r export, eval=pipeline_mode && has_ptmsea_results}
 # Create output directory
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 
@@ -461,7 +484,7 @@ export_summary <- tibble(
 knitr::kable(export_summary, caption = "Exported Files")
 ```
 
-```{r exportVignette, eval=!pipeline_mode}
+```{r exportVignette, eval=!pipeline_mode && has_ptmsea_results}
 message("Vignette mode: File export skipped.")
 ```
 

@@ -1,4 +1,4 @@
-.PHONY: all check check-fast test build document coverage install lint format clean help
+.PHONY: all check check-fast test build document coverage install lint format clean help site deploy
 
 all: check
 
@@ -15,6 +15,8 @@ help:
 	@echo "  make lint      - run lintr"
 	@echo "  make format    - format with air"
 	@echo "  make clean     - remove build artifacts"
+	@echo "  make site      - build pkgdown site locally"
+	@echo "  make deploy    - build pkgdown site and push to gh-pages"
 
 document:
 	Rscript -e "devtools::document()"
@@ -42,6 +44,12 @@ lint:
 
 format:
 	air format .
+
+site: document
+	Rscript -e "pkgdown::build_site()"
+
+deploy: document
+	Rscript -e "pkgdown::deploy_to_branch()"
 
 clean:
 	rm -rf *.Rcheck
