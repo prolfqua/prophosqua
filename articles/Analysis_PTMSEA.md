@@ -1,76 +1,152 @@
-# PTM-SEA: Kinase Activity Inference from Phosphoproteomics Data
+# PTM-SEA Analysis
 
-## Introduction
+## Overview
 
-PTM-SEA (Post-Translational Modification Signature Enrichment Analysis)
-uses curated phosphosite signatures from PTMsigDB to infer kinase
-activities from phosphoproteomics data. This vignette demonstrates three
-approaches:
+**PTM-SEA** (Post-Translational Modification Signature Enrichment
+Analysis) for **DPA** analysis.
 
-1.  **GSEA without direction** - ignores ;u/;d suffixes in PTMsigDB
-2.  **GSEA with direction** - splits pathways into \_up and \_down sets
-3.  **ORA with direction** - over-representation analysis on significant
-    sites
+PTM-SEA uses flanking sequences and PTMsigDB signatures to infer kinase
+activities from phosphoproteomics data via ClusterProfiler’s GSEA.
 
-We analyze both DPA (Differential PTM Abundance) and DPU (Differential
-PTM Usage) results.
+**Analysis Type:** DPA
 
-## Load Data and PTMsigDB
+- **DPA**: Differential PTM Abundance - raw phosphosite changes
+  (includes protein abundance effects)
+- **DPU**: Differential PTM Usage - protein-normalized changes (true
+  stoichiometry changes)
+- **CF**: CorrectFirst - alternative protein-correction approach
+
+## Load Libraries and Data
 
 ``` r
 
 library(prophosqua)
 library(clusterProfiler)
 library(dplyr)
+library(DT)
 library(enrichplot)
 library(fgsea)
+library(forcats)
 library(purrr)
-
-# Load example data
-example_path <- here::here("data", "combined_test_diff_example.rds")
-example_data <- readRDS(example_path)
-
-data_info <- tibble(
-  Property = c("Rows", "Columns", "Contrasts"),
-  Value = c(nrow(example_data), ncol(example_data),
-            paste(unique(example_data$contrast), collapse = ", "))
-)
-knitr::kable(data_info, caption = "Example Data")
+library(readxl)
+library(writexl)
+library(ggplot2)
 ```
-
-| Property | Value |
-|:---|:---|
-| Rows | 105824 |
-| Columns | 56 |
-| Contrasts | KO_vs_WT, KO_vs_WT_at_Early, KO_vs_WT_at_Late, KO_vs_WT_at_Uninfect |
-
-Example Data {.table}
 
 ``` r
 
-# Download PTMsigDB signatures
-gmt_path <- download_ptmsigdb(species = "mouse", output_dir = tempdir())
-pathways_raw <- fgsea::gmtPathways(gmt_path)
+if (pipeline_mode) {
+  # Pipeline mode: load from Excel file
+  data <- readxl::read_xlsx(params$xlsx_file, sheet = params$sheet)
+  output_dir <- if (!is.null(params$output_dir)) params$output_dir else dirname(params$xlsx_file)
+} else {
+  # Vignette mode: use example data (subset to 1 contrast for speed)
+  data("combined_test_diff_example", package = "prophosqua")
+  data <- combined_test_diff_example |>
+    dplyr::filter(contrast == unique(contrast)[1])
+  output_dir <- tempdir()
+}
 
-# Trim pathways to 11-mer (default) to increase overlap with our data
-pathways <- trim_ptmsigdb_pathways(pathways_raw, trim_to = "11")
+data_info <- tibble(
+  Property = c("Mode", "Sheet", "Stat Column", "Rows", "Columns", "Contrasts"),
+  Value = c(
+    if (pipeline_mode) basename(params$xlsx_file) else "Example data",
+    params$sheet, params$stat_column,
+    nrow(data), ncol(data),
+    paste(unique(data$contrast), collapse = ", ")
+  )
+)
+knitr::kable(data_info, caption = "Input Data Summary")
+```
+
+| Property    | Value                   |
+|:------------|:------------------------|
+| Mode        | Example data            |
+| Sheet       | combinedSiteProteinData |
+| Stat Column | statistic.site          |
+| Rows        | 26456                   |
+| Columns     | 56                      |
+| Contrasts   | KO_vs_WT                |
+
+Input Data Summary {.table}
+
+## Load PTMsigDB Signatures
+
+``` r
+
+# Load PTMsigDB - try multiple sources
+ptmsigdb_file <- params$ptmsigdb_file
+
+if (is.null(ptmsigdb_file) || !file.exists(ptmsigdb_file)) {
+  # Try bundled resource (compressed)
+  bundled_zip <- system.file("extdata", "ptmsigdb_kinase.rds.zip", package = "prophosqua")
+  if (file.exists(bundled_zip)) {
+    temp_dir <- tempdir()
+    unzip(bundled_zip, exdir = temp_dir)
+    ptmsigdb_file <- file.path(temp_dir, "ptmsigdb_filtered_KINASE_15mer.rds")
+    message("Using bundled PTMsigDB from prophosqua package")
+  }
+}
+
+if (is.null(ptmsigdb_file) || !file.exists(ptmsigdb_file)) {
+  stop("PTMsigDB file not found. Provide via params$ptmsigdb_file or install prophosqua with bundled data.")
+}
+
+# Load pathways
+if (grepl("\\.rds$", ptmsigdb_file)) {
+  pathways <- readRDS(ptmsigdb_file)
+  message("Loaded ", length(pathways), " pathways from RDS")
+} else {
+  pathways <- fgsea::gmtPathways(ptmsigdb_file)
+  message("Loaded ", length(pathways), " pathways from GMT")
+}
+
+# Count categories
+n_kinase <- sum(grepl("^KINASE-", names(pathways)))
+n_path <- sum(grepl("^PATH-", names(pathways)))
+
+# Summary table
+ptmsigdb_summary <- tibble(
+  Property = c("Source File", "Total Signatures", "KINASE signatures", "PATH signatures", "Unique Sites"),
+  Value = c(basename(ptmsigdb_file), length(pathways), n_kinase, n_path,
+            length(unique(unlist(pathways))))
+)
+knitr::kable(ptmsigdb_summary, caption = "PTMsigDB Signature Database Summary")
+```
+
+| Property          | Value                              |
+|:------------------|:-----------------------------------|
+| Source File       | ptmsigdb_filtered_KINASE_15mer.rds |
+| Total Signatures  | 662                                |
+| KINASE signatures | 662                                |
+| PATH signatures   | 0                                  |
+| Unique Sites      | 16279                              |
+
+PTMsigDB Signature Database Summary {.table}
+
+``` r
+
+# Vignette mode: subsample to 50 pathway sets for speed
+if (!pipeline_mode) {
+  set.seed(42)
+  keep_sets <- sample(names(pathways), min(50, length(pathways)))
+  pathways <- pathways[keep_sets]
+  message("Vignette mode: subsampled to ", length(keep_sets), " pathway sets")
+}
 ```
 
 ## Overlap Statistics
 
-Understanding the overlap between our data and PTMsigDB is crucial for
-interpreting results.
-
 ``` r
 
-# Our data: unique flanking sequences (trimmed to 11-mer to match pathways)
-our_sequences <- example_data |>
+# Our data: unique flanking sequences (trimmed to match pathways)
+our_sequences <- data |>
   pull(SequenceWindow) |>
   trimws() |>
   toupper() |>
   unique()
 our_sequences_trimmed <- our_sequences |>
-  map_chr(~prophosqua:::trim_flanking_seq(.x, trim_to = 11L))
+  map_chr(~prophosqua:::trim_flanking_seq(.x, trim_to = params$trim_to))
 our_site_ids <- paste0(our_sequences_trimmed, "-p")
 n_our_sites <- n_distinct(our_site_ids)
 
@@ -89,388 +165,388 @@ n_overlap <- length(overlap_ids)
 
 overlap_stats <- tibble(
   Metric = c("Our data (unique sequences)", "PTMsigDB (unique site IDs)", "Overlap",
-             "% of our sites", "% of PTMsigDB sites"),
+             "% of our sites in PTMsigDB", "% of PTMsigDB sites in our data"),
   Value = c(n_our_sites, n_ptmsigdb_sites, n_overlap,
             round(100 * n_overlap / n_our_sites, 2),
             round(100 * n_overlap / n_ptmsigdb_sites, 2))
 )
-knitr::kable(overlap_stats, caption = "Overlap Statistics (11-mer)")
+knitr::kable(overlap_stats, caption = paste0("Overlap Statistics (", params$trim_to, "-mer)"))
 ```
 
-| Metric                      |    Value |
-|:----------------------------|---------:|
-| Our data (unique sequences) | 21653.00 |
-| PTMsigDB (unique site IDs)  |  1746.00 |
-| Overlap                     |   331.00 |
-| % of our sites              |     1.53 |
-| % of PTMsigDB sites         |    18.96 |
+| Metric                          |    Value |
+|:--------------------------------|---------:|
+| Our data (unique sequences)     | 21683.00 |
+| PTMsigDB (unique site IDs)      |  2838.00 |
+| Overlap                         |   282.00 |
+| % of our sites in PTMsigDB      |     1.30 |
+| % of PTMsigDB sites in our data |     9.94 |
 
-Overlap Statistics (11-mer) {.table}
+Overlap Statistics (15-mer) {.table}
 
-The low overlap is expected because:
-
-1.  PTMsigDB contains curated kinase-substrate relationships (~1,700
-    unique sites)
-2.  Our phosphoproteomics data measures ~20,000+ sites
-3.  Most measured sites have no known kinase annotation
-
-## DPA Analysis (Differential PTM Abundance)
-
-DPA uses raw phosphosite fold changes, which include both true signaling
-changes and protein abundance effects.
-
-### Prepare DPA Data
+## Prepare Rank Data
 
 ``` r
 
-# Use t-statistic for ranking
-prep_dpa <- ptmsea_data_prep(
-  data = example_data,
-  stat_column = "statistic.site",
+# Prepare ranks using prophosqua (trim_to must match pathways)
+prep <- ptmsea_data_prep(
+  data = data,
+  stat_column = params$stat_column,
   seq_window_col = "SequenceWindow",
-  contrast_col = "contrast"
+  contrast_col = "contrast",
+  trim_to = as.character(params$trim_to)
 )
 
-dpa_prep_info <- tibble(
-  Contrast = names(prep_dpa$ranks),
-  Sites = map_int(prep_dpa$ranks, length)
+prep_info <- tibble(
+  Contrast = names(prep$ranks),
+  Sites = map_int(prep$ranks, length)
 )
-knitr::kable(dpa_prep_info, caption = "DPA Contrasts Prepared")
+knitr::kable(prep_info, caption = paste(params$analysis_type, "Contrasts Prepared"))
 ```
 
-| Contrast             | Sites |
-|:---------------------|------:|
-| KO_vs_WT             | 21652 |
-| KO_vs_WT_at_Early    | 21652 |
-| KO_vs_WT_at_Late     | 21652 |
-| KO_vs_WT_at_Uninfect | 21652 |
+| Contrast | Sites |
+|:---------|------:|
+| KO_vs_WT | 21682 |
 
 DPA Contrasts Prepared {.table}
 
-### DPA: GSEA without Direction
+``` r
 
-Standard GSEA ignoring the ;u/;d direction suffixes in PTMsigDB.
+# Count dropped sequences (handle empty lists/NULL values)
+n_dropped <- 0
+if (length(prep$dropped) > 0) {
+  n_dropped <- sum(map_int(prep$dropped, ~{
+    if (is.null(.x) || length(.x) == 0) return(0L)
+    if (is.data.frame(.x)) return(nrow(.x))
+    return(length(.x))
+  }))
+}
+
+if (n_dropped > 0) {
+  message("Note: ", n_dropped, " duplicate sequences were dropped.")
+}
+```
+
+## Run PTM-SEA (GSEA)
 
 ``` r
 
-results_dpa_nodir <- run_ptmsea(
-  ranks_list = prep_dpa$ranks,
+results <- run_ptmsea(
+  ranks_list = prep$ranks,
   pathways = pathways,
-  min_size = 3,
-  max_size = 500,
-  n_perm = 1000,
-  pvalueCutoff = 0.1
+  min_size = params$min_size,
+  max_size = params$max_size,
+  n_perm = params$n_perm,
+  pvalueCutoff = 0.25  # Relaxed for visualization; filter later
 )
 
-dpa_nodir_info <- tibble(
-  Contrast = names(results_dpa_nodir),
-  `Significant (FDR < 0.1)` = map_int(results_dpa_nodir, ~nrow(.x@result))
+results_info <- tibble(
+  Contrast = names(results),
+  `Total Pathways` = map_int(results, ~nrow(.x@result)),
+  `FDR < 0.1` = map_int(results, ~sum(.x@result$p.adjust < 0.1, na.rm = TRUE)),
+  `FDR < 0.05` = map_int(results, ~sum(.x@result$p.adjust < 0.05, na.rm = TRUE))
 )
-knitr::kable(dpa_nodir_info, caption = "DPA GSEA (no direction) Results")
+knitr::kable(results_info, caption = paste(params$analysis_type, "PTM-SEA Results Summary"))
 ```
 
-| Contrast             | Significant (FDR \< 0.1) |
-|:---------------------|-------------------------:|
-| KO_vs_WT             |                        5 |
-| KO_vs_WT_at_Early    |                        5 |
-| KO_vs_WT_at_Late     |                        8 |
-| KO_vs_WT_at_Uninfect |                        0 |
+| Contrast | Total Pathways | FDR \< 0.1 | FDR \< 0.05 |
+|:---------|---------------:|-----------:|------------:|
+| KO_vs_WT |              0 |          0 |           0 |
 
-DPA GSEA (no direction) Results {.table}
+DPA PTM-SEA Results Summary {.table}
 
 ``` r
 
-merged_dpa_nodir <- merge_result(results_dpa_nodir)
-dotplot(merged_dpa_nodir, showCategory = 10,
-        title = "DPA GSEA (no direction) - Significant (FDR < 0.1)") +
-  ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
+has_ptmsea_results <- sum(results_info$`Total Pathways`) > 0
 ```
-
-![](Analysis_PTMSEA_files/figure-html/dpa_gsea_nodir_plot-1.png)
-
-### DPA: GSEA with Direction
-
-Splits pathways into \_up and \_down sets, runs ascending and
-descending.
 
 ``` r
 
-results_dpa_dir <- run_ptmsea_up_down(
-  ranks_list = prep_dpa$ranks,
-  pathways = pathways,
-  min_size = 3,
-  max_size = 500,
-  n_perm = 1000,
-  pvalueCutoff = 0.1
-)
-
-dpa_dir_info <- tibble(
-  Contrast = names(results_dpa_dir),
-  `Significant (FDR < 0.1)` = map_int(results_dpa_dir, ~nrow(.x@result))
-)
-knitr::kable(dpa_dir_info, caption = "DPA GSEA (with direction) Results")
+cat("\n\n# No PTM-SEA Results\n\n")
 ```
 
-| Contrast                        | Significant (FDR \< 0.1) |
-|:--------------------------------|-------------------------:|
-| KO_vs_WT_descending             |                        6 |
-| KO_vs_WT_ascending              |                        3 |
-| KO_vs_WT_at_Early_descending    |                        5 |
-| KO_vs_WT_at_Early_ascending     |                        5 |
-| KO_vs_WT_at_Late_descending     |                        8 |
-| KO_vs_WT_at_Late_ascending      |                        7 |
-| KO_vs_WT_at_Uninfect_descending |                        0 |
-| KO_vs_WT_at_Uninfect_ascending  |                        0 |
-
-DPA GSEA (with direction) Results {.table}
+## No PTM-SEA Results
 
 ``` r
 
-merged_dpa_dir <- merge_result(results_dpa_dir)
-dotplot(merged_dpa_dir, showCategory = 10,
-        title = "DPA GSEA (with direction) - Significant (FDR < 0.1)") +
-  ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
+cat("No pathways passed the size filter (min_size=10). This typically means too few\n")
 ```
 
-![](Analysis_PTMSEA_files/figure-html/dpa_gsea_dir_plot-1.png)
-
-## DPU Analysis (Differential PTM Usage)
-
-DPU uses protein-normalized phosphosite fold changes, representing true
-stoichiometry changes independent of protein abundance.
-
-### Prepare DPU Data
+No pathways passed the size filter (min_size=10). This typically means
+too few
 
 ``` r
 
-# Use t-statistic for DPU ranking
-prep_dpu <- ptmsea_data_prep(
-  data = example_data,
-  stat_column = "tstatistic_I",
-  seq_window_col = "SequenceWindow",
-  contrast_col = "contrast"
-)
-
-dpu_prep_info <- tibble(
-  Contrast = names(prep_dpu$ranks),
-  Sites = map_int(prep_dpu$ranks, length)
-)
-knitr::kable(dpu_prep_info, caption = "DPU Contrasts Prepared")
+cat("phosphosites in the input data overlap with PTMsigDB signatures.\n\n")
 ```
 
-| Contrast             | Sites |
-|:---------------------|------:|
-| KO_vs_WT             | 20920 |
-| KO_vs_WT_at_Early    | 20920 |
-| KO_vs_WT_at_Late     | 20920 |
-| KO_vs_WT_at_Uninfect | 20920 |
-
-DPU Contrasts Prepared {.table}
-
-### DPU: GSEA without Direction
+phosphosites in the input data overlap with PTMsigDB signatures.
 
 ``` r
 
-results_dpu_nodir <- run_ptmsea(
-  ranks_list = prep_dpu$ranks,
-  pathways = pathways,
-  min_size = 3,
-  max_size = 500,
-  n_perm = 1000,
-  pvalueCutoff = 0.1
-)
-
-dpu_nodir_info <- tibble(
-  Contrast = names(results_dpu_nodir),
-  `Significant (FDR < 0.1)` = map_int(results_dpu_nodir, ~nrow(.x@result))
-)
-knitr::kable(dpu_nodir_info, caption = "DPU GSEA (no direction) Results")
+cat("**Overlap was:", n_overlap, "sites out of", n_our_sites, "**\n\n")
 ```
 
-| Contrast             | Significant (FDR \< 0.1) |
-|:---------------------|-------------------------:|
-| KO_vs_WT             |                        1 |
-| KO_vs_WT_at_Early    |                        2 |
-| KO_vs_WT_at_Late     |                        7 |
-| KO_vs_WT_at_Uninfect |                        0 |
-
-DPU GSEA (no direction) Results {.table}
+**Overlap was: 282 sites out of 21683**
 
 ``` r
 
-merged_dpu_nodir <- merge_result(results_dpu_nodir)
-dotplot(merged_dpu_nodir, showCategory = 10,
-        title = "DPU GSEA (no direction) - Significant (FDR < 0.1)") +
-  ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
+cat("Consider using a larger dataset or lowering `min_size`.\n\n")
 ```
 
-![](Analysis_PTMSEA_files/figure-html/dpu_gsea_nodir_plot-1.png)
+Consider using a larger dataset or lowering `min_size`.
 
-### DPU: GSEA with Direction
+## Results by Contrast
 
 ``` r
 
-results_dpu_dir <- run_ptmsea_up_down(
-  ranks_list = prep_dpu$ranks,
-  pathways = pathways,
-  min_size = 3,
-  max_size = 500,
-  n_perm = 1000,
-  pvalueCutoff = 0.1
-)
+# Extract all results into data frame using shared function
+all_clean <- extract_gsea_results(results) |>
+  mutate(
+    pathway = ID,
+    pathway_short = gsub("^(KINASE|PERT|PATH|DISEASE)-PSP_", "", ID) |>
+      substr(1, 40)
+  )
 
-dpu_dir_info <- tibble(
-  Contrast = names(results_dpu_dir),
-  `Significant (FDR < 0.1)` = map_int(results_dpu_dir, ~nrow(.x@result))
-)
-knitr::kable(dpu_dir_info, caption = "DPU GSEA (with direction) Results")
+for (ctr in unique(all_clean$contrast)) {
+  cat("\n\n## ", ctr, "\n\n")
+
+  ctr_data <- all_clean |> filter(contrast == ctr)
+  n_sig <- sum(ctr_data$p.adjust < 0.1, na.rm = TRUE)
+  cat("**Significant pathways (FDR < 0.1):** ", n_sig, "\n\n")
+
+  # Using shared dotplot function
+  p <- plot_enrichment_dotplot(
+    ctr_data,
+    item_col = "pathway_short",
+    fdr_col = "p.adjust",
+    title = paste0(params$analysis_type, " - ", ctr),
+    subtitle = "Top 30 pathways by FDR"
+  )
+  print(p)
+  cat("\n\n")
+
+  # Significant pathways table
+  cat("### Significant Pathways\n\n")
+  sig_table <- ctr_data |>
+    filter(p.adjust < 0.1) |>
+    select(pathway_short, NES, pvalue, FDR = p.adjust, setSize) |>
+    arrange(FDR) |>
+    mutate(across(where(is.numeric), ~round(.x, 4)))
+  print(htmltools::tagList(
+    DT::datatable(sig_table,
+                  extensions = 'Buttons',
+                  options = list(pageLength = 15, scrollX = TRUE,
+                                 dom = 'Bfrtip', buttons = c('copy', 'csv', 'excel')))
+  ))
+  cat("\n\n")
+}
 ```
 
-| Contrast                        | Significant (FDR \< 0.1) |
-|:--------------------------------|-------------------------:|
-| KO_vs_WT_descending             |                        1 |
-| KO_vs_WT_ascending              |                        1 |
-| KO_vs_WT_at_Early_descending    |                        1 |
-| KO_vs_WT_at_Early_ascending     |                        1 |
-| KO_vs_WT_at_Late_descending     |                        7 |
-| KO_vs_WT_at_Late_ascending      |                        7 |
-| KO_vs_WT_at_Uninfect_descending |                        0 |
-| KO_vs_WT_at_Uninfect_ascending  |                        0 |
+## clusterProfiler Dotplots
 
-DPU GSEA (with direction) Results {.table}
+### Combined Dotplot
 
 ``` r
 
-merged_dpu_dir <- merge_result(results_dpu_dir)
-dotplot(merged_dpu_dir, showCategory = 10,
-        title = "DPU GSEA (with direction) - Significant (FDR < 0.1)") +
-  ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
+merged_results <- merge_result(results)
+dotplot(merged_results, showCategory = 15,
+        title = paste(params$analysis_type, "PTM-SEA (All Contrasts)")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-![](Analysis_PTMSEA_files/figure-html/dpu_gsea_dir_plot-1.png)
-
-### DPU: ORA with Direction
-
-Over-representation analysis on significant sites for all contrasts.
-When `fc_col` is provided, sites are split into up-regulated and
-down-regulated sets for separate ORA tests.
+### Individual Contrasts
 
 ``` r
 
-# Convert pathways to TERM2GENE format and strip direction suffixes
-term2gene <- ptmsigdb_to_term2gene(pathways) |>
-  mutate(gene = gsub(";[ud]$", "", gene))
+for (ct in names(results)) {
+  cat("\n\n### ", ct, "\n\n")
 
-# Get all PTMsigDB site IDs (stripped, without ;u/;d)
-ptmsigdb_sites <- unique(term2gene$gene)
+  res <- results[[ct]]
 
-# Run ORA for each contrast (up and down separately)
-contrasts <- unique(example_data$contrast)
+  # Check if there are any results to plot (dotplot fails on empty data)
+  n_results <- nrow(res@result)
+  if (n_results == 0) {
+    cat("No pathways met the pvalue cutoff for this contrast.\n\n")
+    next
+  }
 
-ora_prep_list <- contrasts |>
-  set_names() |>
-  map(function(contrast_name) {
-    contrast_data <- example_data |>
-      filter(contrast == contrast_name)
+  p <- dotplot(res, showCategory = 15, title = ct) +
+    theme(axis.text.y = element_text(size = 8))
+  print(p)
 
-    prep_ora <- ptmsea_ora_prep(
-      data = contrast_data,
-      ptmsigdb_sites = ptmsigdb_sites,
-      score_col = "FDR_I",
-      fc_col = "diff_diff",
-      threshold = 0.1
+  # Show top pathways table
+  top_res <- res@result |>
+    as_tibble() |>
+    filter(p.adjust < 0.25) |>
+    arrange(pvalue) |>
+    head(10) |>
+    select(ID, NES, pvalue, p.adjust, setSize) |>
+    mutate(
+      NES = round(NES, 3),
+      pvalue = signif(pvalue, 3),
+      p.adjust = signif(p.adjust, 3)
     )
-
-    tibble(
-      Contrast = contrast_name,
-      Up = length(prep_ora$enriched_up),
-      Down = length(prep_ora$enriched_down),
-      Background = length(prep_ora$background)
-    )
-  }) |>
-  bind_rows()
-
-ora_results <- contrasts |>
-  map(function(contrast_name) {
-    contrast_data <- example_data |>
-      filter(contrast == contrast_name)
-
-    prep_ora <- ptmsea_ora_prep(
-      data = contrast_data,
-      ptmsigdb_sites = ptmsigdb_sites,
-      score_col = "FDR_I",
-      fc_col = "diff_diff",
-      threshold = 0.1
-    )
-
-    results <- list()
-
-    # ORA for up-regulated sites
-    if (length(prep_ora$enriched_up) > 0) {
-      ora_up <- enricher(
-        gene = prep_ora$enriched_up,
-        universe = prep_ora$background,
-        TERM2GENE = term2gene,
-        pvalueCutoff = 0.1
-      )
-      if (!is.null(ora_up) && nrow(ora_up@result) > 0) {
-        results[[paste0(contrast_name, "_up")]] <- ora_up
-      }
-    }
-
-    # ORA for down-regulated sites
-    if (length(prep_ora$enriched_down) > 0) {
-      ora_down <- enricher(
-        gene = prep_ora$enriched_down,
-        universe = prep_ora$background,
-        TERM2GENE = term2gene,
-        pvalueCutoff = 0.1
-      )
-      if (!is.null(ora_down) && nrow(ora_down@result) > 0) {
-        results[[paste0(contrast_name, "_down")]] <- ora_down
-      }
-    }
-
-    results
-  }) |>
-  list_flatten()
-
-knitr::kable(ora_prep_list, caption = "ORA Preparation Summary")
+  print(htmltools::tagList(
+    DT::datatable(top_res,
+                  extensions = 'Buttons',
+                  options = list(pageLength = 10, scrollX = TRUE,
+                                 dom = 'Bfrtip', buttons = c('copy', 'csv', 'excel')),
+                  caption = paste("Top Pathways -", ct))
+  ))
+  cat("\n\n")
+}
 ```
 
-| Contrast             |  Up | Down | Background |
-|:---------------------|----:|-----:|-----------:|
-| KO_vs_WT             |  40 |   21 |        323 |
-| KO_vs_WT_at_Early    |  16 |    5 |        323 |
-| KO_vs_WT_at_Late     |  22 |    5 |        323 |
-| KO_vs_WT_at_Uninfect |   1 |    1 |        323 |
-
-ORA Preparation Summary {.table}
+## Summary Heatmap
 
 ``` r
 
-if (length(ora_results) > 0) {
-  merged_ora <- merge_result(ora_results)
-  if (nrow(merged_ora@compareClusterResult) > 0) {
-    print(dotplot(merged_ora, showCategory = 10,
-            title = "DPU ORA (up/down separate) - Significant (FDR < 0.1)") +
-      ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)))
+stopifnot(
+ "No GSEA results - check min_size parameter and sequence overlap" = nrow(all_clean) > 0
+)
+
+# Using shared heatmap function with pathway_short labels
+plot_enrichment_heatmap(
+  all_clean,
+  item_col = "ID",
+  fdr_col = "p.adjust",
+  n_top = 25,
+  item_label_col = "pathway_short",
+  title = paste0("PTM-SEA Summary - ", params$analysis_type)
+)
+```
+
+## Volcano Plot
+
+``` r
+
+# Using shared volcano function
+plot_enrichment_volcano(
+  all_clean,
+  item_col = "pathway_short",
+  fdr_col = "p.adjust",
+  title = paste(params$analysis_type, "- PTM-SEA Volcano Plots")
+)
+```
+
+## Export All GSEA Plots to PDF
+
+``` r
+
+# Export all GSEA enrichment plots to PDF using shared function
+pdf_file <- file.path(output_dir, paste0("GSEA_plots_", params$analysis_type, ".pdf"))
+n_gsea_plots <- export_gsea_plots_pdf(
+  results, pdf_file,
+  prefix_pattern = "^(KINASE|PERT|PATH|DISEASE)-PSP_"
+)
+cat("Exported", n_gsea_plots, "GSEA plots to:", pdf_file, "\n")
+```
+
+``` r
+
+# Vignette mode: skip PDF export
+n_gsea_plots <- sum(map_int(results, ~nrow(.x@result)))
+message("Vignette mode: PDF export skipped. Would export ", n_gsea_plots, " plots.")
+```
+
+## GSEA Enrichment Plots
+
+Showing top 3 plots per contrast.
+
+``` r
+
+for (ct in names(results)) {
+  cat("\n\n## ", ct, " {.tabset}\n\n")
+
+  res <- results[[ct]]
+  top10 <- res@result |>
+    as_tibble() |>
+    arrange(pvalue) |>
+    head(params$top_genesets) |>
+    pull(ID)
+
+  for (i in seq_along(top10)) {
+    geneset <- top10[i]
+    pathway_short <- gsub("^(KINASE|PERT|PATH|DISEASE)-PSP_", "", geneset)
+    cat("\n\n### ", pathway_short, "\n\n")
+
+    row <- res@result |>
+      as_tibble() |>
+      filter(ID == geneset)
+    nes_val <- round(row$NES, 2)
+    fdr <- signif(row$p.adjust, 2)
+
+    p <- gseaplot2(res, geneSetID = geneset,
+      title = paste0(pathway_short, " (NES=", nes_val, ", FDR=", fdr, ")"))
+    print(p)
+    cat("\n\n")
   }
 }
 ```
 
-![](Analysis_PTMSEA_files/figure-html/dpu_ora_plot-1.png)
+## All Results
 
-## Interpretation
+``` r
 
-- **DPA results** show kinase activity changes including protein
-  abundance effects
-- **DPU results** show kinase activity changes independent of protein
-  abundance
+# All pathways across all contrasts
+all_clean_dt <- all_clean |>
+  select(contrast, pathway = ID, NES, pvalue, FDR = p.adjust, setSize) |>
+  arrange(contrast, FDR) |>
+  mutate(across(where(is.numeric), ~round(.x, 4)))
 
-Kinases appearing significant in **DPU but not DPA** represent genuine
-signaling changes. Kinases appearing in **DPA but not DPU** may be
-driven by protein abundance changes.
+DT::datatable(all_clean_dt,
+  filter = "top",
+  extensions = 'Buttons',
+  options = list(pageLength = 15, scrollX = TRUE,
+                 dom = 'Bfrtip', buttons = c('copy', 'csv', 'excel')),
+  caption = "All pathways across all contrasts")
+```
+
+## Export Results
+
+``` r
+
+# Create output directory
+dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+
+# Prepare export data
+export_data <- all_clean |> arrange(contrast, pvalue)
+
+export_list <- list(all_clean = export_data)
+
+# Add per-contrast sheets
+for (ct in unique(export_data$contrast)) {
+  sheet_name <- gsub("[^a-zA-Z0-9_]", "_", substr(ct, 1, 31))
+  export_list[[sheet_name]] <- export_data |> filter(contrast == ct)
+}
+
+# Add significant results sheet
+export_list[["significant_FDR10"]] <- export_data |> filter(p.adjust < 0.1)
+
+# Write Excel
+xlsx_file <- file.path(output_dir, paste0("PTMSEA_", params$analysis_type, "_results.xlsx"))
+writexl::write_xlsx(export_list, xlsx_file)
+
+# Save RDS with full results objects
+rds_file <- file.path(output_dir, paste0("PTMSEA_", params$analysis_type, "_results.rds"))
+saveRDS(results, rds_file)
+
+# Export summary
+export_summary <- tibble(
+  Output = c("Excel results", "RDS object"),
+  File = c(xlsx_file, rds_file),
+  Size = c(
+    paste(round(file.size(xlsx_file) / 1024, 1), "KB"),
+    paste(round(file.size(rds_file) / 1024, 1), "KB")
+  )
+)
+knitr::kable(export_summary, caption = "Exported Files")
+```
+
+``` r
+
+message("Vignette mode: File export skipped.")
+```
 
 ## Session Info
 
@@ -481,7 +557,7 @@ sessionInfo()
 
     ## R version 4.5.2 (2025-10-31)
     ## Platform: aarch64-apple-darwin20
-    ## Running under: macOS Tahoe 26.1
+    ## Running under: macOS Tahoe 26.3
     ## 
     ## Matrix products: default
     ## BLAS:   /System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/libBLAS.dylib 
@@ -497,44 +573,45 @@ sessionInfo()
     ## [1] stats     graphics  grDevices utils     datasets  methods   base     
     ## 
     ## other attached packages:
-    ## [1] purrr_1.2.0            fgsea_1.36.0           enrichplot_1.30.3     
-    ## [4] dplyr_1.1.4            clusterProfiler_4.18.1 prophosqua_0.2.0      
+    ##  [1] ggplot2_4.0.2          writexl_1.5.4          readxl_1.4.5          
+    ##  [4] purrr_1.2.1            forcats_1.0.1          fgsea_1.36.0          
+    ##  [7] enrichplot_1.30.3      DT_0.34.0              dplyr_1.2.0           
+    ## [10] clusterProfiler_4.18.1 prophosqua_0.3.0      
     ## 
     ## loaded via a namespace (and not attached):
-    ##   [1] DBI_1.2.3               gson_0.1.0              rlang_1.1.6            
-    ##   [4] magrittr_2.0.4          DOSE_4.4.0              compiler_4.5.2         
-    ##   [7] RSQLite_2.4.5           png_0.1-8               systemfonts_1.3.1      
-    ##  [10] vctrs_0.6.5             reshape2_1.4.5          stringr_1.6.0          
-    ##  [13] pkgconfig_2.0.3         crayon_1.5.3            fastmap_1.2.0          
-    ##  [16] XVector_0.50.0          labeling_0.4.3          rmarkdown_2.30         
-    ##  [19] ragg_1.5.0              bit_4.6.0               xfun_0.54              
-    ##  [22] ggseqlogo_0.2           cachem_1.1.0            aplot_0.2.9            
+    ##   [1] DBI_1.2.3               gson_0.1.0              rlang_1.1.7            
+    ##   [4] magrittr_2.0.4          DOSE_4.4.0              otel_0.2.0             
+    ##   [7] compiler_4.5.2          RSQLite_2.4.5           png_0.1-8              
+    ##  [10] systemfonts_1.3.1       vctrs_0.7.1             reshape2_1.4.5         
+    ##  [13] stringr_1.6.0           pkgconfig_2.0.3         crayon_1.5.3           
+    ##  [16] fastmap_1.2.0           XVector_0.50.0          rmarkdown_2.30         
+    ##  [19] ragg_1.5.0              bit_4.6.0               xfun_0.55              
+    ##  [22] ggseqlogo_0.2.2         cachem_1.1.0            aplot_0.2.9            
     ##  [25] jsonlite_2.0.0          blob_1.2.4              BiocParallel_1.44.0    
     ##  [28] parallel_4.5.2          R6_2.6.1                bslib_0.9.0            
-    ##  [31] stringi_1.8.7           RColorBrewer_1.1-3      jquerylib_0.1.4        
-    ##  [34] GOSemSim_2.36.0         Rcpp_1.1.0              Seqinfo_1.0.0          
-    ##  [37] bookdown_0.46           knitr_1.50              ggtangle_0.0.9         
-    ##  [40] R.utils_2.13.0          IRanges_2.44.0          Matrix_1.7-4           
-    ##  [43] splines_4.5.2           igraph_2.2.1            tidyselect_1.2.1       
-    ##  [46] qvalue_2.42.0           yaml_2.3.11             codetools_0.2-20       
-    ##  [49] lattice_0.22-7          tibble_3.3.0            plyr_1.8.9             
-    ##  [52] withr_3.0.2             Biobase_2.70.0          treeio_1.34.0          
-    ##  [55] KEGGREST_1.50.0         S7_0.2.1                evaluate_1.0.5         
-    ##  [58] gridGraphics_0.5-1      desc_1.4.3              Biostrings_2.78.0      
-    ##  [61] pillar_1.11.1           ggtree_4.0.1            stats4_4.5.2           
-    ##  [64] ggfun_0.2.0             generics_0.1.4          rprojroot_2.1.1        
-    ##  [67] S4Vectors_0.48.0        ggplot2_4.0.1           scales_1.4.0           
-    ##  [70] tidytree_0.4.6          glue_1.8.0              gdtools_0.4.4          
-    ##  [73] lazyeval_0.2.2          tools_4.5.2             data.table_1.17.8      
-    ##  [76] ggiraph_0.9.2           fs_1.6.6                fastmatch_1.1-6        
-    ##  [79] cowplot_1.2.0           grid_4.5.2              tidyr_1.3.1            
-    ##  [82] ape_5.8-1               AnnotationDbi_1.72.0    nlme_3.1-168           
-    ##  [85] patchwork_1.3.2         cli_3.6.5               rappdirs_0.3.3         
-    ##  [88] textshaping_1.0.4       fontBitstreamVera_0.1.1 gtable_0.3.6           
-    ##  [91] R.methodsS3_1.8.2       yulab.utils_0.2.2       sass_0.4.10            
-    ##  [94] digest_0.6.39           fontquiver_0.2.1        BiocGenerics_0.56.0    
-    ##  [97] ggrepel_0.9.6           ggplotify_0.1.3         htmlwidgets_1.6.4      
-    ## [100] farver_2.1.2            memoise_2.0.1           htmltools_0.5.9        
-    ## [103] pkgdown_2.2.0           R.oo_1.27.1             lifecycle_1.0.4        
-    ## [106] here_1.0.2              httr_1.4.7              GO.db_3.22.0           
-    ## [109] fontLiberation_0.1.0    bit64_4.6.0-1
+    ##  [31] stringi_1.8.7           RColorBrewer_1.1-3      cellranger_1.1.0       
+    ##  [34] jquerylib_0.1.4         GOSemSim_2.36.0         Rcpp_1.1.1             
+    ##  [37] Seqinfo_1.0.0           bookdown_0.46           knitr_1.51             
+    ##  [40] ggtangle_0.0.9          R.utils_2.13.0          IRanges_2.44.0         
+    ##  [43] Matrix_1.7-4            splines_4.5.2           igraph_2.2.1           
+    ##  [46] tidyselect_1.2.1        qvalue_2.42.0           yaml_2.3.12            
+    ##  [49] codetools_0.2-20        lattice_0.22-7          tibble_3.3.1           
+    ##  [52] plyr_1.8.9              withr_3.0.2             treeio_1.34.0          
+    ##  [55] Biobase_2.70.0          KEGGREST_1.50.0         S7_0.2.1               
+    ##  [58] evaluate_1.0.5          gridGraphics_0.5-1      desc_1.4.3             
+    ##  [61] Biostrings_2.78.0       pillar_1.11.1           ggtree_4.0.1           
+    ##  [64] stats4_4.5.2            ggfun_0.2.0             generics_0.1.4         
+    ##  [67] S4Vectors_0.48.0        scales_1.4.0            tidytree_0.4.6         
+    ##  [70] glue_1.8.0              gdtools_0.4.4           lazyeval_0.2.2         
+    ##  [73] tools_4.5.2             data.table_1.18.0       ggiraph_0.9.2          
+    ##  [76] fs_1.6.6                fastmatch_1.1-6         cowplot_1.2.0          
+    ##  [79] grid_4.5.2              tidyr_1.3.2             ape_5.8-1              
+    ##  [82] AnnotationDbi_1.72.0    nlme_3.1-168            patchwork_1.3.2        
+    ##  [85] cli_3.6.5               rappdirs_0.3.3          textshaping_1.0.4      
+    ##  [88] fontBitstreamVera_0.1.1 gtable_0.3.6            R.methodsS3_1.8.2      
+    ##  [91] yulab.utils_0.2.2       fontquiver_0.2.1        sass_0.4.10            
+    ##  [94] digest_0.6.39           BiocGenerics_0.56.0     ggrepel_0.9.6          
+    ##  [97] ggplotify_0.1.3         htmlwidgets_1.6.4       farver_2.1.2           
+    ## [100] memoise_2.0.1           htmltools_0.5.9         pkgdown_2.2.0          
+    ## [103] R.oo_1.27.1             lifecycle_1.0.5         httr_1.4.7             
+    ## [106] GO.db_3.22.0            fontLiberation_0.1.0    bit64_4.6.0-1

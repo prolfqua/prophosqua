@@ -5,12 +5,12 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>PTM-SEA: Kinase Activity Inference from Phosphoproteomics Data • prophosqua</title>
+<title>PTM-SEA Analysis • prophosqua</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="PTM-SEA: Kinase Activity Inference from Phosphoproteomics Data">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="PTM-SEA Analysis">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">prophosqua</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -30,14 +30,7 @@
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
-<li class="active nav-item dropdown">
-  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/Supplementary_Material_v3.html">Integrated Analysis of Post-Translational Modifications and Total Proteome: Methods for Distinguishing Abundance from Usage Changes</a></li>
-    <li><hr class="dropdown-divider"></li>
-    <li><a class="dropdown-item" href="../articles/index.html">More articles...</a></li>
-  </ul>
-</li>
+<li class="nav-item"><a class="nav-link" href="../articles/index.html">Articles</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -57,8 +50,11 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>PTM-SEA: Kinase Activity Inference from Phosphoproteomics Data</h1>
+      <h1>PTM-SEA Analysis</h1>
+            <h3 data-toc-skip class="subtitle">DPA</h3>
+                        <h4 data-toc-skip class="author">FGCZ</h4>
             
+            <h4 data-toc-skip class="date">16 February, 2026</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/prolfqua/prophosqua/blob/HEAD/vignettes/Analysis_PTMSEA.Rmd" class="external-link"><code>vignettes/Analysis_PTMSEA.Rmd</code></a></small>
       <div class="d-none name"><code>Analysis_PTMSEA.Rmd</code></div>
@@ -67,95 +63,190 @@
     
     
 <div class="section level2">
-<h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
+<h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
-<p>PTM-SEA (Post-Translational Modification Signature Enrichment
-Analysis) uses curated phosphosite signatures from PTMsigDB to infer
-kinase activities from phosphoproteomics data. This vignette
-demonstrates three approaches:</p>
-<ol style="list-style-type: decimal">
+<p><strong>PTM-SEA</strong> (Post-Translational Modification Signature
+Enrichment Analysis) for <strong>DPA</strong> analysis.</p>
+<p>PTM-SEA uses flanking sequences and PTMsigDB signatures to infer
+kinase activities from phosphoproteomics data via ClusterProfiler’s
+GSEA.</p>
+<p><strong>Analysis Type:</strong> DPA</p>
+<ul>
 <li>
-<strong>GSEA without direction</strong> - ignores ;u/;d suffixes in
-PTMsigDB</li>
+<strong>DPA</strong>: Differential PTM Abundance - raw phosphosite
+changes (includes protein abundance effects)</li>
 <li>
-<strong>GSEA with direction</strong> - splits pathways into _up and
-_down sets</li>
+<strong>DPU</strong>: Differential PTM Usage - protein-normalized
+changes (true stoichiometry changes)</li>
 <li>
-<strong>ORA with direction</strong> - over-representation analysis
-on significant sites</li>
-</ol>
-<p>We analyze both DPA (Differential PTM Abundance) and DPU
-(Differential PTM Usage) results.</p>
+<strong>CF</strong>: CorrectFirst - alternative protein-correction
+approach</li>
+</ul>
 </div>
 <div class="section level2">
-<h2 id="load-data-and-ptmsigdb">Load Data and PTMsigDB<a class="anchor" aria-label="anchor" href="#load-data-and-ptmsigdb"></a>
+<h2 id="load-libraries-and-data">Load Libraries and Data<a class="anchor" aria-label="anchor" href="#load-libraries-and-data"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://prolfqua.github.io/prophosqua">prophosqua</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://yulab-smu.top/contribution-knowledge-mining/" class="external-link">clusterProfiler</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/rstudio/DT" class="external-link">DT</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://yulab-smu.top/contribution-knowledge-mining/" class="external-link">enrichplot</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/ctlab/fgsea/" class="external-link">fgsea</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://forcats.tidyverse.org/" class="external-link">forcats</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://purrr.tidyverse.org/" class="external-link">purrr</a></span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Load example data</span></span>
-<span><span class="va">example_path</span> <span class="op">&lt;-</span> <span class="fu">here</span><span class="fu">::</span><span class="fu"><a href="https://here.r-lib.org/reference/here.html" class="external-link">here</a></span><span class="op">(</span><span class="st">"data"</span>, <span class="st">"combined_test_diff_example.rds"</span><span class="op">)</span></span>
-<span><span class="va">example_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="va">example_path</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://readxl.tidyverse.org" class="external-link">readxl</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ropensci.r-universe.dev/writexl" class="external-link">writexl</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="va">pipeline_mode</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="co"># Pipeline mode: load from Excel file</span></span>
+<span>  <span class="va">data</span> <span class="op">&lt;-</span> <span class="fu">readxl</span><span class="fu">::</span><span class="fu"><a href="https://readxl.tidyverse.org/reference/read_excel.html" class="external-link">read_xlsx</a></span><span class="op">(</span><span class="va">params</span><span class="op">$</span><span class="va">xlsx_file</span>, sheet <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">sheet</span><span class="op">)</span></span>
+<span>  <span class="va">output_dir</span> <span class="op">&lt;-</span> <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">params</span><span class="op">$</span><span class="va">output_dir</span><span class="op">)</span><span class="op">)</span> <span class="va">params</span><span class="op">$</span><span class="va">output_dir</span> <span class="kw">else</span> <span class="fu"><a href="https://rdrr.io/r/base/basename.html" class="external-link">dirname</a></span><span class="op">(</span><span class="va">params</span><span class="op">$</span><span class="va">xlsx_file</span><span class="op">)</span></span>
+<span><span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span>  <span class="co"># Vignette mode: use example data (subset to 1 contrast for speed)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"combined_test_diff_example"</span>, package <span class="op">=</span> <span class="st">"prophosqua"</span><span class="op">)</span></span>
+<span>  <span class="va">data</span> <span class="op">&lt;-</span> <span class="va">combined_test_diff_example</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">contrast</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">contrast</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span></span>
+<span>  <span class="va">output_dir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
 <span></span>
 <span><span class="va">data_info</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
-<span>  Property <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Rows"</span>, <span class="st">"Columns"</span>, <span class="st">"Contrasts"</span><span class="op">)</span>,</span>
-<span>  Value <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">example_data</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">example_data</span><span class="op">)</span>,</span>
-<span>            <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">example_data</span><span class="op">$</span><span class="va">contrast</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span><span class="op">)</span></span>
+<span>  Property <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Mode"</span>, <span class="st">"Sheet"</span>, <span class="st">"Stat Column"</span>, <span class="st">"Rows"</span>, <span class="st">"Columns"</span>, <span class="st">"Contrasts"</span><span class="op">)</span>,</span>
+<span>  Value <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="kw">if</span> <span class="op">(</span><span class="va">pipeline_mode</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/basename.html" class="external-link">basename</a></span><span class="op">(</span><span class="va">params</span><span class="op">$</span><span class="va">xlsx_file</span><span class="op">)</span> <span class="kw">else</span> <span class="st">"Example data"</span>,</span>
+<span>    <span class="va">params</span><span class="op">$</span><span class="va">sheet</span>, <span class="va">params</span><span class="op">$</span><span class="va">stat_column</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">contrast</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">data_info</span>, caption <span class="op">=</span> <span class="st">"Example Data"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">data_info</span>, caption <span class="op">=</span> <span class="st">"Input Data Summary"</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
-<caption>Example Data</caption>
-<colgroup>
-<col width="12%">
-<col width="87%">
-</colgroup>
+<caption>Input Data Summary</caption>
 <thead><tr class="header">
 <th align="left">Property</th>
 <th align="left">Value</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left">Rows</td>
-<td align="left">105824</td>
+<td align="left">Mode</td>
+<td align="left">Example data</td>
 </tr>
 <tr class="even">
+<td align="left">Sheet</td>
+<td align="left">combinedSiteProteinData</td>
+</tr>
+<tr class="odd">
+<td align="left">Stat Column</td>
+<td align="left">statistic.site</td>
+</tr>
+<tr class="even">
+<td align="left">Rows</td>
+<td align="left">26456</td>
+</tr>
+<tr class="odd">
 <td align="left">Columns</td>
 <td align="left">56</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">Contrasts</td>
-<td align="left">KO_vs_WT, KO_vs_WT_at_Early, KO_vs_WT_at_Late,
-KO_vs_WT_at_Uninfect</td>
+<td align="left">KO_vs_WT</td>
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Download PTMsigDB signatures</span></span>
-<span><span class="va">gmt_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/download_ptmsigdb.html">download_ptmsigdb</a></span><span class="op">(</span>species <span class="op">=</span> <span class="st">"mouse"</span>, output_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">pathways_raw</span> <span class="op">&lt;-</span> <span class="fu">fgsea</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/fgsea/man/gmtPathways.html" class="external-link">gmtPathways</a></span><span class="op">(</span><span class="va">gmt_path</span><span class="op">)</span></span>
+</div>
+<div class="section level2">
+<h2 id="load-ptmsigdb-signatures">Load PTMsigDB Signatures<a class="anchor" aria-label="anchor" href="#load-ptmsigdb-signatures"></a>
+</h2>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Load PTMsigDB - try multiple sources</span></span>
+<span><span class="va">ptmsigdb_file</span> <span class="op">&lt;-</span> <span class="va">params</span><span class="op">$</span><span class="va">ptmsigdb_file</span></span>
 <span></span>
-<span><span class="co"># Trim pathways to 11-mer (default) to increase overlap with our data</span></span>
-<span><span class="va">pathways</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/trim_ptmsigdb_pathways.html">trim_ptmsigdb_pathways</a></span><span class="op">(</span><span class="va">pathways_raw</span>, trim_to <span class="op">=</span> <span class="st">"11"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">ptmsigdb_file</span><span class="op">)</span> <span class="op">||</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="va">ptmsigdb_file</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="co"># Try bundled resource (compressed)</span></span>
+<span>  <span class="va">bundled_zip</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"ptmsigdb_kinase.rds.zip"</span>, package <span class="op">=</span> <span class="st">"prophosqua"</span><span class="op">)</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="va">bundled_zip</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="va">temp_dir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/utils/unzip.html" class="external-link">unzip</a></span><span class="op">(</span><span class="va">bundled_zip</span>, exdir <span class="op">=</span> <span class="va">temp_dir</span><span class="op">)</span></span>
+<span>    <span class="va">ptmsigdb_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">temp_dir</span>, <span class="st">"ptmsigdb_filtered_KINASE_15mer.rds"</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"Using bundled PTMsigDB from prophosqua package"</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">ptmsigdb_file</span><span class="op">)</span> <span class="op">||</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="va">ptmsigdb_file</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"PTMsigDB file not found. Provide via params$ptmsigdb_file or install prophosqua with bundled data."</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="co"># Load pathways</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"\\.rds$"</span>, <span class="va">ptmsigdb_file</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">pathways</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="va">ptmsigdb_file</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"Loaded "</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">pathways</span><span class="op">)</span>, <span class="st">" pathways from RDS"</span><span class="op">)</span></span>
+<span><span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span>  <span class="va">pathways</span> <span class="op">&lt;-</span> <span class="fu">fgsea</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/fgsea/man/gmtPathways.html" class="external-link">gmtPathways</a></span><span class="op">(</span><span class="va">ptmsigdb_file</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"Loaded "</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">pathways</span><span class="op">)</span>, <span class="st">" pathways from GMT"</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="co"># Count categories</span></span>
+<span><span class="va">n_kinase</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"^KINASE-"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">pathways</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">n_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"^PATH-"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">pathways</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Summary table</span></span>
+<span><span class="va">ptmsigdb_summary</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
+<span>  Property <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Source File"</span>, <span class="st">"Total Signatures"</span>, <span class="st">"KINASE signatures"</span>, <span class="st">"PATH signatures"</span>, <span class="st">"Unique Sites"</span><span class="op">)</span>,</span>
+<span>  Value <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/basename.html" class="external-link">basename</a></span><span class="op">(</span><span class="va">ptmsigdb_file</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">pathways</span><span class="op">)</span>, <span class="va">n_kinase</span>, <span class="va">n_path</span>,</span>
+<span>            <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">pathways</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">ptmsigdb_summary</span>, caption <span class="op">=</span> <span class="st">"PTMsigDB Signature Database Summary"</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<caption>PTMsigDB Signature Database Summary</caption>
+<thead><tr class="header">
+<th align="left">Property</th>
+<th align="left">Value</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">Source File</td>
+<td align="left">ptmsigdb_filtered_KINASE_15mer.rds</td>
+</tr>
+<tr class="even">
+<td align="left">Total Signatures</td>
+<td align="left">662</td>
+</tr>
+<tr class="odd">
+<td align="left">KINASE signatures</td>
+<td align="left">662</td>
+</tr>
+<tr class="even">
+<td align="left">PATH signatures</td>
+<td align="left">0</td>
+</tr>
+<tr class="odd">
+<td align="left">Unique Sites</td>
+<td align="left">16279</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Vignette mode: subsample to 50 pathway sets for speed</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="va">pipeline_mode</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
+<span>  <span class="va">keep_sets</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">pathways</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fl">50</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">pathways</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="va">pathways</span> <span class="op">&lt;-</span> <span class="va">pathways</span><span class="op">[</span><span class="va">keep_sets</span><span class="op">]</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"Vignette mode: subsampled to "</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">keep_sets</span><span class="op">)</span>, <span class="st">" pathway sets"</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="overlap-statistics">Overlap Statistics<a class="anchor" aria-label="anchor" href="#overlap-statistics"></a>
 </h2>
-<p>Understanding the overlap between our data and PTMsigDB is crucial
-for interpreting results.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Our data: unique flanking sequences (trimmed to 11-mer to match pathways)</span></span>
-<span><span class="va">our_sequences</span> <span class="op">&lt;-</span> <span class="va">example_data</span> <span class="op">|&gt;</span></span>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Our data: unique flanking sequences (trimmed to match pathways)</span></span>
+<span><span class="va">our_sequences</span> <span class="op">&lt;-</span> <span class="va">data</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/pull.html" class="external-link">pull</a></span><span class="op">(</span><span class="va">SequenceWindow</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/trimws.html" class="external-link">trimws</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/chartr.html" class="external-link">toupper</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">our_sequences_trimmed</span> <span class="op">&lt;-</span> <span class="va">our_sequences</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map_chr</a></span><span class="op">(</span><span class="op">~</span><span class="fu">prophosqua</span><span class="fu">:::</span><span class="fu"><a href="../reference/trim_flanking_seq.html">trim_flanking_seq</a></span><span class="op">(</span><span class="va">.x</span>, trim_to <span class="op">=</span> <span class="fl">11L</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map_chr</a></span><span class="op">(</span><span class="op">~</span><span class="fu">prophosqua</span><span class="fu">:::</span><span class="fu"><a href="../reference/trim_flanking_seq.html">trim_flanking_seq</a></span><span class="op">(</span><span class="va">.x</span>, trim_to <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">trim_to</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">our_site_ids</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">our_sequences_trimmed</span>, <span class="st">"-p"</span><span class="op">)</span></span>
 <span><span class="va">n_our_sites</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/n_distinct.html" class="external-link">n_distinct</a></span><span class="op">(</span><span class="va">our_site_ids</span><span class="op">)</span></span>
 <span></span>
@@ -174,14 +265,14 @@ for interpreting results.</p>
 <span></span>
 <span><span class="va">overlap_stats</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span>  Metric <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Our data (unique sequences)"</span>, <span class="st">"PTMsigDB (unique site IDs)"</span>, <span class="st">"Overlap"</span>,</span>
-<span>             <span class="st">"% of our sites"</span>, <span class="st">"% of PTMsigDB sites"</span><span class="op">)</span>,</span>
+<span>             <span class="st">"% of our sites in PTMsigDB"</span>, <span class="st">"% of PTMsigDB sites in our data"</span><span class="op">)</span>,</span>
 <span>  Value <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">n_our_sites</span>, <span class="va">n_ptmsigdb_sites</span>, <span class="va">n_overlap</span>,</span>
 <span>            <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fl">100</span> <span class="op">*</span> <span class="va">n_overlap</span> <span class="op">/</span> <span class="va">n_our_sites</span>, <span class="fl">2</span><span class="op">)</span>,</span>
 <span>            <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fl">100</span> <span class="op">*</span> <span class="va">n_overlap</span> <span class="op">/</span> <span class="va">n_ptmsigdb_sites</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">overlap_stats</span>, caption <span class="op">=</span> <span class="st">"Overlap Statistics (11-mer)"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">overlap_stats</span>, caption <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Overlap Statistics ("</span>, <span class="va">params</span><span class="op">$</span><span class="va">trim_to</span>, <span class="st">"-mer)"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
-<caption>Overlap Statistics (11-mer)</caption>
+<caption>Overlap Statistics (15-mer)</caption>
 <thead><tr class="header">
 <th align="left">Metric</th>
 <th align="right">Value</th>
@@ -189,522 +280,376 @@ for interpreting results.</p>
 <tbody>
 <tr class="odd">
 <td align="left">Our data (unique sequences)</td>
-<td align="right">21653.00</td>
+<td align="right">21683.00</td>
 </tr>
 <tr class="even">
 <td align="left">PTMsigDB (unique site IDs)</td>
-<td align="right">1746.00</td>
+<td align="right">2838.00</td>
 </tr>
 <tr class="odd">
 <td align="left">Overlap</td>
-<td align="right">331.00</td>
+<td align="right">282.00</td>
 </tr>
 <tr class="even">
-<td align="left">% of our sites</td>
-<td align="right">1.53</td>
+<td align="left">% of our sites in PTMsigDB</td>
+<td align="right">1.30</td>
 </tr>
 <tr class="odd">
-<td align="left">% of PTMsigDB sites</td>
-<td align="right">18.96</td>
+<td align="left">% of PTMsigDB sites in our data</td>
+<td align="right">9.94</td>
 </tr>
 </tbody>
 </table>
-<p>The low overlap is expected because:</p>
-<ol style="list-style-type: decimal">
-<li>PTMsigDB contains curated kinase-substrate relationships (~1,700
-unique sites)</li>
-<li>Our phosphoproteomics data measures ~20,000+ sites</li>
-<li>Most measured sites have no known kinase annotation</li>
-</ol>
 </div>
 <div class="section level2">
-<h2 id="dpa-analysis-differential-ptm-abundance">DPA Analysis (Differential PTM Abundance)<a class="anchor" aria-label="anchor" href="#dpa-analysis-differential-ptm-abundance"></a>
+<h2 id="prepare-rank-data">Prepare Rank Data<a class="anchor" aria-label="anchor" href="#prepare-rank-data"></a>
 </h2>
-<p>DPA uses raw phosphosite fold changes, which include both true
-signaling changes and protein abundance effects.</p>
-<div class="section level3">
-<h3 id="prepare-dpa-data">Prepare DPA Data<a class="anchor" aria-label="anchor" href="#prepare-dpa-data"></a>
-</h3>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Use t-statistic for ranking</span></span>
-<span><span class="va">prep_dpa</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ptmsea_data_prep.html">ptmsea_data_prep</a></span><span class="op">(</span></span>
-<span>  data <span class="op">=</span> <span class="va">example_data</span>,</span>
-<span>  stat_column <span class="op">=</span> <span class="st">"statistic.site"</span>,</span>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Prepare ranks using prophosqua (trim_to must match pathways)</span></span>
+<span><span class="va">prep</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ptmsea_data_prep.html">ptmsea_data_prep</a></span><span class="op">(</span></span>
+<span>  data <span class="op">=</span> <span class="va">data</span>,</span>
+<span>  stat_column <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">stat_column</span>,</span>
 <span>  seq_window_col <span class="op">=</span> <span class="st">"SequenceWindow"</span>,</span>
-<span>  contrast_col <span class="op">=</span> <span class="st">"contrast"</span></span>
+<span>  contrast_col <span class="op">=</span> <span class="st">"contrast"</span>,</span>
+<span>  trim_to <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">params</span><span class="op">$</span><span class="va">trim_to</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">dpa_prep_info</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
-<span>  Contrast <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">prep_dpa</span><span class="op">$</span><span class="va">ranks</span><span class="op">)</span>,</span>
-<span>  Sites <span class="op">=</span> <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map_int</a></span><span class="op">(</span><span class="va">prep_dpa</span><span class="op">$</span><span class="va">ranks</span>, <span class="va">length</span><span class="op">)</span></span>
+<span><span class="va">prep_info</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
+<span>  Contrast <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">prep</span><span class="op">$</span><span class="va">ranks</span><span class="op">)</span>,</span>
+<span>  Sites <span class="op">=</span> <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map_int</a></span><span class="op">(</span><span class="va">prep</span><span class="op">$</span><span class="va">ranks</span>, <span class="va">length</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">dpa_prep_info</span>, caption <span class="op">=</span> <span class="st">"DPA Contrasts Prepared"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">prep_info</span>, caption <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">params</span><span class="op">$</span><span class="va">analysis_type</span>, <span class="st">"Contrasts Prepared"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <caption>DPA Contrasts Prepared</caption>
 <thead><tr class="header">
 <th align="left">Contrast</th>
 <th align="right">Sites</th>
 </tr></thead>
-<tbody>
-<tr class="odd">
+<tbody><tr class="odd">
 <td align="left">KO_vs_WT</td>
-<td align="right">21652</td>
-</tr>
-<tr class="even">
-<td align="left">KO_vs_WT_at_Early</td>
-<td align="right">21652</td>
-</tr>
-<tr class="odd">
-<td align="left">KO_vs_WT_at_Late</td>
-<td align="right">21652</td>
-</tr>
-<tr class="even">
-<td align="left">KO_vs_WT_at_Uninfect</td>
-<td align="right">21652</td>
-</tr>
-</tbody>
+<td align="right">21682</td>
+</tr></tbody>
 </table>
-</div>
-<div class="section level3">
-<h3 id="dpa-gsea-without-direction">DPA: GSEA without Direction<a class="anchor" aria-label="anchor" href="#dpa-gsea-without-direction"></a>
-</h3>
-<p>Standard GSEA ignoring the ;u/;d direction suffixes in PTMsigDB.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">results_dpa_nodir</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_ptmsea.html">run_ptmsea</a></span><span class="op">(</span></span>
-<span>  ranks_list <span class="op">=</span> <span class="va">prep_dpa</span><span class="op">$</span><span class="va">ranks</span>,</span>
-<span>  pathways <span class="op">=</span> <span class="va">pathways</span>,</span>
-<span>  min_size <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  max_size <span class="op">=</span> <span class="fl">500</span>,</span>
-<span>  n_perm <span class="op">=</span> <span class="fl">1000</span>,</span>
-<span>  pvalueCutoff <span class="op">=</span> <span class="fl">0.1</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">dpa_nodir_info</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
-<span>  Contrast <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">results_dpa_nodir</span><span class="op">)</span>,</span>
-<span>  `Significant (FDR &lt; 0.1)` <span class="op">=</span> <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map_int</a></span><span class="op">(</span><span class="va">results_dpa_nodir</span>, <span class="op">~</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">.x</span><span class="op">@</span><span class="va">result</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">dpa_nodir_info</span>, caption <span class="op">=</span> <span class="st">"DPA GSEA (no direction) Results"</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<caption>DPA GSEA (no direction) Results</caption>
-<thead><tr class="header">
-<th align="left">Contrast</th>
-<th align="right">Significant (FDR &lt; 0.1)</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">KO_vs_WT</td>
-<td align="right">5</td>
-</tr>
-<tr class="even">
-<td align="left">KO_vs_WT_at_Early</td>
-<td align="right">5</td>
-</tr>
-<tr class="odd">
-<td align="left">KO_vs_WT_at_Late</td>
-<td align="right">8</td>
-</tr>
-<tr class="even">
-<td align="left">KO_vs_WT_at_Uninfect</td>
-<td align="right">0</td>
-</tr>
-</tbody>
-</table>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">merged_dpa_nodir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/clusterProfiler/man/merge_result.html" class="external-link">merge_result</a></span><span class="op">(</span><span class="va">results_dpa_nodir</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/enrichplot/man/dotplot.html" class="external-link">dotplot</a></span><span class="op">(</span><span class="va">merged_dpa_nodir</span>, showCategory <span class="op">=</span> <span class="fl">10</span>,</span>
-<span>        title <span class="op">=</span> <span class="st">"DPA GSEA (no direction) - Significant (FDR &lt; 0.1)"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>axis.text.x <span class="op">=</span> <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>angle <span class="op">=</span> <span class="fl">45</span>, hjust <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="Analysis_PTMSEA_files/figure-html/dpa_gsea_nodir_plot-1.png" class="r-plt" width="1152"></p>
-</div>
-<div class="section level3">
-<h3 id="dpa-gsea-with-direction">DPA: GSEA with Direction<a class="anchor" aria-label="anchor" href="#dpa-gsea-with-direction"></a>
-</h3>
-<p>Splits pathways into _up and _down sets, runs ascending and
-descending.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">results_dpa_dir</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_ptmsea_up_down.html">run_ptmsea_up_down</a></span><span class="op">(</span></span>
-<span>  ranks_list <span class="op">=</span> <span class="va">prep_dpa</span><span class="op">$</span><span class="va">ranks</span>,</span>
+<code class="sourceCode R"><span><span class="co"># Count dropped sequences (handle empty lists/NULL values)</span></span>
+<span><span class="va">n_dropped</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">prep</span><span class="op">$</span><span class="va">dropped</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">n_dropped</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map_int</a></span><span class="op">(</span><span class="va">prep</span><span class="op">$</span><span class="va">dropped</span>, <span class="op">~</span><span class="op">{</span></span>
+<span>    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">.x</span><span class="op">)</span> <span class="op">||</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">.x</span><span class="op">)</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="fl">0L</span><span class="op">)</span></span>
+<span>    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">is.data.frame</a></span><span class="op">(</span><span class="va">.x</span><span class="op">)</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">.x</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">.x</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="op">}</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="va">n_dropped</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"Note: "</span>, <span class="va">n_dropped</span>, <span class="st">" duplicate sequences were dropped."</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="run-ptm-sea-gsea">Run PTM-SEA (GSEA)<a class="anchor" aria-label="anchor" href="#run-ptm-sea-gsea"></a>
+</h2>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_ptmsea.html">run_ptmsea</a></span><span class="op">(</span></span>
+<span>  ranks_list <span class="op">=</span> <span class="va">prep</span><span class="op">$</span><span class="va">ranks</span>,</span>
 <span>  pathways <span class="op">=</span> <span class="va">pathways</span>,</span>
-<span>  min_size <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  max_size <span class="op">=</span> <span class="fl">500</span>,</span>
-<span>  n_perm <span class="op">=</span> <span class="fl">1000</span>,</span>
-<span>  pvalueCutoff <span class="op">=</span> <span class="fl">0.1</span></span>
+<span>  min_size <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">min_size</span>,</span>
+<span>  max_size <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">max_size</span>,</span>
+<span>  n_perm <span class="op">=</span> <span class="va">params</span><span class="op">$</span><span class="va">n_perm</span>,</span>
+<span>  pvalueCutoff <span class="op">=</span> <span class="fl">0.25</span>  <span class="co"># Relaxed for visualization; filter later</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">dpa_dir_info</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
-<span>  Contrast <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">results_dpa_dir</span><span class="op">)</span>,</span>
-<span>  `Significant (FDR &lt; 0.1)` <span class="op">=</span> <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map_int</a></span><span class="op">(</span><span class="va">results_dpa_dir</span>, <span class="op">~</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">.x</span><span class="op">@</span><span class="va">result</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">results_info</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
+<span>  Contrast <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">results</span><span class="op">)</span>,</span>
+<span>  `Total Pathways` <span class="op">=</span> <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map_int</a></span><span class="op">(</span><span class="va">results</span>, <span class="op">~</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">.x</span><span class="op">@</span><span class="va">result</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  `FDR &lt; 0.1` <span class="op">=</span> <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map_int</a></span><span class="op">(</span><span class="va">results</span>, <span class="op">~</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">.x</span><span class="op">@</span><span class="va">result</span><span class="op">$</span><span class="va">p.adjust</span> <span class="op">&lt;</span> <span class="fl">0.1</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  `FDR &lt; 0.05` <span class="op">=</span> <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map_int</a></span><span class="op">(</span><span class="va">results</span>, <span class="op">~</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">.x</span><span class="op">@</span><span class="va">result</span><span class="op">$</span><span class="va">p.adjust</span> <span class="op">&lt;</span> <span class="fl">0.05</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">dpa_dir_info</span>, caption <span class="op">=</span> <span class="st">"DPA GSEA (with direction) Results"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">results_info</span>, caption <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">params</span><span class="op">$</span><span class="va">analysis_type</span>, <span class="st">"PTM-SEA Results Summary"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
-<caption>DPA GSEA (with direction) Results</caption>
+<caption>DPA PTM-SEA Results Summary</caption>
 <thead><tr class="header">
 <th align="left">Contrast</th>
-<th align="right">Significant (FDR &lt; 0.1)</th>
+<th align="right">Total Pathways</th>
+<th align="right">FDR &lt; 0.1</th>
+<th align="right">FDR &lt; 0.05</th>
 </tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">KO_vs_WT_descending</td>
-<td align="right">6</td>
-</tr>
-<tr class="even">
-<td align="left">KO_vs_WT_ascending</td>
-<td align="right">3</td>
-</tr>
-<tr class="odd">
-<td align="left">KO_vs_WT_at_Early_descending</td>
-<td align="right">5</td>
-</tr>
-<tr class="even">
-<td align="left">KO_vs_WT_at_Early_ascending</td>
-<td align="right">5</td>
-</tr>
-<tr class="odd">
-<td align="left">KO_vs_WT_at_Late_descending</td>
-<td align="right">8</td>
-</tr>
-<tr class="even">
-<td align="left">KO_vs_WT_at_Late_ascending</td>
-<td align="right">7</td>
-</tr>
-<tr class="odd">
-<td align="left">KO_vs_WT_at_Uninfect_descending</td>
+<tbody><tr class="odd">
+<td align="left">KO_vs_WT</td>
 <td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">KO_vs_WT_at_Uninfect_ascending</td>
 <td align="right">0</td>
-</tr>
-</tbody>
+<td align="right">0</td>
+</tr></tbody>
 </table>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">merged_dpa_dir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/clusterProfiler/man/merge_result.html" class="external-link">merge_result</a></span><span class="op">(</span><span class="va">results_dpa_dir</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/enrichplot/man/dotplot.html" class="external-link">dotplot</a></span><span class="op">(</span><span class="va">merged_dpa_dir</span>, showCategory <span class="op">=</span> <span class="fl">10</span>,</span>
-<span>        title <span class="op">=</span> <span class="st">"DPA GSEA (with direction) - Significant (FDR &lt; 0.1)"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>axis.text.x <span class="op">=</span> <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>angle <span class="op">=</span> <span class="fl">45</span>, hjust <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="Analysis_PTMSEA_files/figure-html/dpa_gsea_dir_plot-1.png" class="r-plt" width="1344"></p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">has_ptmsea_results</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">results_info</span><span class="op">$</span><span class="va">`Total Pathways`</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span></span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n\n# No PTM-SEA Results\n\n"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="no-ptm-sea-results">No PTM-SEA Results<a class="anchor" aria-label="anchor" href="#no-ptm-sea-results"></a>
+</h2>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"No pathways passed the size filter (min_size=10). This typically means too few\n"</span><span class="op">)</span></span></code></pre></div>
+<p>No pathways passed the size filter (min_size=10). This typically
+means too few</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"phosphosites in the input data overlap with PTMsigDB signatures.\n\n"</span><span class="op">)</span></span></code></pre></div>
+<p>phosphosites in the input data overlap with PTMsigDB signatures.</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"**Overlap was:"</span>, <span class="va">n_overlap</span>, <span class="st">"sites out of"</span>, <span class="va">n_our_sites</span>, <span class="st">"**\n\n"</span><span class="op">)</span></span></code></pre></div>
+<p><strong>Overlap was: 282 sites out of 21683 </strong></p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Consider using a larger dataset or lowering `min_size`.\n\n"</span><span class="op">)</span></span></code></pre></div>
+<p>Consider using a larger dataset or lowering
+<code>min_size</code>.</p>
+</div>
+<div class="section level2">
+<h2 class="tabset tabset-pills" id="results-by-contrast">Results by Contrast<a class="anchor" aria-label="anchor" href="#results-by-contrast"></a>
+</h2>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Extract all results into data frame using shared function</span></span>
+<span><span class="va">all_clean</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/extract_gsea_results.html">extract_gsea_results</a></span><span class="op">(</span><span class="va">results</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span></span>
+<span>    pathway <span class="op">=</span> <span class="va">ID</span>,</span>
+<span>    pathway_short <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">gsub</a></span><span class="op">(</span><span class="st">"^(KINASE|PERT|PATH|DISEASE)-PSP_"</span>, <span class="st">""</span>, <span class="va">ID</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>      <span class="fu"><a href="https://rdrr.io/r/base/substr.html" class="external-link">substr</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">40</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span><span class="kw">for</span> <span class="op">(</span><span class="va">ctr</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">all_clean</span><span class="op">$</span><span class="va">contrast</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n\n## "</span>, <span class="va">ctr</span>, <span class="st">"\n\n"</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="va">ctr_data</span> <span class="op">&lt;-</span> <span class="va">all_clean</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">contrast</span> <span class="op">==</span> <span class="va">ctr</span><span class="op">)</span></span>
+<span>  <span class="va">n_sig</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">ctr_data</span><span class="op">$</span><span class="va">p.adjust</span> <span class="op">&lt;</span> <span class="fl">0.1</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"**Significant pathways (FDR &lt; 0.1):** "</span>, <span class="va">n_sig</span>, <span class="st">"\n\n"</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="co"># Using shared dotplot function</span></span>
+<span>  <span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_enrichment_dotplot.html">plot_enrichment_dotplot</a></span><span class="op">(</span></span>
+<span>    <span class="va">ctr_data</span>,</span>
+<span>    item_col <span class="op">=</span> <span class="st">"pathway_short"</span>,</span>
+<span>    fdr_col <span class="op">=</span> <span class="st">"p.adjust"</span>,</span>
+<span>    title <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">params</span><span class="op">$</span><span class="va">analysis_type</span>, <span class="st">" - "</span>, <span class="va">ctr</span><span class="op">)</span>,</span>
+<span>    subtitle <span class="op">=</span> <span class="st">"Top 30 pathways by FDR"</span></span>
+<span>  <span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n\n"</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="co"># Significant pathways table</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"### Significant Pathways\n\n"</span><span class="op">)</span></span>
+<span>  <span class="va">sig_table</span> <span class="op">&lt;-</span> <span class="va">ctr_data</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">p.adjust</span> <span class="op">&lt;</span> <span class="fl">0.1</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">pathway_short</span>, <span class="va">NES</span>, <span class="va">pvalue</span>, FDR <span class="op">=</span> <span class="va">p.adjust</span>, <span class="va">setSize</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="va">FDR</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/across.html" class="external-link">across</a></span><span class="op">(</span><span class="fu"><a href="https://tidyselect.r-lib.org/reference/where.html" class="external-link">where</a></span><span class="op">(</span><span class="va">is.numeric</span><span class="op">)</span>, <span class="op">~</span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">.x</span>, <span class="fl">4</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu">htmltools</span><span class="fu">::</span><span class="fu"><a href="https://rstudio.github.io/htmltools/reference/tagList.html" class="external-link">tagList</a></span><span class="op">(</span></span>
+<span>    <span class="fu">DT</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/DT/man/datatable.html" class="external-link">datatable</a></span><span class="op">(</span><span class="va">sig_table</span>,</span>
+<span>                  extensions <span class="op">=</span> <span class="st">'Buttons'</span>,</span>
+<span>                  options <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>pageLength <span class="op">=</span> <span class="fl">15</span>, scrollX <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>                                 dom <span class="op">=</span> <span class="st">'Bfrtip'</span>, buttons <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'copy'</span>, <span class="st">'csv'</span>, <span class="st">'excel'</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n\n"</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 class="tabset tabset-pills" id="clusterprofiler-dotplots">clusterProfiler Dotplots<a class="anchor" aria-label="anchor" href="#clusterprofiler-dotplots"></a>
+</h2>
+<div class="section level3">
+<h3 id="combined-dotplot">Combined Dotplot<a class="anchor" aria-label="anchor" href="#combined-dotplot"></a>
+</h3>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">merged_results</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/clusterProfiler/man/merge_result.html" class="external-link">merge_result</a></span><span class="op">(</span><span class="va">results</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/enrichplot/man/dotplot.html" class="external-link">dotplot</a></span><span class="op">(</span><span class="va">merged_results</span>, showCategory <span class="op">=</span> <span class="fl">15</span>,</span>
+<span>        title <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">params</span><span class="op">$</span><span class="va">analysis_type</span>, <span class="st">"PTM-SEA (All Contrasts)"</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>axis.text.x <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>angle <span class="op">=</span> <span class="fl">45</span>, hjust <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="individual-contrasts">Individual Contrasts<a class="anchor" aria-label="anchor" href="#individual-contrasts"></a>
+</h3>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">ct</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">results</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n\n### "</span>, <span class="va">ct</span>, <span class="st">"\n\n"</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="va">res</span> <span class="op">&lt;-</span> <span class="va">results</span><span class="op">[[</span><span class="va">ct</span><span class="op">]</span><span class="op">]</span></span>
+<span></span>
+<span>  <span class="co"># Check if there are any results to plot (dotplot fails on empty data)</span></span>
+<span>  <span class="va">n_results</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">res</span><span class="op">@</span><span class="va">result</span><span class="op">)</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="va">n_results</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"No pathways met the pvalue cutoff for this contrast.\n\n"</span><span class="op">)</span></span>
+<span>    <span class="kw">next</span></span>
+<span>  <span class="op">}</span></span>
+<span></span>
+<span>  <span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/enrichplot/man/dotplot.html" class="external-link">dotplot</a></span><span class="op">(</span><span class="va">res</span>, showCategory <span class="op">=</span> <span class="fl">15</span>, title <span class="op">=</span> <span class="va">ct</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>axis.text.y <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fl">8</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="co"># Show top pathways table</span></span>
+<span>  <span class="va">top_res</span> <span class="op">&lt;-</span> <span class="va">res</span><span class="op">@</span><span class="va">result</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">p.adjust</span> <span class="op">&lt;</span> <span class="fl">0.25</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="va">pvalue</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fl">10</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">ID</span>, <span class="va">NES</span>, <span class="va">pvalue</span>, <span class="va">p.adjust</span>, <span class="va">setSize</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span></span>
+<span>      NES <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">NES</span>, <span class="fl">3</span><span class="op">)</span>,</span>
+<span>      pvalue <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">signif</a></span><span class="op">(</span><span class="va">pvalue</span>, <span class="fl">3</span><span class="op">)</span>,</span>
+<span>      p.adjust <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">signif</a></span><span class="op">(</span><span class="va">p.adjust</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span>    <span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu">htmltools</span><span class="fu">::</span><span class="fu"><a href="https://rstudio.github.io/htmltools/reference/tagList.html" class="external-link">tagList</a></span><span class="op">(</span></span>
+<span>    <span class="fu">DT</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/DT/man/datatable.html" class="external-link">datatable</a></span><span class="op">(</span><span class="va">top_res</span>,</span>
+<span>                  extensions <span class="op">=</span> <span class="st">'Buttons'</span>,</span>
+<span>                  options <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>pageLength <span class="op">=</span> <span class="fl">10</span>, scrollX <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>                                 dom <span class="op">=</span> <span class="st">'Bfrtip'</span>, buttons <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'copy'</span>, <span class="st">'csv'</span>, <span class="st">'excel'</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>                  caption <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Top Pathways -"</span>, <span class="va">ct</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n\n"</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
-<h2 id="dpu-analysis-differential-ptm-usage">DPU Analysis (Differential PTM Usage)<a class="anchor" aria-label="anchor" href="#dpu-analysis-differential-ptm-usage"></a>
+<h2 id="summary-heatmap">Summary Heatmap<a class="anchor" aria-label="anchor" href="#summary-heatmap"></a>
 </h2>
-<p>DPU uses protein-normalized phosphosite fold changes, representing
-true stoichiometry changes independent of protein abundance.</p>
-<div class="section level3">
-<h3 id="prepare-dpu-data">Prepare DPU Data<a class="anchor" aria-label="anchor" href="#prepare-dpu-data"></a>
-</h3>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Use t-statistic for DPU ranking</span></span>
-<span><span class="va">prep_dpu</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ptmsea_data_prep.html">ptmsea_data_prep</a></span><span class="op">(</span></span>
-<span>  data <span class="op">=</span> <span class="va">example_data</span>,</span>
-<span>  stat_column <span class="op">=</span> <span class="st">"tstatistic_I"</span>,</span>
-<span>  seq_window_col <span class="op">=</span> <span class="st">"SequenceWindow"</span>,</span>
-<span>  contrast_col <span class="op">=</span> <span class="st">"contrast"</span></span>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span></span>
+<span> <span class="st">"No GSEA results - check min_size parameter and sequence overlap"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">all_clean</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">dpu_prep_info</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
-<span>  Contrast <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">prep_dpu</span><span class="op">$</span><span class="va">ranks</span><span class="op">)</span>,</span>
-<span>  Sites <span class="op">=</span> <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map_int</a></span><span class="op">(</span><span class="va">prep_dpu</span><span class="op">$</span><span class="va">ranks</span>, <span class="va">length</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">dpu_prep_info</span>, caption <span class="op">=</span> <span class="st">"DPU Contrasts Prepared"</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<caption>DPU Contrasts Prepared</caption>
-<thead><tr class="header">
-<th align="left">Contrast</th>
-<th align="right">Sites</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">KO_vs_WT</td>
-<td align="right">20920</td>
-</tr>
-<tr class="even">
-<td align="left">KO_vs_WT_at_Early</td>
-<td align="right">20920</td>
-</tr>
-<tr class="odd">
-<td align="left">KO_vs_WT_at_Late</td>
-<td align="right">20920</td>
-</tr>
-<tr class="even">
-<td align="left">KO_vs_WT_at_Uninfect</td>
-<td align="right">20920</td>
-</tr>
-</tbody>
-</table>
+<span><span class="co"># Using shared heatmap function with pathway_short labels</span></span>
+<span><span class="fu"><a href="../reference/plot_enrichment_heatmap.html">plot_enrichment_heatmap</a></span><span class="op">(</span></span>
+<span>  <span class="va">all_clean</span>,</span>
+<span>  item_col <span class="op">=</span> <span class="st">"ID"</span>,</span>
+<span>  fdr_col <span class="op">=</span> <span class="st">"p.adjust"</span>,</span>
+<span>  n_top <span class="op">=</span> <span class="fl">25</span>,</span>
+<span>  item_label_col <span class="op">=</span> <span class="st">"pathway_short"</span>,</span>
+<span>  title <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"PTM-SEA Summary - "</span>, <span class="va">params</span><span class="op">$</span><span class="va">analysis_type</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 </div>
-<div class="section level3">
-<h3 id="dpu-gsea-without-direction">DPU: GSEA without Direction<a class="anchor" aria-label="anchor" href="#dpu-gsea-without-direction"></a>
-</h3>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">results_dpu_nodir</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_ptmsea.html">run_ptmsea</a></span><span class="op">(</span></span>
-<span>  ranks_list <span class="op">=</span> <span class="va">prep_dpu</span><span class="op">$</span><span class="va">ranks</span>,</span>
-<span>  pathways <span class="op">=</span> <span class="va">pathways</span>,</span>
-<span>  min_size <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  max_size <span class="op">=</span> <span class="fl">500</span>,</span>
-<span>  n_perm <span class="op">=</span> <span class="fl">1000</span>,</span>
-<span>  pvalueCutoff <span class="op">=</span> <span class="fl">0.1</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">dpu_nodir_info</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
-<span>  Contrast <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">results_dpu_nodir</span><span class="op">)</span>,</span>
-<span>  `Significant (FDR &lt; 0.1)` <span class="op">=</span> <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map_int</a></span><span class="op">(</span><span class="va">results_dpu_nodir</span>, <span class="op">~</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">.x</span><span class="op">@</span><span class="va">result</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">dpu_nodir_info</span>, caption <span class="op">=</span> <span class="st">"DPU GSEA (no direction) Results"</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<caption>DPU GSEA (no direction) Results</caption>
-<thead><tr class="header">
-<th align="left">Contrast</th>
-<th align="right">Significant (FDR &lt; 0.1)</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">KO_vs_WT</td>
-<td align="right">1</td>
-</tr>
-<tr class="even">
-<td align="left">KO_vs_WT_at_Early</td>
-<td align="right">2</td>
-</tr>
-<tr class="odd">
-<td align="left">KO_vs_WT_at_Late</td>
-<td align="right">7</td>
-</tr>
-<tr class="even">
-<td align="left">KO_vs_WT_at_Uninfect</td>
-<td align="right">0</td>
-</tr>
-</tbody>
-</table>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">merged_dpu_nodir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/clusterProfiler/man/merge_result.html" class="external-link">merge_result</a></span><span class="op">(</span><span class="va">results_dpu_nodir</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/enrichplot/man/dotplot.html" class="external-link">dotplot</a></span><span class="op">(</span><span class="va">merged_dpu_nodir</span>, showCategory <span class="op">=</span> <span class="fl">10</span>,</span>
-<span>        title <span class="op">=</span> <span class="st">"DPU GSEA (no direction) - Significant (FDR &lt; 0.1)"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>axis.text.x <span class="op">=</span> <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>angle <span class="op">=</span> <span class="fl">45</span>, hjust <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="Analysis_PTMSEA_files/figure-html/dpu_gsea_nodir_plot-1.png" class="r-plt" width="1152"></p>
+<div class="section level2">
+<h2 id="volcano-plot">Volcano Plot<a class="anchor" aria-label="anchor" href="#volcano-plot"></a>
+</h2>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Using shared volcano function</span></span>
+<span><span class="fu"><a href="../reference/plot_enrichment_volcano.html">plot_enrichment_volcano</a></span><span class="op">(</span></span>
+<span>  <span class="va">all_clean</span>,</span>
+<span>  item_col <span class="op">=</span> <span class="st">"pathway_short"</span>,</span>
+<span>  fdr_col <span class="op">=</span> <span class="st">"p.adjust"</span>,</span>
+<span>  title <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">params</span><span class="op">$</span><span class="va">analysis_type</span>, <span class="st">"- PTM-SEA Volcano Plots"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 </div>
-<div class="section level3">
-<h3 id="dpu-gsea-with-direction">DPU: GSEA with Direction<a class="anchor" aria-label="anchor" href="#dpu-gsea-with-direction"></a>
-</h3>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">results_dpu_dir</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_ptmsea_up_down.html">run_ptmsea_up_down</a></span><span class="op">(</span></span>
-<span>  ranks_list <span class="op">=</span> <span class="va">prep_dpu</span><span class="op">$</span><span class="va">ranks</span>,</span>
-<span>  pathways <span class="op">=</span> <span class="va">pathways</span>,</span>
-<span>  min_size <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  max_size <span class="op">=</span> <span class="fl">500</span>,</span>
-<span>  n_perm <span class="op">=</span> <span class="fl">1000</span>,</span>
-<span>  pvalueCutoff <span class="op">=</span> <span class="fl">0.1</span></span>
+<div class="section level2">
+<h2 id="export-all-gsea-plots-to-pdf">Export All GSEA Plots to PDF<a class="anchor" aria-label="anchor" href="#export-all-gsea-plots-to-pdf"></a>
+</h2>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Export all GSEA enrichment plots to PDF using shared function</span></span>
+<span><span class="va">pdf_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">output_dir</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"GSEA_plots_"</span>, <span class="va">params</span><span class="op">$</span><span class="va">analysis_type</span>, <span class="st">".pdf"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">n_gsea_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/export_gsea_plots_pdf.html">export_gsea_plots_pdf</a></span><span class="op">(</span></span>
+<span>  <span class="va">results</span>, <span class="va">pdf_file</span>,</span>
+<span>  prefix_pattern <span class="op">=</span> <span class="st">"^(KINASE|PERT|PATH|DISEASE)-PSP_"</span></span>
 <span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">dpu_dir_info</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
-<span>  Contrast <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">results_dpu_dir</span><span class="op">)</span>,</span>
-<span>  `Significant (FDR &lt; 0.1)` <span class="op">=</span> <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map_int</a></span><span class="op">(</span><span class="va">results_dpu_dir</span>, <span class="op">~</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">.x</span><span class="op">@</span><span class="va">result</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">dpu_dir_info</span>, caption <span class="op">=</span> <span class="st">"DPU GSEA (with direction) Results"</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<caption>DPU GSEA (with direction) Results</caption>
-<thead><tr class="header">
-<th align="left">Contrast</th>
-<th align="right">Significant (FDR &lt; 0.1)</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">KO_vs_WT_descending</td>
-<td align="right">1</td>
-</tr>
-<tr class="even">
-<td align="left">KO_vs_WT_ascending</td>
-<td align="right">1</td>
-</tr>
-<tr class="odd">
-<td align="left">KO_vs_WT_at_Early_descending</td>
-<td align="right">1</td>
-</tr>
-<tr class="even">
-<td align="left">KO_vs_WT_at_Early_ascending</td>
-<td align="right">1</td>
-</tr>
-<tr class="odd">
-<td align="left">KO_vs_WT_at_Late_descending</td>
-<td align="right">7</td>
-</tr>
-<tr class="even">
-<td align="left">KO_vs_WT_at_Late_ascending</td>
-<td align="right">7</td>
-</tr>
-<tr class="odd">
-<td align="left">KO_vs_WT_at_Uninfect_descending</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">KO_vs_WT_at_Uninfect_ascending</td>
-<td align="right">0</td>
-</tr>
-</tbody>
-</table>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">merged_dpu_dir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/clusterProfiler/man/merge_result.html" class="external-link">merge_result</a></span><span class="op">(</span><span class="va">results_dpu_dir</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/enrichplot/man/dotplot.html" class="external-link">dotplot</a></span><span class="op">(</span><span class="va">merged_dpu_dir</span>, showCategory <span class="op">=</span> <span class="fl">10</span>,</span>
-<span>        title <span class="op">=</span> <span class="st">"DPU GSEA (with direction) - Significant (FDR &lt; 0.1)"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>axis.text.x <span class="op">=</span> <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>angle <span class="op">=</span> <span class="fl">45</span>, hjust <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="Analysis_PTMSEA_files/figure-html/dpu_gsea_dir_plot-1.png" class="r-plt" width="1344"></p>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Exported"</span>, <span class="va">n_gsea_plots</span>, <span class="st">"GSEA plots to:"</span>, <span class="va">pdf_file</span>, <span class="st">"\n"</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Vignette mode: skip PDF export</span></span>
+<span><span class="va">n_gsea_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map_int</a></span><span class="op">(</span><span class="va">results</span>, <span class="op">~</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">.x</span><span class="op">@</span><span class="va">result</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"Vignette mode: PDF export skipped. Would export "</span>, <span class="va">n_gsea_plots</span>, <span class="st">" plots."</span><span class="op">)</span></span></code></pre></div>
 </div>
-<div class="section level3">
-<h3 id="dpu-ora-with-direction">DPU: ORA with Direction<a class="anchor" aria-label="anchor" href="#dpu-ora-with-direction"></a>
-</h3>
-<p>Over-representation analysis on significant sites for all contrasts.
-When <code>fc_col</code> is provided, sites are split into up-regulated
-and down-regulated sets for separate ORA tests.</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Convert pathways to TERM2GENE format and strip direction suffixes</span></span>
-<span><span class="va">term2gene</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ptmsigdb_to_term2gene.html">ptmsigdb_to_term2gene</a></span><span class="op">(</span><span class="va">pathways</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>gene <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">gsub</a></span><span class="op">(</span><span class="st">";[ud]$"</span>, <span class="st">""</span>, <span class="va">gene</span><span class="op">)</span><span class="op">)</span></span>
+<div class="section level2">
+<h2 class="tabset tabset-pills" id="gsea-enrichment-plots">GSEA Enrichment Plots<a class="anchor" aria-label="anchor" href="#gsea-enrichment-plots"></a>
+</h2>
+<p>Showing top 3 plots per contrast.</p>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">ct</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">results</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n\n## "</span>, <span class="va">ct</span>, <span class="st">" {.tabset}\n\n"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Get all PTMsigDB site IDs (stripped, without ;u/;d)</span></span>
-<span><span class="va">ptmsigdb_sites</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">term2gene</span><span class="op">$</span><span class="va">gene</span><span class="op">)</span></span>
+<span>  <span class="va">res</span> <span class="op">&lt;-</span> <span class="va">results</span><span class="op">[[</span><span class="va">ct</span><span class="op">]</span><span class="op">]</span></span>
+<span>  <span class="va">top10</span> <span class="op">&lt;-</span> <span class="va">res</span><span class="op">@</span><span class="va">result</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="va">pvalue</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">params</span><span class="op">$</span><span class="va">top_genesets</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/pull.html" class="external-link">pull</a></span><span class="op">(</span><span class="va">ID</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Run ORA for each contrast (up and down separately)</span></span>
-<span><span class="va">contrasts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">example_data</span><span class="op">$</span><span class="va">contrast</span><span class="op">)</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">top10</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="va">geneset</span> <span class="op">&lt;-</span> <span class="va">top10</span><span class="op">[</span><span class="va">i</span><span class="op">]</span></span>
+<span>    <span class="va">pathway_short</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">gsub</a></span><span class="op">(</span><span class="st">"^(KINASE|PERT|PATH|DISEASE)-PSP_"</span>, <span class="st">""</span>, <span class="va">geneset</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n\n### "</span>, <span class="va">pathway_short</span>, <span class="st">"\n\n"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">ora_prep_list</span> <span class="op">&lt;-</span> <span class="va">contrasts</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://rlang.r-lib.org/reference/set_names.html" class="external-link">set_names</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="kw">function</span><span class="op">(</span><span class="va">contrast_name</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="va">contrast_data</span> <span class="op">&lt;-</span> <span class="va">example_data</span> <span class="op">|&gt;</span></span>
-<span>      <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">contrast</span> <span class="op">==</span> <span class="va">contrast_name</span><span class="op">)</span></span>
+<span>    <span class="va">row</span> <span class="op">&lt;-</span> <span class="va">res</span><span class="op">@</span><span class="va">result</span> <span class="op">|&gt;</span></span>
+<span>      <span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>      <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">ID</span> <span class="op">==</span> <span class="va">geneset</span><span class="op">)</span></span>
+<span>    <span class="va">nes_val</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">row</span><span class="op">$</span><span class="va">NES</span>, <span class="fl">2</span><span class="op">)</span></span>
+<span>    <span class="va">fdr</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">signif</a></span><span class="op">(</span><span class="va">row</span><span class="op">$</span><span class="va">p.adjust</span>, <span class="fl">2</span><span class="op">)</span></span>
 <span></span>
-<span>    <span class="va">prep_ora</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ptmsea_ora_prep.html">ptmsea_ora_prep</a></span><span class="op">(</span></span>
-<span>      data <span class="op">=</span> <span class="va">contrast_data</span>,</span>
-<span>      ptmsigdb_sites <span class="op">=</span> <span class="va">ptmsigdb_sites</span>,</span>
-<span>      score_col <span class="op">=</span> <span class="st">"FDR_I"</span>,</span>
-<span>      fc_col <span class="op">=</span> <span class="st">"diff_diff"</span>,</span>
-<span>      threshold <span class="op">=</span> <span class="fl">0.1</span></span>
-<span>    <span class="op">)</span></span>
-<span></span>
-<span>    <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
-<span>      Contrast <span class="op">=</span> <span class="va">contrast_name</span>,</span>
-<span>      Up <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">prep_ora</span><span class="op">$</span><span class="va">enriched_up</span><span class="op">)</span>,</span>
-<span>      Down <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">prep_ora</span><span class="op">$</span><span class="va">enriched_down</span><span class="op">)</span>,</span>
-<span>      Background <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">prep_ora</span><span class="op">$</span><span class="va">background</span><span class="op">)</span></span>
-<span>    <span class="op">)</span></span>
-<span>  <span class="op">}</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">ora_results</span> <span class="op">&lt;-</span> <span class="va">contrasts</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="kw">function</span><span class="op">(</span><span class="va">contrast_name</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="va">contrast_data</span> <span class="op">&lt;-</span> <span class="va">example_data</span> <span class="op">|&gt;</span></span>
-<span>      <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">contrast</span> <span class="op">==</span> <span class="va">contrast_name</span><span class="op">)</span></span>
-<span></span>
-<span>    <span class="va">prep_ora</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ptmsea_ora_prep.html">ptmsea_ora_prep</a></span><span class="op">(</span></span>
-<span>      data <span class="op">=</span> <span class="va">contrast_data</span>,</span>
-<span>      ptmsigdb_sites <span class="op">=</span> <span class="va">ptmsigdb_sites</span>,</span>
-<span>      score_col <span class="op">=</span> <span class="st">"FDR_I"</span>,</span>
-<span>      fc_col <span class="op">=</span> <span class="st">"diff_diff"</span>,</span>
-<span>      threshold <span class="op">=</span> <span class="fl">0.1</span></span>
-<span>    <span class="op">)</span></span>
-<span></span>
-<span>    <span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
-<span></span>
-<span>    <span class="co"># ORA for up-regulated sites</span></span>
-<span>    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">prep_ora</span><span class="op">$</span><span class="va">enriched_up</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
-<span>      <span class="va">ora_up</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/clusterProfiler/man/enricher.html" class="external-link">enricher</a></span><span class="op">(</span></span>
-<span>        gene <span class="op">=</span> <span class="va">prep_ora</span><span class="op">$</span><span class="va">enriched_up</span>,</span>
-<span>        universe <span class="op">=</span> <span class="va">prep_ora</span><span class="op">$</span><span class="va">background</span>,</span>
-<span>        TERM2GENE <span class="op">=</span> <span class="va">term2gene</span>,</span>
-<span>        pvalueCutoff <span class="op">=</span> <span class="fl">0.1</span></span>
-<span>      <span class="op">)</span></span>
-<span>      <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">ora_up</span><span class="op">)</span> <span class="op">&amp;&amp;</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">ora_up</span><span class="op">@</span><span class="va">result</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
-<span>        <span class="va">results</span><span class="op">[[</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">contrast_name</span>, <span class="st">"_up"</span><span class="op">)</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">ora_up</span></span>
-<span>      <span class="op">}</span></span>
-<span>    <span class="op">}</span></span>
-<span></span>
-<span>    <span class="co"># ORA for down-regulated sites</span></span>
-<span>    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">prep_ora</span><span class="op">$</span><span class="va">enriched_down</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
-<span>      <span class="va">ora_down</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/clusterProfiler/man/enricher.html" class="external-link">enricher</a></span><span class="op">(</span></span>
-<span>        gene <span class="op">=</span> <span class="va">prep_ora</span><span class="op">$</span><span class="va">enriched_down</span>,</span>
-<span>        universe <span class="op">=</span> <span class="va">prep_ora</span><span class="op">$</span><span class="va">background</span>,</span>
-<span>        TERM2GENE <span class="op">=</span> <span class="va">term2gene</span>,</span>
-<span>        pvalueCutoff <span class="op">=</span> <span class="fl">0.1</span></span>
-<span>      <span class="op">)</span></span>
-<span>      <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">ora_down</span><span class="op">)</span> <span class="op">&amp;&amp;</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">ora_down</span><span class="op">@</span><span class="va">result</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
-<span>        <span class="va">results</span><span class="op">[[</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">contrast_name</span>, <span class="st">"_down"</span><span class="op">)</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">ora_down</span></span>
-<span>      <span class="op">}</span></span>
-<span>    <span class="op">}</span></span>
-<span></span>
-<span>    <span class="va">results</span></span>
-<span>  <span class="op">}</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/list_flatten.html" class="external-link">list_flatten</a></span><span class="op">(</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">ora_prep_list</span>, caption <span class="op">=</span> <span class="st">"ORA Preparation Summary"</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<caption>ORA Preparation Summary</caption>
-<thead><tr class="header">
-<th align="left">Contrast</th>
-<th align="right">Up</th>
-<th align="right">Down</th>
-<th align="right">Background</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">KO_vs_WT</td>
-<td align="right">40</td>
-<td align="right">21</td>
-<td align="right">323</td>
-</tr>
-<tr class="even">
-<td align="left">KO_vs_WT_at_Early</td>
-<td align="right">16</td>
-<td align="right">5</td>
-<td align="right">323</td>
-</tr>
-<tr class="odd">
-<td align="left">KO_vs_WT_at_Late</td>
-<td align="right">22</td>
-<td align="right">5</td>
-<td align="right">323</td>
-</tr>
-<tr class="even">
-<td align="left">KO_vs_WT_at_Uninfect</td>
-<td align="right">1</td>
-<td align="right">1</td>
-<td align="right">323</td>
-</tr>
-</tbody>
-</table>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">ora_results</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">merged_ora</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/clusterProfiler/man/merge_result.html" class="external-link">merge_result</a></span><span class="op">(</span><span class="va">ora_results</span><span class="op">)</span></span>
-<span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">merged_ora</span><span class="op">@</span><span class="va">compareClusterResult</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/enrichplot/man/dotplot.html" class="external-link">dotplot</a></span><span class="op">(</span><span class="va">merged_ora</span>, showCategory <span class="op">=</span> <span class="fl">10</span>,</span>
-<span>            title <span class="op">=</span> <span class="st">"DPU ORA (up/down separate) - Significant (FDR &lt; 0.1)"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>      <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>axis.text.x <span class="op">=</span> <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>angle <span class="op">=</span> <span class="fl">45</span>, hjust <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/enrichplot/man/gseaplot2.html" class="external-link">gseaplot2</a></span><span class="op">(</span><span class="va">res</span>, geneSetID <span class="op">=</span> <span class="va">geneset</span>,</span>
+<span>      title <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">pathway_short</span>, <span class="st">" (NES="</span>, <span class="va">nes_val</span>, <span class="st">", FDR="</span>, <span class="va">fdr</span>, <span class="st">")"</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n\n"</span><span class="op">)</span></span>
 <span>  <span class="op">}</span></span>
 <span><span class="op">}</span></span></code></pre></div>
-<p><img src="Analysis_PTMSEA_files/figure-html/dpu_ora_plot-1.png" class="r-plt" width="1344"></p>
-</div>
 </div>
 <div class="section level2">
-<h2 id="interpretation">Interpretation<a class="anchor" aria-label="anchor" href="#interpretation"></a>
+<h2 id="all-results">All Results<a class="anchor" aria-label="anchor" href="#all-results"></a>
 </h2>
-<ul>
-<li>
-<strong>DPA results</strong> show kinase activity changes including
-protein abundance effects</li>
-<li>
-<strong>DPU results</strong> show kinase activity changes
-independent of protein abundance</li>
-</ul>
-<p>Kinases appearing significant in <strong>DPU but not DPA</strong>
-represent genuine signaling changes. Kinases appearing in <strong>DPA
-but not DPU</strong> may be driven by protein abundance changes.</p>
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># All pathways across all contrasts</span></span>
+<span><span class="va">all_clean_dt</span> <span class="op">&lt;-</span> <span class="va">all_clean</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">contrast</span>, pathway <span class="op">=</span> <span class="va">ID</span>, <span class="va">NES</span>, <span class="va">pvalue</span>, FDR <span class="op">=</span> <span class="va">p.adjust</span>, <span class="va">setSize</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="va">contrast</span>, <span class="va">FDR</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/across.html" class="external-link">across</a></span><span class="op">(</span><span class="fu"><a href="https://tidyselect.r-lib.org/reference/where.html" class="external-link">where</a></span><span class="op">(</span><span class="va">is.numeric</span><span class="op">)</span>, <span class="op">~</span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">.x</span>, <span class="fl">4</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">DT</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/DT/man/datatable.html" class="external-link">datatable</a></span><span class="op">(</span><span class="va">all_clean_dt</span>,</span>
+<span>  filter <span class="op">=</span> <span class="st">"top"</span>,</span>
+<span>  extensions <span class="op">=</span> <span class="st">'Buttons'</span>,</span>
+<span>  options <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>pageLength <span class="op">=</span> <span class="fl">15</span>, scrollX <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>                 dom <span class="op">=</span> <span class="st">'Bfrtip'</span>, buttons <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'copy'</span>, <span class="st">'csv'</span>, <span class="st">'excel'</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  caption <span class="op">=</span> <span class="st">"All pathways across all contrasts"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="export-results">Export Results<a class="anchor" aria-label="anchor" href="#export-results"></a>
+</h2>
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Create output directory</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="va">output_dir</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span>, showWarnings <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Prepare export data</span></span>
+<span><span class="va">export_data</span> <span class="op">&lt;-</span> <span class="va">all_clean</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="va">contrast</span>, <span class="va">pvalue</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">export_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>all_clean <span class="op">=</span> <span class="va">export_data</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Add per-contrast sheets</span></span>
+<span><span class="kw">for</span> <span class="op">(</span><span class="va">ct</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">export_data</span><span class="op">$</span><span class="va">contrast</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">sheet_name</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">gsub</a></span><span class="op">(</span><span class="st">"[^a-zA-Z0-9_]"</span>, <span class="st">"_"</span>, <span class="fu"><a href="https://rdrr.io/r/base/substr.html" class="external-link">substr</a></span><span class="op">(</span><span class="va">ct</span>, <span class="fl">1</span>, <span class="fl">31</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="va">export_list</span><span class="op">[[</span><span class="va">sheet_name</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">export_data</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">contrast</span> <span class="op">==</span> <span class="va">ct</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="co"># Add significant results sheet</span></span>
+<span><span class="va">export_list</span><span class="op">[[</span><span class="st">"significant_FDR10"</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">export_data</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">p.adjust</span> <span class="op">&lt;</span> <span class="fl">0.1</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Write Excel</span></span>
+<span><span class="va">xlsx_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">output_dir</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"PTMSEA_"</span>, <span class="va">params</span><span class="op">$</span><span class="va">analysis_type</span>, <span class="st">"_results.xlsx"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">writexl</span><span class="fu">::</span><span class="fu"><a href="https://docs.ropensci.org/writexl//reference/write_xlsx.html" class="external-link">write_xlsx</a></span><span class="op">(</span><span class="va">export_list</span>, <span class="va">xlsx_file</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Save RDS with full results objects</span></span>
+<span><span class="va">rds_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">output_dir</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"PTMSEA_"</span>, <span class="va">params</span><span class="op">$</span><span class="va">analysis_type</span>, <span class="st">"_results.rds"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="va">results</span>, <span class="va">rds_file</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Export summary</span></span>
+<span><span class="va">export_summary</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
+<span>  Output <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Excel results"</span>, <span class="st">"RDS object"</span><span class="op">)</span>,</span>
+<span>  File <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">xlsx_file</span>, <span class="va">rds_file</span><span class="op">)</span>,</span>
+<span>  Size <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.info.html" class="external-link">file.size</a></span><span class="op">(</span><span class="va">xlsx_file</span><span class="op">)</span> <span class="op">/</span> <span class="fl">1024</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"KB"</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.info.html" class="external-link">file.size</a></span><span class="op">(</span><span class="va">rds_file</span><span class="op">)</span> <span class="op">/</span> <span class="fl">1024</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"KB"</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">export_summary</span>, caption <span class="op">=</span> <span class="st">"Exported Files"</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"Vignette mode: File export skipped."</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="session-info">Session Info<a class="anchor" aria-label="anchor" href="#session-info"></a>
 </h2>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## R version 4.5.2 (2025-10-31)</span></span>
 <span><span class="co">## Platform: aarch64-apple-darwin20</span></span>
-<span><span class="co">## Running under: macOS Tahoe 26.1</span></span>
+<span><span class="co">## Running under: macOS Tahoe 26.3</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Matrix products: default</span></span>
 <span><span class="co">## BLAS:   /System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/libBLAS.dylib </span></span>
@@ -720,47 +665,48 @@ but not DPU</strong> may be driven by protein abundance changes.</p>
 <span><span class="co">## [1] stats     graphics  grDevices utils     datasets  methods   base     </span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## other attached packages:</span></span>
-<span><span class="co">## [1] purrr_1.2.0            fgsea_1.36.0           enrichplot_1.30.3     </span></span>
-<span><span class="co">## [4] dplyr_1.1.4            clusterProfiler_4.18.1 prophosqua_0.2.0      </span></span>
+<span><span class="co">##  [1] ggplot2_4.0.2          writexl_1.5.4          readxl_1.4.5          </span></span>
+<span><span class="co">##  [4] purrr_1.2.1            forcats_1.0.1          fgsea_1.36.0          </span></span>
+<span><span class="co">##  [7] enrichplot_1.30.3      DT_0.34.0              dplyr_1.2.0           </span></span>
+<span><span class="co">## [10] clusterProfiler_4.18.1 prophosqua_0.3.0      </span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## loaded via a namespace (and not attached):</span></span>
-<span><span class="co">##   [1] DBI_1.2.3               gson_0.1.0              rlang_1.1.6            </span></span>
-<span><span class="co">##   [4] magrittr_2.0.4          DOSE_4.4.0              compiler_4.5.2         </span></span>
-<span><span class="co">##   [7] RSQLite_2.4.5           png_0.1-8               systemfonts_1.3.1      </span></span>
-<span><span class="co">##  [10] vctrs_0.6.5             reshape2_1.4.5          stringr_1.6.0          </span></span>
-<span><span class="co">##  [13] pkgconfig_2.0.3         crayon_1.5.3            fastmap_1.2.0          </span></span>
-<span><span class="co">##  [16] XVector_0.50.0          labeling_0.4.3          rmarkdown_2.30         </span></span>
-<span><span class="co">##  [19] ragg_1.5.0              bit_4.6.0               xfun_0.54              </span></span>
-<span><span class="co">##  [22] ggseqlogo_0.2           cachem_1.1.0            aplot_0.2.9            </span></span>
+<span><span class="co">##   [1] DBI_1.2.3               gson_0.1.0              rlang_1.1.7            </span></span>
+<span><span class="co">##   [4] magrittr_2.0.4          DOSE_4.4.0              otel_0.2.0             </span></span>
+<span><span class="co">##   [7] compiler_4.5.2          RSQLite_2.4.5           png_0.1-8              </span></span>
+<span><span class="co">##  [10] systemfonts_1.3.1       vctrs_0.7.1             reshape2_1.4.5         </span></span>
+<span><span class="co">##  [13] stringr_1.6.0           pkgconfig_2.0.3         crayon_1.5.3           </span></span>
+<span><span class="co">##  [16] fastmap_1.2.0           XVector_0.50.0          rmarkdown_2.30         </span></span>
+<span><span class="co">##  [19] ragg_1.5.0              bit_4.6.0               xfun_0.55              </span></span>
+<span><span class="co">##  [22] ggseqlogo_0.2.2         cachem_1.1.0            aplot_0.2.9            </span></span>
 <span><span class="co">##  [25] jsonlite_2.0.0          blob_1.2.4              BiocParallel_1.44.0    </span></span>
 <span><span class="co">##  [28] parallel_4.5.2          R6_2.6.1                bslib_0.9.0            </span></span>
-<span><span class="co">##  [31] stringi_1.8.7           RColorBrewer_1.1-3      jquerylib_0.1.4        </span></span>
-<span><span class="co">##  [34] GOSemSim_2.36.0         Rcpp_1.1.0              Seqinfo_1.0.0          </span></span>
-<span><span class="co">##  [37] bookdown_0.46           knitr_1.50              ggtangle_0.0.9         </span></span>
-<span><span class="co">##  [40] R.utils_2.13.0          IRanges_2.44.0          Matrix_1.7-4           </span></span>
-<span><span class="co">##  [43] splines_4.5.2           igraph_2.2.1            tidyselect_1.2.1       </span></span>
-<span><span class="co">##  [46] qvalue_2.42.0           yaml_2.3.11             codetools_0.2-20       </span></span>
-<span><span class="co">##  [49] lattice_0.22-7          tibble_3.3.0            plyr_1.8.9             </span></span>
-<span><span class="co">##  [52] withr_3.0.2             Biobase_2.70.0          treeio_1.34.0          </span></span>
-<span><span class="co">##  [55] KEGGREST_1.50.0         S7_0.2.1                evaluate_1.0.5         </span></span>
-<span><span class="co">##  [58] gridGraphics_0.5-1      desc_1.4.3              Biostrings_2.78.0      </span></span>
-<span><span class="co">##  [61] pillar_1.11.1           ggtree_4.0.1            stats4_4.5.2           </span></span>
-<span><span class="co">##  [64] ggfun_0.2.0             generics_0.1.4          rprojroot_2.1.1        </span></span>
-<span><span class="co">##  [67] S4Vectors_0.48.0        ggplot2_4.0.1           scales_1.4.0           </span></span>
-<span><span class="co">##  [70] tidytree_0.4.6          glue_1.8.0              gdtools_0.4.4          </span></span>
-<span><span class="co">##  [73] lazyeval_0.2.2          tools_4.5.2             data.table_1.17.8      </span></span>
-<span><span class="co">##  [76] ggiraph_0.9.2           fs_1.6.6                fastmatch_1.1-6        </span></span>
-<span><span class="co">##  [79] cowplot_1.2.0           grid_4.5.2              tidyr_1.3.1            </span></span>
-<span><span class="co">##  [82] ape_5.8-1               AnnotationDbi_1.72.0    nlme_3.1-168           </span></span>
-<span><span class="co">##  [85] patchwork_1.3.2         cli_3.6.5               rappdirs_0.3.3         </span></span>
-<span><span class="co">##  [88] textshaping_1.0.4       fontBitstreamVera_0.1.1 gtable_0.3.6           </span></span>
-<span><span class="co">##  [91] R.methodsS3_1.8.2       yulab.utils_0.2.2       sass_0.4.10            </span></span>
-<span><span class="co">##  [94] digest_0.6.39           fontquiver_0.2.1        BiocGenerics_0.56.0    </span></span>
-<span><span class="co">##  [97] ggrepel_0.9.6           ggplotify_0.1.3         htmlwidgets_1.6.4      </span></span>
-<span><span class="co">## [100] farver_2.1.2            memoise_2.0.1           htmltools_0.5.9        </span></span>
-<span><span class="co">## [103] pkgdown_2.2.0           R.oo_1.27.1             lifecycle_1.0.4        </span></span>
-<span><span class="co">## [106] here_1.0.2              httr_1.4.7              GO.db_3.22.0           </span></span>
-<span><span class="co">## [109] fontLiberation_0.1.0    bit64_4.6.0-1</span></span></code></pre>
+<span><span class="co">##  [31] stringi_1.8.7           RColorBrewer_1.1-3      cellranger_1.1.0       </span></span>
+<span><span class="co">##  [34] jquerylib_0.1.4         GOSemSim_2.36.0         Rcpp_1.1.1             </span></span>
+<span><span class="co">##  [37] Seqinfo_1.0.0           bookdown_0.46           knitr_1.51             </span></span>
+<span><span class="co">##  [40] ggtangle_0.0.9          R.utils_2.13.0          IRanges_2.44.0         </span></span>
+<span><span class="co">##  [43] Matrix_1.7-4            splines_4.5.2           igraph_2.2.1           </span></span>
+<span><span class="co">##  [46] tidyselect_1.2.1        qvalue_2.42.0           yaml_2.3.12            </span></span>
+<span><span class="co">##  [49] codetools_0.2-20        lattice_0.22-7          tibble_3.3.1           </span></span>
+<span><span class="co">##  [52] plyr_1.8.9              withr_3.0.2             treeio_1.34.0          </span></span>
+<span><span class="co">##  [55] Biobase_2.70.0          KEGGREST_1.50.0         S7_0.2.1               </span></span>
+<span><span class="co">##  [58] evaluate_1.0.5          gridGraphics_0.5-1      desc_1.4.3             </span></span>
+<span><span class="co">##  [61] Biostrings_2.78.0       pillar_1.11.1           ggtree_4.0.1           </span></span>
+<span><span class="co">##  [64] stats4_4.5.2            ggfun_0.2.0             generics_0.1.4         </span></span>
+<span><span class="co">##  [67] S4Vectors_0.48.0        scales_1.4.0            tidytree_0.4.6         </span></span>
+<span><span class="co">##  [70] glue_1.8.0              gdtools_0.4.4           lazyeval_0.2.2         </span></span>
+<span><span class="co">##  [73] tools_4.5.2             data.table_1.18.0       ggiraph_0.9.2          </span></span>
+<span><span class="co">##  [76] fs_1.6.6                fastmatch_1.1-6         cowplot_1.2.0          </span></span>
+<span><span class="co">##  [79] grid_4.5.2              tidyr_1.3.2             ape_5.8-1              </span></span>
+<span><span class="co">##  [82] AnnotationDbi_1.72.0    nlme_3.1-168            patchwork_1.3.2        </span></span>
+<span><span class="co">##  [85] cli_3.6.5               rappdirs_0.3.3          textshaping_1.0.4      </span></span>
+<span><span class="co">##  [88] fontBitstreamVera_0.1.1 gtable_0.3.6            R.methodsS3_1.8.2      </span></span>
+<span><span class="co">##  [91] yulab.utils_0.2.2       fontquiver_0.2.1        sass_0.4.10            </span></span>
+<span><span class="co">##  [94] digest_0.6.39           BiocGenerics_0.56.0     ggrepel_0.9.6          </span></span>
+<span><span class="co">##  [97] ggplotify_0.1.3         htmlwidgets_1.6.4       farver_2.1.2           </span></span>
+<span><span class="co">## [100] memoise_2.0.1           htmltools_0.5.9         pkgdown_2.2.0          </span></span>
+<span><span class="co">## [103] R.oo_1.27.1             lifecycle_1.0.5         httr_1.4.7             </span></span>
+<span><span class="co">## [106] GO.db_3.22.0            fontLiberation_0.1.0    bit64_4.6.0-1</span></span></code></pre>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

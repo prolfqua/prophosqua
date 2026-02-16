@@ -11,19 +11,32 @@ deeper insights into cellular signaling and regulation.
 
 ## Overview
 
-`prophosqua` builds upon the `prolfqua` and `prolfquapp` packages to
-provide:
+The integrated PTM analysis is carried out using `prophosqua`, which
+implements three complementary statistical approaches:
 
-- **Differential PTM Feature Expression (DPE)** - Analysis of
-  modification site abundance changes
-- **Differential PTM Feature Usage (DPU)** - Analysis of modification
-  site usage relative to total protein
+- **DPA** (Differential PTM Abundance): tests for changes in PTM-site
+  intensity between conditions.
+- **DPU** (Differential PTM Usage): tests whether the ratio of PTM-site
+  to total protein intensity changes, identifying regulation independent
+  of protein abundance.
+- **CorrectFirst**: applies protein-level correction before testing PTM
+  sites, an alternative approach to distinguish PTM-specific regulation
+  from protein expression changes.
+
+Building on the [prolfqua](https://github.com/prolfqua/prolfqua) and
+[prolfquapp](https://github.com/prolfqua/prolfquapp) packages,
+`prophosqua` additionally provides:
+
 - **N-to-C plots** - Visualization of phosphorylation sites along
   protein backbones
 - **Sequence logo analysis** - Identification of kinase recognition
   motifs
-- **Statistical integration** - Combined analysis of phosphoproteome and
-  total proteome data
+- **PTM-SEA** - Post-translational modification set enrichment analysis
+- **Kinase activity inference** - Kinase library-based analysis from
+  phosphoproteomics data
+- **Motif enrichment analysis** - MEA visualization
+- **Enrichment visualization** - Dot plots, heatmaps, and volcano plots
+  for enrichment results
 
 ## Installation
 
@@ -39,7 +52,7 @@ library(devtools)
 devtools::install_github('protviz/prozor', dependencies = TRUE)
 devtools::install_github('prolfqua/prolfqua', dependencies = TRUE)
 # Install prolfquapp (proteomics analysis workflow package)
-devtools::install_github('prolfqua/prolfquapp', dependencies = TRUE)
+devtools::install_github('prolfqua/prolfquapp', dependencies = TRUE, build_vignettes=TRUE)
 ```
 
 For detailed installation instructions and system requirements, see: -
@@ -51,7 +64,7 @@ For detailed installation instructions and system requirements, see: -
 ``` r
 
 library(devtools)
-devtools::install_github('prolfqua/prophosqua', dependencies = TRUE)
+devtools::install_github('prolfqua/prophosqua', dependencies = TRUE, build_vignettes=TRUE)
 ```
 
 ## Usage
@@ -82,100 +95,39 @@ combined_test_diff <- test_diff(phospho_res, tot_res, join_column = join_column)
 plot_data <- n_to_c_usage(combined_test_diff, contrast_name, FDR_threshold = 0.05)
 ```
 
-## Vignettes and Documentation
+## Vignettes
 
-The package includes comprehensive vignettes that demonstrate the
-complete analysis workflow:
+The package includes vignettes demonstrating the analysis workflow:
 
-### Rendering Vignettes
-
-The following code renders the vignettes and copies them to the example
-directory:
-
-``` r
-
-# Render the differential expression analysis vignette
-
-wd <- "inst/PTM_analysis_example"
-
-
-rmarkdown::render("vignettes/QCReport.qmd",
-params=list(wd=wd,
-psm="ptm_example-main/qc_example_data/QCmini/psm.tsv",
-fasta="ptm_example-main/qc_example_data/fgcz_3702_UP000006548_AraUniprot_1spg_d_20231024.fasta",
-workunit="exampleQC",
-projectid="ABCD1234"))
-file.copy("vignettes/QCReport.html", file.path(wd,"QCReport.html"))
-
-# Render the PTM integration and visualization vignette  
-rmarkdown::render("vignettes/Supplementary_Material_v2.Rmd",
-params=list(wd = wd, dodea = TRUE), output_format=bookdown::pdf_document2())
-file.copy("vignettes/Supplementary_Material_v2.pdf", file.path(wd,"Supplementary_Material_v2.pdf"))
-
-rmarkdown::render("vignettes/Supplementary_Material_v2.Rmd",
-params=list(wd = wd, dodea = FALSE), output_format=bookdown::html_document2())
-file.copy("vignettes/Supplementary_Material_v2.html", file.path(wd,"Supplementary_Material_v2.html"))
-```
-
-This code: 1. **Renders R Markdown files** to HTML using
-[`rmarkdown::render()`](https://pkgs.rstudio.com/rmarkdown/reference/render.html)
-2. **Copies the HTML files** to the `inst/PTM_analysis_example/`
-directory for easy access 3. **Creates interactive reports** with code
-folding and navigation
-
-### Available Vignettes
-
-- **`Run_DEA_prolfquapp.Rmd`** - Complete workflow for differential
-  expression analysis
-- **`Visualize_PTM_features.Rmd`** - Integration and visualization of
-  PTM data
-- **Interactive reports** - Available in the
-  `inst/PTM_analysis_example/` directory
-
-## Related Publications
-
-### Core Dependencies
-
-- **prolfqua**: [Proteomics data analysis in
-  R](https://www.sciencedirect.com/science/article/pii/S1535947622002857) -
-  MSstatsPTM publication
-- **prolfquapp**: [Proteomics analysis workflow
-  package](https://www.sciencedirect.com/science/article/pii/S1535947623002190) -
-  msqrob2PTM publication
-
-### Related Work
-
-- [MSstatsPTM](https://www.sciencedirect.com/science/article/pii/S1535947622002857) -
-  Statistical analysis of PTM data
-- [msqrob2PTM](https://www.sciencedirect.com/science/article/pii/S1535947623002190) -
-  Robust statistical methods for PTM analysis
-
-## GitHub Repositories
-
-- [prolfqua](https://github.com/prolfqua/prolfqua) - Core proteomics
-  analysis package
-- [prolfquapp](https://github.com/prolfqua/prolfquapp) - Proteomics
-  analysis workflow package
-- [prophosqua](https://github.com/prolfqua/prophosqua) - PTM integration
-  and analysis package
-
-## Poster
-
-[Prophosqua Poster from SIBDays
-2024](https://prolfqua.github.io/prophosqua/img/SIBDays24_Poster_Prophosqua_Grossmann.pdf)
+- **`MiMBIntegratedPTM.Rmd`** - Integrated analysis of PTM and total
+  proteome (DPA, DPU, CorrectFirst)
+- **`Analysis_n_to_c.Rmd`** - N-to-C plots for PTM site visualization
+- **`Analysis_seqlogo.Rmd`** - Sequence logo analysis
+- **`Analysis_PTMSEA.Rmd`** - PTM-SEA analysis
+- **`Analysis_KinaseLibrary.Rmd`** - Kinase activity inference from
+  phosphoproteomics data
+- **`Analysis_MEA.Rmd`** - Motif enrichment analysis visualization
+- **`QCReport.qmd`** - FragPipe TMT quality control report
 
 ## Citation
 
 If you use this package in your research, please cite:
 
-``` bibtex
-@article{prophosqua2024,
-  title={prophosqua: Integration of phosphoproteome and total proteome data},
-  author={Functional Genomics Center Zurich},
-  journal={Bioinformatics},
-  year={2024}
-}
-```
+> Wolski W, Dittmann A, Panse C, Kunz L, Grossmann J. “Integrated
+> Analysis of Post-Translational Modifications and Total Proteome:
+> Methods for Distinguishing Abundance from Usage Changes.” *Methods in
+> Molecular Biology*, 2025 (submitted).
+
+> Grossmann J, Wolski W. “prolfqua/prophosqua: 0.1.0.” Zenodo, 2025.
+> DOI:
+> [10.5281/zenodo.15845272](https://doi.org/10.5281/zenodo.15845272)
+
+## Related Packages
+
+- [prolfqua](https://github.com/prolfqua/prolfqua) - Core proteomics
+  analysis package
+- [prolfquapp](https://github.com/prolfqua/prolfquapp) - Proteomics
+  analysis workflow package
 
 ## Building and Deploying Documentation
 
@@ -193,8 +145,8 @@ pkgdown::build_site()
 uvx ghp-import -n -p -f docs
 ```
 
-Then enable GitHub Pages in repo settings (Settings → Pages → Source:
-`gh-pages` branch).
+Then enable GitHub Pages in repo settings (Settings -\> Pages -\>
+Source: `gh-pages` branch).
 
 Site: <https://prolfqua.github.io/prophosqua>
 
@@ -202,8 +154,7 @@ Site: <https://prolfqua.github.io/prophosqua>
 
 Contributions are welcome! Please visit our [GitHub
 repository](https://github.com/prolfqua/prophosqua) for: - Issue
-reporting - Feature requests - Code contributions - Documentation
-improvements
+reporting - Feature requests - Code contributions
 
 ## License
 
@@ -214,32 +165,36 @@ License](https://prolfqua.github.io/prophosqua/LICENSE).
 
 ## All functions
 
+- [`combined_test_diff_example`](https://prolfqua.github.io/prophosqua/reference/combined_test_diff_example.md)
+  : Example phosphoproteomics differential expression results
 - [`copy_phospho_integration()`](https://prolfqua.github.io/prophosqua/reference/copy_phospho_integration.md)
   : copy Markdown and runscript for FragPipe combined_protein.tsv
 - [`dea_res_dir()`](https://prolfqua.github.io/prophosqua/reference/dea_res_dir.md)
-  : get xlsx path
+  : Get DEA results directory path
 - [`dea_xlsx_path()`](https://prolfqua.github.io/prophosqua/reference/dea_xlsx_path.md)
-  : get xlsx path
-- [`derive_motifs_from_gmt()`](https://prolfqua.github.io/prophosqua/reference/derive_motifs_from_gmt.md)
-  : Derive motifs from PTMsigDB GMT file
-- [`.test_diff_diff()`](https://prolfqua.github.io/prophosqua/reference/dot-test_diff_diff.md)
-  : Test if differences of differences are significant
+  : Get DEA xlsx file path
 - [`download_ptmsigdb()`](https://prolfqua.github.io/prophosqua/reference/download_ptmsigdb.md)
   : Download PTMsigDB signatures
+- [`enrichment_visualization`](https://prolfqua.github.io/prophosqua/reference/enrichment_visualization.md)
+  : Enrichment Visualization Functions
 - [`exampleN_C_dat`](https://prolfqua.github.io/prophosqua/reference/exampleN_C_dat.md)
   : Example dataset exampleN_C_dat
 - [`exampleN_C_dat_no_prot`](https://prolfqua.github.io/prophosqua/reference/exampleN_C_dat_no_prot.md)
   : Example dataset exampleN_C_dat_no_prot
 - [`explode_multisites()`](https://prolfqua.github.io/prophosqua/reference/explode_multisites.md)
-  : each site goes into own row, if more then on site per multisite
+  : Explode multisites into individual rows
+- [`export_gsea_plots_pdf()`](https://prolfqua.github.io/prophosqua/reference/export_gsea_plots_pdf.md)
+  : Export GSEA enrichment plots to PDF
+- [`extract_gsea_results()`](https://prolfqua.github.io/prophosqua/reference/extract_gsea_results.md)
+  : Extract results from clusterProfiler GSEA objects
 - [`filter_contaminants()`](https://prolfqua.github.io/prophosqua/reference/filter_contaminants.md)
-  : filter contaminants
-- [`get_kinase_motifs()`](https://prolfqua.github.io/prophosqua/reference/get_kinase_motifs.md)
-  : Get default list of kinase motifs
+  : Filter contaminant proteins from data
+- [`filter_significant_sites()`](https://prolfqua.github.io/prophosqua/reference/filter_significant_sites.md)
+  : Filter significant PTM sites
 - [`get_sequence_windows()`](https://prolfqua.github.io/prophosqua/reference/get_sequence_windows.md)
   : extract sequence windows, from sequence at pos in protein
 - [`load_and_preprocess_data()`](https://prolfqua.github.io/prophosqua/reference/load_and_preprocess_data.md)
-  : load_and_preprocess_data
+  : Load and preprocess DEA data from Excel
 - [`make_fasta_summary()`](https://prolfqua.github.io/prophosqua/reference/make_fasta_summary.md)
   : Make FASTA database summary
 - [`n_c_integrated_df`](https://prolfqua.github.io/prophosqua/reference/n_c_integrated_df.md)
@@ -252,56 +207,70 @@ License](https://prolfqua.github.io/prophosqua/LICENSE).
 - [`n_to_c_plot()`](https://prolfqua.github.io/prophosqua/reference/n_to_c_plot.md)
   : N to C plot using ggplot2
 - [`n_to_c_plot_integrated()`](https://prolfqua.github.io/prophosqua/reference/n_to_c_plot_integrated.md)
-  : N to C for integrated results
+  : N to C plot for integrated (DPU) results
 - [`n_to_c_usage()`](https://prolfqua.github.io/prophosqua/reference/n_to_c_usage.md)
   : Plot PTM occupation, use after adjusting for total proteome
 - [`n_to_c_usage_multicontrast()`](https://prolfqua.github.io/prophosqua/reference/n_to_c_usage_multicontrast.md)
   : Plot PTM usage across all contrasts in multi-panel layout
 - [`plot_diff_logo()`](https://prolfqua.github.io/prophosqua/reference/plot_diff_logo.md)
   : Plot Difference Sequence Logo (Upregulated - Downregulated)
+- [`plot_enrichment_dotplot()`](https://prolfqua.github.io/prophosqua/reference/plot_enrichment_dotplot.md)
+  : Create enrichment dotplot for top items by FDR
+- [`plot_enrichment_heatmap()`](https://prolfqua.github.io/prophosqua/reference/plot_enrichment_heatmap.md)
+  : Create NES heatmap for top items across contrasts
+- [`plot_enrichment_volcano()`](https://prolfqua.github.io/prophosqua/reference/plot_enrichment_volcano.md)
+  : Create volcano plot for enrichment results
 - [`plot_seqlogo_with_diff()`](https://prolfqua.github.io/prophosqua/reference/plot_seqlogo_with_diff.md)
   : Plot Sequence Logos with Difference Column
+- [`prepare_enrichment_data()`](https://prolfqua.github.io/prophosqua/reference/prepare_enrichment_data.md)
+  : Prepare enrichment data with common computed columns
+- [`prepare_gsea_ranks()`](https://prolfqua.github.io/prophosqua/reference/prepare_gsea_ranks.md)
+  : Prepare ranked lists for GSEA analysis
+- [`prepare_ntoc_data()`](https://prolfqua.github.io/prophosqua/reference/prepare_ntoc_data.md)
+  : Prepare data for N-to-C plotting
 - [`ptmsea_data_prep()`](https://prolfqua.github.io/prophosqua/reference/ptmsea_data_prep.md)
   : Prepare data for PTM-SEA analysis
 - [`ptmsea_ora_prep()`](https://prolfqua.github.io/prophosqua/reference/ptmsea_ora_prep.md)
   : Prepare data for PTM-SEA ORA analysis
 - [`ptmsigdb_to_term2gene()`](https://prolfqua.github.io/prophosqua/reference/ptmsigdb_to_term2gene.md)
   : Convert PTMsigDB pathways to TERM2GENE format
-- [`read_kinase_motifs_csv()`](https://prolfqua.github.io/prophosqua/reference/read_kinase_motifs_csv.md)
-  : Read kinase motifs from CSV
-- [`run_motif_gsea()`](https://prolfqua.github.io/prophosqua/reference/run_motif_gsea.md)
-  : Run Motif-based GSEA
 - [`run_ptmsea()`](https://prolfqua.github.io/prophosqua/reference/run_ptmsea.md)
   : Run PTM-SEA without direction
 - [`run_ptmsea_up_down()`](https://prolfqua.github.io/prophosqua/reference/run_ptmsea_up_down.md)
   : Run directional PTM-SEA analysis
-- [`scan_motifs()`](https://prolfqua.github.io/prophosqua/reference/scan_motifs.md)
-  : Scan sequences for kinase motifs
 - [`split_ptmsigdb_pathways()`](https://prolfqua.github.io/prophosqua/reference/split_ptmsigdb_pathways.md)
-  : Run PTM-SEA analysis
+  : Split PTMsigDB pathways by direction
+- [`summarize_enrichment_results()`](https://prolfqua.github.io/prophosqua/reference/summarize_enrichment_results.md)
+  : Create summary table for enrichment results
+- [`summarize_significant_sites()`](https://prolfqua.github.io/prophosqua/reference/summarize_significant_sites.md)
+  : Summarize significant sites by group
 - [`test_diff()`](https://prolfqua.github.io/prophosqua/reference/test_diff.md)
-  : compute MSstats like test statsitics
+  : Compute MSstats-like test statistics for differential PTM usage
 - [`trim_ptmsigdb_pathways()`](https://prolfqua.github.io/prophosqua/reference/trim_ptmsigdb_pathways.md)
   : Trim PTMsigDB pathways to shorter flanking sequences
+- [`validate_sequence_window()`](https://prolfqua.github.io/prophosqua/reference/validate_sequence_window.md)
+  : Validate sequence window alignment
 
 # Articles
 
-### Complete Workflow
+### Methods Paper
 
 - [Integrated Analysis of Post-Translational Modifications and Total
   Proteome: Methods for Distinguishing Abundance from Usage
-  Changes](https://prolfqua.github.io/prophosqua/articles/Supplementary_Material_v3.md):
+  Changes](https://prolfqua.github.io/prophosqua/articles/MiMBIntegratedPTM.md):
 
-### Kinase/Motif Enrichment Analysis
+### Analysis Vignettes
 
-- [PTM-SEA: Kinase Activity Inference from Phosphoproteomics
-  Data](https://prolfqua.github.io/prophosqua/articles/Analysis_PTMSEA.md):
-- [Motif-Based Enrichment Analysis: Kinase Activity
-  Inference](https://prolfqua.github.io/prophosqua/articles/Analysis_Motif_Enrichment.md):
 - [Kinase Library: Kinase Activity Inference from Phosphoproteomics
   Data](https://prolfqua.github.io/prophosqua/articles/Analysis_KinaseLibrary.md):
-- [Visualizing Kinase Library MEA
-  Results](https://prolfqua.github.io/prophosqua/articles/Vis_MEA.md):
+- [Motif Enrichment Analysis (MEA)
+  Visualization](https://prolfqua.github.io/prophosqua/articles/Analysis_MEA.md):
+- [PTM Analysis - N-to-C
+  Plots](https://prolfqua.github.io/prophosqua/articles/Analysis_n_to_c.md):
+- [PTM-SEA
+  Analysis](https://prolfqua.github.io/prophosqua/articles/Analysis_PTMSEA.md):
+- [PTM Analysis - Sequence
+  Logo](https://prolfqua.github.io/prophosqua/articles/Analysis_seqlogo.md):
 
 ### Quality Control
 

@@ -1,6 +1,6 @@
-# N to C for integrated results
+# N to C plot for integrated (DPU) results
 
-N to C for integrated results
+N to C plot for integrated (DPU) results
 
 ## Usage
 
@@ -18,9 +18,33 @@ n_to_c_plot_integrated(
 
 ## Arguments
 
-- POI_matrixMin:
+- poi_matrix_min:
 
-  data.frame
+  data.frame with integrated phospho/protein data
+
+- protein_name:
+
+  name of protein
+
+- prot_length:
+
+  protein length
+
+- contrast:
+
+  name of contrast
+
+- thr_a:
+
+  significance threshold (strict), default 0.05
+
+- thr_b:
+
+  significance threshold (lenient), default 0.20
+
+- color_protein:
+
+  color for protein-level bar (default: "yellow")
 
 ## Examples
 

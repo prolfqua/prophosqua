@@ -18,29 +18,33 @@ n_to_c_plot(
 
 ## Arguments
 
+- poi_matrix_min:
+
+  data.frame with phosphorylation data
+
 - protein_name:
 
   name of protein
+
+- prot_length:
+
+  protein length
 
 - contrast:
 
   name of contrast
 
-- POI_matrixMin:
+- thr_a:
 
-  data.frame
+  significance threshold (strict), default 0.05
 
-- protLength:
+- thr_b:
 
-  protein length
+  significance threshold (lenient), default 0.20
 
-- thrA:
+- color_protein:
 
-  significance threshold small default 0.05
-
-- thrB:
-
-  significance threshold small large default 0.20
+  color for protein-level bar (default: "yellow")
 
 ## Examples
 

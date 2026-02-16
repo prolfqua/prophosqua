@@ -1,6 +1,8 @@
-# compute MSstats like test statsitics
+# Compute MSstats-like test statistics for differential PTM usage
 
-compute MSstats like test statsitics
+Joins site-level and protein-level results, computes
+difference-of-differences, and performs t-tests for differential PTM
+usage.
 
 ## Usage
 
@@ -12,3 +14,21 @@ test_diff(
     "nr_tryptic_peptides")
 )
 ```
+
+## Arguments
+
+- phos_res:
+
+  Data frame with phospho site-level results
+
+- tot_res:
+
+  Data frame with protein-level results
+
+- join_column:
+
+  Character vector of columns to join by
+
+## Value
+
+Data frame with combined results including diff_diff test statistics

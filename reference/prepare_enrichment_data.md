@@ -1,0 +1,49 @@
+# Prepare enrichment data with common computed columns
+
+Adds neg_log_fdr, direction, and significant columns to enrichment
+results. This is a shared helper used by plot functions and analyses.
+
+## Usage
+
+``` r
+prepare_enrichment_data(data, fdr_col = "FDR", fdr_threshold = 0.1)
+```
+
+## Arguments
+
+- data:
+
+  Data frame with NES and FDR columns
+
+- fdr_col:
+
+  Name of FDR column (default: "FDR")
+
+- fdr_threshold:
+
+  FDR threshold for significance (default: 0.1)
+
+## Value
+
+Data frame with added neg_log_fdr, direction, significant columns
+
+## Examples
+
+``` r
+# Basic usage with default FDR column
+df <- data.frame(NES = c(1.5, -1.2, 0.5, -0.3), FDR = c(0.01, 0.08, 0.05, 0.25))
+result <- prepare_enrichment_data(df)
+result$direction   # "Up", "Down", "Up", "Down"
+#> [1] "Up"   "Down" "Up"   "Down"
+result$significant # TRUE, TRUE, TRUE, FALSE
+#> [1]  TRUE  TRUE  TRUE FALSE
+
+# With custom FDR column name (e.g., from clusterProfiler)
+df2 <- data.frame(NES = c(2.0, -1.5), p.adjust = c(0.02, 0.12))
+result2 <- prepare_enrichment_data(df2, fdr_col = "p.adjust")
+
+# With stricter FDR threshold
+result3 <- prepare_enrichment_data(df, fdr_threshold = 0.05)
+result3$significant # TRUE, FALSE, TRUE, FALSE
+#> [1]  TRUE FALSE FALSE FALSE
+```

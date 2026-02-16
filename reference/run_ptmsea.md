@@ -44,3 +44,23 @@ run_ptmsea(
 ## Value
 
 Named list of clusterProfiler gseaResult objects (one per contrast).
+
+## Examples
+
+``` r
+# Mock ranked lists
+seqs <- paste0("SEQ", 1:15, "-p")
+rank_vec <- setNames(rnorm(15), seqs)
+ranks_list <- list(contrast1 = sort(rank_vec, decreasing = TRUE))
+
+# Mock pathways
+pathways <- list(
+  PathwayA = seqs[1:10],
+  PathwayB = seqs[6:15]
+)
+
+# Run PTM-SEA (adjusting min_size for small mock data)
+results <- run_ptmsea(ranks_list, pathways, min_size = 1, pvalueCutoff = 1.0)
+#> Running PTM-SEA for 'contrast1' (15 sites, 15 overlap)
+#> 
+```

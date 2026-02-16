@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="index.html">prophosqua</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,14 +32,7 @@
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
 <li class="nav-item"><a class="nav-link" href="reference/index.html">Reference</a></li>
-<li class="nav-item dropdown">
-  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="articles/Supplementary_Material_v3.html">Integrated Analysis of Post-Translational Modifications and Total Proteome: Methods for Distinguishing Abundance from Usage Changes</a></li>
-    <li><hr class="dropdown-divider"></li>
-    <li><a class="dropdown-item" href="articles/index.html">More articles...</a></li>
-  </ul>
-</li>
+<li class="nav-item"><a class="nav-link" href="articles/index.html">Articles</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -62,18 +55,29 @@
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
-<p><code>prophosqua</code> builds upon the <code>prolfqua</code> and <code>prolfquapp</code> packages to provide:</p>
+<p>The integrated PTM analysis is carried out using <code>prophosqua</code>, which implements three complementary statistical approaches:</p>
 <ul>
 <li>
-<strong>Differential PTM Feature Expression (DPE)</strong> - Analysis of modification site abundance changes</li>
+<strong>DPA</strong> (Differential PTM Abundance): tests for changes in PTM-site intensity between conditions.</li>
 <li>
-<strong>Differential PTM Feature Usage (DPU)</strong> - Analysis of modification site usage relative to total protein</li>
+<strong>DPU</strong> (Differential PTM Usage): tests whether the ratio of PTM-site to total protein intensity changes, identifying regulation independent of protein abundance.</li>
+<li>
+<strong>CorrectFirst</strong>: applies protein-level correction before testing PTM sites, an alternative approach to distinguish PTM-specific regulation from protein expression changes.</li>
+</ul>
+<p>Building on the <a href="https://github.com/prolfqua/prolfqua" class="external-link">prolfqua</a> and <a href="https://github.com/prolfqua/prolfquapp" class="external-link">prolfquapp</a> packages, <code>prophosqua</code> additionally provides:</p>
+<ul>
 <li>
 <strong>N-to-C plots</strong> - Visualization of phosphorylation sites along protein backbones</li>
 <li>
 <strong>Sequence logo analysis</strong> - Identification of kinase recognition motifs</li>
 <li>
-<strong>Statistical integration</strong> - Combined analysis of phosphoproteome and total proteome data</li>
+<strong>PTM-SEA</strong> - Post-translational modification set enrichment analysis</li>
+<li>
+<strong>Kinase activity inference</strong> - Kinase library-based analysis from phosphoproteomics data</li>
+<li>
+<strong>Motif enrichment analysis</strong> - MEA visualization</li>
+<li>
+<strong>Enrichment visualization</strong> - Dot plots, heatmaps, and volcano plots for enrichment results</li>
 </ul>
 </div>
 <div class="section level2">
@@ -89,7 +93,7 @@
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">'protviz/prozor'</span>, dependencies <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">'prolfqua/prolfqua'</span>, dependencies <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co"># Install prolfquapp (proteomics analysis workflow package)</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">'prolfqua/prolfquapp'</span>, dependencies <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">'prolfqua/prolfquapp'</span>, dependencies <span class="op">=</span> <span class="cn">TRUE</span>, build_vignettes<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>For detailed installation instructions and system requirements, see: - <a href="https://github.com/prolfqua/prolfqua" class="external-link">prolfqua GitHub repository</a> - <a href="https://github.com/prolfqua/prolfquapp" class="external-link">prolfquapp GitHub repository</a></p>
 </div>
 <div class="section level3">
@@ -97,7 +101,7 @@
 </h3>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://devtools.r-lib.org/" class="external-link">devtools</a></span><span class="op">)</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">'prolfqua/prophosqua'</span>, dependencies <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">'prolfqua/prophosqua'</span>, dependencies <span class="op">=</span> <span class="cn">TRUE</span>, build_vignettes<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -136,101 +140,46 @@
 </div>
 </div>
 <div class="section level2">
-<h2 id="vignettes-and-documentation">Vignettes and Documentation<a class="anchor" aria-label="anchor" href="#vignettes-and-documentation"></a>
+<h2 id="vignettes">Vignettes<a class="anchor" aria-label="anchor" href="#vignettes"></a>
 </h2>
-<p>The package includes comprehensive vignettes that demonstrate the complete analysis workflow:</p>
-<div class="section level3">
-<h3 id="rendering-vignettes">Rendering Vignettes<a class="anchor" aria-label="anchor" href="#rendering-vignettes"></a>
-</h3>
-<p>The following code renders the vignettes and copies them to the example directory:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Render the differential expression analysis vignette</span></span>
-<span></span>
-<span><span class="va">wd</span> <span class="op">&lt;-</span> <span class="st">"inst/PTM_analysis_example"</span></span>
-<span></span>
-<span></span>
-<span><span class="fu">rmarkdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgs.rstudio.com/rmarkdown/reference/render.html" class="external-link">render</a></span><span class="op">(</span><span class="st">"vignettes/QCReport.qmd"</span>,</span>
-<span>params<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>wd<span class="op">=</span><span class="va">wd</span>,</span>
-<span>psm<span class="op">=</span><span class="st">"ptm_example-main/qc_example_data/QCmini/psm.tsv"</span>,</span>
-<span>fasta<span class="op">=</span><span class="st">"ptm_example-main/qc_example_data/fgcz_3702_UP000006548_AraUniprot_1spg_d_20231024.fasta"</span>,</span>
-<span>workunit<span class="op">=</span><span class="st">"exampleQC"</span>,</span>
-<span>projectid<span class="op">=</span><span class="st">"ABCD1234"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.copy</a></span><span class="op">(</span><span class="st">"vignettes/QCReport.html"</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">wd</span>,<span class="st">"QCReport.html"</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Render the PTM integration and visualization vignette  </span></span>
-<span><span class="fu">rmarkdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgs.rstudio.com/rmarkdown/reference/render.html" class="external-link">render</a></span><span class="op">(</span><span class="st">"vignettes/Supplementary_Material_v2.Rmd"</span>,</span>
-<span>params<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>wd <span class="op">=</span> <span class="va">wd</span>, dodea <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, output_format<span class="op">=</span><span class="fu">bookdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgs.rstudio.com/bookdown/reference/html_document2.html" class="external-link">pdf_document2</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.copy</a></span><span class="op">(</span><span class="st">"vignettes/Supplementary_Material_v2.pdf"</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">wd</span>,<span class="st">"Supplementary_Material_v2.pdf"</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu">rmarkdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgs.rstudio.com/rmarkdown/reference/render.html" class="external-link">render</a></span><span class="op">(</span><span class="st">"vignettes/Supplementary_Material_v2.Rmd"</span>,</span>
-<span>params<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>wd <span class="op">=</span> <span class="va">wd</span>, dodea <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>, output_format<span class="op">=</span><span class="fu">bookdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgs.rstudio.com/bookdown/reference/html_document2.html" class="external-link">html_document2</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.copy</a></span><span class="op">(</span><span class="st">"vignettes/Supplementary_Material_v2.html"</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">wd</span>,<span class="st">"Supplementary_Material_v2.html"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>This code: 1. <strong>Renders R Markdown files</strong> to HTML using <code><a href="https://pkgs.rstudio.com/rmarkdown/reference/render.html" class="external-link">rmarkdown::render()</a></code> 2. <strong>Copies the HTML files</strong> to the <code>inst/PTM_analysis_example/</code> directory for easy access 3. <strong>Creates interactive reports</strong> with code folding and navigation</p>
-</div>
-<div class="section level3">
-<h3 id="available-vignettes">Available Vignettes<a class="anchor" aria-label="anchor" href="#available-vignettes"></a>
-</h3>
+<p>The package includes vignettes demonstrating the analysis workflow:</p>
 <ul>
 <li>
-<strong><code>Run_DEA_prolfquapp.Rmd</code></strong> - Complete workflow for differential expression analysis</li>
+<strong><code>MiMBIntegratedPTM.Rmd</code></strong> - Integrated analysis of PTM and total proteome (DPA, DPU, CorrectFirst)</li>
 <li>
-<strong><code>Visualize_PTM_features.Rmd</code></strong> - Integration and visualization of PTM data</li>
+<strong><code>Analysis_n_to_c.Rmd</code></strong> - N-to-C plots for PTM site visualization</li>
 <li>
-<strong>Interactive reports</strong> - Available in the <code>inst/PTM_analysis_example/</code> directory</li>
+<strong><code>Analysis_seqlogo.Rmd</code></strong> - Sequence logo analysis</li>
+<li>
+<strong><code>Analysis_PTMSEA.Rmd</code></strong> - PTM-SEA analysis</li>
+<li>
+<strong><code>Analysis_KinaseLibrary.Rmd</code></strong> - Kinase activity inference from phosphoproteomics data</li>
+<li>
+<strong><code>Analysis_MEA.Rmd</code></strong> - Motif enrichment analysis visualization</li>
+<li>
+<strong><code>QCReport.qmd</code></strong> - FragPipe TMT quality control report</li>
 </ul>
-</div>
 </div>
 <div class="section level2">
-<h2 id="related-publications">Related Publications<a class="anchor" aria-label="anchor" href="#related-publications"></a>
+<h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>
 </h2>
-<div class="section level3">
-<h3 id="core-dependencies">Core Dependencies<a class="anchor" aria-label="anchor" href="#core-dependencies"></a>
-</h3>
-<ul>
-<li>
-<strong>prolfqua</strong>: <a href="https://www.sciencedirect.com/science/article/pii/S1535947622002857" class="external-link">Proteomics data analysis in R</a> - MSstatsPTM publication</li>
-<li>
-<strong>prolfquapp</strong>: <a href="https://www.sciencedirect.com/science/article/pii/S1535947623002190" class="external-link">Proteomics analysis workflow package</a> - msqrob2PTM publication</li>
-</ul>
-</div>
-<div class="section level3">
-<h3 id="related-work">Related Work<a class="anchor" aria-label="anchor" href="#related-work"></a>
-</h3>
-<ul>
-<li>
-<a href="https://www.sciencedirect.com/science/article/pii/S1535947622002857" class="external-link">MSstatsPTM</a> - Statistical analysis of PTM data</li>
-<li>
-<a href="https://www.sciencedirect.com/science/article/pii/S1535947623002190" class="external-link">msqrob2PTM</a> - Robust statistical methods for PTM analysis</li>
-</ul>
-</div>
+<p>If you use this package in your research, please cite:</p>
+<blockquote>
+<p>Wolski W, Dittmann A, Panse C, Kunz L, Grossmann J. “Integrated Analysis of Post-Translational Modifications and Total Proteome: Methods for Distinguishing Abundance from Usage Changes.” <em>Methods in Molecular Biology</em>, 2025 (submitted).</p>
+</blockquote>
+<blockquote>
+<p>Grossmann J, Wolski W. “prolfqua/prophosqua: 0.1.0.” Zenodo, 2025. DOI: <a href="https://doi.org/10.5281/zenodo.15845272" class="external-link">10.5281/zenodo.15845272</a></p>
+</blockquote>
 </div>
 <div class="section level2">
-<h2 id="github-repositories">GitHub Repositories<a class="anchor" aria-label="anchor" href="#github-repositories"></a>
+<h2 id="related-packages">Related Packages<a class="anchor" aria-label="anchor" href="#related-packages"></a>
 </h2>
 <ul>
 <li>
 <a href="https://github.com/prolfqua/prolfqua" class="external-link">prolfqua</a> - Core proteomics analysis package</li>
 <li>
 <a href="https://github.com/prolfqua/prolfquapp" class="external-link">prolfquapp</a> - Proteomics analysis workflow package</li>
-<li>
-<a href="https://github.com/prolfqua/prophosqua" class="external-link">prophosqua</a> - PTM integration and analysis package</li>
 </ul>
-</div>
-<div class="section level2">
-<h2 id="poster">Poster<a class="anchor" aria-label="anchor" href="#poster"></a>
-</h2>
-<p><a href="img/SIBDays24_Poster_Prophosqua_Grossmann.pdf">Prophosqua Poster from SIBDays 2024</a></p>
-</div>
-<div class="section level2">
-<h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>
-</h2>
-<p>If you use this package in your research, please cite:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode bibtex"><code class="sourceCode bibtex"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="va">@article</span>{<span class="ot">prophosqua2024</span>,</span>
-<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>  <span class="dt">title</span>={prophosqua: Integration of phosphoproteome and total proteome data},</span>
-<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>  <span class="dt">author</span>={Functional Genomics Center Zurich},</span>
-<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  <span class="dt">journal</span>={Bioinformatics},</span>
-<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>  <span class="dt">year</span>={2024}</span>
-<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>}</span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="building-and-deploying-documentation">Building and Deploying Documentation<a class="anchor" aria-label="anchor" href="#building-and-deploying-documentation"></a>
@@ -238,22 +187,22 @@
 <div class="section level3">
 <h3 id="build-pkgdown-site-locally">Build pkgdown site locally<a class="anchor" aria-label="anchor" href="#build-pkgdown-site-locally"></a>
 </h3>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">pkgdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgdown.r-lib.org/reference/build_site.html" class="external-link">build_site</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="deploy-to-github-pages">Deploy to GitHub Pages<a class="anchor" aria-label="anchor" href="#deploy-to-github-pages"></a>
 </h3>
-<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># Using ghp-import (via uv)</span></span>
-<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="ex">uvx</span> ghp-import <span class="at">-n</span> <span class="at">-p</span> <span class="at">-f</span> docs</span></code></pre></div>
-<p>Then enable GitHub Pages in repo settings (Settings → Pages → Source: <code>gh-pages</code> branch).</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># Using ghp-import (via uv)</span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="ex">uvx</span> ghp-import <span class="at">-n</span> <span class="at">-p</span> <span class="at">-f</span> docs</span></code></pre></div>
+<p>Then enable GitHub Pages in repo settings (Settings -&gt; Pages -&gt; Source: <code>gh-pages</code> branch).</p>
 <p>Site: <a href="https://prolfqua.github.io/prophosqua" class="uri">https://prolfqua.github.io/prophosqua</a></p>
 </div>
 </div>
 <div class="section level2">
 <h2 id="contributing">Contributing<a class="anchor" aria-label="anchor" href="#contributing"></a>
 </h2>
-<p>Contributions are welcome! Please visit our <a href="https://github.com/prolfqua/prophosqua" class="external-link">GitHub repository</a> for: - Issue reporting - Feature requests - Code contributions - Documentation improvements</p>
+<p>Contributions are welcome! Please visit our <a href="https://github.com/prolfqua/prophosqua" class="external-link">GitHub repository</a> for: - Issue reporting - Feature requests - Code contributions</p>
 </div>
 <div class="section level2">
 <h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>

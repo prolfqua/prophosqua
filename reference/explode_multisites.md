@@ -1,9 +1,19 @@
-# each site goes into own row, if more then on site per multisite
+# Explode multisites into individual rows
 
-each site goes into own row, if more then on site per multisite
+Each phosphosite goes into its own row when multiple sites are present.
 
 ## Usage
 
 ``` r
 explode_multisites(combined_site)
 ```
+
+## Arguments
+
+- combined_site:
+
+  Data frame with PhosSites column (semicolon-delimited)
+
+## Value
+
+Data frame with one row per site, with modAA and posInProtein columns
