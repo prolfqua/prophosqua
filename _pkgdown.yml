@@ -10,3 +10,6 @@ articles:
   - title: Analysis Vignettes
     contents:
     - starts_with("Analysis")
+  - title: Quality Control
+    contents:
+    - QCReport
