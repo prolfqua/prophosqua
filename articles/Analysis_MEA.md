@@ -1,4 +1,4 @@
-# Motif Enrichment Analysis (MEA) Visualization
+# Kinase Activity (Kinase Library + MEA)
 
 ## Overview
 

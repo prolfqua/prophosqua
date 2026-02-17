@@ -1,4 +1,4 @@
-# PTM-SEA Analysis
+# Kinase Activity (PTMsigDB + GSEA)
 
 ## Overview
 
@@ -40,10 +40,9 @@ if (pipeline_mode) {
   data <- readxl::read_xlsx(params$xlsx_file, sheet = params$sheet)
   output_dir <- if (!is.null(params$output_dir)) params$output_dir else dirname(params$xlsx_file)
 } else {
-  # Vignette mode: use example data (subset to 1 contrast for speed)
+  # Vignette mode: use example data
   data("combined_test_diff_example", package = "prophosqua")
-  data <- combined_test_diff_example |>
-    dplyr::filter(contrast == unique(contrast)[1])
+  data <- combined_test_diff_example
   output_dir <- tempdir()
 }
 
@@ -59,14 +58,14 @@ data_info <- tibble(
 knitr::kable(data_info, caption = "Input Data Summary")
 ```
 
-| Property    | Value                   |
-|:------------|:------------------------|
-| Mode        | Example data            |
-| Sheet       | combinedSiteProteinData |
-| Stat Column | statistic.site          |
-| Rows        | 26456                   |
-| Columns     | 56                      |
-| Contrasts   | KO_vs_WT                |
+| Property | Value |
+|:---|:---|
+| Mode | Example data |
+| Sheet | combinedSiteProteinData |
+| Stat Column | statistic.site |
+| Rows | 105824 |
+| Columns | 56 |
+| Contrasts | KO_vs_WT, KO_vs_WT_at_Early, KO_vs_WT_at_Late, KO_vs_WT_at_Uninfect |
 
 Input Data Summary {.table}
 
@@ -108,8 +107,10 @@ n_path <- sum(grepl("^PATH-", names(pathways)))
 # Summary table
 ptmsigdb_summary <- tibble(
   Property = c("Source File", "Total Signatures", "KINASE signatures", "PATH signatures", "Unique Sites"),
-  Value = c(basename(ptmsigdb_file), length(pathways), n_kinase, n_path,
-            length(unique(unlist(pathways))))
+  Value = c(
+    basename(ptmsigdb_file), length(pathways), n_kinase, n_path,
+    length(unique(unlist(pathways)))
+  )
 )
 knitr::kable(ptmsigdb_summary, caption = "PTMsigDB Signature Database Summary")
 ```
@@ -146,7 +147,7 @@ our_sequences <- data |>
   toupper() |>
   unique()
 our_sequences_trimmed <- our_sequences |>
-  map_chr(~prophosqua:::trim_flanking_seq(.x, trim_to = params$trim_to))
+  map_chr(~ prophosqua:::trim_flanking_seq(.x, trim_to = params$trim_to))
 our_site_ids <- paste0(our_sequences_trimmed, "-p")
 n_our_sites <- n_distinct(our_site_ids)
 
@@ -164,11 +165,15 @@ overlap_ids <- intersect(unique(our_site_ids), ptmsigdb_ids_stripped)
 n_overlap <- length(overlap_ids)
 
 overlap_stats <- tibble(
-  Metric = c("Our data (unique sequences)", "PTMsigDB (unique site IDs)", "Overlap",
-             "% of our sites in PTMsigDB", "% of PTMsigDB sites in our data"),
-  Value = c(n_our_sites, n_ptmsigdb_sites, n_overlap,
-            round(100 * n_overlap / n_our_sites, 2),
-            round(100 * n_overlap / n_ptmsigdb_sites, 2))
+  Metric = c(
+    "Our data (unique sequences)", "PTMsigDB (unique site IDs)", "Overlap",
+    "% of our sites in PTMsigDB", "% of PTMsigDB sites in our data"
+  ),
+  Value = c(
+    n_our_sites, n_ptmsigdb_sites, n_overlap,
+    round(100 * n_overlap / n_our_sites, 2),
+    round(100 * n_overlap / n_ptmsigdb_sites, 2)
+  )
 )
 knitr::kable(overlap_stats, caption = paste0("Overlap Statistics (", params$trim_to, "-mer)"))
 ```
@@ -203,9 +208,12 @@ prep_info <- tibble(
 knitr::kable(prep_info, caption = paste(params$analysis_type, "Contrasts Prepared"))
 ```
 
-| Contrast | Sites |
-|:---------|------:|
-| KO_vs_WT | 21682 |
+| Contrast             | Sites |
+|:---------------------|------:|
+| KO_vs_WT             | 21682 |
+| KO_vs_WT_at_Early    | 21682 |
+| KO_vs_WT_at_Late     | 21682 |
+| KO_vs_WT_at_Uninfect | 21682 |
 
 DPA Contrasts Prepared {.table}
 
@@ -214,9 +222,13 @@ DPA Contrasts Prepared {.table}
 # Count dropped sequences (handle empty lists/NULL values)
 n_dropped <- 0
 if (length(prep$dropped) > 0) {
-  n_dropped <- sum(map_int(prep$dropped, ~{
-    if (is.null(.x) || length(.x) == 0) return(0L)
-    if (is.data.frame(.x)) return(nrow(.x))
+  n_dropped <- sum(map_int(prep$dropped, ~ {
+    if (is.null(.x) || length(.x) == 0) {
+      return(0L)
+    }
+    if (is.data.frame(.x)) {
+      return(nrow(.x))
+    }
     return(length(.x))
   }))
 }
@@ -241,16 +253,19 @@ results <- run_ptmsea(
 
 results_info <- tibble(
   Contrast = names(results),
-  `Total Pathways` = map_int(results, ~nrow(.x@result)),
-  `FDR < 0.1` = map_int(results, ~sum(.x@result$p.adjust < 0.1, na.rm = TRUE)),
-  `FDR < 0.05` = map_int(results, ~sum(.x@result$p.adjust < 0.05, na.rm = TRUE))
+  `Total Pathways` = map_int(results, ~ nrow(.x@result)),
+  `FDR < 0.1` = map_int(results, ~ sum(.x@result$p.adjust < 0.1, na.rm = TRUE)),
+  `FDR < 0.05` = map_int(results, ~ sum(.x@result$p.adjust < 0.05, na.rm = TRUE))
 )
 knitr::kable(results_info, caption = paste(params$analysis_type, "PTM-SEA Results Summary"))
 ```
 
-| Contrast | Total Pathways | FDR \< 0.1 | FDR \< 0.05 |
-|:---------|---------------:|-----------:|------------:|
-| KO_vs_WT |              0 |          0 |           0 |
+| Contrast             | Total Pathways | FDR \< 0.1 | FDR \< 0.05 |
+|:---------------------|---------------:|-----------:|------------:|
+| KO_vs_WT             |              0 |          0 |           0 |
+| KO_vs_WT_at_Early    |              0 |          0 |           0 |
+| KO_vs_WT_at_Late     |              0 |          0 |           0 |
+| KO_vs_WT_at_Uninfect |              0 |          0 |           0 |
 
 DPA PTM-SEA Results Summary {.table}
 
@@ -315,14 +330,19 @@ for (ctr in unique(all_clean$contrast)) {
   cat("**Significant pathways (FDR < 0.1):** ", n_sig, "\n\n")
 
   # Using shared dotplot function
-  p <- plot_enrichment_dotplot(
-    ctr_data,
-    item_col = "pathway_short",
-    fdr_col = "p.adjust",
-    title = paste0(params$analysis_type, " - ", ctr),
-    subtitle = "Top 30 pathways by FDR"
-  )
-  print(p)
+  # Check if data exists to avoid empty plot errors
+  if (nrow(ctr_data) > 0) {
+    p <- plot_enrichment_dotplot(
+      ctr_data,
+      item_col = "pathway_short",
+      fdr_col = "p.adjust",
+      title = paste0(params$analysis_type, " - ", ctr),
+      subtitle = "Top 30 pathways by FDR"
+    )
+    print(p)
+  } else {
+    cat("No results to plot for this contrast.\n")
+  }
   cat("\n\n")
 
   # Significant pathways table
@@ -331,13 +351,21 @@ for (ctr in unique(all_clean$contrast)) {
     filter(p.adjust < 0.1) |>
     select(pathway_short, NES, pvalue, FDR = p.adjust, setSize) |>
     arrange(FDR) |>
-    mutate(across(where(is.numeric), ~round(.x, 4)))
-  print(htmltools::tagList(
-    DT::datatable(sig_table,
-                  extensions = 'Buttons',
-                  options = list(pageLength = 15, scrollX = TRUE,
-                                 dom = 'Bfrtip', buttons = c('copy', 'csv', 'excel')))
-  ))
+    mutate(across(where(is.numeric), ~ round(.x, 4)))
+
+  if (nrow(sig_table) > 0) {
+    print(htmltools::tagList(
+      DT::datatable(sig_table,
+        extensions = "Buttons",
+        options = list(
+          pageLength = 15, scrollX = TRUE,
+          dom = "Bfrtip", buttons = c("copy", "csv", "excel")
+        )
+      )
+    ))
+  } else {
+    cat("No significant pathways found (FDR < 0.1).\n")
+  }
   cat("\n\n")
 }
 ```
@@ -349,8 +377,10 @@ for (ctr in unique(all_clean$contrast)) {
 ``` r
 
 merged_results <- merge_result(results)
-dotplot(merged_results, showCategory = 15,
-        title = paste(params$analysis_type, "PTM-SEA (All Contrasts)")) +
+dotplot(merged_results,
+  showCategory = 15,
+  title = paste(params$analysis_type, "PTM-SEA (All Contrasts)")
+) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
@@ -388,10 +418,13 @@ for (ct in names(results)) {
     )
   print(htmltools::tagList(
     DT::datatable(top_res,
-                  extensions = 'Buttons',
-                  options = list(pageLength = 10, scrollX = TRUE,
-                                 dom = 'Bfrtip', buttons = c('copy', 'csv', 'excel')),
-                  caption = paste("Top Pathways -", ct))
+      extensions = "Buttons",
+      options = list(
+        pageLength = 10, scrollX = TRUE,
+        dom = "Bfrtip", buttons = c("copy", "csv", "excel")
+      ),
+      caption = paste("Top Pathways -", ct)
+    )
   ))
   cat("\n\n")
 }
@@ -402,7 +435,7 @@ for (ct in names(results)) {
 ``` r
 
 stopifnot(
- "No GSEA results - check min_size parameter and sequence overlap" = nrow(all_clean) > 0
+  "No GSEA results - check min_size parameter and sequence overlap" = nrow(all_clean) > 0
 )
 
 # Using shared heatmap function with pathway_short labels
@@ -445,7 +478,7 @@ cat("Exported", n_gsea_plots, "GSEA plots to:", pdf_file, "\n")
 ``` r
 
 # Vignette mode: skip PDF export
-n_gsea_plots <- sum(map_int(results, ~nrow(.x@result)))
+n_gsea_plots <- sum(map_int(results, ~ nrow(.x@result)))
 message("Vignette mode: PDF export skipped. Would export ", n_gsea_plots, " plots.")
 ```
 
@@ -476,8 +509,10 @@ for (ct in names(results)) {
     nes_val <- round(row$NES, 2)
     fdr <- signif(row$p.adjust, 2)
 
-    p <- gseaplot2(res, geneSetID = geneset,
-      title = paste0(pathway_short, " (NES=", nes_val, ", FDR=", fdr, ")"))
+    p <- gseaplot2(res,
+      geneSetID = geneset,
+      title = paste0(pathway_short, " (NES=", nes_val, ", FDR=", fdr, ")")
+    )
     print(p)
     cat("\n\n")
   }
@@ -492,14 +527,17 @@ for (ct in names(results)) {
 all_clean_dt <- all_clean |>
   select(contrast, pathway = ID, NES, pvalue, FDR = p.adjust, setSize) |>
   arrange(contrast, FDR) |>
-  mutate(across(where(is.numeric), ~round(.x, 4)))
+  mutate(across(where(is.numeric), ~ round(.x, 4)))
 
 DT::datatable(all_clean_dt,
   filter = "top",
-  extensions = 'Buttons',
-  options = list(pageLength = 15, scrollX = TRUE,
-                 dom = 'Bfrtip', buttons = c('copy', 'csv', 'excel')),
-  caption = "All pathways across all contrasts")
+  extensions = "Buttons",
+  options = list(
+    pageLength = 15, scrollX = TRUE,
+    dom = "Bfrtip", buttons = c("copy", "csv", "excel")
+  ),
+  caption = "All pathways across all contrasts"
+)
 ```
 
 ## Export Results

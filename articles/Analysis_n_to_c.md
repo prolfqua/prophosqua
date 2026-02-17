@@ -27,10 +27,9 @@ if (pipeline_mode) {
   data <- readxl::read_xlsx(params$xlsx_file, sheet = params$sheet)
   output_dir <- if (!is.null(params$output_dir)) params$output_dir else dirname(params$xlsx_file)
 } else {
-  # Vignette mode: use example data (subset to 1 contrast for speed)
+  # Vignette mode: use example data
   data("combined_test_diff_example", package = "prophosqua")
-  data <- combined_test_diff_example |>
-    dplyr::filter(contrast == unique(contrast)[1])
+  data <- combined_test_diff_example
   output_dir <- tempdir()
   max_fig <- 5
   message("Using example data from prophosqua package")
@@ -47,13 +46,13 @@ data_info <- tibble(
 knitr::kable(data_info, caption = "Data Summary")
 ```
 
-| Property      | Value        |
-|:--------------|:-------------|
-| Mode          | Example data |
-| Sheet         | DPA          |
-| Analysis Type | DPA          |
-| Rows          | 26456        |
-| Contrasts     | KO_vs_WT     |
+| Property | Value |
+|:---|:---|
+| Mode | Example data |
+| Sheet | DPA |
+| Analysis Type | DPA |
+| Rows | 105824 |
+| Contrasts | KO_vs_WT, KO_vs_WT_at_Early, KO_vs_WT_at_Late, KO_vs_WT_at_Uninfect |
 
 Data Summary {.table}
 
@@ -66,7 +65,7 @@ all_contrasts <- unique(plot_data$contrast)
 cat("Found", length(all_contrasts), "contrasts:", paste(all_contrasts, collapse = ", "), "\n")
 ```
 
-    ## Found 1 contrasts: KO_vs_WT
+    ## Found 4 contrasts: KO_vs_WT, KO_vs_WT_at_Early, KO_vs_WT_at_Late, KO_vs_WT_at_Uninfect
 
 ## Generate N-to-C Plots
 

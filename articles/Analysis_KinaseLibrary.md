@@ -1,4 +1,4 @@
-# Kinase Library: Kinase Activity Inference from Phosphoproteomics Data
+# Kinase Activity (Kinase Library + GSEA)
 
 ### Introduction
 
@@ -62,10 +62,9 @@ if (pipeline_mode) {
     stat_col = "statistic.site"
   )
 } else {
-  # Vignette mode: use example data (subset to 1 contrast for speed)
+  # Vignette mode: use example data
   data("combined_test_diff_example", package = "prophosqua")
-  data <- combined_test_diff_example |>
-    filter(contrast == unique(contrast)[1])
+  data <- combined_test_diff_example
   output_dir <- tempdir()
 
   # Define config for vignette mode
@@ -88,11 +87,11 @@ data_info <- tibble(
 knitr::kable(data_info, caption = "Differential Analysis Data")
 ```
 
-| Property  | Value    |
-|:----------|:---------|
-| Rows      | 26456    |
-| Columns   | 56       |
-| Contrasts | KO_vs_WT |
+| Property | Value |
+|:---|:---|
+| Rows | 105824 |
+| Columns | 56 |
+| Contrasts | KO_vs_WT, KO_vs_WT_at_Early, KO_vs_WT_at_Late, KO_vs_WT_at_Uninfect |
 
 Differential Analysis Data {.table}
 
@@ -242,9 +241,12 @@ ranks_info <- tibble(
 knitr::kable(ranks_info, caption = paste(params$analysis_type, "Ranks Prepared"))
 ```
 
-| Contrast | Sites |
-|:---------|------:|
-| KO_vs_WT | 21682 |
+| Contrast             | Sites |
+|:---------------------|------:|
+| KO_vs_WT             | 21682 |
+| KO_vs_WT_at_Early    | 21682 |
+| KO_vs_WT_at_Late     | 21682 |
+| KO_vs_WT_at_Uninfect | 21682 |
 
 DPA Ranks Prepared {.table}
 
@@ -273,9 +275,12 @@ gsea_info <- tibble(
 knitr::kable(gsea_info, caption = paste(params$analysis_type, "GSEA Results Summary"))
 ```
 
-| Contrast | Significant Kinases (FDR \< 0.25) |
-|:---------|----------------------------------:|
-| KO_vs_WT |                                29 |
+| Contrast             | Significant Kinases (FDR \< 0.25) |
+|:---------------------|----------------------------------:|
+| KO_vs_WT             |                                29 |
+| KO_vs_WT_at_Early    |                                35 |
+| KO_vs_WT_at_Late     |                                35 |
+| KO_vs_WT_at_Uninfect |                                41 |
 
 DPA GSEA Results Summary {.table}
 
@@ -340,6 +345,30 @@ for (ctr in unique(all_clean$contrast)) {
 **Significant kinases (FDR \< 0.1):** 26
 
 ![](Analysis_KinaseLibrary_files/figure-html/contrastPlots-1.png)
+
+**Significant Kinases (FDR \< 0.1):**
+
+### KO_vs_WT_at_Early
+
+**Significant kinases (FDR \< 0.1):** 26
+
+![](Analysis_KinaseLibrary_files/figure-html/contrastPlots-2.png)
+
+**Significant Kinases (FDR \< 0.1):**
+
+### KO_vs_WT_at_Late
+
+**Significant kinases (FDR \< 0.1):** 31
+
+![](Analysis_KinaseLibrary_files/figure-html/contrastPlots-3.png)
+
+**Significant Kinases (FDR \< 0.1):**
+
+### KO_vs_WT_at_Uninfect
+
+**Significant kinases (FDR \< 0.1):** 38
+
+![](Analysis_KinaseLibrary_files/figure-html/contrastPlots-4.png)
 
 **Significant Kinases (FDR \< 0.1):**
 
@@ -428,9 +457,12 @@ pval_diag <- names(gsea_results) |>
 knitr::kable(pval_diag, caption = paste("Raw p-value Distribution (", params$analysis_type, ")"))
 ```
 
-| Contrast | Min p-value | p \< 0.05 | p \< 0.01 | Total |
-|:---------|------------:|----------:|----------:|------:|
-| KO_vs_WT |           0 |        26 |        20 |    29 |
+| Contrast             | Min p-value | p \< 0.05 | p \< 0.01 | Total |
+|:---------------------|------------:|----------:|----------:|------:|
+| KO_vs_WT             |           0 |        26 |        20 |    29 |
+| KO_vs_WT_at_Early    |           0 |        26 |        19 |    35 |
+| KO_vs_WT_at_Late     |           0 |        31 |        22 |    35 |
+| KO_vs_WT_at_Uninfect |           0 |        37 |        32 |    41 |
 
 Raw p-value Distribution ( DPA ) {.table}
 
@@ -498,6 +530,48 @@ for (ct in names(gsea_results)) {
 ##### TBK1
 
 ![](Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-3.png)
+
+#### KO_vs_WT_at_Early
+
+##### CDK2
+
+![](Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-4.png)
+
+##### CDK3
+
+![](Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-5.png)
+
+##### CDK1
+
+![](Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-6.png)
+
+#### KO_vs_WT_at_Late
+
+##### CDK2
+
+![](Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-7.png)
+
+##### CDK3
+
+![](Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-8.png)
+
+##### CDK1
+
+![](Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-9.png)
+
+#### KO_vs_WT_at_Uninfect
+
+##### TBK1
+
+![](Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-10.png)
+
+##### YSK4
+
+![](Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-11.png)
+
+##### IKKA
+
+![](Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-12.png)
 
 ## All Results
 

@@ -5,12 +5,12 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Kinase Library: Kinase Activity Inference from Phosphoproteomics Data • prophosqua</title>
+<title>Kinase Activity (Kinase Library + GSEA) • prophosqua</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Kinase Library: Kinase Activity Inference from Phosphoproteomics Data">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Kinase Activity (Kinase Library + GSEA)">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -57,11 +57,11 @@
 <script src="Analysis_KinaseLibrary_files/crosstalk-1.2.2/js/crosstalk.min.js"></script><div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Kinase Library: Kinase Activity Inference from Phosphoproteomics Data</h1>
+      <h1>Kinase Activity (Kinase Library + GSEA)</h1>
             <h3 data-toc-skip class="subtitle">DPA</h3>
                         <h4 data-toc-skip class="author">FGCZ</h4>
             
-            <h4 data-toc-skip class="date">16 February, 2026</h4>
+            <h4 data-toc-skip class="date">17 February, 2026</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/prolfqua/prophosqua/blob/HEAD/vignettes/Analysis_KinaseLibrary.Rmd" class="external-link"><code>vignettes/Analysis_KinaseLibrary.Rmd</code></a></small>
       <div class="d-none name"><code>Analysis_KinaseLibrary.Rmd</code></div>
@@ -141,10 +141,9 @@ ranked phosphosite statistics.</p>
 <span>    stat_col <span class="op">=</span> <span class="st">"statistic.site"</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
-<span>  <span class="co"># Vignette mode: use example data (subset to 1 contrast for speed)</span></span>
+<span>  <span class="co"># Vignette mode: use example data</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"combined_test_diff_example"</span>, package <span class="op">=</span> <span class="st">"prophosqua"</span><span class="op">)</span></span>
-<span>  <span class="va">data</span> <span class="op">&lt;-</span> <span class="va">combined_test_diff_example</span> <span class="op">|&gt;</span></span>
-<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">contrast</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">contrast</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span></span>
+<span>  <span class="va">data</span> <span class="op">&lt;-</span> <span class="va">combined_test_diff_example</span></span>
 <span>  <span class="va">output_dir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span>  <span class="co"># Define config for vignette mode</span></span>
@@ -167,6 +166,10 @@ ranked phosphosite statistics.</p>
 <span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">data_info</span>, caption <span class="op">=</span> <span class="st">"Differential Analysis Data"</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <caption>Differential Analysis Data</caption>
+<colgroup>
+<col width="12%">
+<col width="87%">
+</colgroup>
 <thead><tr class="header">
 <th align="left">Property</th>
 <th align="left">Value</th>
@@ -174,7 +177,7 @@ ranked phosphosite statistics.</p>
 <tbody>
 <tr class="odd">
 <td align="left">Rows</td>
-<td align="left">26456</td>
+<td align="left">105824</td>
 </tr>
 <tr class="even">
 <td align="left">Columns</td>
@@ -182,7 +185,8 @@ ranked phosphosite statistics.</p>
 </tr>
 <tr class="odd">
 <td align="left">Contrasts</td>
-<td align="left">KO_vs_WT</td>
+<td align="left">KO_vs_WT, KO_vs_WT_at_Early, KO_vs_WT_at_Late,
+KO_vs_WT_at_Uninfect</td>
 </tr>
 </tbody>
 </table>
@@ -378,10 +382,24 @@ ranked phosphosite statistics.</p>
 <th align="left">Contrast</th>
 <th align="right">Sites</th>
 </tr></thead>
-<tbody><tr class="odd">
+<tbody>
+<tr class="odd">
 <td align="left">KO_vs_WT</td>
 <td align="right">21682</td>
-</tr></tbody>
+</tr>
+<tr class="even">
+<td align="left">KO_vs_WT_at_Early</td>
+<td align="right">21682</td>
+</tr>
+<tr class="odd">
+<td align="left">KO_vs_WT_at_Late</td>
+<td align="right">21682</td>
+</tr>
+<tr class="even">
+<td align="left">KO_vs_WT_at_Uninfect</td>
+<td align="right">21682</td>
+</tr>
+</tbody>
 </table>
 </div>
 <div class="section level3">
@@ -413,10 +431,24 @@ ranked phosphosite statistics.</p>
 <th align="left">Contrast</th>
 <th align="right">Significant Kinases (FDR &lt; 0.25)</th>
 </tr></thead>
-<tbody><tr class="odd">
+<tbody>
+<tr class="odd">
 <td align="left">KO_vs_WT</td>
 <td align="right">29</td>
-</tr></tbody>
+</tr>
+<tr class="even">
+<td align="left">KO_vs_WT_at_Early</td>
+<td align="right">35</td>
+</tr>
+<tr class="odd">
+<td align="left">KO_vs_WT_at_Late</td>
+<td align="right">35</td>
+</tr>
+<tr class="even">
+<td align="left">KO_vs_WT_at_Uninfect</td>
+<td align="right">41</td>
+</tr>
+</tbody>
 </table>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">has_gsea_results</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map_int</a></span><span class="op">(</span><span class="va">gsea_results</span>, <span class="op">~</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">.x</span><span class="op">@</span><span class="va">result</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span></span></code></pre></div>
@@ -477,6 +509,39 @@ ranked phosphosite statistics.</p>
 
 </div>
 <script type="application/json" data-for="htmlwidget-ac96cb3ee4656e2e9ec3">{"x":{"filter":"none","vertical":false,"extensions":["Buttons"],"data":[["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26"],["CDK2","CDK3","TBK1","CDK1","YSK4","NLK","IKKA","RAF1","TLK2","CDK16","MINK","CDKL5","SRPK2","PLK4","TLK1","MEK2","ICK","MARK4","EEF2K","TTBK1","ANKRD3","DYRK3","NEK9","WNK3","JNK2","CK1D"],[-2.4046,-2.3784,2.2668,-2.1162,2.0959,-1.6846,1.6633,1.5857,1.6784,-1.5114,1.4422,-1.3053,-1.2848,1.3038,1.3357,1.3224,-1.2364,1.2225,-1.2552,1.2105,1.2038,-1.1446,1.212,-1.1689,-1.143,1.1381],[0,0,0,0,0,0,0,0,0,0,0,0.0001,0.0002,0.0004,0.0005,0.0007,0.0016,0.0022,0.0068,0.0071,0.0127,0.0238,0.0257,0.0269,0.0397,0.0401],[0,0,0,0,0,0,0,0,0,0,0,0.0004,0.0007,0.0016,0.0018,0.0023,0.0048,0.0061,0.0177,0.0177,0.0303,0.054,0.0559,0.0561,0.0771,0.0771],[1519,1575,966,1557,788,1579,1158,1272,760,1482,855,1522,1667,832,728,644,1505,1155,808,808,868,1677,593,1495,1326,979]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>kinase<\/th>\n      <th>NES<\/th>\n      <th>pvalue<\/th>\n      <th>FDR<\/th>\n      <th>setSize<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":15,"scrollX":true,"dom":"Bfrtip","buttons":["copy","csv","excel"],"columnDefs":[{"className":"dt-right","targets":[2,3,4,5]},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"kinase","targets":1},{"name":"NES","targets":2},{"name":"pvalue","targets":3},{"name":"FDR","targets":4},{"name":"setSize","targets":5}],"order":[],"autoWidth":false,"orderClasses":false,"lengthMenu":[10,15,25,50,100]}},"evals":[],"jsHooks":[]}</script>
+</div>
+<div class="section level3">
+<h3 id="ko_vs_wt_at_early">KO_vs_WT_at_Early<a class="anchor" aria-label="anchor" href="#ko_vs_wt_at_early"></a>
+</h3>
+<p><strong>Significant kinases (FDR &lt; 0.1):</strong> 26</p>
+<p><img src="Analysis_KinaseLibrary_files/figure-html/contrastPlots-2.png" class="r-plt" alt="" width="1152"></p>
+<p><strong>Significant Kinases (FDR &lt; 0.1):</strong></p>
+<div id="htmlwidget-e5c8c404fe174e4c81bd" class="datatables html-widget html-fill-item" style="width:100%;height:auto;">
+
+</div>
+<script type="application/json" data-for="htmlwidget-e5c8c404fe174e4c81bd">{"x":{"filter":"none","vertical":false,"extensions":["Buttons"],"data":[["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26"],["CDK2","CDK3","CDK1","TBK1","YSK4","NLK","TLK2","CDK16","IKKA","RAF1","CDKL5","WNK3","PHKG2","AMPKA1","SRPK2","PHKG1","NUAK1","TLK1","ICK","EEF2K","HRI","MEKK6","MINK","TSSK2","DCAMKL2","DYRK3"],[-2.2863,-2.203,-1.9155,1.7901,1.785,-1.5574,1.5759,-1.3801,1.368,1.3419,-1.3394,-1.3311,-1.3325,-1.3134,-1.2898,-1.2799,-1.2503,1.2789,-1.1959,-1.2473,-1.2401,-1.2053,1.1608,-1.1707,-1.1469,-1.1313],[0,0,0,0,0,0,0,0,0,0,0,0,0.0001,0.0001,0.0001,0.0004,0.0012,0.0032,0.006,0.0107,0.018,0.019,0.0269,0.0297,0.0351,0.0385],[0,0,0,0,0,0,0,0,0,0.0001,0.0002,0.0002,0.0003,0.0004,0.0004,0.0013,0.0035,0.008800000000000001,0.0157,0.0268,0.0429,0.0432,0.0585,0.0619,0.0702,0.074],[1519,1575,1557,966,788,1579,760,1482,1158,1272,1522,1495,1429,1517,1667,1329,1379,728,1505,808,690,950,855,1144,1453,1677]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>kinase<\/th>\n      <th>NES<\/th>\n      <th>pvalue<\/th>\n      <th>FDR<\/th>\n      <th>setSize<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":15,"scrollX":true,"dom":"Bfrtip","buttons":["copy","csv","excel"],"columnDefs":[{"className":"dt-right","targets":[2,3,4,5]},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"kinase","targets":1},{"name":"NES","targets":2},{"name":"pvalue","targets":3},{"name":"FDR","targets":4},{"name":"setSize","targets":5}],"order":[],"autoWidth":false,"orderClasses":false,"lengthMenu":[10,15,25,50,100]}},"evals":[],"jsHooks":[]}</script>
+</div>
+<div class="section level3">
+<h3 id="ko_vs_wt_at_late">KO_vs_WT_at_Late<a class="anchor" aria-label="anchor" href="#ko_vs_wt_at_late"></a>
+</h3>
+<p><strong>Significant kinases (FDR &lt; 0.1):</strong> 31</p>
+<p><img src="Analysis_KinaseLibrary_files/figure-html/contrastPlots-3.png" class="r-plt" alt="" width="1152"></p>
+<p><strong>Significant Kinases (FDR &lt; 0.1):</strong></p>
+<div id="htmlwidget-36aa3d2a04d42bbc2145" class="datatables html-widget html-fill-item" style="width:100%;height:auto;">
+
+</div>
+<script type="application/json" data-for="htmlwidget-36aa3d2a04d42bbc2145">{"x":{"filter":"none","vertical":false,"extensions":["Buttons"],"data":[["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31"],["CDK2","CDK3","CDK1","TBK1","NLK","YSK4","BMPR1A","TLK2","CK1D","CDK16","TLK1","IKKA","EEF2K","PHKG2","WNK3","CDKL5","RAF1","SRPK2","PHKG1","NUAK1","PAK6","AMPKA1","MEK2","ICK","MINK","MEK5","MEKK6","PKCB","HRI","JNK2","MARK4"],[-2.6217,-2.5663,-2.1653,1.9826,-1.8214,1.8045,1.777,1.7653,1.6695,-1.5664,1.5553,1.4502,-1.457,-1.3857,-1.38,-1.3442,1.3358,-1.3137,-1.3188,-1.2694,-1.2293,-1.2307,1.1932,-1.1904,1.1752,-1.1763,-1.187,-1.1778,-1.2135,-1.1529,1.1307],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.0001,0.001,0.0017,0.002,0.01,0.0106,0.0115,0.0165,0.0194,0.0192,0.0293,0.0329,0.0339],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.0001,0.0004,0.0024,0.0041,0.0045,0.0218,0.022,0.023,0.0316,0.0346,0.0346,0.0505,0.0547,0.0547],[1519,1575,1557,966,1579,788,858,760,979,1482,728,1158,808,1429,1495,1522,1272,1667,1329,1379,1603,1517,644,1505,855,997,950,1254,690,1326,1155]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>kinase<\/th>\n      <th>NES<\/th>\n      <th>pvalue<\/th>\n      <th>FDR<\/th>\n      <th>setSize<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":15,"scrollX":true,"dom":"Bfrtip","buttons":["copy","csv","excel"],"columnDefs":[{"className":"dt-right","targets":[2,3,4,5]},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"kinase","targets":1},{"name":"NES","targets":2},{"name":"pvalue","targets":3},{"name":"FDR","targets":4},{"name":"setSize","targets":5}],"order":[],"autoWidth":false,"orderClasses":false,"lengthMenu":[10,15,25,50,100]}},"evals":[],"jsHooks":[]}</script>
+</div>
+<div class="section level3">
+<h3 id="ko_vs_wt_at_uninfect">KO_vs_WT_at_Uninfect<a class="anchor" aria-label="anchor" href="#ko_vs_wt_at_uninfect"></a>
+</h3>
+<p><strong>Significant kinases (FDR &lt; 0.1):</strong> 38</p>
+<p><img src="Analysis_KinaseLibrary_files/figure-html/contrastPlots-4.png" class="r-plt" alt="" width="1152"></p>
+<p><strong>Significant Kinases (FDR &lt; 0.1):</strong></p>
+<div id="htmlwidget-febe03efa1a2d8d52a86" class="datatables html-widget html-fill-item" style="width:100%;height:auto;">
+
+</div>
+<script type="application/json" data-for="htmlwidget-febe03efa1a2d8d52a86">{"x":{"filter":"none","vertical":false,"extensions":["Buttons"],"data":[["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38"],["TBK1","YSK4","IKKA","RAF1","CDK2","MINK","CDK3","PLK4","TTBK1","CDK1","MARK4","NIM1","IRAK1","BMPR1A","ANKRD3","PHKG2","MEK2","NEK9","CDK16","NUAK1","DCAMKL2","JNK2","MAP3K15","TLK2","PHKG1","MEK5","MEKK6","NLK","TSSK2","PKCB","TLK1","WNK3","ICK","HRI","YANK3","AMPKA1","DYRK3","SMMLCK"],[2.6903,2.4175,1.9699,1.9693,-1.8722,1.8687,-1.8671,1.8036,1.7631,-1.7585,1.5908,1.5726,1.5312,-1.5826,1.5644,1.4053,1.5529,1.5457,-1.378,1.3631,1.3536,-1.4026,1.4183,1.4282,1.3114,1.3595,1.3445,-1.3009,1.2764,1.2624,1.2654,1.1834,-1.1875,1.237,1.1417,1.1489,-1.1491,1.086],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.0001,0.0001,0.0001,0.0002,0.0003,0.0005,0.0029,0.0072,0.0103,0.0121,0.0139,0.0184,0.031,0.0664],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.0001,0.0001,0.0002,0.0003,0.0004,0.0005,0.0008,0.0046,0.0112,0.0156,0.0178,0.0198,0.0255,0.0419,0.08740000000000001],[966,788,1158,1272,1519,855,1575,832,808,1557,1155,1200,1058,858,868,1429,644,593,1482,1379,1453,1326,847,760,1329,997,950,1579,1144,1254,728,1495,1505,690,1689,1517,1677,1674]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>kinase<\/th>\n      <th>NES<\/th>\n      <th>pvalue<\/th>\n      <th>FDR<\/th>\n      <th>setSize<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":15,"scrollX":true,"dom":"Bfrtip","buttons":["copy","csv","excel"],"columnDefs":[{"className":"dt-right","targets":[2,3,4,5]},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"kinase","targets":1},{"name":"NES","targets":2},{"name":"pvalue","targets":3},{"name":"FDR","targets":4},{"name":"setSize","targets":5}],"order":[],"autoWidth":false,"orderClasses":false,"lengthMenu":[10,15,25,50,100]}},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
 <div class="section level2">
@@ -565,13 +630,36 @@ ranked phosphosite statistics.</p>
 <th align="right">p &lt; 0.01</th>
 <th align="right">Total</th>
 </tr></thead>
-<tbody><tr class="odd">
+<tbody>
+<tr class="odd">
 <td align="left">KO_vs_WT</td>
 <td align="right">0</td>
 <td align="right">26</td>
 <td align="right">20</td>
 <td align="right">29</td>
-</tr></tbody>
+</tr>
+<tr class="even">
+<td align="left">KO_vs_WT_at_Early</td>
+<td align="right">0</td>
+<td align="right">26</td>
+<td align="right">19</td>
+<td align="right">35</td>
+</tr>
+<tr class="odd">
+<td align="left">KO_vs_WT_at_Late</td>
+<td align="right">0</td>
+<td align="right">31</td>
+<td align="right">22</td>
+<td align="right">35</td>
+</tr>
+<tr class="even">
+<td align="left">KO_vs_WT_at_Uninfect</td>
+<td align="right">0</td>
+<td align="right">37</td>
+<td align="right">32</td>
+<td align="right">41</td>
+</tr>
+</tbody>
 </table>
 </div>
 <div class="section level2">
@@ -637,6 +725,63 @@ ranked phosphosite statistics.</p>
 <p><img src="Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-3.png" class="r-plt" alt="" width="960"></p>
 </div>
 </div>
+<div class="section level4">
+<h4 class="tabset" id="ko_vs_wt_at_early-1">KO_vs_WT_at_Early<a class="anchor" aria-label="anchor" href="#ko_vs_wt_at_early-1"></a>
+</h4>
+<div class="section level5">
+<h5 id="cdk2-1">CDK2<a class="anchor" aria-label="anchor" href="#cdk2-1"></a>
+</h5>
+<p><img src="Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-4.png" class="r-plt" alt="" width="960"></p>
+</div>
+<div class="section level5">
+<h5 id="cdk3-1">CDK3<a class="anchor" aria-label="anchor" href="#cdk3-1"></a>
+</h5>
+<p><img src="Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-5.png" class="r-plt" alt="" width="960"></p>
+</div>
+<div class="section level5">
+<h5 id="cdk1">CDK1<a class="anchor" aria-label="anchor" href="#cdk1"></a>
+</h5>
+<p><img src="Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-6.png" class="r-plt" alt="" width="960"></p>
+</div>
+</div>
+<div class="section level4">
+<h4 class="tabset" id="ko_vs_wt_at_late-1">KO_vs_WT_at_Late<a class="anchor" aria-label="anchor" href="#ko_vs_wt_at_late-1"></a>
+</h4>
+<div class="section level5">
+<h5 id="cdk2-2">CDK2<a class="anchor" aria-label="anchor" href="#cdk2-2"></a>
+</h5>
+<p><img src="Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-7.png" class="r-plt" alt="" width="960"></p>
+</div>
+<div class="section level5">
+<h5 id="cdk3-2">CDK3<a class="anchor" aria-label="anchor" href="#cdk3-2"></a>
+</h5>
+<p><img src="Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-8.png" class="r-plt" alt="" width="960"></p>
+</div>
+<div class="section level5">
+<h5 id="cdk1-1">CDK1<a class="anchor" aria-label="anchor" href="#cdk1-1"></a>
+</h5>
+<p><img src="Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-9.png" class="r-plt" alt="" width="960"></p>
+</div>
+</div>
+<div class="section level4">
+<h4 class="tabset" id="ko_vs_wt_at_uninfect-1">KO_vs_WT_at_Uninfect<a class="anchor" aria-label="anchor" href="#ko_vs_wt_at_uninfect-1"></a>
+</h4>
+<div class="section level5">
+<h5 id="tbk1-1">TBK1<a class="anchor" aria-label="anchor" href="#tbk1-1"></a>
+</h5>
+<p><img src="Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-10.png" class="r-plt" alt="" width="960"></p>
+</div>
+<div class="section level5">
+<h5 id="ysk4">YSK4<a class="anchor" aria-label="anchor" href="#ysk4"></a>
+</h5>
+<p><img src="Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-11.png" class="r-plt" alt="" width="960"></p>
+</div>
+<div class="section level5">
+<h5 id="ikka">IKKA<a class="anchor" aria-label="anchor" href="#ikka"></a>
+</h5>
+<p><img src="Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-12.png" class="r-plt" alt="" width="960"></p>
+</div>
+</div>
 </div>
 <div class="section level2">
 <h2 id="all-results">All Results<a class="anchor" aria-label="anchor" href="#all-results"></a>
@@ -659,8 +804,8 @@ ranked phosphosite statistics.</p>
 <span>  options <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>pageLength <span class="op">=</span> <span class="fl">15</span>, scrollX <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>                 dom <span class="op">=</span> <span class="st">'Bfrtip'</span>, buttons <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'copy'</span>, <span class="st">'csv'</span>, <span class="st">'excel'</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  caption <span class="op">=</span> <span class="st">"All kinases across all contrasts"</span><span class="op">)</span></span></code></pre></div>
-<div class="datatables html-widget html-fill-item" id="htmlwidget-e5c8c404fe174e4c81bd" style="width:100%;height:auto;"></div>
-<script type="application/json" data-for="htmlwidget-e5c8c404fe174e4c81bd">{"x":{"filter":"top","vertical":false,"filterHTML":"<tr>\n  <td><\/td>\n  <td data-type=\"character\" style=\"vertical-align: top;\">\n    <div class=\"form-group has-feedback\" style=\"margin-bottom: auto;\">\n      <input type=\"search\" placeholder=\"All\" class=\"form-control\" style=\"width: 100%;\" disabled=\"\"/>\n      <span class=\"glyphicon glyphicon-remove-circle form-control-feedback\"><\/span>\n    <\/div>\n  <\/td>\n  <td data-type=\"character\" style=\"vertical-align: top;\">\n    <div class=\"form-group has-feedback\" style=\"margin-bottom: auto;\">\n      <input type=\"search\" placeholder=\"All\" class=\"form-control\" style=\"width: 100%;\"/>\n      <span class=\"glyphicon glyphicon-remove-circle form-control-feedback\"><\/span>\n    <\/div>\n  <\/td>\n  <td data-type=\"number\" style=\"vertical-align: top;\">\n    <div class=\"form-group has-feedback\" style=\"margin-bottom: auto;\">\n      <input type=\"search\" placeholder=\"All\" class=\"form-control\" style=\"width: 100%;\"/>\n      <span class=\"glyphicon glyphicon-remove-circle form-control-feedback\"><\/span>\n    <\/div>\n    <div style=\"display: none;position: absolute;width: 200px;opacity: 1\">\n      <div data-min=\"-2.4046\" data-max=\"2.2668\" data-scale=\"4\"><\/div>\n      <span style=\"float: left;\"><\/span>\n      <span style=\"float: right;\"><\/span>\n    <\/div>\n  <\/td>\n  <td data-type=\"number\" style=\"vertical-align: top;\">\n    <div class=\"form-group has-feedback\" style=\"margin-bottom: auto;\">\n      <input type=\"search\" placeholder=\"All\" class=\"form-control\" style=\"width: 100%;\"/>\n      <span class=\"glyphicon glyphicon-remove-circle form-control-feedback\"><\/span>\n    <\/div>\n    <div style=\"display: none;position: absolute;width: 200px;opacity: 1\">\n      <div data-min=\"0\" data-max=\"0.1126\" data-scale=\"4\"><\/div>\n      <span style=\"float: left;\"><\/span>\n      <span style=\"float: right;\"><\/span>\n    <\/div>\n  <\/td>\n  <td data-type=\"number\" style=\"vertical-align: top;\">\n    <div class=\"form-group has-feedback\" style=\"margin-bottom: auto;\">\n      <input type=\"search\" placeholder=\"All\" class=\"form-control\" style=\"width: 100%;\"/>\n      <span class=\"glyphicon glyphicon-remove-circle form-control-feedback\"><\/span>\n    <\/div>\n    <div style=\"display: none;position: absolute;width: 200px;opacity: 1\">\n      <div data-min=\"0\" data-max=\"0.1943\" data-scale=\"4\"><\/div>\n      <span style=\"float: left;\"><\/span>\n      <span style=\"float: right;\"><\/span>\n    <\/div>\n  <\/td>\n  <td data-type=\"number\" style=\"vertical-align: top;\">\n    <div class=\"form-group has-feedback\" style=\"margin-bottom: auto;\">\n      <input type=\"search\" placeholder=\"All\" class=\"form-control\" style=\"width: 100%;\"/>\n      <span class=\"glyphicon glyphicon-remove-circle form-control-feedback\"><\/span>\n    <\/div>\n    <div style=\"display: none;position: absolute;width: 200px;opacity: 1\">\n      <div data-min=\"593\" data-max=\"1677\"><\/div>\n      <span style=\"float: left;\"><\/span>\n      <span style=\"float: right;\"><\/span>\n    <\/div>\n  <\/td>\n<\/tr>","extensions":["Buttons"],"caption":"<caption>All kinases across all contrasts<\/caption>","data":[["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29"],["KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT"],["CDK2","CDK3","TBK1","CDK1","YSK4","NLK","IKKA","RAF1","TLK2","CDK16","MINK","CDKL5","SRPK2","PLK4","TLK1","MEK2","ICK","MARK4","EEF2K","TTBK1","ANKRD3","DYRK3","NEK9","WNK3","JNK2","CK1D","NIM1","PAK6","AMPKA1"],[-2.4046,-2.3784,2.2668,-2.1162,2.0959,-1.6846,1.6633,1.5857,1.6784,-1.5114,1.4422,-1.3053,-1.2848,1.3038,1.3357,1.3224,-1.2364,1.2225,-1.2552,1.2105,1.2038,-1.1446,1.212,-1.1689,-1.143,1.1381,1.0915,-1.0862,-1.0732],[0,0,0,0,0,0,0,0,0,0,0,0.0001,0.0002,0.0004,0.0005,0.0007,0.0016,0.0022,0.0068,0.0071,0.0127,0.0238,0.0257,0.0269,0.0397,0.0401,0.0741,0.0897,0.1126],[0,0,0,0,0,0,0,0,0,0,0,0.0004,0.0007,0.0016,0.0018,0.0023,0.0048,0.0061,0.0177,0.0177,0.0303,0.054,0.0559,0.0561,0.0771,0.0771,0.1373,0.1602,0.1942],[1519,1575,966,1557,788,1579,1158,1272,760,1482,855,1522,1667,832,728,644,1505,1155,808,808,868,1677,593,1495,1326,979,1200,1603,1517]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>contrast<\/th>\n      <th>kinase<\/th>\n      <th>NES<\/th>\n      <th>pvalue<\/th>\n      <th>FDR<\/th>\n      <th>setSize<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":15,"scrollX":true,"dom":"Bfrtip","buttons":["copy","csv","excel"],"columnDefs":[{"className":"dt-right","targets":[3,4,5,6]},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"contrast","targets":1},{"name":"kinase","targets":2},{"name":"NES","targets":3},{"name":"pvalue","targets":4},{"name":"FDR","targets":5},{"name":"setSize","targets":6}],"order":[],"autoWidth":false,"orderClasses":false,"orderCellsTop":true,"lengthMenu":[10,15,25,50,100]}},"evals":[],"jsHooks":[]}</script>
+<div class="datatables html-widget html-fill-item" id="htmlwidget-1fb4450895fe099f74a1" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-1fb4450895fe099f74a1">{"x":{"filter":"top","vertical":false,"filterHTML":"<tr>\n  <td><\/td>\n  <td data-type=\"character\" style=\"vertical-align: top;\">\n    <div class=\"form-group has-feedback\" style=\"margin-bottom: auto;\">\n      <input type=\"search\" placeholder=\"All\" class=\"form-control\" style=\"width: 100%;\"/>\n      <span class=\"glyphicon glyphicon-remove-circle form-control-feedback\"><\/span>\n    <\/div>\n  <\/td>\n  <td data-type=\"character\" style=\"vertical-align: top;\">\n    <div class=\"form-group has-feedback\" style=\"margin-bottom: auto;\">\n      <input type=\"search\" placeholder=\"All\" class=\"form-control\" style=\"width: 100%;\"/>\n      <span class=\"glyphicon glyphicon-remove-circle form-control-feedback\"><\/span>\n    <\/div>\n  <\/td>\n  <td data-type=\"number\" style=\"vertical-align: top;\">\n    <div class=\"form-group has-feedback\" style=\"margin-bottom: auto;\">\n      <input type=\"search\" placeholder=\"All\" class=\"form-control\" style=\"width: 100%;\"/>\n      <span class=\"glyphicon glyphicon-remove-circle form-control-feedback\"><\/span>\n    <\/div>\n    <div style=\"display: none;position: absolute;width: 200px;opacity: 1\">\n      <div data-min=\"-2.6217\" data-max=\"2.6903\" data-scale=\"4\"><\/div>\n      <span style=\"float: left;\"><\/span>\n      <span style=\"float: right;\"><\/span>\n    <\/div>\n  <\/td>\n  <td data-type=\"number\" style=\"vertical-align: top;\">\n    <div class=\"form-group has-feedback\" style=\"margin-bottom: auto;\">\n      <input type=\"search\" placeholder=\"All\" class=\"form-control\" style=\"width: 100%;\"/>\n      <span class=\"glyphicon glyphicon-remove-circle form-control-feedback\"><\/span>\n    <\/div>\n    <div style=\"display: none;position: absolute;width: 200px;opacity: 1\">\n      <div data-min=\"0\" data-max=\"0.1563\" data-scale=\"4\"><\/div>\n      <span style=\"float: left;\"><\/span>\n      <span style=\"float: right;\"><\/span>\n    <\/div>\n  <\/td>\n  <td data-type=\"number\" style=\"vertical-align: top;\">\n    <div class=\"form-group has-feedback\" style=\"margin-bottom: auto;\">\n      <input type=\"search\" placeholder=\"All\" class=\"form-control\" style=\"width: 100%;\"/>\n      <span class=\"glyphicon glyphicon-remove-circle form-control-feedback\"><\/span>\n    <\/div>\n    <div style=\"display: none;position: absolute;width: 200px;opacity: 1\">\n      <div data-min=\"0\" data-max=\"0.2233\" data-scale=\"4\"><\/div>\n      <span style=\"float: left;\"><\/span>\n      <span style=\"float: right;\"><\/span>\n    <\/div>\n  <\/td>\n  <td data-type=\"number\" style=\"vertical-align: top;\">\n    <div class=\"form-group has-feedback\" style=\"margin-bottom: auto;\">\n      <input type=\"search\" placeholder=\"All\" class=\"form-control\" style=\"width: 100%;\"/>\n      <span class=\"glyphicon glyphicon-remove-circle form-control-feedback\"><\/span>\n    <\/div>\n    <div style=\"display: none;position: absolute;width: 200px;opacity: 1\">\n      <div data-min=\"593\" data-max=\"1689\"><\/div>\n      <span style=\"float: left;\"><\/span>\n      <span style=\"float: right;\"><\/span>\n    <\/div>\n  <\/td>\n<\/tr>","extensions":["Buttons"],"caption":"<caption>All kinases across all contrasts<\/caption>","data":[["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55","56","57","58","59","60","61","62","63","64","65","66","67","68","69","70","71","72","73","74","75","76","77","78","79","80","81","82","83","84","85","86","87","88","89","90","91","92","93","94","95","96","97","98","99","100","101","102","103","104","105","106","107","108","109","110","111","112","113","114","115","116","117","118","119","120","121","122","123","124","125","126","127","128","129","130","131","132","133","134","135","136","137","138","139","140"],["KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT","KO_vs_WT_at_Early","KO_vs_WT_at_Early","KO_vs_WT_at_Early","KO_vs_WT_at_Early","KO_vs_WT_at_Early","KO_vs_WT_at_Early","KO_vs_WT_at_Early","KO_vs_WT_at_Early","KO_vs_WT_at_Early","KO_vs_WT_at_Early","KO_vs_WT_at_Early","KO_vs_WT_at_Early","KO_vs_WT_at_Early","KO_vs_WT_at_Early","KO_vs_WT_at_Early","KO_vs_WT_at_Early","KO_vs_WT_at_Early","KO_vs_WT_at_Early","KO_vs_WT_at_Early","KO_vs_WT_at_Early","KO_vs_WT_at_Early","KO_vs_WT_at_Early","KO_vs_WT_at_Early","KO_vs_WT_at_Early","KO_vs_WT_at_Early","KO_vs_WT_at_Early","KO_vs_WT_at_Early","KO_vs_WT_at_Early","KO_vs_WT_at_Early","KO_vs_WT_at_Early","KO_vs_WT_at_Early","KO_vs_WT_at_Early","KO_vs_WT_at_Early","KO_vs_WT_at_Early","KO_vs_WT_at_Early","KO_vs_WT_at_Late","KO_vs_WT_at_Late","KO_vs_WT_at_Late","KO_vs_WT_at_Late","KO_vs_WT_at_Late","KO_vs_WT_at_Late","KO_vs_WT_at_Late","KO_vs_WT_at_Late","KO_vs_WT_at_Late","KO_vs_WT_at_Late","KO_vs_WT_at_Late","KO_vs_WT_at_Late","KO_vs_WT_at_Late","KO_vs_WT_at_Late","KO_vs_WT_at_Late","KO_vs_WT_at_Late","KO_vs_WT_at_Late","KO_vs_WT_at_Late","KO_vs_WT_at_Late","KO_vs_WT_at_Late","KO_vs_WT_at_Late","KO_vs_WT_at_Late","KO_vs_WT_at_Late","KO_vs_WT_at_Late","KO_vs_WT_at_Late","KO_vs_WT_at_Late","KO_vs_WT_at_Late","KO_vs_WT_at_Late","KO_vs_WT_at_Late","KO_vs_WT_at_Late","KO_vs_WT_at_Late","KO_vs_WT_at_Late","KO_vs_WT_at_Late","KO_vs_WT_at_Late","KO_vs_WT_at_Late","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect","KO_vs_WT_at_Uninfect"],["CDK2","CDK3","TBK1","CDK1","YSK4","NLK","IKKA","RAF1","TLK2","CDK16","MINK","CDKL5","SRPK2","PLK4","TLK1","MEK2","ICK","MARK4","EEF2K","TTBK1","ANKRD3","DYRK3","NEK9","WNK3","JNK2","CK1D","NIM1","PAK6","AMPKA1","CDK2","CDK3","CDK1","TBK1","YSK4","NLK","TLK2","CDK16","IKKA","RAF1","CDKL5","WNK3","PHKG2","AMPKA1","SRPK2","PHKG1","NUAK1","TLK1","ICK","EEF2K","HRI","MEKK6","MINK","TSSK2","DCAMKL2","DYRK3","PRKD1","MEK5","PAK6","NIM1","BMPR1A","CK1D","YANK3","RSK3","MEK2","CDK2","CDK3","CDK1","TBK1","NLK","YSK4","BMPR1A","TLK2","CK1D","CDK16","TLK1","IKKA","EEF2K","PHKG2","WNK3","CDKL5","RAF1","SRPK2","PHKG1","NUAK1","PAK6","AMPKA1","MEK2","ICK","MINK","MEK5","MEKK6","PKCB","HRI","JNK2","MARK4","ANKRD3","DCAMKL2","RSK3","PLK4","TBK1","YSK4","IKKA","RAF1","CDK2","MINK","CDK3","PLK4","TTBK1","CDK1","MARK4","NIM1","IRAK1","BMPR1A","ANKRD3","PHKG2","MEK2","NEK9","CDK16","NUAK1","DCAMKL2","JNK2","MAP3K15","TLK2","PHKG1","MEK5","MEKK6","NLK","TSSK2","PKCB","TLK1","WNK3","ICK","HRI","YANK3","AMPKA1","DYRK3","SMMLCK","PKACB","SRPK2","CDKL5"],[-2.4046,-2.3784,2.2668,-2.1162,2.0959,-1.6846,1.6633,1.5857,1.6784,-1.5114,1.4422,-1.3053,-1.2848,1.3038,1.3357,1.3224,-1.2364,1.2225,-1.2552,1.2105,1.2038,-1.1446,1.212,-1.1689,-1.143,1.1381,1.0915,-1.0862,-1.0732,-2.2863,-2.203,-1.9155,1.7901,1.785,-1.5574,1.5759,-1.3801,1.368,1.3419,-1.3394,-1.3311,-1.3325,-1.3134,-1.2898,-1.2799,-1.2503,1.2789,-1.1959,-1.2473,-1.2401,-1.2053,1.1608,-1.1707,-1.1469,-1.1313,1.0895,-1.1505,-1.1273,-1.1088,1.0859,1.0846,-1.0709,-1.0615,1.0924,-2.6217,-2.5663,-2.1653,1.9826,-1.8214,1.8045,1.777,1.7653,1.6695,-1.5664,1.5553,1.4502,-1.457,-1.3857,-1.38,-1.3442,1.3358,-1.3137,-1.3188,-1.2694,-1.2293,-1.2307,1.1932,-1.1904,1.1752,-1.1763,-1.187,-1.1778,-1.2135,-1.1529,1.1307,1.0525,-1.0703,-1.0687,1.0574,2.6903,2.4175,1.9699,1.9693,-1.8722,1.8687,-1.8671,1.8036,1.7631,-1.7585,1.5908,1.5726,1.5312,-1.5826,1.5644,1.4053,1.5529,1.5457,-1.378,1.3631,1.3536,-1.4026,1.4183,1.4282,1.3114,1.3595,1.3445,-1.3009,1.2764,1.2624,1.2654,1.1834,-1.1875,1.237,1.1417,1.1489,-1.1491,1.086,-1.0908,-1.0922,-1.0776],[0,0,0,0,0,0,0,0,0,0,0,0.0001,0.0002,0.0004,0.0005,0.0007,0.0016,0.0022,0.0068,0.0071,0.0127,0.0238,0.0257,0.0269,0.0397,0.0401,0.0741,0.0897,0.1126,0,0,0,0,0,0,0,0,0,0,0,0,0.0001,0.0001,0.0001,0.0004,0.0012,0.0032,0.006,0.0107,0.018,0.019,0.0269,0.0297,0.0351,0.0385,0.0557,0.0708,0.08260000000000001,0.0803,0.0863,0.0896,0.1214,0.1422,0.1563,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.0001,0.001,0.0017,0.002,0.01,0.0106,0.0115,0.0165,0.0194,0.0192,0.0293,0.0329,0.0339,0.1132,0.1305,0.1561,0.155,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.0001,0.0001,0.0001,0.0002,0.0003,0.0005,0.0029,0.0072,0.0103,0.0121,0.0139,0.0184,0.031,0.0664,0.1149,0.1368,0.1528],[0,0,0,0,0,0,0,0,0,0,0,0.0004,0.0007,0.0016,0.0018,0.0023,0.0048,0.0061,0.0177,0.0177,0.0303,0.054,0.0559,0.0561,0.0771,0.0771,0.1373,0.1602,0.1942,0,0,0,0,0,0,0,0,0,0.0001,0.0002,0.0002,0.0003,0.0004,0.0004,0.0013,0.0035,0.008800000000000001,0.0157,0.0268,0.0429,0.0432,0.0585,0.0619,0.0702,0.074,0.1032,0.1264,0.1377,0.1377,0.1392,0.1401,0.184,0.2091,0.2233,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.0001,0.0004,0.0024,0.0041,0.0045,0.0218,0.022,0.023,0.0316,0.0346,0.0346,0.0505,0.0547,0.0547,0.1768,0.1977,0.223,0.223,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.0001,0.0001,0.0002,0.0003,0.0004,0.0005,0.0008,0.0046,0.0112,0.0156,0.0178,0.0198,0.0255,0.0419,0.08740000000000001,0.1473,0.171,0.1863],[1519,1575,966,1557,788,1579,1158,1272,760,1482,855,1522,1667,832,728,644,1505,1155,808,808,868,1677,593,1495,1326,979,1200,1603,1517,1519,1575,1557,966,788,1579,760,1482,1158,1272,1522,1495,1429,1517,1667,1329,1379,728,1505,808,690,950,855,1144,1453,1677,1164,997,1603,1200,858,979,1689,1633,644,1519,1575,1557,966,1579,788,858,760,979,1482,728,1158,808,1429,1495,1522,1272,1667,1329,1379,1603,1517,644,1505,855,997,950,1254,690,1326,1155,868,1453,1633,832,966,788,1158,1272,1519,855,1575,832,808,1557,1155,1200,1058,858,868,1429,644,593,1482,1379,1453,1326,847,760,1329,997,950,1579,1144,1254,728,1495,1505,690,1689,1517,1677,1674,1676,1667,1522]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>contrast<\/th>\n      <th>kinase<\/th>\n      <th>NES<\/th>\n      <th>pvalue<\/th>\n      <th>FDR<\/th>\n      <th>setSize<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":15,"scrollX":true,"dom":"Bfrtip","buttons":["copy","csv","excel"],"columnDefs":[{"className":"dt-right","targets":[3,4,5,6]},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"contrast","targets":1},{"name":"kinase","targets":2},{"name":"NES","targets":3},{"name":"pvalue","targets":4},{"name":"FDR","targets":5},{"name":"setSize","targets":6}],"order":[],"autoWidth":false,"orderClasses":false,"orderCellsTop":true,"lengthMenu":[10,15,25,50,100]}},"evals":[],"jsHooks":[]}</script>
 </div>
 <div class="section level2">
 <h2 id="export-results">Export Results<a class="anchor" aria-label="anchor" href="#export-results"></a>

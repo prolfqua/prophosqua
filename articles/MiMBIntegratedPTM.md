@@ -737,7 +737,7 @@ function, which follows the standard naming convention for DEA results.
 prolfquapp::zipdir_name("DEA", workunit_id = "total_proteome")
 ```
 
-    ## [1] "DEA_20260216_WUtotal_proteome_vsn"
+    ## [1] "DEA_20260217_WUtotal_proteome_vsn"
 
 The DEA of the single-site output of enriched phosphoproteome examines
 changes at individual modification sites and is performed by running the
