@@ -76,10 +76,9 @@ if (pipeline_mode) {
   data <- readxl::read_xlsx(params$xlsx_file, sheet = params$sheet)
   output_dir <- if (!is.null(params$output_dir)) params$output_dir else dirname(params$xlsx_file)
 } else {
-  # Vignette mode: use example data (subset to 1 contrast for speed)
+  # Vignette mode: use example data
   data("combined_test_diff_example", package = "prophosqua")
-  data <- combined_test_diff_example |>
-    dplyr::filter(contrast == unique(contrast)[1])
+  data <- combined_test_diff_example
   output_dir <- tempdir()
   max_fig <- 5
   message("Using example data from prophosqua package")

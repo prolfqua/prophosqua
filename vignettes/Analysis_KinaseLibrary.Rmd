@@ -1,5 +1,5 @@
 ---
-title: "Kinase Library: Kinase Activity Inference from Phosphoproteomics Data"
+title: "Kinase Activity (Kinase Library + GSEA)"
 subtitle: "`r params$analysis_type`"
 author: "FGCZ"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
@@ -20,7 +20,7 @@ output:
     code_folding: hide
     self_contained: true
 vignette: >
-  %\VignetteIndexEntry{Kinase Library GSEA}
+  %\VignetteIndexEntry{Kinase Activity (Kinase Library + GSEA)}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -92,10 +92,9 @@ if (pipeline_mode) {
     stat_col = "statistic.site"
   )
 } else {
-  # Vignette mode: use example data (subset to 1 contrast for speed)
+  # Vignette mode: use example data
   data("combined_test_diff_example", package = "prophosqua")
-  data <- combined_test_diff_example |>
-    filter(contrast == unique(contrast)[1])
+  data <- combined_test_diff_example
   output_dir <- tempdir()
 
   # Define config for vignette mode

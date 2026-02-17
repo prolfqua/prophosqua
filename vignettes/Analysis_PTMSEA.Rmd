@@ -1,5 +1,5 @@
 ---
-title: "PTM-SEA Analysis"
+title: "Kinase Activity (PTMsigDB + GSEA)"
 subtitle: "`r params$analysis_type`"
 author: "FGCZ"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
@@ -22,7 +22,7 @@ output:
     code_folding: hide
     self_contained: true
 vignette: >
-  %\VignetteIndexEntry{PTM-SEA Analysis}
+  %\VignetteIndexEntry{Kinase Activity (PTMsigDB + GSEA)}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -74,10 +74,9 @@ if (pipeline_mode) {
   data <- readxl::read_xlsx(params$xlsx_file, sheet = params$sheet)
   output_dir <- if (!is.null(params$output_dir)) params$output_dir else dirname(params$xlsx_file)
 } else {
-  # Vignette mode: use example data (subset to 1 contrast for speed)
+  # Vignette mode: use example data
   data("combined_test_diff_example", package = "prophosqua")
-  data <- combined_test_diff_example |>
-    dplyr::filter(contrast == unique(contrast)[1])
+  data <- combined_test_diff_example
   output_dir <- tempdir()
 }
 
