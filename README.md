@@ -1,4 +1,5 @@
 [![DOI](https://zenodo.org/badge/784111954.svg)](https://doi.org/10.5281/zenodo.15845272)
+[![pkgdown](https://img.shields.io/badge/docs-pkgdown-blue)](https://prolfqua.github.io/prophosqua/)
 
 # prophosqua
 
