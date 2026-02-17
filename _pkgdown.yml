@@ -2,6 +2,8 @@ url: https://prolfqua.github.io/prophosqua/
 
 template:
   bootstrap: 5
+code:
+  fold: true
 
 articles:
   - title: Methods Paper

@@ -1,5 +1,5 @@
 ---
-title: "Motif Enrichment Analysis (MEA) Visualization"
+title: "Kinase Activity (Kinase Library + MEA)"
 subtitle: "`r params$analysis_type`"
 author: "FGCZ"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
@@ -13,7 +13,7 @@ output:
     code_folding: hide
     self_contained: true
 vignette: >
-  %\VignetteIndexEntry{Motif Enrichment Analysis}
+  %\VignetteIndexEntry{Kinase Activity (Kinase Library + MEA)}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
