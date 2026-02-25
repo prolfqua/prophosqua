@@ -42,6 +42,7 @@
 ^\.lintr$
 ^\.claude$
 ^\.vscode$
+^inst/MiMB_build/\.package_installed$
 
 ^data-raw$
 

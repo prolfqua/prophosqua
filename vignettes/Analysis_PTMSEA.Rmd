@@ -128,21 +128,13 @@ n_path <- sum(grepl("^PATH-", names(pathways)))
 
 # Summary table
 ptmsigdb_summary <- tibble(
-  Property = c("Source File", "Total Signatures", "KINASE signatures", "PATH signatures", "Unique Sites"),
+  Property = c("Source File", "Total Signatures", "KINASE signatures", "PATH signatures", "Unique site IDs"),
   Value = c(
     basename(ptmsigdb_file), length(pathways), n_kinase, n_path,
-    length(unique(unlist(pathways)))
+    length(unique(gsub(";[ud]$", "", unlist(pathways))))
   )
 )
 knitr::kable(ptmsigdb_summary, caption = "PTMsigDB Signature Database Summary")
-
-# Vignette mode: subsample to 50 pathway sets for speed
-if (!pipeline_mode) {
-  set.seed(42)
-  keep_sets <- sample(names(pathways), min(50, length(pathways)))
-  pathways <- pathways[keep_sets]
-  message("Vignette mode: subsampled to ", length(keep_sets), " pathway sets")
-}
 ```
 
 # Overlap Statistics
