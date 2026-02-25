@@ -41,12 +41,18 @@ Imports:
 Suggests:
     bookdown,
     clusterProfiler,
+    covr,
+    devtools,
     DT,
     enrichplot,
     fgsea,
     here,
     htmltools,
     knitr,
+    lintr,
+    pkgdown,
+    rcmdcheck,
     rmarkdown,
+    roxygen2,
     testthat (>= 3.0.0),
     writexl
