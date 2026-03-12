@@ -1,4 +1,4 @@
-.PHONY: all check check-fast test build build-vignettes document coverage install lint format clean help site deploy renv-init renv-restore renv-snapshot
+.PHONY: all check check-fast test build build-vignettes document coverage install lint format clean help site deploy
 
 all: check
 
@@ -18,11 +18,6 @@ help:
 	@echo "  make clean     - remove build artifacts"
 	@echo "  make site      - build pkgdown site locally"
 	@echo "  make deploy    - build pkgdown site and push to gh-pages"
-	@echo ""
-	@echo "  Environment (renv):"
-	@echo "  make renv-init       - initialize renv and install all deps (first time)"
-	@echo "  make renv-restore    - restore environment from renv.lock"
-	@echo "  make renv-snapshot   - update renv.lock after installing new packages"
 
 document:
 	Rscript -e "devtools::document()"
@@ -56,20 +51,11 @@ lint:
 format:
 	air format .
 
-site: document
-	Rscript -e "pkgdown::build_site()"
+site: install
+	Rscript -e "pkgdown::build_site(install = FALSE)"
 
 deploy: document
 	Rscript -e "pkgdown::deploy_to_branch()"
-
-renv-init:
-	Rscript -e "renv::init(bioconductor = TRUE)"
-
-renv-restore:
-	Rscript -e "renv::restore()"
-
-renv-snapshot:
-	Rscript -e "renv::snapshot()"
 
 clean:
 	rm -rf *.Rcheck
