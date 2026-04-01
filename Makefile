@@ -34,7 +34,7 @@ build-vignettes: document
 	cp doc/*.html doc/*.Rmd doc/*.R inst/doc/ 2>/dev/null || true
 
 check-fast: document
-	Rscript -e "devtools::check(build_args = '--no-build-vignettes', args = '--no-vignettes')"
+	Rscript -e "devtools::check(build_args = '--no-build-vignettes', args = '--no-vignettes', vignettes = FALSE)"
 
 test: document
 	Rscript -e "devtools::test()"
