@@ -1,0 +1,188 @@
+---
+title: "PTM Analysis - Sequence Logo"
+subtitle: "`r params$sheet` Analysis"
+author: "FGCZ"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+params:
+  xlsx_file: NULL
+  sheet: "DPA"
+  fdr: 0.05
+  fc: 0.6
+output:
+  bookdown::html_document2:
+    toc: true
+    toc_float: true
+    code_folding: hide
+    self_contained: true
+  pdf_document:
+    toc: true
+vignette: >
+  %\VignetteIndexEntry{Sequence Logo Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 10,
+  fig.height = 6,
+  dpi = 300
+)
+
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(ggseqlogo)
+  library(readxl)
+  library(prophosqua)
+})
+
+# Detect pipeline vs vignette mode
+pipeline_mode <- !is.null(params$xlsx_file)
+
+# Load shared utilities if in pipeline mode
+if (pipeline_mode && file.exists("src/feature_preparation.R")) {
+  source("src/feature_preparation.R")
+}
+
+```
+
+# Introduction
+
+This document performs sequence logo analysis on significantly regulated sites from **`r params$sheet`** analysis. Sequence motifs help identify active kinases driving PTM changes.
+
+```{r analysisDescription, results='asis'}
+desc <- switch(params$sheet,
+  "DPA" = "**DPA (Differential PTM Abundance)**: Raw PTM signal changes. Sequence motifs may reflect both abundance and stoichiometry effects.",
+  "DPU" = "**DPU (Differential PTM Usage)**: Protein-normalized changes. Sequence motifs reflect genuine kinase activity changes.",
+  "CF" = "**CF (CorrectFirst)**: Alternative normalization. Sequence motifs reflect activity changes with different correction approach."
+)
+cat(desc)
+```
+
+# Data Loading
+
+```{r loadData}
+if (pipeline_mode) {
+  message("Loading data from: ", params$xlsx_file, " (sheet: ", params$sheet, ")")
+  data <- readxl::read_xlsx(params$xlsx_file, sheet = params$sheet)
+} else {
+  # Vignette mode: use example data
+  data("combined_test_diff_example", package = "prophosqua")
+  data <- combined_test_diff_example
+  message("Using example data from prophosqua package")
+}
+
+data_info <- tibble(
+  Property = c("Mode", "Sheet", "Rows", "Contrasts"),
+  Value = c(
+    if (pipeline_mode) basename(params$xlsx_file) else "Example data",
+    params$sheet,
+    nrow(data), paste(unique(data$contrast), collapse = ", ")
+  )
+)
+knitr::kable(data_info, caption = "Data Summary")
+```
+
+# Filter Significant Sites
+
+Filter sites with |log2FC| > `r params$fc` and FDR < `r params$fdr`.
+
+```{r filterSignificant}
+# Use shared filtering function with sequence validation
+significant_sites <- data |>
+  dplyr::filter(!is.na(posInProtein)) |>
+  filter_significant_sites(
+    fdr_threshold = params$fdr,
+    fc_threshold = params$fc,
+    require_sequence = TRUE
+  )
+
+cat("Found", nrow(significant_sites), "significant sites\n")
+```
+
+## Count Significant Sites
+
+```{r tableSignificant}
+stopifnot("No significant sites found. Adjust fdr/log2fc thresholds in config." = nrow(significant_sites) > 0)
+
+tx <- as.data.frame(with(significant_sites, table(contrast, regulation, modAA)))
+capt <- paste0("Number of significantly regulated sites by contrast, residue, and regulation direction (", params$sheet, ").")
+
+knitr::kable(tx, caption = capt)
+```
+
+## Validate Sequence Window
+
+Ensure the central residue matches the modified amino acid.
+
+```{r validateSeqWindow}
+# Use shared validation function
+significant_sites <- validate_sequence_window(significant_sites)
+
+cat("After validation:", nrow(significant_sites), "sites remain\n")
+```
+
+# Sequence Logo Analysis
+
+## Generate Sequence Logos
+
+```{r figSeqlogo, fig.width=9, fig.height=12, fig.cap="Sequence logos for significantly regulated sites by contrast and regulation direction."}
+seq_list <- significant_sites |>
+  dplyr::mutate(.grp = paste(contrast, regulation, sep = "_")) |>
+  dplyr::group_by(.grp) |>
+  dplyr::summarize(
+    seqs = list(toupper(SequenceWindow)),
+    .groups = "drop"
+  ) |>
+  with(setNames(seqs, .grp))
+
+if (length(seq_list) > 0) {
+  ggseqlogo(
+    seq_list,
+    ncol = 2,
+    seq_type = "aa",
+    method = "probability"
+  )
+} else {
+  cat("No significant sites found for sequence logo generation.\n")
+}
+```
+
+# Difference Logo Analysis
+
+Visualize the difference in amino acid enrichment between upregulated and downregulated sites.
+
+```{r figDifflogo, fig.width=10, fig.height=10, fig.cap="Difference Logos (Upregulated - Downregulated)"}
+p_diff <- prophosqua::plot_diff_logo(significant_sites)
+
+if (!is.null(p_diff)) {
+  print(p_diff)
+} else {
+  cat("No contrasts with both upregulated and downregulated sites found for difference logo.\n")
+}
+```
+
+# Results Summary
+
+```{r summary}
+summary_info <- tibble(
+  Metric = c("Analysis Type", "FDR Threshold", "FC Threshold",
+             "Total Significant Sites", "Upregulated", "Downregulated"),
+  Value = c(params$sheet, params$fdr, params$fc,
+            nrow(significant_sites),
+            sum(significant_sites$regulation == "upregulated"),
+            sum(significant_sites$regulation == "downregulated"))
+)
+knitr::kable(summary_info, caption = "Analysis Summary")
+```
+
+# Session Info
+
+```{r sessionInfo}
+sessionInfo()
+```
