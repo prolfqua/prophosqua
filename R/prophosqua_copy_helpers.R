@@ -7,5 +7,5 @@ copy_phospho_integration <- function(workdir = getwd()) {
     "application/_Overview_PhosphoAndIntegration_site.Rmd",
     "application/bibliography2025.bib"
   )
-  prolfqua::scriptCopyHelperVec(runscripts, workdir = workdir, packagename = "prophosqua")
+  prolfqua::script_copy_helper_vec(runscripts, workdir = workdir, packagename = "prophosqua")
 }
