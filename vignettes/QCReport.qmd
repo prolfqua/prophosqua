@@ -190,26 +190,25 @@ prot_annot <- prolfquapp::dataset_protein_annot(
 
 psm$qValue <- 1 - psm$Probability
 
-atable <- prolfqua::AnalysisTableAnnotation$new()
-atable$ident_Score = "Probability"
-atable$ident_qValue = "qValue"
-atable$fileName = "channel"
+config <- prolfqua::AnalysisConfiguration$new()
+config$ident_score = "Probability"
+config$ident_q_value = "qValue"
+config$file_name = "channel"
 
-atable$opt_rt = "Retention"
-atable$opt_mz = "psmcharge"
+config$opt_rt = "Retention"
+config$opt_mz = "psmcharge"
 
-atable$hierarchy[["protein_Id"]] <- c("Protein")
-atable$hierarchy[["peptide_Id"]] <- c("Peptide")
-atable$hierarchy[["mod_peptide_Id"]] <- c("Modified.Peptide","Assigned.Modifications")
-atable$hierarchy[["precursor"]] <- c("Modified.Peptide","Assigned.Modifications", "Charge")
-atable$hierarchy[["Spectrum"]] <- c("Spectrum")
+config$hierarchy[["protein_Id"]] <- c("Protein")
+config$hierarchy[["peptide_Id"]] <- c("Peptide")
+config$hierarchy[["mod_peptide_Id"]] <- c("Modified.Peptide","Assigned.Modifications")
+config$hierarchy[["precursor"]] <- c("Modified.Peptide","Assigned.Modifications", "Charge")
+config$hierarchy[["Spectrum"]] <- c("Spectrum")
 
-atable$factors[["experiment"]] <- "experiment"
-atable$set_response("abundance")
+config$factors[["experiment"]] <- "experiment"
+config$set_response("abundance")
 
 psm$experiment <- "QC"
 psm$psmcharge <- psm$Charge
-config <- prolfqua::AnalysisConfiguration$new(atable)
 
 adata <- prolfqua::setup_analysis(psm, config)
 
@@ -411,7 +410,7 @@ TMT quantification relies on consistent labeling and equal loading across channe
 ```{r totalQuant, fig.cap = "Total abundance per channel (Sum of all abundances)."}
 
 xx <- lfqdata$data
-totalPerChannel <- xx |> dplyr::group_by(!!rlang::sym(lfqdata$config$table$sampleName) ) |>
+totalPerChannel <- xx |> dplyr::group_by(!!rlang::sym(lfqdata$config$sample_name) ) |>
   dplyr::summarize(totalAbundance = sum(!!rlang::sym(lfqdata$response()), na.rm = TRUE))
 
 totalPerChannel |> ggplot2::ggplot(ggplot2::aes(x = sampleName, y = totalAbundance)) + 

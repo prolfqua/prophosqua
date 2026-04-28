@@ -766,7 +766,7 @@ ptm_data$data <- ptm_data$data |>
 ```
 
 ```{r fig3densityCorrectedCompute}
-ptm_data$config$table$set_response("ptm_usage")
+ptm_data$config$set_response("ptm_usage")
 pl <- ptm_data$get_Plotter()
 fig3_plot <- pl$intensity_distribution_density()
 ```
