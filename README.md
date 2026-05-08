@@ -105,6 +105,7 @@ If you use this package in your research, please cite:
 - [prolfquapp](https://github.com/prolfqua/prolfquapp) - Proteomics analysis workflow package
 
 ## Building and Deploying Documentation
+- https://deepwiki.com/wolski/ptm-pipeline - AI attempt for documentation
 
 ### Build pkgdown site locally
 
