@@ -15,42 +15,46 @@
 #' cat(make_fasta_summary(fasta))
 #' }
 make_fasta_summary <- function(resDB, old = FALSE, as_string = TRUE) {
-    if (old) {
-        bigstr <- paste(resDB, collapse = "")
-        vec <- strsplit(bigstr, split = "")[[1]]
-        aafreq <- table(vec)
-    } else {
-        res <- list()
-        tmp <- lapply(resDB, function(x) {
-            table(strsplit(x, split = "")[[1]])
-        })
-        for (i in seq_along(tmp)) {
-            x <- tmp[[i]]
-            for (j in names(x)) {
-                if (is.null(res[[j]])) {
-                    res[[j]] <- as.numeric(x[j])
-                } else {
-                    res[[j]] <- res[[j]] + as.numeric(x[j])
-                }
-            }
+  if (old) {
+    bigstr <- paste(resDB, collapse = "")
+    vec <- strsplit(bigstr, split = "")[[1]]
+    aafreq <- table(vec)
+  } else {
+    res <- list()
+    tmp <- lapply(resDB, function(x) {
+      table(strsplit(x, split = "")[[1]])
+    })
+    for (i in seq_along(tmp)) {
+      x <- tmp[[i]]
+      for (j in names(x)) {
+        if (is.null(res[[j]])) {
+          res[[j]] <- as.numeric(x[j])
+        } else {
+          res[[j]] <- res[[j]] + as.numeric(x[j])
         }
-        aafreq <- unlist(res)
-        aafreq <- aafreq[order(names(aafreq))]
+      }
     }
-    length_s <- summary(vapply(resDB, seqinr::getLength, numeric(1)))
+    aafreq <- unlist(res)
+    aafreq <- aafreq[order(names(aafreq))]
+  }
+  length_s <- summary(vapply(resDB, seqinr::getLength, numeric(1)))
 
-    if (as_string) {
-        aafreq <- paste(utils::capture.output(as.matrix(aafreq)), "\n", sep = "")
-        length_s <- paste(utils::capture.output(length_s), "\n", sep = "")
-        summaryRes <- c(
-            "nr sequences:\n", length(resDB), "\n length summary:\n",
-            length_s, "AA frequencies:\n", aafreq
-        )
-    } else {
-        summaryRes <- list()
-        summaryRes$nrSequences <- length(resDB)
-        summaryRes$lengthSummary <- length_s
-        summaryRes$aafreq <- aafreq
-    }
-    return(summaryRes)
+  if (as_string) {
+    aafreq <- paste(utils::capture.output(as.matrix(aafreq)), "\n", sep = "")
+    length_s <- paste(utils::capture.output(length_s), "\n", sep = "")
+    summaryRes <- c(
+      "nr sequences:\n",
+      length(resDB),
+      "\n length summary:\n",
+      length_s,
+      "AA frequencies:\n",
+      aafreq
+    )
+  } else {
+    summaryRes <- list()
+    summaryRes$nrSequences <- length(resDB)
+    summaryRes$lengthSummary <- length_s
+    summaryRes$aafreq <- aafreq
+  }
+  return(summaryRes)
 }

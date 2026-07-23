@@ -57,14 +57,16 @@
 #' sig_dpu <- filter_significant_sites(data_dpu, fdr_col = "FDR_I", diff_col = "diff_diff")
 #'
 #' @seealso \code{\link{plot_diff_logo}}, \code{\link{plot_seqlogo_with_diff}}
-filter_significant_sites <- function(data,
-                                     fdr_col = "FDR.site",
-                                     diff_col = "diff.site",
-                                     fdr_threshold = 0.05,
-                                     fc_threshold = 0.6,
-                                     require_sequence = FALSE) {
+filter_significant_sites <- function(
+  data,
+  fdr_col = "FDR.site",
+  diff_col = "diff.site",
+  fdr_threshold = 0.05,
+  fc_threshold = 0.6,
+  require_sequence = FALSE
+) {
   # Validate columns exist
- required_cols <- c(fdr_col, diff_col)
+  required_cols <- c(fdr_col, diff_col)
   missing_cols <- setdiff(required_cols, colnames(data))
   if (length(missing_cols) > 0) {
     stop("Missing required columns: ", paste(missing_cols, collapse = ", "))
@@ -168,10 +170,12 @@ summarize_significant_sites <- function(data, group_cols = c("contrast")) {
 #' )
 #' validate_sequence_window(data)
 #' # Only first two rows kept (center matches S)
-validate_sequence_window <- function(data,
-                                     seq_col = "SequenceWindow",
-                                     mod_col = "modAA",
-                                     center_pos = 8L) {
+validate_sequence_window <- function(
+  data,
+  seq_col = "SequenceWindow",
+  mod_col = "modAA",
+  center_pos = 8L
+) {
   if (!seq_col %in% colnames(data)) {
     stop("Column '", seq_col, "' not found in data")
   }

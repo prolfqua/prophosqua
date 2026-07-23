@@ -10,8 +10,26 @@
 get_pwm <- function(sequences) {
   mat <- do.call(rbind, strsplit(sequences, ""))
   aa <- c(
-    "A", "C", "D", "E", "F", "G", "H", "I", "K", "L",
-    "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y"
+    "A",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I",
+    "K",
+    "L",
+    "M",
+    "N",
+    "P",
+    "Q",
+    "R",
+    "S",
+    "T",
+    "V",
+    "W",
+    "Y"
   )
   pwm <- apply(mat, 2, function(x) {
     table(factor(x, levels = aa)) / length(x)
@@ -236,7 +254,12 @@ plot_seqlogo_with_diff <- function(sig_sites) {
     p_up <- ggseqlogo::ggseqlogo(up_seq_list, ncol = 1, method = "probability", seq_type = "aa") +
       ggplot2::ggtitle("Upregulated") +
       ggplot2::theme(legend.position = "none")
-    p_down <- ggseqlogo::ggseqlogo(down_seq_list, ncol = 1, method = "probability", seq_type = "aa") +
+    p_down <- ggseqlogo::ggseqlogo(
+      down_seq_list,
+      ncol = 1,
+      method = "probability",
+      seq_type = "aa"
+    ) +
       ggplot2::ggtitle("Downregulated") +
       ggplot2::theme(legend.position = "none")
 

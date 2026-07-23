@@ -1,4 +1,3 @@
-
 #' Get DEA xlsx file path
 #'
 #' Constructs the path to a DEA results Excel file based on project structure.
@@ -11,8 +10,8 @@
 dea_xlsx_path <- function(project_dir, WU, date) {
   file.path(
     project_dir,
-    paste0("DEA_", date, "_",
-           "WU",WU,"_vsn/Results_WU_",WU,"/DE_WU",WU,".xlsx"))
+    paste0("DEA_", date, "_", "WU", WU, "_vsn/Results_WU_", WU, "/DE_WU", WU, ".xlsx")
+  )
 }
 
 #' Get DEA results directory path
@@ -27,8 +26,8 @@ dea_xlsx_path <- function(project_dir, WU, date) {
 dea_res_dir <- function(project_dir, WU, date) {
   file.path(
     project_dir,
-    paste0("DEA_", date, "_",
-           "WU",WU,"_vsn/Results_WU_",WU))
+    paste0("DEA_", date, "_", "WU", WU, "_vsn/Results_WU_", WU)
+  )
 }
 
 
@@ -57,9 +56,10 @@ filter_contaminants <- function(data, protein_id_col = "protein_Id") {
 #' @return Data frame with the loaded data
 #' @export
 load_and_preprocess_data <- function(
-    file_path,
-    required_cols,
-    sheet_name = "diff_exp_analysis") {
+  file_path,
+  required_cols,
+  sheet_name = "diff_exp_analysis"
+) {
   if (!file.exists(file_path)) {
     stop("File not found: ", file_path)
   }

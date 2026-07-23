@@ -81,8 +81,14 @@ prepare_enrichment_data <- function(data, fdr_col = "FDR", fdr_threshold = 0.1) 
 #' )
 #' plot_enrichment_dotplot(pathway_results, item_col = "pathway",
 #'                         fdr_col = "p.adjust", n_top = 3)
-plot_enrichment_dotplot <- function(data, item_col = "kinase", fdr_col = "FDR",
-                                    n_top = 30, title = NULL, subtitle = "Top 30 by FDR") {
+plot_enrichment_dotplot <- function(
+  data,
+  item_col = "kinase",
+  fdr_col = "FDR",
+  n_top = 30,
+  title = NULL,
+  subtitle = "Top 30 by FDR"
+) {
   # Prepare data using shared helper
   plot_data <- prepare_enrichment_data(data, fdr_col, 0.1) |>
     dplyr::arrange(.data[[fdr_col]]) |>
@@ -90,7 +96,11 @@ plot_enrichment_dotplot <- function(data, item_col = "kinase", fdr_col = "FDR",
     dplyr::mutate(item = forcats::fct_reorder(.data[[item_col]], .data$NES))
 
   ggplot2::ggplot(plot_data, ggplot2::aes(x = .data$NES, y = .data$item)) +
-    ggplot2::geom_point(ggplot2::aes(size = .data$neg_log_fdr, color = .data$NES, alpha = .data$significant)) +
+    ggplot2::geom_point(ggplot2::aes(
+      size = .data$neg_log_fdr,
+      color = .data$NES,
+      alpha = .data$significant
+    )) +
     ggplot2::scale_color_gradient2(low = "blue", mid = "grey80", high = "red", midpoint = 0) +
     ggplot2::scale_size_continuous(name = "-log10(FDR)", range = c(2, 8)) +
     ggplot2::scale_alpha_manual(values = c("TRUE" = 1, "FALSE" = 0.4), guide = "none") +
@@ -131,19 +141,35 @@ plot_enrichment_dotplot <- function(data, item_col = "kinase", fdr_col = "FDR",
 #' # Customize labeling thresholds
 #' plot_enrichment_volcano(kinase_results, fdr_threshold = 0.05,
 #'                         label_fdr_threshold = 0.02, n_labels = 3)
-plot_enrichment_volcano <- function(data, item_col = "kinase", fdr_col = "FDR",
-                                    fdr_threshold = 0.1, label_fdr_threshold = 0.05,
-                                    n_labels = 5, title = NULL, subtitle = NULL) {
+plot_enrichment_volcano <- function(
+  data,
+  item_col = "kinase",
+  fdr_col = "FDR",
+  fdr_threshold = 0.1,
+  label_fdr_threshold = 0.05,
+  n_labels = 5,
+  title = NULL,
+  subtitle = NULL
+) {
   # Prepare data using shared helper
   volcano_data <- prepare_enrichment_data(data, fdr_col, fdr_threshold)
 
   # Default subtitle
   if (is.null(subtitle)) {
-    subtitle <- paste0("Dashed line: FDR = ", fdr_threshold, "; Labels: top ", n_labels, " by FDR per contrast")
+    subtitle <- paste0(
+      "Dashed line: FDR = ",
+      fdr_threshold,
+      "; Labels: top ",
+      n_labels,
+      " by FDR per contrast"
+    )
   }
 
   ggplot2::ggplot(volcano_data, ggplot2::aes(x = .data$NES, y = .data$neg_log_fdr)) +
-    ggplot2::geom_point(ggplot2::aes(color = .data$direction, alpha = .data$significant), size = 2) +
+    ggplot2::geom_point(
+      ggplot2::aes(color = .data$direction, alpha = .data$significant),
+      size = 2
+    ) +
     ggplot2::geom_hline(yintercept = -log10(fdr_threshold), linetype = "dashed", color = "grey30") +
     ggplot2::geom_vline(xintercept = 0, linetype = "dashed", color = "grey30") +
     ggplot2::geom_text(
@@ -158,7 +184,7 @@ plot_enrichment_volcano <- function(data, item_col = "kinase", fdr_col = "FDR",
     ) +
     ggplot2::scale_color_manual(values = c("Up" = "red", "Down" = "blue", "NS" = "grey50")) +
     ggplot2::scale_alpha_manual(values = c("TRUE" = 1, "FALSE" = 0.3), guide = "none") +
-    ggplot2::facet_wrap(~.data$contrast, scales = "free") +
+    ggplot2::facet_wrap(~ .data$contrast, scales = "free") +
     ggplot2::theme_bw() +
     ggplot2::labs(
       title = title,
@@ -196,9 +222,16 @@ plot_enrichment_volcano <- function(data, item_col = "kinase", fdr_col = "FDR",
 #' # With custom item labels (shorter names)
 #' ptmsea_results$short_name <- gsub("KINASE-PSP_", "", ptmsea_results$ID)
 #' plot_enrichment_heatmap(ptmsea_results, item_label_col = "short_name")
-plot_enrichment_heatmap <- function(data, item_col = "ID", fdr_col = "p.adjust",
-                                    fdr_filter = 0.15, n_top = 25,
-                                    item_label_col = NULL, title = NULL, subtitle = NULL) {
+plot_enrichment_heatmap <- function(
+  data,
+  item_col = "ID",
+  fdr_col = "p.adjust",
+  fdr_filter = 0.15,
+  n_top = 25,
+  item_label_col = NULL,
+  title = NULL,
+  subtitle = NULL
+) {
   # Find top items across all contrasts
   top_items <- data |>
     dplyr::filter(.data[[fdr_col]] < fdr_filter) |>
@@ -231,7 +264,10 @@ plot_enrichment_heatmap <- function(data, item_col = "ID", fdr_col = "p.adjust",
     subtitle <- "Top items (* p<0.1, ** p<0.05, *** p<0.01)"
   }
 
-  ggplot2::ggplot(heatmap_data, ggplot2::aes(x = .data$contrast, y = reorder(.data$item_label, .data$NES), fill = .data$NES)) +
+  ggplot2::ggplot(
+    heatmap_data,
+    ggplot2::aes(x = .data$contrast, y = reorder(.data$item_label, .data$NES), fill = .data$NES)
+  ) +
     ggplot2::geom_tile(color = "white") +
     ggplot2::geom_text(ggplot2::aes(label = .data$sig_label), color = "black", size = 4) +
     ggplot2::scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) +
@@ -243,7 +279,9 @@ plot_enrichment_heatmap <- function(data, item_col = "ID", fdr_col = "p.adjust",
     ggplot2::labs(
       title = title,
       subtitle = subtitle,
-      x = "", y = "", fill = "NES"
+      x = "",
+      y = "",
+      fill = "NES"
     )
 }
 
@@ -266,8 +304,14 @@ plot_enrichment_heatmap <- function(data, item_col = "ID", fdr_col = "p.adjust",
 #' # Requires clusterProfiler GSEA results
 #' export_gsea_plots_pdf(gsea_results, "enrichment_plots.pdf")
 #' }
-export_gsea_plots_pdf <- function(results, output_file, fdr_threshold = 0.25,
-                                  width = 10, height = 6, prefix_pattern = NULL) {
+export_gsea_plots_pdf <- function(
+  results,
+  output_file,
+  fdr_threshold = 0.25,
+  width = 10,
+  height = 6,
+  prefix_pattern = NULL
+) {
   if (!requireNamespace("enrichplot", quietly = TRUE)) {
     stop("Package 'enrichplot' is required for export_gsea_plots_pdf()")
   }
@@ -295,8 +339,11 @@ export_gsea_plots_pdf <- function(results, output_file, fdr_threshold = 0.25,
       nes_val <- round(row$NES, 2)
       fdr <- signif(row$p.adjust, 2)
 
-      p <- enrichplot::gseaplot2(res, geneSetID = geneset,
-                                 title = paste0(ct, ": ", pathway_label, " (NES=", nes_val, ", FDR=", fdr, ")"))
+      p <- enrichplot::gseaplot2(
+        res,
+        geneSetID = geneset,
+        title = paste0(ct, ": ", pathway_label, " (NES=", nes_val, ", FDR=", fdr, ")")
+      )
       print(p)
       n_plots <- n_plots + 1
     }
@@ -340,9 +387,9 @@ summarize_enrichment_results <- function(results, fdr_thresholds = c(0.1, 0.05))
     # Handle clusterProfiler results list
     dplyr::tibble(
       Contrast = names(results),
-      `Total` = purrr::map_int(results, ~nrow(.x@result)),
-      `FDR < 0.1` = purrr::map_int(results, ~sum(.x@result$p.adjust < 0.1, na.rm = TRUE)),
-      `FDR < 0.05` = purrr::map_int(results, ~sum(.x@result$p.adjust < 0.05, na.rm = TRUE))
+      `Total` = purrr::map_int(results, ~ nrow(.x@result)),
+      `FDR < 0.1` = purrr::map_int(results, ~ sum(.x@result$p.adjust < 0.1, na.rm = TRUE)),
+      `FDR < 0.05` = purrr::map_int(results, ~ sum(.x@result$p.adjust < 0.05, na.rm = TRUE))
     )
   }
 }

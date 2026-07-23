@@ -2,7 +2,6 @@
 #
 # Minimal functions for running PTM-SEA analysis using PTMsigDB signatures and fgsea.
 
-
 #' Download PTMsigDB signatures
 #'
 #' Downloads and caches PTMsigDB GMT files from the Broad Institute ssGSEA2.0 repository.
@@ -26,17 +25,28 @@
 #' gmt_path <- download_ptmsigdb(species = "mouse", output_dir = "ptmsea_cache")
 #' pathways <- fgsea::gmtPathways(gmt_path)
 #' }
-download_ptmsigdb <- function(species = "mouse",
-                              version = "v2.0.0",
-                              output_dir = ".",
-                              force_download = FALSE) {
+download_ptmsigdb <- function(
+  species = "mouse",
+  version = "v2.0.0",
+  output_dir = ".",
+  force_download = FALSE
+) {
   valid_species <- c("mouse", "human")
   if (!species %in% valid_species) {
     stop("Species must be one of: ", paste(valid_species, collapse = ", "))
   }
 
   base_url <- "https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/db/ptmsigdb"
-  gmt_url <- paste0(base_url, "/", version, "/all/ptm.sig.db.all.flanking.", species, ".", version, ".gmt")
+  gmt_url <- paste0(
+    base_url,
+    "/",
+    version,
+    "/all/ptm.sig.db.all.flanking.",
+    species,
+    ".",
+    version,
+    ".gmt"
+  )
 
   dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
   gmt_cache <- file.path(output_dir, paste0("ptmsigdb_flanking_", species, "_", version, ".gmt"))
@@ -139,15 +149,17 @@ trim_flanking_seq <- function(seq, trim_to = 15L) {
 #' ranks_ptm <- prepare_gsea_ranks(data, stat_col = "statistic.site", add_suffix = "-p")
 #'
 #' @seealso \code{\link{ptmsea_data_prep}} for PTMsigDB-specific preparation with trimming
-prepare_gsea_ranks <- function(data,
-                               stat_col,
-                               seq_col = "SequenceWindow",
-                               contrast_col = "contrast",
-                               to_uppercase = TRUE,
-                               add_suffix = NULL) {
+prepare_gsea_ranks <- function(
+  data,
+  stat_col,
+  seq_col = "SequenceWindow",
+  contrast_col = "contrast",
+  to_uppercase = TRUE,
+  add_suffix = NULL
+) {
   # Validate input columns
 
-required_cols <- c(seq_col, stat_col, contrast_col)
+  required_cols <- c(seq_col, stat_col, contrast_col)
   missing_cols <- setdiff(required_cols, colnames(data))
   if (length(missing_cols) > 0) {
     stop("Missing required columns: ", paste(missing_cols, collapse = ", "))
@@ -227,11 +239,13 @@ required_cols <- c(seq_col, stat_col, contrast_col)
 #'
 #' # Trim to 13-mer to potentially increase PTMsigDB overlap
 #' prep_dpa_13 <- ptmsea_data_prep(data, stat_column = "statistic.site", trim_to = "13")
-ptmsea_data_prep <- function(data,
-                             stat_column,
-                             seq_window_col = "SequenceWindow",
-                             contrast_col = "contrast",
-                             trim_to = c("11", "13", "15")) {
+ptmsea_data_prep <- function(
+  data,
+  stat_column,
+  seq_window_col = "SequenceWindow",
+  contrast_col = "contrast",
+  trim_to = c("11", "13", "15")
+) {
   trim_to <- match.arg(trim_to)
   trim_width <- as.integer(trim_to)
 
@@ -301,7 +315,9 @@ split_ptmsigdb_pathways <- function(pathways) {
     down_genes <- genes[grepl(";d$", genes)]
     up_genes <- gsub(";u$", "", up_genes)
     down_genes <- gsub(";d$", "", down_genes)
-    if (length(up_genes) > 0) result[[paste0(name, "_up")]] <- unique(up_genes)
+    if (length(up_genes) > 0) {
+      result[[paste0(name, "_up")]] <- unique(up_genes)
+    }
     if (length(down_genes) > 0) result[[paste0(name, "_down")]] <- unique(down_genes)
   }
   return(result)
@@ -322,12 +338,14 @@ split_ptmsigdb_pathways <- function(pathways) {
 #'
 #' @return Named list of clusterProfiler gseaResult objects, named <contrast>_<ascending/descending>.
 #' @export
-run_ptmsea_up_down <- function(ranks_list,
-                               pathways,
-                               min_size = 3,
-                               max_size = 500,
-                               n_perm = 1000,
-                               pvalueCutoff = 0.1) {
+run_ptmsea_up_down <- function(
+  ranks_list,
+  pathways,
+  min_size = 3,
+  max_size = 500,
+  n_perm = 1000,
+  pvalueCutoff = 0.1
+) {
   # Split pathways by direction
   pathways_split <- split_ptmsigdb_pathways(pathways)
 
@@ -345,15 +363,23 @@ run_ptmsea_up_down <- function(ranks_list,
 
     if (overlap < 10) {
       warning(
-        "Contrast '", contrast_name, "': Low overlap with PTMsigDB (",
-        overlap, " sites). Skipping."
+        "Contrast '",
+        contrast_name,
+        "': Low overlap with PTMsigDB (",
+        overlap,
+        " sites). Skipping."
       )
       next
     }
 
     message(
-      "Running PTM-SEA for '", contrast_name, "' (",
-      length(ranks), " sites, ", overlap, " overlap)"
+      "Running PTM-SEA for '",
+      contrast_name,
+      "' (",
+      length(ranks),
+      " sites, ",
+      overlap,
+      " overlap)"
     )
 
     # Descending
@@ -418,12 +444,14 @@ run_ptmsea_up_down <- function(ranks_list,
 #'
 #' # Run PTM-SEA (adjusting min_size for small mock data)
 #' results <- run_ptmsea(ranks_list, pathways, min_size = 1, pvalueCutoff = 1.0)
-run_ptmsea <- function(ranks_list,
-                       pathways,
-                       min_size = 3,
-                       max_size = 500,
-                       n_perm = 1000,
-                       pvalueCutoff = 0.1) {
+run_ptmsea <- function(
+  ranks_list,
+  pathways,
+  min_size = 3,
+  max_size = 500,
+  n_perm = 1000,
+  pvalueCutoff = 0.1
+) {
   # Strip direction suffixes (;u or ;d) from PTMsigDB site IDs
   pathways <- lapply(pathways, function(genes) {
     unique(gsub(";[ud]$", "", genes))
@@ -441,15 +469,23 @@ run_ptmsea <- function(ranks_list,
 
     if (overlap < 10) {
       warning(
-        "Contrast '", contrast_name, "': Low overlap with PTMsigDB (",
-        overlap, " sites). Skipping."
+        "Contrast '",
+        contrast_name,
+        "': Low overlap with PTMsigDB (",
+        overlap,
+        " sites). Skipping."
       )
       return(NULL)
     }
 
     message(
-      "Running PTM-SEA for '", contrast_name, "' (",
-      length(ranks), " sites, ", overlap, " overlap)"
+      "Running PTM-SEA for '",
+      contrast_name,
+      "' (",
+      length(ranks),
+      " sites, ",
+      overlap,
+      " overlap)"
     )
 
     # Ensure sorted descending for GSEA
@@ -498,13 +534,15 @@ run_ptmsea <- function(ranks_list,
 #' @export
 #' @importFrom dplyr mutate filter distinct pull
 #' @importFrom rlang .data
-ptmsea_ora_prep <- function(data,
-                            ptmsigdb_sites,
-                            score_col,
-                            fc_col = NULL,
-                            seq_window_col = "SequenceWindow",
-                            threshold = 0.05,
-                            trim_to = c("11", "13", "15")) {
+ptmsea_ora_prep <- function(
+  data,
+  ptmsigdb_sites,
+  score_col,
+  fc_col = NULL,
+  seq_window_col = "SequenceWindow",
+  threshold = 0.05,
+  trim_to = c("11", "13", "15")
+) {
   trim_to <- match.arg(trim_to)
   trim_width <- as.integer(trim_to)
 
@@ -518,10 +556,15 @@ ptmsea_ora_prep <- function(data,
   # Prepare site IDs
   data <- data |>
     dplyr::mutate(
-      .site_id = paste0(sapply(toupper(trimws(.data[[seq_window_col]])),
-        trim_flanking_seq,
-        trim_to = trim_width, USE.NAMES = FALSE
-      ), "-p")
+      .site_id = paste0(
+        sapply(
+          toupper(trimws(.data[[seq_window_col]])),
+          trim_flanking_seq,
+          trim_to = trim_width,
+          USE.NAMES = FALSE
+        ),
+        "-p"
+      )
     ) |>
     dplyr::filter(!is.na(.data[[score_col]]))
 
@@ -589,12 +632,17 @@ trim_ptmsigdb_pathways <- function(pathways, trim_to = c("11", "13", "15")) {
 
   lapply(pathways, function(genes) {
     # Site IDs are like "ABCDEFGHIJKLMNO-p" or "ABCDEFGHIJKLMNO-p;u"
-    sapply(genes, function(g) {
-      has_dir <- grepl(";[ud]$", g)
-      dir_suffix <- ifelse(has_dir, sub(".*(-p;[ud])$", "\\1", g), "-p")
-      seq <- sub("-p(;[ud])?$", "", g)
-      paste0(trim_flanking_seq(seq, trim_width), dir_suffix)
-    }, USE.NAMES = FALSE) |> unique()
+    sapply(
+      genes,
+      function(g) {
+        has_dir <- grepl(";[ud]$", g)
+        dir_suffix <- ifelse(has_dir, sub(".*(-p;[ud])$", "\\1", g), "-p")
+        seq <- sub("-p(;[ud])?$", "", g)
+        paste0(trim_flanking_seq(seq, trim_width), dir_suffix)
+      },
+      USE.NAMES = FALSE
+    ) |>
+      unique()
   })
 }
 
@@ -609,8 +657,11 @@ trim_ptmsigdb_pathways <- function(pathways, trim_to = c("11", "13", "15")) {
 #' @return data.frame with columns: term, gene
 #' @export
 ptmsigdb_to_term2gene <- function(pathways) {
-  term2gene <- do.call(rbind, lapply(names(pathways), function(term) {
-    data.frame(term = term, gene = pathways[[term]], stringsAsFactors = FALSE)
-  }))
+  term2gene <- do.call(
+    rbind,
+    lapply(names(pathways), function(term) {
+      data.frame(term = term, gene = pathways[[term]], stringsAsFactors = FALSE)
+    })
+  )
   return(term2gene)
 }
