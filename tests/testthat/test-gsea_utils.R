@@ -3,8 +3,7 @@
 test_that("prepare_gsea_ranks creates sorted named vectors", {
   data <- data.frame(
     contrast = rep(c("A_vs_B", "C_vs_D"), each = 3),
-    SequenceWindow = c("AAASAAAA", "BBBSBBB", "CCCSCCCC",
-                       "DDDSDDDD", "EEESEEEE", "FFFSFFF"),
+    SequenceWindow = c("AAASAAAA", "BBBSBBB", "CCCSCCCC", "DDDSDDDD", "EEESEEEE", "FFFSFFF"),
     statistic.site = c(2.5, 1.0, -0.5, 1.8, -1.2, 0.3),
     stringsAsFactors = FALSE
   )

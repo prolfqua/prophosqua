@@ -14,13 +14,16 @@ NULL
 #' @param suffix_b Suffix for columns from dataframe_b
 #' @return Data frame with diff_diff test results
 #' @keywords internal
-.test_diff_diff <- function(dataframe_a, dataframe_b,
-                            by,
-                            diff = c("diff"),
-                            std_err = c("std.error"),
-                            df = c("df"),
-                            suffix_a = ".site",
-                            suffix_b = ".protein") {
+.test_diff_diff <- function(
+  dataframe_a,
+  dataframe_b,
+  by,
+  diff = c("diff"),
+  std_err = c("std.error"),
+  df = c("df"),
+  suffix_a = ".site",
+  suffix_b = ".protein"
+) {
   dataf <- dplyr::inner_join(dataframe_a, dataframe_b, by = by, suffix = c(suffix_a, suffix_b))
 
   f_se <- function(stde_a, stde_b) {
@@ -37,14 +40,18 @@ NULL
   df_a <- rlang::sym(paste0(df, suffix_a))
   df_b <- rlang::sym(paste0(df, suffix_b))
 
-  dataf <- dataf |> dplyr::mutate(
-    diff_diff = !!diff_a - !!diff_b,
-    SE_I = f_se(!!std_error_a, !!std_error_b),
-    df_I = f_df(!!std_error_a, !!std_error_b, !!df_a, !!df_b)
-  )
+  dataf <- dataf |>
+    dplyr::mutate(
+      diff_diff = !!diff_a - !!diff_b,
+      SE_I = f_se(!!std_error_a, !!std_error_b),
+      df_I = f_df(!!std_error_a, !!std_error_b, !!df_a, !!df_b)
+    )
 
   dataf <- dataf |> dplyr::mutate(tstatistic_I = .data$diff_diff / .data$SE_I)
-  dataf <- dataf |> dplyr::mutate(pValue_I = 2 * pt(q = abs(.data$tstatistic_I), df = .data$df_I, lower.tail = FALSE))
+  dataf <- dataf |>
+    dplyr::mutate(
+      pValue_I = 2 * pt(q = abs(.data$tstatistic_I), df = .data$df_I, lower.tail = FALSE)
+    )
   dataf <- dataf |>
     dplyr::group_by(.data$contrast) |>
     dplyr::mutate(FDR_I = p.adjust(.data$pValue_I, method = "BH")) |>
@@ -53,11 +60,19 @@ NULL
 }
 
 
-.reverse_join_column <- function(join_column){
+.reverse_join_column <- function(join_column) {
   reverse_join_column <- vector(mode = "character", length(join_column))
   for (i in seq_along(join_column)) {
-    reverse_join_column[i] <- if (names(join_column)[i] != "") {  names(join_column)[i]} else { join_column[i]}
-    names(reverse_join_column)[i] <- if (names(join_column)[i] != "") { join_column[i]} else {""}
+    reverse_join_column[i] <- if (names(join_column)[i] != "") {
+      names(join_column)[i]
+    } else {
+      join_column[i]
+    }
+    names(reverse_join_column)[i] <- if (names(join_column)[i] != "") {
+      join_column[i]
+    } else {
+      ""
+    }
   }
   return(reverse_join_column)
 }
@@ -73,15 +88,17 @@ NULL
 #' @param join_column Character vector of columns to join by
 #' @return Data frame with combined results including diff_diff test statistics
 #' @export
-test_diff <- function(phos_res,
-                      tot_res,
-                      join_column = c(
-                        "protein_Id",
-                        "contrast",
-                        "description",
-                        "protein_length",
-                        "nr_tryptic_peptides"
-                      )) {
+test_diff <- function(
+  phos_res,
+  tot_res,
+  join_column = c(
+    "protein_Id",
+    "contrast",
+    "description",
+    "protein_length",
+    "nr_tryptic_peptides"
+  )
+) {
   test_diff <- .test_diff_diff(phos_res, tot_res, by = join_column)
   test_diff$measured_In <- "both"
 
@@ -93,7 +110,8 @@ test_diff <- function(phos_res,
 
   common_columns <- setdiff(
     intersect(
-      colnames(removed_from_site), colnames(removed_from_prot)
+      colnames(removed_from_site),
+      colnames(removed_from_prot)
     ),
     c(join_column, "measured_In")
   )
@@ -102,6 +120,10 @@ test_diff <- function(phos_res,
   removed_from_prot_renamed <- removed_from_prot |>
     dplyr::rename_with(~ paste0(., ".protein"), dplyr::all_of(common_columns))
 
-  combined_test_diff <- dplyr::bind_rows(test_diff, removed_from_site_renamed, removed_from_prot_renamed)
+  combined_test_diff <- dplyr::bind_rows(
+    test_diff,
+    removed_from_site_renamed,
+    removed_from_prot_renamed
+  )
   return(combined_test_diff)
 }

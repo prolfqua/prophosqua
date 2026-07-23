@@ -22,14 +22,23 @@ fgcz_project <- "PTM_analysis_example"
 oid_fgcz <- "fgcz_project"
 ptm_feature <- "singlesite"
 
-tot_dir <- "/Users/witoldwolski/Dropbox/DataAnalysis/PTM/PTM_analysis_example/data_total/DEA_20250630_WUtotal_proteome_vsn/"
+tot_dir <- paste0(
+  "/Users/witoldwolski/Dropbox/DataAnalysis/PTM/PTM_analysis_example/",
+  "data_total/DEA_20250630_WUtotal_proteome_vsn/"
+)
 tot_pattern <- "DE_.*total_proteome\\.xlsx$"
 
 if (ptm_feature == "multisite") {
-  ptm_dir <- "/Users/witoldwolski/Dropbox/DataAnalysis/PTM/PTM_analysis_example/data_ptm/DEA_20250630_WUmultisite_PTM_vsn/"
+  ptm_dir <- paste0(
+    "/Users/witoldwolski/Dropbox/DataAnalysis/PTM/PTM_analysis_example/",
+    "data_ptm/DEA_20250630_WUmultisite_PTM_vsn/"
+  )
   ptm_pattern <- "DE_.*multisite_PTM\\.xlsx$"
 } else if (ptm_feature == "singlesite") {
-  ptm_dir <- "/Users/witoldwolski/Dropbox/DataAnalysis/PTM/PTM_analysis_example/data_ptm/DEA_20250701_WUsinglesite_PTM_vsn/"
+  ptm_dir <- paste0(
+    "/Users/witoldwolski/Dropbox/DataAnalysis/PTM/PTM_analysis_example/",
+    "data_ptm/DEA_20250701_WUsinglesite_PTM_vsn/"
+  )
   ptm_pattern <- "DE_.*singlesite_PTM\\.xlsx$"
 }
 
@@ -117,7 +126,8 @@ drumm <- prolfquapp::make_DEA_config_R6(
 prophosqua::copy_phospho_integration()
 
 # Render HTML report
-rmarkdown::render("_Overview_PhosphoAndIntegration_site.Rmd",
+rmarkdown::render(
+  "_Overview_PhosphoAndIntegration_site.Rmd",
   params = list(
     data = combined_test_diff,
     grp = drumm,

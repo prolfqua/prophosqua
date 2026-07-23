@@ -37,21 +37,32 @@ NULL
 #'                                sequence = "prot_seq",
 #'                                pos_in_protein = "position")
 #' print(result2$sequence_window)
-get_sequence_windows <- function(unique_prot_pep_seq,
-                                 flank_size = 7,
-                                 sequence = "sequence",
-                                 pos_in_protein = "pos_in_protein"){
+get_sequence_windows <- function(
+  unique_prot_pep_seq,
+  flank_size = 7,
+  sequence = "sequence",
+  pos_in_protein = "pos_in_protein"
+) {
   half_window <- flank_size
 
   unique_prot_pep_seq_2 <- unique_prot_pep_seq |>
     dplyr::mutate(
-      padded_sequence = paste0(strrep("X", half_window), !!rlang::sym(sequence), strrep("X", half_window)),
+      padded_sequence = paste0(
+        strrep("X", half_window),
+        !!rlang::sym(sequence),
+        strrep("X", half_window)
+      ),
       pos_in_padded_seq = !!rlang::sym(pos_in_protein) + half_window,
       pos_start = .data$pos_in_padded_seq - half_window,
       pos_end = .data$pos_in_padded_seq + half_window,
       sequence_window = substr(.data$padded_sequence, start = .data$pos_start, stop = .data$pos_end)
     )
   unique_prot_pep_seq <- unique_prot_pep_seq_2 |>
-    dplyr::select(-.data$padded_sequence, -.data$pos_in_padded_seq, -.data$pos_start, -.data$pos_end)
+    dplyr::select(
+      -.data$padded_sequence,
+      -.data$pos_in_padded_seq,
+      -.data$pos_start,
+      -.data$pos_end
+    )
   return(unique_prot_pep_seq)
 }

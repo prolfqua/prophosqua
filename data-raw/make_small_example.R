@@ -13,10 +13,18 @@ set.seed(42)
 
 load("data/combined_test_diff_example.rda")
 
-cat("Original dimensions:", nrow(combined_test_diff_example), "x",
-    ncol(combined_test_diff_example), "\n")
-cat("Original contrasts:", paste(unique(combined_test_diff_example$contrast),
-    collapse = ", "), "\n")
+cat(
+  "Original dimensions:",
+  nrow(combined_test_diff_example),
+  "x",
+  ncol(combined_test_diff_example),
+  "\n"
+)
+cat(
+  "Original contrasts:",
+  paste(unique(combined_test_diff_example$contrast), collapse = ", "),
+  "\n"
+)
 
 # Keep only 2 contrasts
 keep_contrasts <- c("KO_vs_WT", "KO_vs_WT_at_Early")
@@ -34,9 +42,11 @@ pathways <- readRDS(ptmsigdb_file)
 ptmsigdb_ids <- unique(gsub(";[ud]$", "", unlist(pathways)))
 
 all_site_ids <- paste0(
-  vapply(trimws(toupper(df$SequenceWindow)),
-         function(x) prophosqua:::trim_flanking_seq(x, trim_to = 15),
-         character(1)),
+  vapply(
+    trimws(toupper(df$SequenceWindow)),
+    function(x) prophosqua:::trim_flanking_seq(x, trim_to = 15),
+    character(1)
+  ),
   "-p"
 )
 ptmsigdb_sites <- unique(df$site[all_site_ids %in% ptmsigdb_ids])
@@ -53,15 +63,18 @@ cat("Total sampled sites:", length(sampled_sites), "\n")
 
 combined_test_diff_example <- df[df$site %in% sampled_sites, ]
 
-cat("Final dimensions:", nrow(combined_test_diff_example), "x",
-    ncol(combined_test_diff_example), "\n")
-cat("Final contrasts:", paste(unique(combined_test_diff_example$contrast),
-    collapse = ", "), "\n")
+cat(
+  "Final dimensions:",
+  nrow(combined_test_diff_example),
+  "x",
+  ncol(combined_test_diff_example),
+  "\n"
+)
+cat("Final contrasts:", paste(unique(combined_test_diff_example$contrast), collapse = ", "), "\n")
 cat("Sites per contrast:\n")
 print(table(combined_test_diff_example$contrast))
 
-save(combined_test_diff_example, file = "data/combined_test_diff_example.rda",
-     compress = "xz")
+save(combined_test_diff_example, file = "data/combined_test_diff_example.rda", compress = "xz")
 
 cat("Saved to data/combined_test_diff_example.rda\n")
 cat("File size:", round(file.size("data/combined_test_diff_example.rda") / 1024, 1), "KB\n")

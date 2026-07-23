@@ -73,7 +73,7 @@ test_that("filter_significant_sites handles require_sequence", {
   expect_equal(nrow(result1), 4)
 
   # With require_sequence - should filter out NA and underscore-bounded
- result2 <- filter_significant_sites(data, require_sequence = TRUE)
+  result2 <- filter_significant_sites(data, require_sequence = TRUE)
   expect_equal(nrow(result2), 1)
   expect_equal(result2$SequenceWindow, "AAASAAAA")
 })
@@ -94,8 +94,7 @@ test_that("filter_significant_sites returns empty df when no sites pass", {
 test_that("summarize_significant_sites counts by group", {
   data <- data.frame(
     contrast = c("A", "A", "A", "B", "B"),
-    regulation = c("upregulated", "upregulated", "downregulated",
-                   "downregulated", "downregulated")
+    regulation = c("upregulated", "upregulated", "downregulated", "downregulated", "downregulated")
   )
 
   result <- summarize_significant_sites(data)
@@ -132,5 +131,5 @@ test_that("summarize_significant_sites handles multiple group columns", {
 
   result <- summarize_significant_sites(data, group_cols = c("contrast", "modAA"))
 
-  expect_equal(nrow(result), 2)  # A-S and A-T
+  expect_equal(nrow(result), 2) # A-S and A-T
 })
