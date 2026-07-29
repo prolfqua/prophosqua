@@ -6,12 +6,6 @@ code:
   fold: true
 
 articles:
-  - title: Methods Paper
-    contents:
-    - MiMBIntegratedPTM
   - title: Analysis Vignettes
     contents:
     - starts_with("Analysis")
-  - title: Quality Control
-    contents:
-    - QCReport

@@ -37,7 +37,7 @@
 ^vignettes/reference\.docx$
 ^vignettes/logs$
 ^vignettes/QCReport_cache$
-^vignettes/QCReport\.qmd$
+^vignettes/_QCReport\.qmd$
 
 # Hidden files and directories
 ^\.editorconfig$
@@ -62,3 +62,8 @@
 ^ptm_example-main\.zip$
 ^doc$
 ^Meta$
+^\.githooks$
+^make$
+^.*\.BiocCheck$
+^\.github$
+^AGENTS\.md$

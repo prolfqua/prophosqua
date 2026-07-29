@@ -640,9 +640,7 @@ n_to_c_usage_multicontrast <- function(
     # Add include_proteins if specified and not already in the set
     if (!is.null(include_proteins)) {
       pattern <- paste(include_proteins, collapse = "|")
-      if (
-        !all(sapply(include_proteins, function(p) any(grepl(p, proteins_limited[[protein_Id]]))))
-      ) {
+      if (!all(sapply(include_proteins, function(p) any(grepl(p, proteins_limited[[protein_Id]]))))) {
         extra_proteins <- proteins_to_plot |>
           dplyr::filter(grepl(pattern, !!dplyr::sym(protein_Id))) |>
           dplyr::filter(!.data[[protein_Id]] %in% proteins_limited[[protein_Id]])

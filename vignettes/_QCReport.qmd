@@ -70,14 +70,14 @@ ggplot2::theme_set(ggplot2::theme_bw())
 ```
 
 ```{r a1getthedata}
-zip_url  <- "https://gitlab.bfabric.org/wolski/ptm_example/-/archive/main/ptm_example-main.zip"
-destfile <- "ptm_example-main.zip"
+if (params$psm == "" || params$fasta == "") {
+  zip_url <- "https://gitlab.bfabric.org/wolski/ptm_example/-/archive/main/ptm_example-main.zip"
+  destfile <- "ptm_example-main.zip"
 
-# Download, unzip and delete
-download.file(zip_url, destfile, mode = "wb")
-unzip(destfile, exdir = ".")
-unlink(destfile)
-do_dea <- TRUE
+  download.file(zip_url, destfile, mode = "wb")
+  unzip(destfile, exdir = ".")
+  unlink(destfile)
+}
 
 ```
 
@@ -214,7 +214,7 @@ adata <- prolfqua::setup_analysis(psm, config)
 
 lfqdata <- prolfqua::LFQData$new(adata, config)
 
-allmods <- lfqdata$data |> dplyr::select(mod_peptide_Id, Spectrum) |> dplyr::distinct()
+allmods <- lfqdata$data_long() |> dplyr::select(mod_peptide_Id, Spectrum) |> dplyr::distinct()
 allmods <- allmods |> dplyr::group_by(mod_peptide_Id) |> dplyr::summarize(n = dplyr::n()) |> dplyr::ungroup()
 allmods <- allmods |> tidyr::separate(mod_peptide_Id, into = c("modSeq", "Assigned.Modifications"), sep = "~")
 allmods <- allmods |> tidyr::separate_longer_delim("Assigned.Modifications", delim = ",")
@@ -409,8 +409,8 @@ TMT quantification relies on consistent labeling and equal loading across channe
 
 ```{r totalQuant, fig.cap = "Total abundance per channel (Sum of all abundances)."}
 
-xx <- lfqdata$data
-totalPerChannel <- xx |> dplyr::group_by(!!rlang::sym(lfqdata$config$sample_name) ) |>
+xx <- lfqdata$data_long()
+totalPerChannel <- xx |> dplyr::group_by(!!rlang::sym(lfqdata$get_config()$sample_name) ) |>
   dplyr::summarize(totalAbundance = sum(!!rlang::sym(lfqdata$response()), na.rm = TRUE))
 
 totalPerChannel |> ggplot2::ggplot(ggplot2::aes(x = sampleName, y = totalAbundance)) + 
@@ -421,20 +421,21 @@ totalPerChannel |> ggplot2::ggplot(ggplot2::aes(x = sampleName, y = totalAbundan
 
 Total abundance reflects both sample amount and ionization efficiency. Large variations (\>2-fold) should be investigated.
 
-```{r relativeQuant, fig.cap = "Ralative to chanell 126 total abundance per chanel."}
-nudgeval = 0.1
-p126 <- totalPerChannel |> dplyr::filter(grepl("126",sampleName) )
-totalPerChannel$norm126abundance <- totalPerChannel$totalAbundance / p126$totalAbundance
+```{r relativeQuant, fig.cap = "Total abundance relative to the first channel."}
+nudgeval <- 0.1
+reference_sample <- totalPerChannel$sampleName[[1]]
+reference_abundance <- totalPerChannel$totalAbundance[[1]]
+totalPerChannel$relative_abundance <- totalPerChannel$totalAbundance / reference_abundance
 
-totalPerChannel |> ggplot2::ggplot(ggplot2::aes(x = sampleName, y = norm126abundance)) + 
+totalPerChannel |> ggplot2::ggplot(ggplot2::aes(x = sampleName, y = relative_abundance)) + 
   ggplot2::geom_bar(stat = "identity", position = "dodge", colour = "black", fill = "white") + 
-  ggplot2::geom_text(ggplot2::aes(label = round(.data$norm126abundance,2)), nudge_y = nudgeval, angle = 65) +
+  ggplot2::geom_text(ggplot2::aes(label = round(.data$relative_abundance, 2)), nudge_y = nudgeval, angle = 65) +
   ggplot2::theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 # TODO add numbers to bars and table.
 
 ```
 
-Normalization to a reference channel (126) helps identify systematic biases. Values should typically be within 0.5-2.0 fold of the reference.
+Normalization to the first channel (`r reference_sample`) helps identify systematic biases. Values should typically be within 0.5-2.0 fold of the reference.
 
 ```{r densityQuant, fig.cap="Density of abundance values per channel."}
 pl <- lfqdata$get_Plotter()
