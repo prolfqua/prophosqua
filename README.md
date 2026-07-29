@@ -79,13 +79,13 @@ plot_data <- n_to_c_usage(combined_test_diff, contrast_name, FDR_threshold = 0.0
 
 The package includes vignettes demonstrating the analysis workflow:
 
-- **`MiMBIntegratedPTM.Rmd`** - Integrated analysis of PTM and total proteome (DPA, DPU, CorrectFirst)
+- **`_MiMBIntegratedPTM.Rmd`** - Integrated analysis of PTM and total proteome (DPA, DPU, CorrectFirst)
 - **`Analysis_n_to_c.Rmd`** - N-to-C plots for PTM site visualization
 - **`Analysis_seqlogo.Rmd`** - Sequence logo analysis
 - **`Analysis_PTMSEA.Rmd`** - PTM-SEA analysis
 - **`Analysis_KinaseLibrary.Rmd`** - Kinase activity inference from phosphoproteomics data
 - **`Analysis_MEA.Rmd`** - Motif enrichment analysis visualization
-- **`QCReport.qmd`** - FragPipe TMT quality control report
+- **`_QCReport.qmd`** - FragPipe TMT quality control report
 
 ## Citation
 

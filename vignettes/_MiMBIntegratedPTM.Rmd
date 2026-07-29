@@ -465,7 +465,7 @@ We need to specify the workunit names and the date when the DEA analysis was run
 
 ```{r definePaths}
 # Use today's date if running DEA, otherwise use existing results
-datedea <- if(do_dea) datetoday else "20251214"
+datedea <- if(do_dea) datetoday else "20260401"
 
 tot_file <- prophosqua::dea_xlsx_path(project_dir, "total_proteome", datedea)
 ptm_file <- prophosqua::dea_xlsx_path(project_dir, "phospho_STY", datedea)
@@ -718,12 +718,6 @@ writexl::write_xlsx(
     "Result_phosphoAndTotalIntegration.xlsx"
   )
 )
-
-# Save example data for package (as .rda for data() loading)
-combined_test_diff_example <- combined_test_diff
-save(combined_test_diff_example,
-     file = here::here("data", "combined_test_diff_example.rda"),
-     compress = "xz")
 ```
 
 The produced XLSX file can be downloaded from [@10.5281/zenodo.15830988].  This comprehensive integrated analysis framework provides key advantages for PTM research, including the ability to distinguish genuine signaling changes from protein abundance effects (see Note \@ref(keyinsight)).
@@ -758,15 +752,19 @@ ptm_data <- prolfqua::LFQData$new(ldata,config)
 We merge the data for the single-site and total proteome protein abundances by protein identifier and sample. Then we subtract the total proteome protein abundances from the single-site abundances. The Density plot (see Figure \@ref(fig:fig3densityCorrected)) shows the distribution of the corrected single-site abundances.
 
 ```{r correctData}
-ptm_data$data <- dplyr::inner_join(
-  ptm_data$data, tot_d,
-  by = c("channel", "protein_Id"), suffix = c(".site",".total"))
-ptm_data$data <- ptm_data$data |> 
+corrected_data <- dplyr::inner_join(
+  ptm_data$data_long(),
+  tot_d,
+  by = c("channel", "protein_Id"),
+  suffix = c(".site", ".total")
+)
+corrected_data <- corrected_data |>
   dplyr::mutate(ptm_usage = normalized_abundance.site - normalized_abundance.total)
+ptm_data$set_data(corrected_data)
 ```
 
 ```{r fig3densityCorrectedCompute}
-ptm_data$config$set_response("ptm_usage")
+ptm_data$get_config()$set_response("ptm_usage")
 pl <- ptm_data$get_Plotter()
 fig3_plot <- pl$intensity_distribution_density()
 ```

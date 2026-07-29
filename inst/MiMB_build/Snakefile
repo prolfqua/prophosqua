@@ -40,6 +40,8 @@ import datetime
 # Path configuration (relative to inst/MiMB_build/)
 PKG_ROOT = "../.."
 VIGNETTES = f"{PKG_ROOT}/vignettes"
+METHODS_RMD = f"{VIGNETTES}/_MiMBIntegratedPTM.Rmd"
+QC_REPORT_QMD = f"{VIGNETTES}/_QCReport.qmd"
 R_FILES = glob.glob(f"{PKG_ROOT}/R/*.R")
 DESCRIPTION = f"{PKG_ROOT}/DESCRIPTION"
 RDA_FILE = f"{PKG_ROOT}/data/combined_test_diff_example.rda"
@@ -114,7 +116,7 @@ rule install_package:
 
 rule render_supplementary:
     input:
-        rmd=f"{VIGNETTES}/MiMBIntegratedPTM.Rmd",
+        rmd=METHODS_RMD,
         pkg=".package_installed"
     output:
         "MiMBIntegratedPTM.docx"
@@ -122,13 +124,13 @@ rule render_supplementary:
         dodea="FALSE"
     shell:
         """
-        Rscript -e "rmarkdown::render('{input.rmd}', output_format = 'bookdown::word_document2', output_dir = '.', params = list(dodea = {params.dodea}), clean = FALSE)"
+        Rscript -e "rmarkdown::render('{input.rmd}', output_format = 'bookdown::word_document2', output_dir = '.', output_file = 'MiMBIntegratedPTM.docx', params = list(dodea = {params.dodea}), clean = FALSE)"
         """
 
 rule render_supplementary_full:
     """Render MiMBIntegratedPTM with full DEA (dodea=true)"""
     input:
-        rmd=f"{VIGNETTES}/MiMBIntegratedPTM.Rmd",
+        rmd=METHODS_RMD,
         pkg=".package_installed"
     output:
         "MiMBIntegratedPTM_full.docx"
@@ -140,7 +142,7 @@ rule render_supplementary_full:
 rule render_supplementary_html:
     """Render MiMBIntegratedPTM as HTML (with full DEA)"""
     input:
-        rmd=f"{VIGNETTES}/MiMBIntegratedPTM.Rmd",
+        rmd=METHODS_RMD,
         pkg=".package_installed"
     output:
         "MiMBIntegratedPTM.html"
@@ -164,13 +166,13 @@ rule renumber_references:
 rule render_supplementary_pdf:
     """Render MiMBIntegratedPTM as PDF"""
     input:
-        rmd=f"{VIGNETTES}/MiMBIntegratedPTM.Rmd",
+        rmd=METHODS_RMD,
         pkg=".package_installed"
     output:
         "MiMBIntegratedPTM.pdf"
     shell:
         """
-        Rscript -e "rmarkdown::render('{input.rmd}', output_format = 'bookdown::pdf_document2', output_dir = '.', params = list(dodea = FALSE), clean = FALSE)"
+        Rscript -e "rmarkdown::render('{input.rmd}', output_format = 'bookdown::pdf_document2', output_dir = '.', output_file = 'MiMBIntegratedPTM.pdf', params = list(dodea = FALSE), clean = FALSE)"
         """
 
 rule archive:
@@ -286,7 +288,7 @@ rule run_mea:
 rule render_qc:
     """Render QCReport with mouse example data"""
     input:
-        qmd=f"{VIGNETTES}/QCReport.qmd",
+        qmd=QC_REPORT_QMD,
         pkg=".package_installed",
         psm=f"{PKG_ROOT}/inst/PTM_example_analysis_v2/PTM_example/data_total/FP_22/p1/psm.tsv"
     output:
@@ -296,5 +298,5 @@ rule render_qc:
     shell:
         """
         cp {input.qmd} {params.dest}/
-        cd {params.dest} && Rscript -e "rmarkdown::render('QCReport.qmd', output_format = 'html_document', params = list(wd = '.', psm = 'PTM_example/data_total/FP_22/p1/psm.tsv', fasta = 'PTM_example/data_total/FP_22/p37688_db3_MusNShigella_20250219.fasta', workunit = 'mouse_example', projectid = 'Maculins2020'))"
+        cd {params.dest} && Rscript -e "rmarkdown::render('_QCReport.qmd', output_format = 'html_document', output_file = 'QCReport.html', params = list(wd = normalizePath('.'), psm = 'PTM_example/data_total/FP_22/p1/psm.tsv', fasta = 'PTM_example/data_total/FP_22/p37688_db3_MusNShigella_20250219.fasta', workunit = 'mouse_example', projectid = 'Maculins2020'))"
         """

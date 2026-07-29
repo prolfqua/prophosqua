@@ -1,4 +1,11 @@
 [format]
-indent-style = "space"
+line-width = 120
 indent-width = 2
-line-width = 100
+indent-style = "space"
+line-ending = "auto"
+persistent-line-breaks = true
+exclude = []
+default-exclude = true
+skip = []
+table = []
+default-table = true
