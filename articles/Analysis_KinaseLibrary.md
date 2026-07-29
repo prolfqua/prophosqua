@@ -278,8 +278,8 @@ knitr::kable(gsea_info, caption = paste(params$analysis_type, "GSEA Results Summ
 | Contrast             | Significant Kinases (FDR \< 0.25) |
 |:---------------------|----------------------------------:|
 | KO_vs_WT             |                                29 |
-| KO_vs_WT_at_Early    |                                35 |
-| KO_vs_WT_at_Late     |                                35 |
+| KO_vs_WT_at_Early    |                                36 |
+| KO_vs_WT_at_Late     |                                36 |
 | KO_vs_WT_at_Uninfect |                                41 |
 
 DPA GSEA Results Summary {.table}
@@ -350,7 +350,7 @@ for (ctr in unique(all_clean$contrast)) {
 
 ### KO_vs_WT_at_Early
 
-**Significant kinases (FDR \< 0.1):** 26
+**Significant kinases (FDR \< 0.1):** 28
 
 ![](Analysis_KinaseLibrary_files/figure-html/contrastPlots-2.png)
 
@@ -366,7 +366,7 @@ for (ctr in unique(all_clean$contrast)) {
 
 ### KO_vs_WT_at_Uninfect
 
-**Significant kinases (FDR \< 0.1):** 38
+**Significant kinases (FDR \< 0.1):** 37
 
 ![](Analysis_KinaseLibrary_files/figure-html/contrastPlots-4.png)
 
@@ -459,10 +459,10 @@ knitr::kable(pval_diag, caption = paste("Raw p-value Distribution (", params$ana
 
 | Contrast             | Min p-value | p \< 0.05 | p \< 0.01 | Total |
 |:---------------------|------------:|----------:|----------:|------:|
-| KO_vs_WT             |           0 |        26 |        20 |    29 |
-| KO_vs_WT_at_Early    |           0 |        26 |        19 |    35 |
-| KO_vs_WT_at_Late     |           0 |        31 |        22 |    35 |
-| KO_vs_WT_at_Uninfect |           0 |        37 |        32 |    41 |
+| KO_vs_WT             |           0 |        26 |        20 |    31 |
+| KO_vs_WT_at_Early    |           0 |        26 |        20 |    39 |
+| KO_vs_WT_at_Late     |           0 |        31 |        24 |    38 |
+| KO_vs_WT_at_Uninfect |           0 |        37 |        33 |    42 |
 
 Raw p-value Distribution ( DPA ) {.table}
 
@@ -640,64 +640,68 @@ message("Vignette mode: File export skipped.")
 sessionInfo()
 ```
 
-    ## R version 4.5.2 (2025-10-31)
-    ## Platform: aarch64-apple-darwin20
-    ## Running under: macOS Tahoe 26.3
+    ## R version 4.6.1 (2026-06-24)
+    ## Platform: x86_64-pc-linux-gnu
+    ## Running under: Ubuntu 24.04.4 LTS
     ## 
     ## Matrix products: default
-    ## BLAS:   /System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/libBLAS.dylib 
-    ## LAPACK: /Library/Frameworks/R.framework/Versions/4.5-arm64/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1
+    ## BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 
+    ## LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblasp-r0.3.26.so;  LAPACK version 3.12.0
     ## 
     ## locale:
-    ## [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+    ##  [1] LC_CTYPE=C.UTF-8       LC_NUMERIC=C           LC_TIME=C.UTF-8       
+    ##  [4] LC_COLLATE=C.UTF-8     LC_MONETARY=C.UTF-8    LC_MESSAGES=C.UTF-8   
+    ##  [7] LC_PAPER=C.UTF-8       LC_NAME=C              LC_ADDRESS=C          
+    ## [10] LC_TELEPHONE=C         LC_MEASUREMENT=C.UTF-8 LC_IDENTIFICATION=C   
     ## 
-    ## time zone: Europe/Zurich
-    ## tzcode source: internal
+    ## time zone: UTC
+    ## tzcode source: system (glibc)
     ## 
     ## attached base packages:
     ## [1] stats     graphics  grDevices utils     datasets  methods   base     
     ## 
     ## other attached packages:
     ##  [1] prophosqua_0.3.0       DT_0.34.0              patchwork_1.3.2       
-    ##  [4] writexl_1.5.4          forcats_1.0.1          purrr_1.2.1           
-    ##  [7] enrichplot_1.30.3      ggplot2_4.0.2          readxl_1.4.5          
-    ## [10] tidyr_1.3.2            dplyr_1.2.0            clusterProfiler_4.18.1
+    ##  [4] writexl_1.5.4          forcats_1.0.1          purrr_1.2.2           
+    ##  [7] enrichplot_1.32.0      ggplot2_4.0.3          readxl_1.5.0          
+    ## [10] tidyr_1.3.2            dplyr_1.2.1            clusterProfiler_4.20.0
     ## 
     ## loaded via a namespace (and not attached):
-    ##   [1] DBI_1.2.3               gson_0.1.0              rlang_1.1.7            
-    ##   [4] magrittr_2.0.4          DOSE_4.4.0              otel_0.2.0             
-    ##   [7] compiler_4.5.2          RSQLite_2.4.5           png_0.1-8              
-    ##  [10] systemfonts_1.3.1       vctrs_0.7.1             reshape2_1.4.5         
-    ##  [13] stringr_1.6.0           pkgconfig_2.0.3         crayon_1.5.3           
-    ##  [16] fastmap_1.2.0           XVector_0.50.0          labeling_0.4.3         
-    ##  [19] rmarkdown_2.30          ragg_1.5.0              bit_4.6.0              
-    ##  [22] xfun_0.55               ggseqlogo_0.2.2         cachem_1.1.0           
-    ##  [25] aplot_0.2.9             jsonlite_2.0.0          blob_1.2.4             
-    ##  [28] BiocParallel_1.44.0     parallel_4.5.2          R6_2.6.1               
-    ##  [31] bslib_0.9.0             stringi_1.8.7           RColorBrewer_1.1-3     
-    ##  [34] cellranger_1.1.0        jquerylib_0.1.4         GOSemSim_2.36.0        
-    ##  [37] Rcpp_1.1.1              Seqinfo_1.0.0           bookdown_0.46          
-    ##  [40] knitr_1.51              ggtangle_0.0.9          R.utils_2.13.0         
-    ##  [43] IRanges_2.44.0          Matrix_1.7-4            splines_4.5.2          
-    ##  [46] igraph_2.2.1            tidyselect_1.2.1        qvalue_2.42.0          
-    ##  [49] yaml_2.3.12             codetools_0.2-20        lattice_0.22-7         
-    ##  [52] tibble_3.3.1            plyr_1.8.9              withr_3.0.2            
-    ##  [55] treeio_1.34.0           Biobase_2.70.0          KEGGREST_1.50.0        
-    ##  [58] S7_0.2.1                evaluate_1.0.5          gridGraphics_0.5-1     
-    ##  [61] desc_1.4.3              Biostrings_2.78.0       pillar_1.11.1          
-    ##  [64] ggtree_4.0.1            stats4_4.5.2            ggfun_0.2.0            
-    ##  [67] generics_0.1.4          S4Vectors_0.48.0        scales_1.4.0           
-    ##  [70] tidytree_0.4.6          glue_1.8.0              gdtools_0.4.4          
-    ##  [73] lazyeval_0.2.2          tools_4.5.2             data.table_1.18.0      
-    ##  [76] fgsea_1.36.0            ggiraph_0.9.2           fs_1.6.6               
-    ##  [79] fastmatch_1.1-6         cowplot_1.2.0           grid_4.5.2             
-    ##  [82] ape_5.8-1               crosstalk_1.2.2         AnnotationDbi_1.72.0   
-    ##  [85] nlme_3.1-168            cli_3.6.5               rappdirs_0.3.3         
-    ##  [88] textshaping_1.0.4       fontBitstreamVera_0.1.1 gtable_0.3.6           
-    ##  [91] R.methodsS3_1.8.2       yulab.utils_0.2.2       fontquiver_0.2.1       
-    ##  [94] sass_0.4.10             digest_0.6.39           BiocGenerics_0.56.0    
-    ##  [97] ggrepel_0.9.6           ggplotify_0.1.3         htmlwidgets_1.6.4      
-    ## [100] farver_2.1.2            memoise_2.0.1           htmltools_0.5.9        
-    ## [103] pkgdown_2.2.0           R.oo_1.27.1             lifecycle_1.0.5        
-    ## [106] httr_1.4.7              GO.db_3.22.0            fontLiberation_0.1.0   
-    ## [109] bit64_4.6.0-1
+    ##   [1] DBI_1.3.0               gson_0.2.0              httr2_1.3.0            
+    ##   [4] rlang_1.3.0             magrittr_2.0.5          DOSE_4.6.0             
+    ##   [7] otel_0.2.0              compiler_4.6.1          RSQLite_3.53.3         
+    ##  [10] png_0.1-9               systemfonts_1.3.2       callr_3.8.0            
+    ##  [13] vctrs_0.7.3             reshape2_1.4.5          stringr_1.6.0          
+    ##  [16] pkgconfig_2.0.3         crayon_1.5.3            fastmap_1.2.0          
+    ##  [19] XVector_0.52.0          labeling_0.4.3          rmarkdown_2.31         
+    ##  [22] ps_1.9.3                ragg_1.5.2              bit_4.6.0              
+    ##  [25] xfun_0.60               ggseqlogo_0.2.2         cachem_1.1.0           
+    ##  [28] aplot_0.3.1             jsonlite_2.0.0          blob_1.3.0             
+    ##  [31] tidydr_0.0.6            tweenr_2.0.3            cluster_2.1.8.2        
+    ##  [34] parallel_4.6.1          R6_2.6.1                bslib_0.11.0           
+    ##  [37] stringi_1.8.7           RColorBrewer_1.1-3      cellranger_1.1.0       
+    ##  [40] enrichit_0.2.0          jquerylib_0.1.4         GOSemSim_2.38.3        
+    ##  [43] Rcpp_1.1.2              Seqinfo_1.2.0           bookdown_0.47          
+    ##  [46] knitr_1.51              ggtangle_0.1.2          IRanges_2.46.0         
+    ##  [49] splines_4.6.1           Matrix_1.7-5            igraph_2.3.3           
+    ##  [52] aisdk_1.4.12            tidyselect_1.2.1        qvalue_2.44.0          
+    ##  [55] yaml_2.3.12             processx_3.9.0          lattice_0.22-9         
+    ##  [58] tibble_3.3.1            plyr_1.8.9              withr_3.0.3            
+    ##  [61] Biobase_2.72.0          treeio_1.36.1           KEGGREST_1.52.2        
+    ##  [64] S7_0.2.2                evaluate_1.0.5          gridGraphics_0.5-1     
+    ##  [67] desc_1.4.3              polyclip_1.10-7         scatterpie_0.2.6       
+    ##  [70] Biostrings_2.80.1       pillar_1.11.1           ggtree_4.2.0           
+    ##  [73] stats4_4.6.1            ggfun_0.2.1             generics_0.1.4         
+    ##  [76] S4Vectors_0.50.1        scales_1.4.0            tidytree_0.4.8         
+    ##  [79] glue_1.8.1              gdtools_0.5.1           lazyeval_0.2.3         
+    ##  [82] tools_4.6.1             ggnewscale_0.5.2        ggiraph_0.9.6          
+    ##  [85] fs_2.1.0                grid_4.6.1              ape_5.8-1              
+    ##  [88] crosstalk_1.2.2         AnnotationDbi_1.74.0    nlme_3.1-169           
+    ##  [91] ggforce_0.5.0           cli_3.6.6               rappdirs_0.3.4         
+    ##  [94] textshaping_1.0.5       fontBitstreamVera_0.1.1 gtable_0.3.6           
+    ##  [97] yulab.utils_0.2.4       sass_0.4.10             digest_0.6.39          
+    ## [100] fontquiver_0.2.1        BiocGenerics_0.58.1     ggrepel_0.9.8          
+    ## [103] ggplotify_0.1.3         htmlwidgets_1.6.4       farver_2.1.2           
+    ## [106] memoise_2.0.1           htmltools_0.5.9         pkgdown_2.2.1          
+    ## [109] lifecycle_1.0.5         httr_1.4.8              GO.db_3.23.1           
+    ## [112] fontLiberation_0.1.0    bit64_4.8.2             MASS_7.3-65

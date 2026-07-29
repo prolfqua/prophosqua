@@ -99,7 +99,7 @@ plot_data <- n_to_c_usage(combined_test_diff, contrast_name, FDR_threshold = 0.0
 
 The package includes vignettes demonstrating the analysis workflow:
 
-- **`MiMBIntegratedPTM.Rmd`** - Integrated analysis of PTM and total
+- **`_MiMBIntegratedPTM.Rmd`** - Integrated analysis of PTM and total
   proteome (DPA, DPU, CorrectFirst)
 - **`Analysis_n_to_c.Rmd`** - N-to-C plots for PTM site visualization
 - **`Analysis_seqlogo.Rmd`** - Sequence logo analysis
@@ -107,7 +107,7 @@ The package includes vignettes demonstrating the analysis workflow:
 - **`Analysis_KinaseLibrary.Rmd`** - Kinase activity inference from
   phosphoproteomics data
 - **`Analysis_MEA.Rmd`** - Motif enrichment analysis visualization
-- **`QCReport.qmd`** - FragPipe TMT quality control report
+- **`_QCReport.qmd`** - FragPipe TMT quality control report
 
 ## Citation
 
@@ -130,6 +130,9 @@ If you use this package in your research, please cite:
   analysis workflow package
 
 ## Building and Deploying Documentation
+
+- <https://deepwiki.com/wolski/ptm-pipeline> - AI attempt for
+  documentation
 
 ### Build pkgdown site locally
 
@@ -165,9 +168,13 @@ License](https://prolfqua.github.io/prophosqua/LICENSE).
 
 ## All functions
 
+- [`n_to_c_plot()`](https://prolfqua.github.io/prophosqua/reference/N_to_C_plot.md)
+  : N to C plot using ggplot2
+- [`n_to_c_plot_integrated()`](https://prolfqua.github.io/prophosqua/reference/N_to_C_plot_integrated.md)
+  : N to C plot for integrated (DPU) results
 - [`combined_test_diff_example`](https://prolfqua.github.io/prophosqua/reference/combined_test_diff_example.md)
   : Example phosphoproteomics differential expression results
-- [`copy_phospho_integration()`](https://prolfqua.github.io/prophosqua/reference/copy_phospho_integration.md)
+- [`copy_phospho_integration()`](https://prolfqua.github.io/prophosqua/reference/copy_phospho_Integration.md)
   : copy Markdown and runscript for FragPipe combined_protein.tsv
 - [`dea_res_dir()`](https://prolfqua.github.io/prophosqua/reference/dea_res_dir.md)
   : Get DEA results directory path
@@ -204,10 +211,6 @@ License](https://prolfqua.github.io/prophosqua/LICENSE).
 - [`n_to_c_expression_multicontrast()`](https://prolfqua.github.io/prophosqua/reference/n_to_c_expression_multicontrast.md)
   : Plot protein and PTM expression across all contrasts in multi-panel
   layout
-- [`n_to_c_plot()`](https://prolfqua.github.io/prophosqua/reference/n_to_c_plot.md)
-  : N to C plot using ggplot2
-- [`n_to_c_plot_integrated()`](https://prolfqua.github.io/prophosqua/reference/n_to_c_plot_integrated.md)
-  : N to C plot for integrated (DPU) results
 - [`n_to_c_usage()`](https://prolfqua.github.io/prophosqua/reference/n_to_c_usage.md)
   : Plot PTM occupation, use after adjusting for total proteome
 - [`n_to_c_usage_multicontrast()`](https://prolfqua.github.io/prophosqua/reference/n_to_c_usage_multicontrast.md)
@@ -253,12 +256,6 @@ License](https://prolfqua.github.io/prophosqua/LICENSE).
 
 # Articles
 
-### Methods Paper
-
-- [Integrated Analysis of Post-Translational Modifications and Total
-  Proteome: Methods for Distinguishing Abundance from Usage
-  Changes](https://prolfqua.github.io/prophosqua/articles/MiMBIntegratedPTM.md):
-
 ### Analysis Vignettes
 
 - [Kinase Activity (Kinase Library +
@@ -271,8 +268,3 @@ License](https://prolfqua.github.io/prophosqua/LICENSE).
   GSEA)](https://prolfqua.github.io/prophosqua/articles/Analysis_PTMSEA.md):
 - [PTM Analysis - Sequence
   Logo](https://prolfqua.github.io/prophosqua/articles/Analysis_seqlogo.md):
-
-### Quality Control
-
-- [FragPipe TMT
-  QC](https://prolfqua.github.io/prophosqua/articles/QCReport.md):

@@ -265,37 +265,40 @@ message("Vignette mode: File export skipped.")
 sessionInfo()
 ```
 
-    ## R version 4.5.2 (2025-10-31)
-    ## Platform: aarch64-apple-darwin20
-    ## Running under: macOS Tahoe 26.3
+    ## R version 4.6.1 (2026-06-24)
+    ## Platform: x86_64-pc-linux-gnu
+    ## Running under: Ubuntu 24.04.4 LTS
     ## 
     ## Matrix products: default
-    ## BLAS:   /System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/libBLAS.dylib 
-    ## LAPACK: /Library/Frameworks/R.framework/Versions/4.5-arm64/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1
+    ## BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 
+    ## LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblasp-r0.3.26.so;  LAPACK version 3.12.0
     ## 
     ## locale:
-    ## [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+    ##  [1] LC_CTYPE=C.UTF-8       LC_NUMERIC=C           LC_TIME=C.UTF-8       
+    ##  [4] LC_COLLATE=C.UTF-8     LC_MONETARY=C.UTF-8    LC_MESSAGES=C.UTF-8   
+    ##  [7] LC_PAPER=C.UTF-8       LC_NAME=C              LC_ADDRESS=C          
+    ## [10] LC_TELEPHONE=C         LC_MEASUREMENT=C.UTF-8 LC_IDENTIFICATION=C   
     ## 
-    ## time zone: Europe/Zurich
-    ## tzcode source: internal
+    ## time zone: UTC
+    ## tzcode source: system (glibc)
     ## 
     ## attached base packages:
     ## [1] stats     graphics  grDevices utils     datasets  methods   base     
     ## 
     ## other attached packages:
-    ## [1] prophosqua_0.3.0 writexl_1.5.4    forcats_1.0.1    purrr_1.2.1     
-    ## [5] ggplot2_4.0.2    tidyr_1.3.2      DT_0.34.0        dplyr_1.2.0     
+    ## [1] prophosqua_0.3.0 writexl_1.5.4    forcats_1.0.1    purrr_1.2.2     
+    ## [5] ggplot2_4.0.3    tidyr_1.3.2      DT_0.34.0        dplyr_1.2.1     
     ## 
     ## loaded via a namespace (and not attached):
-    ##  [1] gtable_0.3.6       jsonlite_2.0.0     compiler_4.5.2     tidyselect_1.2.1  
-    ##  [5] jquerylib_0.1.4    systemfonts_1.3.1  scales_1.4.0       textshaping_1.0.4 
+    ##  [1] gtable_0.3.6       jsonlite_2.0.0     compiler_4.6.1     tidyselect_1.2.1  
+    ##  [5] jquerylib_0.1.4    systemfonts_1.3.2  scales_1.4.0       textshaping_1.0.5 
     ##  [9] yaml_2.3.12        fastmap_1.2.0      R6_2.6.1           labeling_0.4.3    
     ## [13] patchwork_1.3.2    generics_0.1.4     knitr_1.51         htmlwidgets_1.6.4 
-    ## [17] tibble_3.3.1       bookdown_0.46      desc_1.4.3         RColorBrewer_1.1-3
-    ## [21] bslib_0.9.0        pillar_1.11.1      rlang_1.1.7        cachem_1.1.0      
-    ## [25] xfun_0.55          S7_0.2.1           fs_1.6.6           sass_0.4.10       
-    ## [29] otel_0.2.0         cli_3.6.5          withr_3.0.2        pkgdown_2.2.0     
-    ## [33] magrittr_2.0.4     crosstalk_1.2.2    digest_0.6.39      grid_4.5.2        
-    ## [37] lifecycle_1.0.5    vctrs_0.7.1        evaluate_1.0.5     glue_1.8.0        
-    ## [41] farver_2.1.2       ggseqlogo_0.2.2    ragg_1.5.0         rmarkdown_2.30    
-    ## [45] tools_4.5.2        pkgconfig_2.0.3    htmltools_0.5.9
+    ## [17] tibble_3.3.1       bookdown_0.47      desc_1.4.3         RColorBrewer_1.1-3
+    ## [21] bslib_0.11.0       pillar_1.11.1      rlang_1.3.0        cachem_1.1.0      
+    ## [25] xfun_0.60          S7_0.2.2           fs_2.1.0           sass_0.4.10       
+    ## [29] otel_0.2.0         cli_3.6.6          withr_3.0.3        pkgdown_2.2.1     
+    ## [33] magrittr_2.0.5     crosstalk_1.2.2    digest_0.6.39      grid_4.6.1        
+    ## [37] lifecycle_1.0.5    vctrs_0.7.3        evaluate_1.0.5     glue_1.8.1        
+    ## [41] farver_2.1.2       ggseqlogo_0.2.2    ragg_1.5.2         rmarkdown_2.31    
+    ## [45] tools_4.6.1        pkgconfig_2.0.3    htmltools_0.5.9

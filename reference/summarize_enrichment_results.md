@@ -37,7 +37,7 @@ summarize_enrichment_results(mea_results)
 #> # A tibble: 2 × 4
 #>   contrast             total `FDR < 0.1` `FDR < 0.05`
 #>   <chr>                <int>       <int>        <int>
-#> 1 Drug_vs_Vehicle         50          16           12
-#> 2 Treatment_vs_Control    50          19           12
+#> 1 Drug_vs_Vehicle         50          22           13
+#> 2 Treatment_vs_Control    50          11            6
 # Returns: contrast, total, FDR < 0.1, FDR < 0.05
 ```

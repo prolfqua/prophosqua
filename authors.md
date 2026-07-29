@@ -9,7 +9,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/prolfqua/prophosqua/blob/HEAD/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/prolfqua/prophosqua/blob/main/DESCRIPTION)
 
 Grossmann J, Wolski W (2026). *prophosqua: Integrate TMT-Labeled
 Phosphoproteomics and Total Proteomics Data*. R package version 0.3.0,

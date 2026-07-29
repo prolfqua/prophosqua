@@ -13,8 +13,7 @@ make_fasta_summary(resDB, old = FALSE, as_string = TRUE)
 
 - resDB:
 
-  A list of sequences from
-  [`prozor::readPeptideFasta`](https://rdrr.io/pkg/prozor/man/readPeptideFasta.html)
+  A list of sequences from `prozor::readPeptideFasta`
 
 - old:
 

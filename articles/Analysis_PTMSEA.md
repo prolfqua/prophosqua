@@ -106,10 +106,10 @@ n_path <- sum(grepl("^PATH-", names(pathways)))
 
 # Summary table
 ptmsigdb_summary <- tibble(
-  Property = c("Source File", "Total Signatures", "KINASE signatures", "PATH signatures", "Unique Sites"),
+  Property = c("Source File", "Total Signatures", "KINASE signatures", "PATH signatures", "Unique site IDs"),
   Value = c(
     basename(ptmsigdb_file), length(pathways), n_kinase, n_path,
-    length(unique(unlist(pathways)))
+    length(unique(gsub(";[ud]$", "", unlist(pathways))))
   )
 )
 knitr::kable(ptmsigdb_summary, caption = "PTMsigDB Signature Database Summary")
@@ -121,20 +121,9 @@ knitr::kable(ptmsigdb_summary, caption = "PTMsigDB Signature Database Summary")
 | Total Signatures  | 662                                |
 | KINASE signatures | 662                                |
 | PATH signatures   | 0                                  |
-| Unique Sites      | 16279                              |
+| Unique site IDs   | 16279                              |
 
 PTMsigDB Signature Database Summary {.table}
-
-``` r
-
-# Vignette mode: subsample to 50 pathway sets for speed
-if (!pipeline_mode) {
-  set.seed(42)
-  keep_sets <- sample(names(pathways), min(50, length(pathways)))
-  pathways <- pathways[keep_sets]
-  message("Vignette mode: subsampled to ", length(keep_sets), " pathway sets")
-}
-```
 
 ## Overlap Statistics
 
@@ -181,10 +170,10 @@ knitr::kable(overlap_stats, caption = paste0("Overlap Statistics (", params$trim
 | Metric                          |    Value |
 |:--------------------------------|---------:|
 | Our data (unique sequences)     | 21683.00 |
-| PTMsigDB (unique site IDs)      |  2838.00 |
-| Overlap                         |   282.00 |
-| % of our sites in PTMsigDB      |     1.30 |
-| % of PTMsigDB sites in our data |     9.94 |
+| PTMsigDB (unique site IDs)      | 16279.00 |
+| Overlap                         |  1151.00 |
+| % of our sites in PTMsigDB      |     5.31 |
+| % of PTMsigDB sites in our data |     7.07 |
 
 Overlap Statistics (15-mer) {.table}
 
@@ -262,10 +251,10 @@ knitr::kable(results_info, caption = paste(params$analysis_type, "PTM-SEA Result
 
 | Contrast             | Total Pathways | FDR \< 0.1 | FDR \< 0.05 |
 |:---------------------|---------------:|-----------:|------------:|
-| KO_vs_WT             |              0 |          0 |           0 |
-| KO_vs_WT_at_Early    |              0 |          0 |           0 |
-| KO_vs_WT_at_Late     |              0 |          0 |           0 |
-| KO_vs_WT_at_Uninfect |              0 |          0 |           0 |
+| KO_vs_WT             |            229 |          0 |           0 |
+| KO_vs_WT_at_Early    |            234 |          3 |           0 |
+| KO_vs_WT_at_Late     |            230 |          0 |           0 |
+| KO_vs_WT_at_Uninfect |            198 |          0 |           0 |
 
 DPA PTM-SEA Results Summary {.table}
 
@@ -277,38 +266,11 @@ has_ptmsea_results <- sum(results_info$`Total Pathways`) > 0
 ``` r
 
 cat("\n\n# No PTM-SEA Results\n\n")
-```
-
-## No PTM-SEA Results
-
-``` r
-
 cat("No pathways passed the size filter (min_size=10). This typically means too few\n")
-```
-
-No pathways passed the size filter (min_size=10). This typically means
-too few
-
-``` r
-
 cat("phosphosites in the input data overlap with PTMsigDB signatures.\n\n")
-```
-
-phosphosites in the input data overlap with PTMsigDB signatures.
-
-``` r
-
 cat("**Overlap was:", n_overlap, "sites out of", n_our_sites, "**\n\n")
-```
-
-**Overlap was: 282 sites out of 21683**
-
-``` r
-
 cat("Consider using a larger dataset or lowering `min_size`.\n\n")
 ```
-
-Consider using a larger dataset or lowering `min_size`.
 
 ## Results by Contrast
 
@@ -370,6 +332,44 @@ for (ctr in unique(all_clean$contrast)) {
 }
 ```
 
+### KO_vs_WT
+
+**Significant pathways (FDR \< 0.1):** 0
+
+![](Analysis_PTMSEA_files/figure-html/contrastPlots-1.png)
+
+#### Significant Pathways
+
+No significant pathways found (FDR \< 0.1).
+
+### KO_vs_WT_at_Early
+
+**Significant pathways (FDR \< 0.1):** 3
+
+![](Analysis_PTMSEA_files/figure-html/contrastPlots-2.png)
+
+#### Significant Pathways
+
+### KO_vs_WT_at_Late
+
+**Significant pathways (FDR \< 0.1):** 0
+
+![](Analysis_PTMSEA_files/figure-html/contrastPlots-3.png)
+
+#### Significant Pathways
+
+No significant pathways found (FDR \< 0.1).
+
+### KO_vs_WT_at_Uninfect
+
+**Significant pathways (FDR \< 0.1):** 0
+
+![](Analysis_PTMSEA_files/figure-html/contrastPlots-4.png)
+
+#### Significant Pathways
+
+No significant pathways found (FDR \< 0.1).
+
 ## clusterProfiler Dotplots
 
 ### Combined Dotplot
@@ -383,6 +383,8 @@ dotplot(merged_results,
 ) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
+
+![](Analysis_PTMSEA_files/figure-html/combinedDotplot-1.png)
 
 ### Individual Contrasts
 
@@ -430,6 +432,22 @@ for (ct in names(results)) {
 }
 ```
 
+#### KO_vs_WT
+
+![](Analysis_PTMSEA_files/figure-html/individualPlots-1.png)
+
+#### KO_vs_WT_at_Early
+
+![](Analysis_PTMSEA_files/figure-html/individualPlots-2.png)
+
+#### KO_vs_WT_at_Late
+
+![](Analysis_PTMSEA_files/figure-html/individualPlots-3.png)
+
+#### KO_vs_WT_at_Uninfect
+
+![](Analysis_PTMSEA_files/figure-html/individualPlots-4.png)
+
 ## Summary Heatmap
 
 ``` r
@@ -449,6 +467,8 @@ plot_enrichment_heatmap(
 )
 ```
 
+![](Analysis_PTMSEA_files/figure-html/summaryHeatmap-1.png)
+
 ## Volcano Plot
 
 ``` r
@@ -461,6 +481,8 @@ plot_enrichment_volcano(
   title = paste(params$analysis_type, "- PTM-SEA Volcano Plots")
 )
 ```
+
+![](Analysis_PTMSEA_files/figure-html/volcanoPlot-1.png)
 
 ## Export All GSEA Plots to PDF
 
@@ -518,6 +540,62 @@ for (ct in names(results)) {
   }
 }
 ```
+
+### KO_vs_WT
+
+#### CDK5
+
+![](Analysis_PTMSEA_files/figure-html/gseaExamplePlots-1.png)
+
+#### CDK1/Cdk1
+
+![](Analysis_PTMSEA_files/figure-html/gseaExamplePlots-2.png)
+
+#### P38A/Mapk14
+
+![](Analysis_PTMSEA_files/figure-html/gseaExamplePlots-3.png)
+
+### KO_vs_WT_at_Early
+
+#### CDK1/Cdk1
+
+![](Analysis_PTMSEA_files/figure-html/gseaExamplePlots-4.png)
+
+#### Syk
+
+![](Analysis_PTMSEA_files/figure-html/gseaExamplePlots-5.png)
+
+#### KINASE-iKiP_PRKD2
+
+![](Analysis_PTMSEA_files/figure-html/gseaExamplePlots-6.png)
+
+### KO_vs_WT_at_Late
+
+#### KINASE-iKiP_CSNK2A2.CK2A2
+
+![](Analysis_PTMSEA_files/figure-html/gseaExamplePlots-7.png)
+
+#### HER2/ERBB2
+
+![](Analysis_PTMSEA_files/figure-html/gseaExamplePlots-8.png)
+
+#### CDK1/Cdk1
+
+![](Analysis_PTMSEA_files/figure-html/gseaExamplePlots-9.png)
+
+### KO_vs_WT_at_Uninfect
+
+#### ALK
+
+![](Analysis_PTMSEA_files/figure-html/gseaExamplePlots-10.png)
+
+#### KINASE-iKiP_SIK2
+
+![](Analysis_PTMSEA_files/figure-html/gseaExamplePlots-11.png)
+
+#### KINASE-iKiP_IKBKE.IKKE
+
+![](Analysis_PTMSEA_files/figure-html/gseaExamplePlots-12.png)
 
 ## All Results
 
@@ -593,63 +671,71 @@ message("Vignette mode: File export skipped.")
 sessionInfo()
 ```
 
-    ## R version 4.5.2 (2025-10-31)
-    ## Platform: aarch64-apple-darwin20
-    ## Running under: macOS Tahoe 26.3
+    ## R version 4.6.1 (2026-06-24)
+    ## Platform: x86_64-pc-linux-gnu
+    ## Running under: Ubuntu 24.04.4 LTS
     ## 
     ## Matrix products: default
-    ## BLAS:   /System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/libBLAS.dylib 
-    ## LAPACK: /Library/Frameworks/R.framework/Versions/4.5-arm64/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1
+    ## BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 
+    ## LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblasp-r0.3.26.so;  LAPACK version 3.12.0
     ## 
     ## locale:
-    ## [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+    ##  [1] LC_CTYPE=C.UTF-8       LC_NUMERIC=C           LC_TIME=C.UTF-8       
+    ##  [4] LC_COLLATE=C.UTF-8     LC_MONETARY=C.UTF-8    LC_MESSAGES=C.UTF-8   
+    ##  [7] LC_PAPER=C.UTF-8       LC_NAME=C              LC_ADDRESS=C          
+    ## [10] LC_TELEPHONE=C         LC_MEASUREMENT=C.UTF-8 LC_IDENTIFICATION=C   
     ## 
-    ## time zone: Europe/Zurich
-    ## tzcode source: internal
+    ## time zone: UTC
+    ## tzcode source: system (glibc)
     ## 
     ## attached base packages:
     ## [1] stats     graphics  grDevices utils     datasets  methods   base     
     ## 
     ## other attached packages:
-    ##  [1] ggplot2_4.0.2          writexl_1.5.4          readxl_1.4.5          
-    ##  [4] purrr_1.2.1            forcats_1.0.1          fgsea_1.36.0          
-    ##  [7] enrichplot_1.30.3      DT_0.34.0              dplyr_1.2.0           
-    ## [10] clusterProfiler_4.18.1 prophosqua_0.3.0      
+    ##  [1] ggplot2_4.0.3          writexl_1.5.4          readxl_1.5.0          
+    ##  [4] purrr_1.2.2            forcats_1.0.1          fgsea_1.38.0          
+    ##  [7] enrichplot_1.32.0      DT_0.34.0              dplyr_1.2.1           
+    ## [10] clusterProfiler_4.20.0 prophosqua_0.3.0      
     ## 
     ## loaded via a namespace (and not attached):
-    ##   [1] DBI_1.2.3               gson_0.1.0              rlang_1.1.7            
-    ##   [4] magrittr_2.0.4          DOSE_4.4.0              otel_0.2.0             
-    ##   [7] compiler_4.5.2          RSQLite_2.4.5           png_0.1-8              
-    ##  [10] systemfonts_1.3.1       vctrs_0.7.1             reshape2_1.4.5         
-    ##  [13] stringr_1.6.0           pkgconfig_2.0.3         crayon_1.5.3           
-    ##  [16] fastmap_1.2.0           XVector_0.50.0          rmarkdown_2.30         
-    ##  [19] ragg_1.5.0              bit_4.6.0               xfun_0.55              
-    ##  [22] ggseqlogo_0.2.2         cachem_1.1.0            aplot_0.2.9            
-    ##  [25] jsonlite_2.0.0          blob_1.2.4              BiocParallel_1.44.0    
-    ##  [28] parallel_4.5.2          R6_2.6.1                bslib_0.9.0            
-    ##  [31] stringi_1.8.7           RColorBrewer_1.1-3      cellranger_1.1.0       
-    ##  [34] jquerylib_0.1.4         GOSemSim_2.36.0         Rcpp_1.1.1             
-    ##  [37] Seqinfo_1.0.0           bookdown_0.46           knitr_1.51             
-    ##  [40] ggtangle_0.0.9          R.utils_2.13.0          IRanges_2.44.0         
-    ##  [43] Matrix_1.7-4            splines_4.5.2           igraph_2.2.1           
-    ##  [46] tidyselect_1.2.1        qvalue_2.42.0           yaml_2.3.12            
-    ##  [49] codetools_0.2-20        lattice_0.22-7          tibble_3.3.1           
-    ##  [52] plyr_1.8.9              withr_3.0.2             treeio_1.34.0          
-    ##  [55] Biobase_2.70.0          KEGGREST_1.50.0         S7_0.2.1               
-    ##  [58] evaluate_1.0.5          gridGraphics_0.5-1      desc_1.4.3             
-    ##  [61] Biostrings_2.78.0       pillar_1.11.1           ggtree_4.0.1           
-    ##  [64] stats4_4.5.2            ggfun_0.2.0             generics_0.1.4         
-    ##  [67] S4Vectors_0.48.0        scales_1.4.0            tidytree_0.4.6         
-    ##  [70] glue_1.8.0              gdtools_0.4.4           lazyeval_0.2.2         
-    ##  [73] tools_4.5.2             data.table_1.18.0       ggiraph_0.9.2          
-    ##  [76] fs_1.6.6                fastmatch_1.1-6         cowplot_1.2.0          
-    ##  [79] grid_4.5.2              tidyr_1.3.2             ape_5.8-1              
-    ##  [82] AnnotationDbi_1.72.0    nlme_3.1-168            patchwork_1.3.2        
-    ##  [85] cli_3.6.5               rappdirs_0.3.3          textshaping_1.0.4      
-    ##  [88] fontBitstreamVera_0.1.1 gtable_0.3.6            R.methodsS3_1.8.2      
-    ##  [91] yulab.utils_0.2.2       fontquiver_0.2.1        sass_0.4.10            
-    ##  [94] digest_0.6.39           BiocGenerics_0.56.0     ggrepel_0.9.6          
-    ##  [97] ggplotify_0.1.3         htmlwidgets_1.6.4       farver_2.1.2           
-    ## [100] memoise_2.0.1           htmltools_0.5.9         pkgdown_2.2.0          
-    ## [103] R.oo_1.27.1             lifecycle_1.0.5         httr_1.4.7             
-    ## [106] GO.db_3.22.0            fontLiberation_0.1.0    bit64_4.6.0-1
+    ##   [1] DBI_1.3.0               gson_0.2.0              httr2_1.3.0            
+    ##   [4] rlang_1.3.0             magrittr_2.0.5          DOSE_4.6.0             
+    ##   [7] otel_0.2.0              compiler_4.6.1          RSQLite_3.53.3         
+    ##  [10] png_0.1-9               systemfonts_1.3.2       callr_3.8.0            
+    ##  [13] vctrs_0.7.3             reshape2_1.4.5          stringr_1.6.0          
+    ##  [16] pkgconfig_2.0.3         crayon_1.5.3            fastmap_1.2.0          
+    ##  [19] XVector_0.52.0          labeling_0.4.3          rmarkdown_2.31         
+    ##  [22] ps_1.9.3                ragg_1.5.2              bit_4.6.0              
+    ##  [25] xfun_0.60               ggseqlogo_0.2.2         cachem_1.1.0           
+    ##  [28] aplot_0.3.1             jsonlite_2.0.0          blob_1.3.0             
+    ##  [31] tidydr_0.0.6            BiocParallel_1.46.0     tweenr_2.0.3           
+    ##  [34] cluster_2.1.8.2         parallel_4.6.1          R6_2.6.1               
+    ##  [37] bslib_0.11.0            stringi_1.8.7           RColorBrewer_1.1-3     
+    ##  [40] cellranger_1.1.0        enrichit_0.2.0          jquerylib_0.1.4        
+    ##  [43] GOSemSim_2.38.3         Rcpp_1.1.2              Seqinfo_1.2.0          
+    ##  [46] bookdown_0.47           knitr_1.51              ggtangle_0.1.2         
+    ##  [49] IRanges_2.46.0          splines_4.6.1           Matrix_1.7-5           
+    ##  [52] igraph_2.3.3            aisdk_1.4.12            tidyselect_1.2.1       
+    ##  [55] qvalue_2.44.0           yaml_2.3.12             codetools_0.2-20       
+    ##  [58] processx_3.9.0          lattice_0.22-9          tibble_3.3.1           
+    ##  [61] plyr_1.8.9              withr_3.0.3             Biobase_2.72.0         
+    ##  [64] treeio_1.36.1           KEGGREST_1.52.2         S7_0.2.2               
+    ##  [67] evaluate_1.0.5          gridGraphics_0.5-1      desc_1.4.3             
+    ##  [70] polyclip_1.10-7         scatterpie_0.2.6        Biostrings_2.80.1      
+    ##  [73] pillar_1.11.1           ggtree_4.2.0            stats4_4.6.1           
+    ##  [76] ggfun_0.2.1             generics_0.1.4          S4Vectors_0.50.1       
+    ##  [79] scales_1.4.0            tidytree_0.4.8          glue_1.8.1             
+    ##  [82] gdtools_0.5.1           lazyeval_0.2.3          tools_4.6.1            
+    ##  [85] data.table_1.18.4       ggnewscale_0.5.2        ggiraph_0.9.6          
+    ##  [88] fs_2.1.0                fastmatch_1.1-8         cowplot_1.2.0          
+    ##  [91] grid_4.6.1              tidyr_1.3.2             ape_5.8-1              
+    ##  [94] crosstalk_1.2.2         AnnotationDbi_1.74.0    nlme_3.1-169           
+    ##  [97] patchwork_1.3.2         ggforce_0.5.0           cli_3.6.6              
+    ## [100] rappdirs_0.3.4          textshaping_1.0.5       fontBitstreamVera_0.1.1
+    ## [103] gtable_0.3.6            yulab.utils_0.2.4       sass_0.4.10            
+    ## [106] digest_0.6.39           fontquiver_0.2.1        BiocGenerics_0.58.1    
+    ## [109] ggrepel_0.9.8           ggplotify_0.1.3         htmlwidgets_1.6.4      
+    ## [112] farver_2.1.2            memoise_2.0.1           htmltools_0.5.9        
+    ## [115] pkgdown_2.2.1           lifecycle_1.0.5         httr_1.4.8             
+    ## [118] GO.db_3.23.1            fontLiberation_0.1.0    bit64_4.8.2            
+    ## [121] MASS_7.3-65

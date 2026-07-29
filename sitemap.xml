@@ -1,6 +1,6 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://prolfqua.github.io/prophosqua/404.html</loc></url>
-<url><loc>https://prolfqua.github.io/prophosqua/CLAUDE.html</loc></url>
+<url><loc>https://prolfqua.github.io/prophosqua/AGENTS.html</loc></url>
 <url><loc>https://prolfqua.github.io/prophosqua/LICENSE-text.html</loc></url>
 <url><loc>https://prolfqua.github.io/prophosqua/TODO.html</loc></url>
 <url><loc>https://prolfqua.github.io/prophosqua/articles/Analysis_KinaseLibrary.html</loc></url>
@@ -8,14 +8,15 @@
 <url><loc>https://prolfqua.github.io/prophosqua/articles/Analysis_PTMSEA.html</loc></url>
 <url><loc>https://prolfqua.github.io/prophosqua/articles/Analysis_n_to_c.html</loc></url>
 <url><loc>https://prolfqua.github.io/prophosqua/articles/Analysis_seqlogo.html</loc></url>
-<url><loc>https://prolfqua.github.io/prophosqua/articles/MiMBIntegratedPTM.html</loc></url>
-<url><loc>https://prolfqua.github.io/prophosqua/articles/QCReport.html</loc></url>
 <url><loc>https://prolfqua.github.io/prophosqua/articles/index.html</loc></url>
 <url><loc>https://prolfqua.github.io/prophosqua/authors.html</loc></url>
 <url><loc>https://prolfqua.github.io/prophosqua/index.html</loc></url>
+<url><loc>https://prolfqua.github.io/prophosqua/news/index.html</loc></url>
+<url><loc>https://prolfqua.github.io/prophosqua/reference/N_to_C_plot.html</loc></url>
+<url><loc>https://prolfqua.github.io/prophosqua/reference/N_to_C_plot_integrated.html</loc></url>
 <url><loc>https://prolfqua.github.io/prophosqua/reference/calculate_optimal_layout.html</loc></url>
 <url><loc>https://prolfqua.github.io/prophosqua/reference/combined_test_diff_example.html</loc></url>
-<url><loc>https://prolfqua.github.io/prophosqua/reference/copy_phospho_integration.html</loc></url>
+<url><loc>https://prolfqua.github.io/prophosqua/reference/copy_phospho_Integration.html</loc></url>
 <url><loc>https://prolfqua.github.io/prophosqua/reference/dea_res_dir.html</loc></url>
 <url><loc>https://prolfqua.github.io/prophosqua/reference/dea_xlsx_path.html</loc></url>
 <url><loc>https://prolfqua.github.io/prophosqua/reference/dot-test_diff_diff.html</loc></url>
@@ -36,8 +37,6 @@
 <url><loc>https://prolfqua.github.io/prophosqua/reference/n_c_integrated_df.html</loc></url>
 <url><loc>https://prolfqua.github.io/prophosqua/reference/n_to_c_expression.html</loc></url>
 <url><loc>https://prolfqua.github.io/prophosqua/reference/n_to_c_expression_multicontrast.html</loc></url>
-<url><loc>https://prolfqua.github.io/prophosqua/reference/n_to_c_plot.html</loc></url>
-<url><loc>https://prolfqua.github.io/prophosqua/reference/n_to_c_plot_integrated.html</loc></url>
 <url><loc>https://prolfqua.github.io/prophosqua/reference/n_to_c_usage.html</loc></url>
 <url><loc>https://prolfqua.github.io/prophosqua/reference/n_to_c_usage_multicontrast.html</loc></url>
 <url><loc>https://prolfqua.github.io/prophosqua/reference/plot_diff_logo.html</loc></url>

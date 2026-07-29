@@ -2,9 +2,13 @@
 
 ## All functions
 
+- [`n_to_c_plot()`](https://prolfqua.github.io/prophosqua/reference/N_to_C_plot.md)
+  : N to C plot using ggplot2
+- [`n_to_c_plot_integrated()`](https://prolfqua.github.io/prophosqua/reference/N_to_C_plot_integrated.md)
+  : N to C plot for integrated (DPU) results
 - [`combined_test_diff_example`](https://prolfqua.github.io/prophosqua/reference/combined_test_diff_example.md)
   : Example phosphoproteomics differential expression results
-- [`copy_phospho_integration()`](https://prolfqua.github.io/prophosqua/reference/copy_phospho_integration.md)
+- [`copy_phospho_integration()`](https://prolfqua.github.io/prophosqua/reference/copy_phospho_Integration.md)
   : copy Markdown and runscript for FragPipe combined_protein.tsv
 - [`dea_res_dir()`](https://prolfqua.github.io/prophosqua/reference/dea_res_dir.md)
   : Get DEA results directory path
@@ -41,10 +45,6 @@
 - [`n_to_c_expression_multicontrast()`](https://prolfqua.github.io/prophosqua/reference/n_to_c_expression_multicontrast.md)
   : Plot protein and PTM expression across all contrasts in multi-panel
   layout
-- [`n_to_c_plot()`](https://prolfqua.github.io/prophosqua/reference/n_to_c_plot.md)
-  : N to C plot using ggplot2
-- [`n_to_c_plot_integrated()`](https://prolfqua.github.io/prophosqua/reference/n_to_c_plot_integrated.md)
-  : N to C plot for integrated (DPU) results
 - [`n_to_c_usage()`](https://prolfqua.github.io/prophosqua/reference/n_to_c_usage.md)
   : Plot PTM occupation, use after adjusting for total proteome
 - [`n_to_c_usage_multicontrast()`](https://prolfqua.github.io/prophosqua/reference/n_to_c_usage_multicontrast.md)
