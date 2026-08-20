@@ -85,7 +85,14 @@ data_info <- tibble(
     nrow(data), paste(unique(data$contrast), collapse = ", ")
   )
 )
-knitr::kable(data_info, caption = "Data Summary")
+knitr::kable(
+  data_info,
+  caption = paste0(
+    "Input of this sequence logo report: source workbook, sheet, number of ",
+    "site-by-contrast rows read and the contrasts they cover. Every row is one ",
+    "phosphosite in one contrast, before any significance filtering."
+  )
+)
 ```
 
 # Filter Significant Sites
@@ -111,7 +118,12 @@ cat("Found", nrow(significant_sites), "significant sites\n")
 stopifnot("No significant sites found. Adjust fdr/log2fc thresholds in config." = nrow(significant_sites) > 0)
 
 tx <- as.data.frame(with(significant_sites, table(contrast, regulation, modAA)))
-capt <- paste0("Number of significantly regulated sites by contrast, residue, and regulation direction (", params$sheet, ").")
+capt <- paste0(
+  "Number of significantly regulated sites entering the logos, cross-tabulated by contrast, ",
+  "regulation direction and modified residue (", params$sheet, "; |log2FC| > ", params$fc,
+  " and FDR < ", params$fdr, "). Freq is the site count of that combination; a direction with ",
+  "few sites gives a noisy logo, and S/T/Y counts show which residue class dominates the motif."
+)
 
 knitr::kable(tx, caption = capt)
 ```
@@ -125,13 +137,34 @@ Ensure the central residue matches the modified amino acid.
 significant_sites <- validate_sequence_window(significant_sites)
 
 cat("After validation:", nrow(significant_sites), "sites remain\n")
+
+# Figure captions, assembled once so they can name the actual thresholds
+seqlogo_cap <- paste0(
+  "Amino acid composition of the sequence windows around the significantly regulated sites (",
+  params$sheet, "), one panel per contrast and regulation direction. The x-axis is the position ",
+  "relative to the modified residue in the centre of the window, letter height is the ",
+  "probability of that amino acid at that position among the sites of the panel (they sum to 1 ",
+  "per position), and letters are coloured by amino acid chemistry. Only sites with |log2FC| > ",
+  params$fc, " and FDR < ", params$fdr, " and a validated sequence window are included, so ",
+  "panels with few sites show tall letters that are not necessarily meaningful."
+)
+
+difflogo_cap <- paste0(
+  "Difference in amino acid probabilities between up- and down-regulated sites (",
+  params$sheet, "), one panel per contrast that has sites in both directions. The x-axis is ",
+  "the position relative to the modified central residue and the y-axis is the probability of ",
+  "an amino acid among up-regulated sites minus its probability among down-regulated sites. ",
+  "Letters above zero mark residues enriched around up-regulated sites, letters below zero ",
+  "residues enriched around down-regulated sites; a position with no directional preference ",
+  "stays empty. This contrasts the two motifs directly instead of showing each separately."
+)
 ```
 
 # Sequence Logo Analysis
 
 ## Generate Sequence Logos
 
-```{r figSeqlogo, fig.width=9, fig.height=12, fig.cap="Sequence logos for significantly regulated sites by contrast and regulation direction."}
+```{r figSeqlogo, fig.width=9, fig.height=12, fig.cap=seqlogo_cap}
 seq_list <- significant_sites |>
   dplyr::mutate(.grp = paste(contrast, regulation, sep = "_")) |>
   dplyr::group_by(.grp) |>
@@ -157,7 +190,7 @@ if (length(seq_list) > 0) {
 
 Visualize the difference in amino acid enrichment between upregulated and downregulated sites.
 
-```{r figDifflogo, fig.width=10, fig.height=10, fig.cap="Difference Logos (Upregulated - Downregulated)"}
+```{r figDifflogo, fig.width=10, fig.height=10, fig.cap=difflogo_cap}
 p_diff <- prophosqua::plot_diff_logo(significant_sites)
 
 if (!is.null(p_diff)) {
@@ -178,7 +211,14 @@ summary_info <- tibble(
             sum(significant_sites$regulation == "upregulated"),
             sum(significant_sites$regulation == "downregulated"))
 )
-knitr::kable(summary_info, caption = "Analysis Summary")
+knitr::kable(
+  summary_info,
+  caption = paste0(
+    "Sites behind the logos above: analysis type, the significance thresholds applied, and how ",
+    "many sites passed them in total and per direction. Upregulated and Downregulated sum to ",
+    "the total; a strong imbalance between them explains an asymmetric difference logo."
+  )
+)
 ```
 
 # Session Info

@@ -9,7 +9,7 @@ n_to_c_expression(
   contrast_name,
   FDR_threshold = 0.05,
   fc_threshold = 0,
-  impute_flag = "Imputed_Mean_moderated"
+  impute_flag = "lod_imputed"
 )
 }
 \arguments{
@@ -21,7 +21,7 @@ n_to_c_expression(
 
 \item{fc_threshold}{Fold change threshold for filtering (default 0)}
 
-\item{impute_flag}{Flag for imputed values (default "Imputed_Mean_moderated")}
+\item{impute_flag}{Value of estimate_type marking an imputed estimate (default "lod_imputed")}
 }
 \value{
 data frame with protein_Id, protein_length, contrast, data, and plot

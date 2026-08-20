@@ -121,17 +121,17 @@ A key analytical challenge is distinguishing genuine changes in PTM levels, due 
 
 Because phosphorylation is substoichiometric, only a small fraction of protein molecules carry the modification; therefore, enrichment is required to isolate phosphopeptides. Enrichment steps (such as Immobilized Metal Affinity Chromatography (IMAC) or Metal Oxide Affinity Chromatography (MOAC)) introduce additional sample handling and technical variability [@10.1039/c5mb00024f; @10.1016/j.aca.2021.338716; @10.1038/nbt.3327]. Therefore, each stage, from digestion to cleanup to MS acquisition, must be carefully optimized to improve reproducibility [@10.1038/s41467-018-03309-6]. Effective experimental design combined with tailored normalization strategies is therefore essential to recover reliable, biologically meaningful PTM signals.
 
-Isobaric TMT labeling enables multiplexed PTM analysis of up to 35 samples in a single run, reducing inter-sample variability and missing values to improve statistical power [@10.1021/acs.jproteome.4c00668; @10.1021/ac0262560]. Phosphopeptides are typically enriched by IMAC or Metal Oxide Affinity Chromatography (MOAC), which provide complementary selectivity and broaden coverage [@10.1074/mcp.m114.045609; @10.1101/2020.04.13.038810]. Adding offline fractionation before liquid chromatography–tandem mass spectrometry (LC–MS/MS) further increases phosphosite depth and distributes peptide load, improving quantification consistency across fractions and conditions [@10.1002/pmic.202100245].
+Isobaric TMT labeling enables multiplexed PTM analysis of up to 35 samples in a single run, reducing inter-sample variability and missing values to improve statistical power [@10.1021/acs.jproteome.4c00668; @10.1021/ac0262560]. Phosphopeptides are typically enriched by IMAC or Metal Oxide Affinity Chromatography (MOAC), which provide complementary selectivity and broaden coverage [@10.1074/mcp.m114.045609; @10.1021/acs.jproteome.0c00508]. Adding offline fractionation before liquid chromatography–tandem mass spectrometry (LC–MS/MS) further increases phosphosite depth and distributes peptide load, improving quantification consistency across fractions and conditions [@10.1002/pmic.202100245].
 
 In TMT-based proteomics, a _plex_ refers to the complete set of isobarically tagged samples analyzed together in a single LC–MS/MS run. When the total number of samples exceeds the available TMT channels, each plex should include at least one biological replicate from every experimental group and a common reference or pooled channel for normalization [@10.1021/acs.jproteome.0c00536]. Replicates of the same group are then distributed across different plexes rather than clustered within a single run, preventing any group’s replicates from being confined to one batch. If all samples fit within the channel capacity of a single plex, these balancing measures are inherently satisfied in that run.
 
 ## Computational Tools and Workflows
 
-The computational landscape for quantitative protein PTM analysis has undergone significant evolution, with numerous specialized software platforms supporting bottom-up proteomics workflows. Following MS data acquisition, spectra undergo database searching to identify peptide sequences, which is subsequently followed by protein inference to determine protein identities based on these identified peptides. The ecosystem of PTM analysis includes several well-established data-dependent acquisition (DDA)-TMT compatible software suites, both free and commercial, such as _Andromeda_ integrated within _MaxQuant_ [@10.1021/acs.jproteome.4c00869], _Proteome Discoverer_ (Thermo Fisher Scientific), _FragPipe_ [@10.1038/s41467-023-39891-7], or _PeptideShaker_ [@10.1021/acs.jproteome.1c00678].
+The computational landscape for quantitative protein PTM analysis has undergone significant evolution, with numerous specialized software platforms supporting bottom-up proteomics workflows. Following MS data acquisition, spectra undergo database searching to identify peptide sequences, which is subsequently followed by protein inference to determine protein identities based on these identified peptides. The ecosystem of PTM analysis includes several well-established data-dependent acquisition (DDA)-TMT compatible software suites, both free and commercial, such as _Andromeda_ integrated within _MaxQuant_ [@10.1021/acs.jproteome.4c00869], _Proteome Discoverer_ (Thermo Fisher Scientific), _FragPipe_ [@10.1038/s41467-026-70118-7], or _PeptideShaker_ [@10.1021/acs.jproteome.1c00678].
 
 Among the analytical steps following peptide identification, PTM site localization scoring represents a particularly crucial computational challenge. Site localization determines the confidence with which a modification can be assigned to a specific amino acid residue within a peptide sequence. This process is especially challenging when peptides contain multiple potential modification sites, necessitating algorithms to evaluate the quality and specificity of site-determining fragment ions. Specialized tools have been developed explicitly for robust PTM site localization, including _PTMProphet_ [@10.1038/s41467-020-17914-x], _PhosphoRS_ [@10.1021/pr200611n], and _Ascore_ [@10.1038/nbt1240]. Accurate localization is essential, as incorrect site assignments can lead to biological misinterpretations, particularly in signaling pathway analyses and kinase-substrate predictions.
 
-In DDA workflows, _FragPipe_ [@10.1101/2025.05.27.656447] represents a widely adopted and integrated platform that comprehensively addresses PTM analysis, including site localization challenges. _FragPipe_ integrates the _MSFragger_ search engine [@10.1038/nmeth.4256], enabling highly sensitive peptide identification, and employs _PTMProphet_ [@10.1021/acs.jproteome.9b00205] functionality for site localization scoring. It also generates detailed quantitative outputs, including site-level quantification reports and multisite feature reports that group peptides sharing identical modification patterns. A detailed description of the _FragPipe_ workflow is provided in the experimental methods section (see Section \@ref(fragpipeparams)).
+In DDA workflows, _FragPipe_ [@10.1038/s41467-026-70118-7] represents a widely adopted and integrated platform that comprehensively addresses PTM analysis, including site localization challenges. _FragPipe_ integrates the _MSFragger_ search engine [@10.1038/nmeth.4256], enabling highly sensitive peptide identification, and employs _PTMProphet_ [@10.1021/acs.jproteome.9b00205] functionality for site localization scoring. It also generates detailed quantitative outputs, including site-level quantification reports and multisite feature reports that group peptides sharing identical modification patterns. A detailed description of the _FragPipe_ workflow is provided in the experimental methods section (see Section \@ref(fragpipeparams)).
 
 While the above discussion has focused primarily on DDA workflows, data-independent acquisition (DIA)-based approaches represent alternative strategies with distinct computational considerations for PTM analysis. Specialized DIA platforms such as _Spectronaut_ [@10.1002/pmic.202300088], [@10.1074/mcp.m114.044305] and _DIA-NN_ [@10.1038/s41592-019-0638-x] offer PTM support through dedicated site-localization scoring algorithms and site-level quantification capabilities. Unlike DDA, DIA workflows require specialized computational approaches to extract and quantify modification-specific information from highly multiplexed fragmentation spectra. Both _Spectronaut_ and _DIA-NN_ incorporate advanced statistical frameworks designed explicitly for PTM identification and quantification in DIA workflows.
 
@@ -206,7 +206,7 @@ As discussed below, TMT enables high-precision quantification across many condit
 Most relevant *R* packages used for the analysis are:
 
 - `tidyverse` [@10.21105/joss.01686] - Data manipulation and visualization tools
-- `ggseqlogo` [@10.32614/cran.package.ggseqlogo] - Sequence motif visualization
+- `ggseqlogo` [@10.1093/bioinformatics/btx469] - Sequence motif visualization
 - `prolfqua` [@10.1021/acs.jproteome.2c00441] - Core statistical framework for proteomics data analysis
 - `prolfquapp` [@10.1021/acs.jproteome.4c00911] - Streamlined differential expression analysis pipeline
 - `prolfquappPTMreaders` [@10.5281/zenodo.15845243] - Specialized readers for PTM data formats
@@ -227,7 +227,7 @@ Raw MS data acquired using DDA combined with TMT labeling are processed using sp
 2. to extract reporter ion intensities
 3. and to compute site localization probabilities
 
-The section (see Methods \@ref(fragpipeparams)) describes in detail how we parameterized the _FragPipe_ software [@10.1038/s41467-023-39891-7].
+The section (see Methods \@ref(fragpipeparams)) describes in detail how we parameterized the _FragPipe_ software [@10.1038/s41467-026-70118-7].
 
 
 # Methods
@@ -237,7 +237,7 @@ A key challenge, when analysing PTMs, is to distinguish changes in PTM abundance
 
 ## Analysing TMT raw data with _FragPipe_ {#fragpipeparams}
 
-We used the TMT 11-plex phospho workflow in _FragPipe_ 22.0 [@10.1038/s41467-023-39891-7] with _MSFragger_ (version 4.1) [@10.1038/nmeth.4256]. Database searching was performed against a species-specific protein sequence database supplemented with common contaminants and reversed decoy sequences. The search parameters included:
+We used the TMT 11-plex phospho workflow in _FragPipe_ 22.0 [@10.1038/s41467-026-70118-7] with _MSFragger_ (version 4.1) [@10.1038/nmeth.4256]. Database searching was performed against a species-specific protein sequence database supplemented with common contaminants and reversed decoy sequences. The search parameters included:
 
 - Fixed modifications:
 - Carbamidomethylation of cysteine (+57.0215 Da)
@@ -247,7 +247,7 @@ We used the TMT 11-plex phospho workflow in _FragPipe_ 22.0 [@10.1038/s41467-023
 - Oxidation of methionine (+15.9949 Da)
 - Acetylation at protein N-termini (+42.0106 Da)
 
-Reporter ions are quantified by _IonQuant_ (version 1.10.27), with downstream processing in _TMTIntegrator_ (version 1.10.27). _TMTIntegrator_ [@10.1101/2025.05.27.656447] performs quantification and normalization specifically tailored for multiplexed TMT experiments.
+Reporter ions are quantified by _IonQuant_ (version 1.10.27), with downstream processing in _TMTIntegrator_ (version 1.10.27). _TMTIntegrator_ [@10.1038/s41467-026-70118-7] performs quantification and normalization specifically tailored for multiplexed TMT experiments.
 
 Selected _TMTIntegrator_ parameters are:
 

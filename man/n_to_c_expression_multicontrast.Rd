@@ -8,7 +8,7 @@ n_to_c_expression_multicontrast(
   combined_site_prot_long,
   FDR_threshold = 0.05,
   fc_threshold = 0,
-  impute_flag = "Imputed_Mean_moderated",
+  impute_flag = "lod_imputed",
   max_plots = NULL,
   include_proteins = NULL
 )
@@ -20,7 +20,7 @@ n_to_c_expression_multicontrast(
 
 \item{fc_threshold}{Fold change threshold for filtering (default 0)}
 
-\item{impute_flag}{Flag for imputed values (default "Imputed_Mean_moderated")}
+\item{impute_flag}{Value of estimate_type marking an imputed estimate (default "lod_imputed")}
 
 \item{max_plots}{Maximum number of plots to generate (default NULL = no limit).
 If specified, only the first max_plots proteins will be plotted.}

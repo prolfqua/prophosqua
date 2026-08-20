@@ -33,11 +33,13 @@ Imports:
     patchwork,
     prolfqua,
     purrr,
+    readr,
     readxl,
     rlang,
     seqinr,
     tidyr,
-    tidyselect
+    tidyselect,
+    yaml
 Suggests:
     bookdown,
     clusterProfiler,

@@ -40,6 +40,19 @@ knitr::opts_chunk$set(
 
 grp2 <- params$grp
 data_diff_diff <- params$data
+
+# Colours for the per-site estimate type. The keys must match the values found in
+# estimate_type.site: a value that is missing from the palette is drawn invisible.
+estimate_type_palette <- c(
+  observed = "black",
+  lod_imputed = "orange",
+  missing_fallback = "blue"
+)
+estimate_type_levels <- names(estimate_type_palette)
+
+# One panel per contrast, at most four panels per row.
+facet_nrow <- ceiling(length(unique(data_diff_diff$contrast)) / 4)
+fig_height <- max(3.5, 3.4 * facet_nrow)
 ```
 
 # Overview
@@ -64,8 +77,16 @@ n_sites <- length(unique(data_diff_1C$site))
 tbl_combined <- c(tbl_modAA, Total = n_sites)
 
 df_summary <- tibble::enframe(tbl_combined, name = "Modification", value = "Count")
-knitr::kable(df_summary, 
-             caption = paste0("Overview on identified phospho sites"))
+knitr::kable(
+  df_summary,
+  caption = paste0(
+    "Phosphosites quantified in contrast ", coi, ", counted per modified residue. ",
+    "Modification is the modified amino acid (S, T or Y; NotLoc marks sites whose position ",
+    "within the peptide could not be localized) and Count the number of distinct sites, with ",
+    "Total giving the distinct sites over all residue types. Serine dominance is the expected ",
+    "pattern in a phosphoproteome."
+  )
+)
 
 ```
 
@@ -101,9 +122,8 @@ In brief, the difference in phosphorylation site levels between two conditions i
 
 ```{r tableAllProt}
 bb <- data_diff_diff |>
-  dplyr::select(all_of(c("site", "site", "protein_Id", "contrast", 
-                         "modelName.site", "modAA", "diff_diff", "FDR_I")))
-bb <- crosstalk::SharedData$new(bb, ~site, group = "BB")
+  dplyr::select(all_of(c("site", "protein_Id", "contrast", 
+                         "estimate_type.site", "modAA", "diff_diff", "FDR_I")))
 
 DT::datatable(
   bb, 
@@ -116,7 +136,13 @@ DT::datatable(
                  scrollX = 400,
                  scroller = TRUE),
   
-  caption = "Differential PTM usage analysis results of all phospho sites (showing MSstatsPTM adjusted log2FCs and FDR)") |>
+  caption = paste0(
+    "Differential PTM usage for every phosphosite and contrast, after MSstatsPTM adjustment. ",
+    "diff_diff is the site log2 fold change minus the log2 fold change of its protein, so it ",
+    "measures usage rather than abundance, and FDR_I is its adjusted p-value; ",
+    "estimate_type.site states whether the site estimate is observed or was filled in by ",
+    "limit-of-detection imputation, and modAA gives the modified residue."
+  )) |>
   DT::formatRound(
     columns = c('diff_diff', 'FDR_I'), 
     digits = 3
@@ -125,67 +151,57 @@ DT::datatable(
 ```
 
 
-(ref:scatterplot) Phosphorylation site differences (Y axis) as a function of protein differences (X axis). This scatter plot shows the relationship between changes in total protein abundance and changes in phosphorylation site abundance, helping to identify whether phosphorylation changes are driven by protein-level changes or by site-specific modification usage.
+(ref:scatterplot) Phosphosite log2 fold change as a function of the log2 fold change of its protein, one panel per contrast. Each point is one phosphosite: the x-axis is the protein-level difference between the two groups, the y-axis the site-level difference, and the colour marks whether the site estimate is observed (black) or was filled in by limit-of-detection imputation (orange). The dashed blue diagonal marks equal change: points on it change as much as their protein and therefore reflect protein abundance, while points off it indicate changed modification usage. Sites without a quantified protein are absent.
 
-```{r scatterplot, fig.cap="(ref:scatterplot)", fig.width=9, fig.height=7, include = TRUE, eval = TRUE}
+```{r scatterplot, fig.cap="(ref:scatterplot)", fig.width=9, fig.height=fig_height, include = TRUE, eval = TRUE}
 
-datax <- data_diff_diff |> dplyr::select(
-  dplyr::all_of(c("site", "contrast", "protein_Id",
-                  "diff.protein",
-                  "diff.site",
-                  "modelName.site", "modelName.protein")))
+datax <- data_diff_diff |>
+  dplyr::filter(!is.na(diff.protein), !is.na(diff.site)) |>
+  # draw the few imputed sites last so they are not buried under the observed ones
+  dplyr::arrange(factor(estimate_type.site, levels = estimate_type_levels))
 
-palette <- c("black","orange")
-palette <- setNames(palette, c("Linear_Model_moderated", "Imputed_Mean_moderated"))
-
-
-xd <- prolfqua::scatter_plotly(
-  datax,
-  proteinID = "site",
-  dx = "diff.protein",
-  dy = "diff.site",
-  contrast = "contrast",
-  color = "modelName.site",
-  palette = palette,
-  title_size = 14,
-  group = "BB")
-
-xd <- lapply(xd, plotly::highlight , off = "plotly_doubleclick")
-nrow <- ceiling(length(xd) / 4)
-plotly::subplot(xd, shareX = TRUE, shareY = TRUE, nrows = nrow)
+ggplot2::ggplot(datax, ggplot2::aes(x = diff.protein, y = diff.site,
+                                    colour = estimate_type.site)) +
+  ggplot2::geom_point(size = 0.5, alpha = 0.3) +
+  ggplot2::geom_abline(slope = 1, intercept = 0,
+                       linetype = "dashed", colour = "steelblue") +
+  ggplot2::facet_wrap(~contrast, nrow = facet_nrow,
+                      labeller = ggplot2::label_wrap_gen(width = 24)) +
+  ggplot2::scale_colour_manual(values = estimate_type_palette, name = "site estimate") +
+  ggplot2::theme_bw(base_size = 10) +
+  ggplot2::theme(strip.text = ggplot2::element_text(size = 7),
+                 legend.position = "bottom") +
+  ggplot2::guides(colour = ggplot2::guide_legend(override.aes = list(size = 2, alpha = 1)))
 
 ```
 
 
-(ref:volcanoplot)  Volcano plot showing $-\log_{10}$ transformed FDR as a function of the protein-level adjusted difference between groups. The red line indicates the $-log_{10}(FDR)$ threshold of FDR = `r grp2$processing_options$FDR_threshold`, while the green lines represent the difference thresholds of minus and plus `r grp2$processing_options$diff_threshold`. Orange dots indicate differences and FDRs that were estimated using missing value imputation. This plot highlights phosphorylation sites with significant changes in usage (DPU) independent of protein abundance changes.
+(ref:volcanoplot) Differential PTM usage per contrast, one panel per contrast. Each point is one phosphosite: the x-axis is the protein-adjusted difference diff_diff (site log2 fold change minus protein log2 fold change) and the y-axis the negative log10 of the adjusted p-value FDR_I, so points far left or right are used less or more than their protein would explain and points high up are the confident ones. The red dotted horizontal line marks FDR = `r grp2$processing_options$FDR_threshold` and the green dotted vertical lines the difference thresholds of minus and plus `r grp2$processing_options$diff_threshold`; orange points were filled in by limit-of-detection imputation and deserve more caution than the black ones.
 
 
-```{r volcanoplot, fig.cap = "(ref:volcanoplot)", fig.width=9, fig.height=7, include = TRUE, eval = TRUE}
-datax <- data_diff_diff |> dplyr::select(
-  all_of(c("site", "protein_Id",
-           "contrast",
-           "modelName.site",
-           "diff_diff",
-           "FDR_I")))
-palette <- c("black", "orange")
-palette <- setNames(palette, c("Linear_Model_moderated", "Imputed_Mean_moderated"))  
-xd <- prolfqua::volcano_plotly( 
-  datax,
-  proteinID = "site",
-  effect = "diff_diff",
-  significance = "FDR_I",
-  contrast = "contrast",
-  color = "modelName.site",
-  palette = palette,
-  xintercept = c(-grp2$processing_options$diff_threshold,
-                 grp2$processing_options$diff_threshold),
-  yintercept = grp2$processing_options$FDR_threshold,
-  title_size = 14,
-  group = "BB")
+```{r volcanoplot, fig.cap = "(ref:volcanoplot)", fig.width=9, fig.height=fig_height, include = TRUE, eval = TRUE}
 
-xd <- lapply(xd, plotly::highlight , off = "plotly_doubleclick")
-nrow <- ceiling(length(xd) / 4)
-plotly::subplot(xd, shareX = TRUE, shareY = TRUE, nrows = nrow)
+datax <- data_diff_diff |>
+  dplyr::filter(!is.na(diff_diff), !is.na(FDR_I)) |>
+  # draw the few imputed sites last so they are not buried under the observed ones
+  dplyr::arrange(factor(estimate_type.site, levels = estimate_type_levels))
+
+ggplot2::ggplot(datax, ggplot2::aes(x = diff_diff, y = -log10(FDR_I),
+                                    colour = estimate_type.site)) +
+  ggplot2::geom_point(size = 0.5, alpha = 0.3) +
+  ggplot2::geom_vline(xintercept = c(-grp2$processing_options$diff_threshold,
+                                     grp2$processing_options$diff_threshold),
+                      linetype = "dotted", colour = "green4") +
+  ggplot2::geom_hline(yintercept = -log10(grp2$processing_options$FDR_threshold),
+                      linetype = "dotted", colour = "red") +
+  ggplot2::facet_wrap(~contrast, nrow = facet_nrow,
+                      labeller = ggplot2::label_wrap_gen(width = 24)) +
+  ggplot2::scale_colour_manual(values = estimate_type_palette, name = "site estimate") +
+  ggplot2::labs(y = expression(-log[10](FDR_I))) +
+  ggplot2::theme_bw(base_size = 10) +
+  ggplot2::theme(strip.text = ggplot2::element_text(size = 7),
+                 legend.position = "bottom") +
+  ggplot2::guides(colour = ggplot2::guide_legend(override.aes = list(size = 2, alpha = 1)))
 
 ```
 

@@ -1,3 +1,32 @@
+#' Derive the imputation status of each row
+#'
+#' Marks a row as imputed when any of the given estimate_type columns holds
+#' impute_flag. Columns that the input does not carry are ignored, which lets
+#' the same plots serve analyses that have no protein level estimate (CF).
+#'
+#' @param data data frame with zero or more estimate_type columns
+#' @param impute_flag value of estimate_type marking an imputed estimate
+#' @param columns estimate_type columns to consider
+#' @return character vector of "imputed" / "observed", one element per row
+#' @keywords internal
+.imputation_status <- function(data, impute_flag, columns) {
+  present <- intersect(columns, names(data))
+  if (length(present) == 0) {
+    warning(
+      "none of ",
+      paste(columns, collapse = ", "),
+      " present; ",
+      "every site will be reported as observed"
+    )
+  }
+  imputed <- rep(FALSE, nrow(data))
+  for (column in present) {
+    imputed <- imputed | data[[column]] %in% impute_flag
+  }
+  ifelse(imputed, "imputed", "observed")
+}
+
+
 #' @importFrom rlang .data
 #' @importFrom utils txtProgressBar setTxtProgressBar
 NULL
@@ -278,12 +307,62 @@ calculate_optimal_layout <- function(n_panels) {
   return(list(ncol = ncol, nrow = nrow))
 }
 
+#' Combine per contrast N to C panels into one figure
+#'
+#' Drops the per panel titles so that the protein description is shown once for
+#' the whole figure, and collects the per panel legends into a single guide area.
+#' The contrast of a panel remains readable from its y axis label.
+#'
+#' @param contrast_plots list of per contrast plots, one per contrast
+#' @param protein_data data of a single protein across all contrasts,
+#'   requires the columns site and modAA
+#' @param protein_name name of protein
+#' @param prot_length protein length
+#' @return patchwork object with one title, one subtitle and one legend
+#' @keywords internal
+combine_n_to_c_panels <- function(
+  contrast_plots,
+  protein_data,
+  protein_name,
+  prot_length
+) {
+  layout <- calculate_optimal_layout(length(contrast_plots))
+  n_sites <- dplyr::n_distinct(protein_data$site)
+  n_not_localized <- dplyr::n_distinct(
+    protein_data$site[which(protein_data$modAA == "NotLoc")]
+  )
+
+  panels <- lapply(contrast_plots, function(p) p + ggplot2::labs(title = NULL))
+
+  patchwork::wrap_plots(
+    panels,
+    ncol = layout$ncol,
+    nrow = layout$nrow,
+    guides = "collect"
+  ) +
+    patchwork::plot_annotation(
+      title = paste0("Protein: ", protein_name, " (length: ", prot_length, ")"),
+      subtitle = paste0(
+        "# sites: ",
+        n_sites,
+        "; # not localized sites: ",
+        n_not_localized,
+        "; # contrasts: ",
+        length(contrast_plots)
+      ),
+      theme = ggplot2::theme(
+        plot.title = ggplot2::element_text(size = 14, face = "bold"),
+        plot.subtitle = ggplot2::element_text(size = 11)
+      )
+    )
+}
+
 #' Plot protein and PTM expression
 #' @param combined_site_prot_long data frame with combined site and protein data
 #' @param contrast_name name of the contrast to plot
 #' @param FDR_threshold FDR threshold for filtering significant sites (default 0.05)
 #' @param fc_threshold Fold change threshold for filtering (default 0)
-#' @param impute_flag Flag for imputed values (default "Imputed_Mean_moderated")
+#' @param impute_flag Value of estimate_type marking an imputed estimate (default "lod_imputed")
 #' @return data frame with protein_Id, protein_length, contrast, data, and plot
 #' @export
 n_to_c_expression <- function(
@@ -291,7 +370,7 @@ n_to_c_expression <- function(
   contrast_name,
   FDR_threshold = 0.05,
   fc_threshold = 0,
-  impute_flag = "Imputed_Mean_moderated"
+  impute_flag = "lod_imputed"
 ) {
   if (!contrast_name %in% unique(combined_site_prot_long$contrast)) {
     stop(contrast_name, " not in ", paste0(unique(combined_site_prot_long$contrast)))
@@ -316,13 +395,13 @@ n_to_c_expression <- function(
     "imputation_status"
   )
 
+  combined_site_prot_long$imputation_status <- .imputation_status(
+    combined_site_prot_long,
+    impute_flag,
+    "estimate_type.site"
+  )
+
   plot_data <- combined_site_prot_long |>
-    dplyr::mutate(
-      imputation_status = dplyr::case_when(
-        modelName.site == impute_flag ~ "imputed",
-        TRUE ~ "observed"
-      )
-    ) |>
     dplyr::select(dplyr::all_of(required_cols)) |>
     dplyr::group_by(.data$protein_Id, .data$contrast, .data$protein_length) |>
     tidyr::nest()
@@ -350,7 +429,7 @@ n_to_c_expression <- function(
 #' @param contrast_name name of the contrast to plot
 #' @param FDR_threshold FDR threshold for filtering significant sites (default 0.05)
 #' @param fc_threshold Fold change threshold for filtering (default 0)
-#' @param impute_flag Flag for imputed values (default "Imputed_Mean_moderated")
+#' @param impute_flag Value of estimate_type marking an imputed estimate (default "lod_imputed")
 #' @param protein_Id Column name for protein identifier (default "protein_Id")
 #' @return data frame with protein_Id, protein_length, contrast, data, and plot
 #' @export
@@ -359,7 +438,7 @@ n_to_c_usage <- function(
   contrast_name,
   FDR_threshold = 0.05,
   fc_threshold = 0,
-  impute_flag = "Imputed_Mean_moderated",
+  impute_flag = "lod_imputed",
   protein_Id = "protein_Id"
 ) {
   data_combined_diff <- data_combined_diff |>
@@ -380,11 +459,10 @@ n_to_c_usage <- function(
     "modAA",
     "imputation_status"
   )
-  data_combined_diff$imputation_status <- ifelse(
-    data_combined_diff$modelName.site == "Imputed_Mean_moderated" |
-      data_combined_diff$modelName.protein == "Imputed_Mean_moderated",
-    "imputed",
-    "observed"
+  data_combined_diff$imputation_status <- .imputation_status(
+    data_combined_diff,
+    impute_flag,
+    c("estimate_type.site", "estimate_type.protein")
   )
 
   # Create integrated N-to-C plots
@@ -416,7 +494,7 @@ n_to_c_usage <- function(
 #' @param combined_site_prot_long data frame with combined site and protein data
 #' @param FDR_threshold FDR threshold for filtering significant sites (default 0.05)
 #' @param fc_threshold Fold change threshold for filtering (default 0)
-#' @param impute_flag Flag for imputed values (default "Imputed_Mean_moderated")
+#' @param impute_flag Value of estimate_type marking an imputed estimate (default "lod_imputed")
 #' @param max_plots Maximum number of plots to generate (default NULL = no limit).
 #'   If specified, only the first max_plots proteins will be plotted.
 #' @param include_proteins Character vector of protein IDs to always include in the output,
@@ -433,7 +511,7 @@ n_to_c_expression_multicontrast <- function(
   combined_site_prot_long,
   FDR_threshold = 0.05,
   fc_threshold = 0,
-  impute_flag = "Imputed_Mean_moderated",
+  impute_flag = "lod_imputed",
   max_plots = NULL,
   include_proteins = NULL
 ) {
@@ -503,16 +581,11 @@ n_to_c_expression_multicontrast <- function(
   )
 
   # Add imputation status
-  combined_site_prot_long <- combined_site_prot_long |>
-    dplyr::mutate(
-      imputation_status = dplyr::case_when(
-        .data$modelName.site == impute_flag ~ "imputed",
-        TRUE ~ "observed"
-      )
-    )
-
-  # Calculate optimal layout
-  layout <- calculate_optimal_layout(n_contrasts)
+  combined_site_prot_long$imputation_status <- .imputation_status(
+    combined_site_prot_long,
+    impute_flag,
+    "estimate_type.site"
+  )
 
   # Initialize results
   plot_data <- proteins_to_plot
@@ -562,23 +635,17 @@ n_to_c_expression_multicontrast <- function(
             size = 5,
             color = "gray50"
           ) +
-          ggplot2::theme_void() +
-          ggplot2::labs(title = contrast_val)
+          ggplot2::theme_void()
       }
     }
 
     # Combine plots using patchwork
-    combined_plot <- patchwork::wrap_plots(
+    plot_data$plot[[i]] <- combine_n_to_c_panels(
       contrast_plots,
-      ncol = layout$ncol,
-      nrow = layout$nrow
-    ) +
-      patchwork::plot_annotation(
-        title = paste0("Protein: ", current_protein, " (length: ", current_length, ")"),
-        theme = ggplot2::theme(plot.title = ggplot2::element_text(size = 14, face = "bold"))
-      )
-
-    plot_data$plot[[i]] <- combined_plot
+      protein_data,
+      current_protein,
+      current_length
+    )
   }
 
   close(pb)
@@ -591,7 +658,7 @@ n_to_c_expression_multicontrast <- function(
 #' @param data_combined_diff data frame with combined differential analysis results
 #' @param FDR_threshold FDR threshold for filtering significant sites (default 0.05)
 #' @param fc_threshold Fold change threshold for filtering (default 0)
-#' @param impute_flag Flag for imputed values (default "Imputed_Mean_moderated")
+#' @param impute_flag Value of estimate_type marking an imputed estimate (default "lod_imputed")
 #' @param protein_Id Column name for protein identifier (default "protein_Id")
 #' @param max_plots Maximum number of plots to generate (default NULL = no limit).
 #'   If specified, only the first max_plots proteins will be plotted.
@@ -609,7 +676,7 @@ n_to_c_usage_multicontrast <- function(
   data_combined_diff,
   FDR_threshold = 0.05,
   fc_threshold = 0,
-  impute_flag = "Imputed_Mean_moderated",
+  impute_flag = "lod_imputed",
   protein_Id = "protein_Id",
   max_plots = NULL,
   include_proteins = NULL
@@ -679,15 +746,11 @@ n_to_c_usage_multicontrast <- function(
   )
 
   # Add imputation status
-  data_combined_diff$imputation_status <- ifelse(
-    data_combined_diff$modelName.site == impute_flag |
-      data_combined_diff$modelName.protein == impute_flag,
-    "imputed",
-    "observed"
+  data_combined_diff$imputation_status <- .imputation_status(
+    data_combined_diff,
+    impute_flag,
+    c("estimate_type.site", "estimate_type.protein")
   )
-
-  # Calculate optimal layout
-  layout <- calculate_optimal_layout(n_contrasts)
 
   # Initialize results
   plot_data <- proteins_to_plot
@@ -737,23 +800,17 @@ n_to_c_usage_multicontrast <- function(
             size = 5,
             color = "gray50"
           ) +
-          ggplot2::theme_void() +
-          ggplot2::labs(title = contrast_val)
+          ggplot2::theme_void()
       }
     }
 
     # Combine plots using patchwork
-    combined_plot <- patchwork::wrap_plots(
+    plot_data$plot[[i]] <- combine_n_to_c_panels(
       contrast_plots,
-      ncol = layout$ncol,
-      nrow = layout$nrow
-    ) +
-      patchwork::plot_annotation(
-        title = paste0("Protein: ", current_protein, " (length: ", current_length, ")"),
-        theme = ggplot2::theme(plot.title = ggplot2::element_text(size = 14, face = "bold"))
-      )
-
-    plot_data$plot[[i]] <- combined_plot
+      protein_data,
+      current_protein,
+      current_length
+    )
   }
 
   close(pb)

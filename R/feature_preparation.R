@@ -226,7 +226,16 @@ prepare_ntoc_data <- function(data, analysis_type = "dpa") {
     stop("Missing required columns: ", paste(missing, collapse = ", "))
   }
 
-  # Just return the data - the N-to-C functions handle column mapping
+  # DPU and CF are exported under the site level names diff.site / FDR.site /
+  # statistic.site, while the usage plots read the protein adjusted names.
+  if (analysis_type %in% c("dpu", "cf")) {
+    data <- data |>
+      dplyr::rename(dplyr::any_of(c(
+        diff_diff = "diff.site",
+        FDR_I = "FDR.site",
+        tstatistic_I = "statistic.site"
+      )))
+  }
 
   return(data)
 }

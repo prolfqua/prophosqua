@@ -47,10 +47,6 @@ suppressPackageStartupMessages({
 # Detect pipeline vs vignette mode
 pipeline_mode <- !is.null(params$xlsx_file)
 
-# Load shared utilities if in pipeline mode
-if (pipeline_mode && file.exists("src/feature_preparation.R")) {
-  source("src/feature_preparation.R")
-}
 
 max_fig <- params$max_fig
 ```
@@ -92,7 +88,14 @@ data_info <- tibble(
     nrow(data), paste(unique(data$contrast), collapse = ", ")
   )
 )
-knitr::kable(data_info, caption = "Data Summary")
+knitr::kable(
+  data_info,
+  caption = paste0(
+    "Input of this N-to-C report: source workbook, sheet, analysis type, number of ",
+    "site-by-contrast rows read and the contrasts they cover. Every row is one phosphosite ",
+    "in one contrast, before the significance filter that selects the plotted proteins."
+  )
+)
 ```
 
 ```{r prepareData}
@@ -135,57 +138,69 @@ cat("Generated", n_plots, "multi-contrast plots\n")
 
 Showing example plots in the HTML report: one protein WITH protein-level data and one WITHOUT (if available). `r if(pipeline_mode) paste0("All ", n_plots, " plots are exported to PDF.")`
 
-```{r displayExamples, fig.width=12, fig.height=10, results='asis'}
-if (n_plots > 0 && params$analysis_type == "dpa") {
-  # For DPA: show examples of proteins with and without protein-level data
-  # Find proteins with matched protein data (has diff.protein)
+```{r selectExamples}
+# Pick the examples first, so that each one can be given its own figure caption.
+matched_proteins <- character(0)
+protein_note <- NULL
+
+if (params$analysis_type == "dpa") {
+  # DPA: show one protein with and one without matched protein-level data
   matched_proteins <- plot_data |>
     dplyr::filter(!is.na(diff.protein)) |>
     dplyr::pull(protein_Id) |>
     unique()
 
-  # Find proteins without matched protein data
   unmatched_proteins <- plot_data |>
     dplyr::filter(is.na(diff.protein)) |>
     dplyr::pull(protein_Id) |>
     unique()
 
-  # Get indices in plot_result for each type
   matched_idx <- which(plot_result$protein_Id %in% matched_proteins)
   unmatched_idx <- which(plot_result$protein_Id %in% unmatched_proteins)
 
-  examples_to_show <- c()
-
-  # Add one matched protein if available
-  if (length(matched_idx) > 0) {
-    examples_to_show <- c(examples_to_show, matched_idx[1])
+  example_idx <- c(
+    if (length(matched_idx) > 0) matched_idx[1],
+    if (length(unmatched_idx) > 0) unmatched_idx[1]
+  )
+  if (length(example_idx) == 0) {
+    example_idx <- seq_len(min(2, n_plots))
   }
 
-  # Add one unmatched protein if available
-  if (length(unmatched_idx) > 0) {
-    examples_to_show <- c(examples_to_show, unmatched_idx[1])
-  }
+  protein_note <- paste0(
+    "**Note:** ", length(matched_idx), " proteins have protein-level data, ",
+    length(unmatched_idx), " proteins do not."
+  )
+} else {
+  # DPU/CF: no protein-level track to compare against, show the first two
+  example_idx <- seq_len(min(2, n_plots))
+}
 
-  # Fallback: if no examples found, use first 2
-  if (length(examples_to_show) == 0) {
-    examples_to_show <- seq_len(min(2, n_plots))
-  }
+example_has_protein <- plot_result$protein_Id[example_idx] %in% matched_proteins
+example_labels <- ifelse(example_has_protein, " (with protein data)", "")
+if (params$analysis_type == "dpa") {
+  example_labels <- ifelse(example_has_protein, " (with protein data)", " (NO protein data)")
+}
 
-  cat("\n\n**Note:** ", length(matched_idx), " proteins have protein-level data, ",
-      length(unmatched_idx), " proteins do not.\n\n", sep = "")
+example_caps <- paste0(
+  "Position-resolved ", toupper(params$analysis_type), " changes along protein ",
+  plot_result$protein_Id[example_idx], example_labels,
+  ", one panel per contrast. The x-axis is the residue position from the N- to the ",
+  "C-terminus of the protein and the y-axis is the site-level log2 fold change of that ",
+  "contrast; each vertical stick is one PTM site, coloured by modified residue (S blue, ",
+  "T green, Y brown, not localized pink) and dashed when the value was imputed. Asterisks ",
+  "give the site FDR (** < 0.05, * < 0.2), and the yellow rectangle spans the protein from ",
+  "N to C at the protein-level log2 fold change, so sticks reaching beyond it change more ",
+  "than the protein itself. Proteins are shown when at least one site has FDR < ",
+  params$fdr, " and |log2FC| > ", params$fc, "."
+)
+```
 
-  for (i in examples_to_show) {
-    has_protein <- plot_result$protein_Id[i] %in% matched_proteins
-    label <- if (has_protein) "(with protein data)" else "(NO protein data)"
-    cat("\n\n### ", plot_result$protein_Id[i], " ", label, "\n\n", sep = "")
-    print(plot_result$plot[[i]])
-    cat("\n\n")
-  }
-} else if (n_plots > 0) {
-  # DPU/CF: just show first 2
-  n_examples <- min(2, n_plots)
-  for (i in seq_len(n_examples)) {
-    cat("\n\n### ", plot_result$protein_Id[i], "\n\n")
+`r if (!is.null(protein_note)) protein_note`
+
+```{r displayExamples, fig.width=12, fig.height=10, results='asis', fig.cap=example_caps}
+if (n_plots > 0) {
+  for (i in example_idx) {
+    cat("\n\n### ", plot_result$protein_Id[i], example_labels[match(i, example_idx)], "\n\n", sep = "")
     print(plot_result$plot[[i]])
     cat("\n\n")
   }
@@ -239,7 +254,16 @@ summary_info <- tibble(
   Value = c(toupper(params$analysis_type), n_distinct(plot_data$protein_Id),
             n_plots, min(2, n_plots), params$fdr, params$fc)
 )
-knitr::kable(summary_info, caption = "Analysis Summary")
+knitr::kable(
+  summary_info,
+  caption = paste0(
+    "Coverage of this report: how many proteins carry data, how many passed the significance ",
+    "filter and were plotted, and how many of those plots are embedded here. Total Proteins ",
+    "counts all proteins in the sheet, Plots Generated the proteins with at least one site ",
+    "below the FDR threshold and above the fold-change threshold (capped by the max_fig ",
+    "setting), and the remaining plots are available in the exported PDF."
+  )
+)
 
 if (pipeline_mode && n_plots > 0) {
   cat("\nPDF exported to:", pdf_path, "\n")
