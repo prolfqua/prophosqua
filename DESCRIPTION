@@ -26,22 +26,27 @@ VignetteBuilder: knitr
 Depends:
     R (>= 4.1.0)
 Imports:
+    arrow,
+    bookdown,
     dplyr,
     forcats,
     ggplot2,
     ggseqlogo,
+    optparse,
     patchwork,
     prolfqua,
+    prolfquapp,
     purrr,
     readr,
     readxl,
     rlang,
+    rmarkdown,
     seqinr,
     tidyr,
     tidyselect,
+    writexl,
     yaml
 Suggests:
-    bookdown,
     clusterProfiler,
     covr,
     devtools,
@@ -54,9 +59,8 @@ Suggests:
     lintr,
     pkgdown,
     rcmdcheck,
-    rmarkdown,
     roxygen2,
-    testthat (>= 3.0.0),
-    writexl
+    testthat (>= 3.0.0)
 Remotes:
-    github::fgcz/prolfqua
+    github::fgcz/prolfqua,
+    github::fgcz/prolfquapp

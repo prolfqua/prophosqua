@@ -1,0 +1,99 @@
+---
+title: "DPA and DPU Integration Analysis"
+author:
+  - FGCZ
+date: "`r format(Sys.Date(), '%Y-%m-%d')`"
+params:
+  objects_rds: "PTM_DPA/dpa_dpu_objects.rds"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setupglobal, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 10,
+  fig.height = 6,
+  dpi = 300
+)
+
+suppressPackageStartupMessages({
+  library(prophosqua)
+  library(dplyr)
+})
+
+objects <- readRDS(params$objects_rds)
+```
+
+# Introduction
+
+This analysis integrates total proteome and phosphoproteome DEA results to compute:
+
+- **DPA** (Differential PTM Abundance): Raw phosphosite signal changes
+- **DPU** (Differential PTM Usage): Protein-normalized changes (site - protein) reflecting modification stoichiometry
+
+Both were computed by `prophosqua::compute_dpa_dpu()` before this report was
+rendered; this document describes and summarizes that result rather than
+producing it. Nothing here is re-quantified: the two DEA runs it reads from,
+
+- phospho: `` `r basename(objects$phospho_dea_dir)` ``
+- total proteome: `` `r basename(objects$protein_dea_dir)` ``
+
+had already happened.
+
+# DPA: Integrate PTM and Protein Data
+
+Each phosphosite result is paired with the protein-level result of the same
+protein and the same contrast, suffixed `.site` and `.protein`. The pairing
+gives `r format(objects$n_dpa_rows, big.mark = ",")` site-contrast rows.
+
+## Match Rate
+
+```{r matchrate}
+knitr::kable(
+  objects$match_rates,
+  col.names = c("Contrast", "Total Sites", "Matched Sites", "Match Rate (%)"),
+  caption = paste0(
+    "How many phosphosites could be paired with a protein-level result, per contrast. Total ",
+    "Sites counts the sites tested in the phospho DEA, Matched Sites those whose protein was ",
+    "also quantified in the total proteome DEA, and Match Rate their ratio. Only matched ",
+    "sites can be corrected for protein abundance, so unmatched sites carry a DPA result but ",
+    "no DPU value."
+  )
+)
+```
+
+# DPU: Compute Differential PTM Usage
+
+DPU calculates protein-normalized PTM changes:
+
+- Effect size: $\Delta_I = \log_2FC_{PTM} - \log_2FC_{Protein}$
+- Standard error: $SE_I = \sqrt{SE_{PTM}^2 + SE_{Protein}^2}$
+
+The DPU table holds `r format(objects$n_dpu_rows, big.mark = ",")` rows. Only the
+rows a site and its protein both contributed to carry a usage estimate; sites
+whose protein was not quantified, and proteins for which no site was tested, are
+kept alongside them so that nothing is silently dropped, and the `measured_In`
+column says which of the three each row is.
+
+# Output Files
+
+| File | Content |
+|:-----|:--------|
+| `` `r basename(objects$dpa_xlsx)` `` | Differential PTM Abundance, sheet `combinedSiteProteinData` |
+| `` `r basename(objects$dpu_xlsx)` `` | Differential PTM Usage, sheet `combinedStats` |
+| `combined_test_diff.rds` | the DPU table, as the integration overview reads it |
+| `dpa_dpu_objects.rds` | the counts and match rates quoted in this report |
+
+# Session Info
+
+```{r sessioninfo}
+sessionInfo()
+```

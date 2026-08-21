@@ -4,16 +4,9 @@ subtitle: "`r params$analysis_type`"
 author: "FGCZ"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 params:
-  xlsx_file: NULL
-  sheet: "combinedSiteProteinData"
-  stat_column: "statistic.site"
+  objects_rds: NULL
   analysis_type: "DPA"
   output_dir: NULL
-  trim_to: 15
-  ptmsigdb_file: NULL
-  min_size: 10
-  max_size: 500
-  n_perm: 100
   top_genesets: 3
 output:
   bookdown::html_document2:
@@ -37,7 +30,7 @@ knitr::opts_chunk$set(
 )
 
 # Detect pipeline vs vignette mode
-pipeline_mode <- !is.null(params$xlsx_file)
+pipeline_mode <- !is.null(params$objects_rds)
 ```
 
 # Overview
@@ -70,27 +63,27 @@ library(ggplot2)
 
 ```{r loadData}
 if (pipeline_mode) {
-  # Pipeline mode: load from Excel file
-  data <- readxl::read_xlsx(params$xlsx_file, sheet = params$sheet)
-  output_dir <- if (!is.null(params$output_dir)) params$output_dir else dirname(params$xlsx_file)
+  ptmsea <- readRDS(params$objects_rds)
 } else {
-  # Vignette mode: use example data
-  data("combined_test_diff_example", package = "prophosqua")
-  data <- combined_test_diff_example
-  output_dir <- tempdir()
+  # Standalone mode: compute from the example data shipped with the package,
+  # through the same function the pipeline calls.
+  ptmsea <- prophosqua:::compute_ptmsea_example()
 }
 
-data_info <- tibble(
-  Property = c("Mode", "Sheet", "Stat Column", "Rows", "Columns", "Contrasts"),
-  Value = c(
-    if (pipeline_mode) basename(params$xlsx_file) else "Example data",
-    params$sheet, params$stat_column,
-    nrow(data), ncol(data),
-    paste(unique(data$contrast), collapse = ", ")
-  )
-)
+# The settings the computation actually ran with, so that the captions below
+# quote the analysis rather than a second copy of its configuration. `params` is
+# a locked binding during a render and cannot be extended, so they get their own
+# name; `params` keeps only what the caller passed.
+inputs <- ptmsea$analysis_inputs
+
+output_dir <- if (!is.null(params$output_dir)) {
+  params$output_dir
+} else {
+  dirname(inputs$xlsx_file)
+}
+
 knitr::kable(
-  data_info,
+  ptmsea$data_info,
   caption = paste0(
     "Input of this PTM-SEA report: source workbook, sheet, the per-site statistic the sites ",
     "are ranked on, the table dimensions and the contrasts covered. Every row is one ",
@@ -102,47 +95,10 @@ knitr::kable(
 # Load PTMsigDB Signatures
 
 ```{r loadPtmsigdb}
-# Load PTMsigDB - try multiple sources
-ptmsigdb_file <- params$ptmsigdb_file
+pathways <- ptmsea$pathways
 
-if (is.null(ptmsigdb_file) || !file.exists(ptmsigdb_file)) {
-  # Try bundled resource (compressed)
-  bundled_zip <- system.file("extdata", "ptmsigdb_kinase.rds.zip", package = "prophosqua")
-  if (file.exists(bundled_zip)) {
-    temp_dir <- tempdir()
-    unzip(bundled_zip, exdir = temp_dir)
-    ptmsigdb_file <- file.path(temp_dir, "ptmsigdb_filtered_KINASE_15mer.rds")
-    message("Using bundled PTMsigDB from prophosqua package")
-  }
-}
-
-if (is.null(ptmsigdb_file) || !file.exists(ptmsigdb_file)) {
-  stop("PTMsigDB file not found. Provide via params$ptmsigdb_file or install prophosqua with bundled data.")
-}
-
-# Load pathways
-if (grepl("\\.rds$", ptmsigdb_file)) {
-  pathways <- readRDS(ptmsigdb_file)
-  message("Loaded ", length(pathways), " pathways from RDS")
-} else {
-  pathways <- fgsea::gmtPathways(ptmsigdb_file)
-  message("Loaded ", length(pathways), " pathways from GMT")
-}
-
-# Count categories
-n_kinase <- sum(grepl("^KINASE-", names(pathways)))
-n_path <- sum(grepl("^PATH-", names(pathways)))
-
-# Summary table
-ptmsigdb_summary <- tibble(
-  Property = c("Source File", "Total Signatures", "KINASE signatures", "PATH signatures", "Unique site IDs"),
-  Value = c(
-    basename(ptmsigdb_file), length(pathways), n_kinase, n_path,
-    length(unique(gsub(";[ud]$", "", unlist(pathways))))
-  )
-)
 knitr::kable(
-  ptmsigdb_summary,
+  ptmsea$ptmsigdb_summary,
   caption = paste0(
     "Signature database tested against the data: file used and how many signatures it ",
     "contains, split into KINASE signatures (curated kinase-substrate sets from ",
@@ -156,46 +112,14 @@ knitr::kable(
 # Overlap Statistics
 
 ```{r overlapStats}
-# Our data: unique flanking sequences (trimmed to match pathways)
-our_sequences <- data |>
-  pull(SequenceWindow) |>
-  trimws() |>
-  toupper() |>
-  unique()
-our_sequences_trimmed <- our_sequences |>
-  map_chr(~ prophosqua:::trim_flanking_seq(.x, trim_to = params$trim_to))
-our_site_ids <- paste0(our_sequences_trimmed, "-p")
-n_our_sites <- n_distinct(our_site_ids)
+n_overlap <- ptmsea$n_overlap
+n_our_sites <- ptmsea$n_our_sites
 
-# PTMsigDB: unique site IDs (strip ;u/;d for comparison)
-ptmsigdb_ids_raw <- pathways |>
-  unlist() |>
-  unique()
-ptmsigdb_ids_stripped <- ptmsigdb_ids_raw |>
-  gsub(";[ud]$", "", x = _) |>
-  unique()
-n_ptmsigdb_sites <- length(ptmsigdb_ids_stripped)
-
-# Overlap
-overlap_ids <- intersect(unique(our_site_ids), ptmsigdb_ids_stripped)
-n_overlap <- length(overlap_ids)
-
-overlap_stats <- tibble(
-  Metric = c(
-    "Our data (unique sequences)", "PTMsigDB (unique site IDs)", "Overlap",
-    "% of our sites in PTMsigDB", "% of PTMsigDB sites in our data"
-  ),
-  Value = c(
-    n_our_sites, n_ptmsigdb_sites, n_overlap,
-    round(100 * n_overlap / n_our_sites, 2),
-    round(100 * n_overlap / n_ptmsigdb_sites, 2)
-  )
-)
 knitr::kable(
-  overlap_stats,
+  ptmsea$overlap_stats,
   caption = paste0(
     "How much of the measured phosphoproteome is annotated in PTMsigDB, matched on ",
-    params$trim_to, "-mer flanking sequences. The first two rows give the distinct sites on ",
+    inputs$trim_to, "-mer flanking sequences. The first two rows give the distinct sites on ",
     "each side, Overlap the sites present in both, and the percentages the same overlap ",
     "relative to the data and to the database. A low percentage of our sites in PTMsigDB ",
     "limits the number of testable signatures and is the first thing to check when few ",
@@ -207,68 +131,26 @@ knitr::kable(
 # Prepare Rank Data
 
 ```{r prepData}
-# Prepare ranks using prophosqua (trim_to must match pathways)
-prep <- ptmsea_data_prep(
-  data = data,
-  stat_column = params$stat_column,
-  seq_window_col = "SequenceWindow",
-  contrast_col = "contrast",
-  trim_to = as.character(params$trim_to)
-)
-
-prep_info <- tibble(
-  Contrast = names(prep$ranks),
-  Sites = map_int(prep$ranks, length)
-)
 knitr::kable(
-  prep_info,
+  ptmsea$prep_info,
   caption = paste0(
     "Ranked site list submitted to PTM-SEA per contrast (", params$analysis_type,
-    "): Sites is the number of ranked, deduplicated ", params$trim_to,
+    "): Sites is the number of ranked, deduplicated ", inputs$trim_to,
     "-mer site identifiers in that contrast's input vector. Contrasts differ when sites are ",
     "missing values in one comparison but not another."
   )
 )
-
-# Count dropped sequences (handle empty lists/NULL values)
-n_dropped <- 0
-if (length(prep$dropped) > 0) {
-  n_dropped <- sum(map_int(prep$dropped, ~ {
-    if (is.null(.x) || length(.x) == 0) {
-      return(0L)
-    }
-    if (is.data.frame(.x)) {
-      return(nrow(.x))
-    }
-    return(length(.x))
-  }))
-}
-
-if (n_dropped > 0) {
-  message("Note: ", n_dropped, " duplicate sequences were dropped.")
-}
 ```
 
 # Run PTM-SEA (GSEA)
 
 ```{r runPtmsea}
-results <- run_ptmsea(
-  ranks_list = prep$ranks,
-  pathways = pathways,
-  min_size = params$min_size,
-  max_size = params$max_size,
-  n_perm = params$n_perm,
-  pvalueCutoff = 0.25  # Relaxed for visualization; filter later
-)
+results <- ptmsea$results
+all_clean <- ptmsea$all_clean
+has_ptmsea_results <- ptmsea$has_results
 
-results_info <- tibble(
-  Contrast = names(results),
-  `Total Pathways` = map_int(results, ~ nrow(.x@result)),
-  `FDR < 0.1` = map_int(results, ~ sum(.x@result$p.adjust < 0.1, na.rm = TRUE)),
-  `FDR < 0.05` = map_int(results, ~ sum(.x@result$p.adjust < 0.05, na.rm = TRUE))
-)
 knitr::kable(
-  results_info,
+  ptmsea$results_info,
   caption = paste0(
     "PTM-SEA outcome per contrast (", params$analysis_type, "). Total Pathways counts the ",
     "signatures that passed the set-size filter and were tested; the two following columns ",
@@ -277,8 +159,6 @@ knitr::kable(
     "absence of biology."
   )
 )
-
-has_ptmsea_results <- sum(results_info$`Total Pathways`) > 0
 ```
 
 ```{r noPtmseaResults, eval=!has_ptmsea_results, results='asis'}
@@ -290,14 +170,6 @@ cat("Consider using a larger dataset or lowering `min_size`.\n\n")
 ```
 
 ```{r prepareCaptions, eval=has_ptmsea_results}
-# Extract all results into data frame using shared function
-all_clean <- extract_gsea_results(results) |>
-  mutate(
-    pathway = ID,
-    pathway_short = gsub("^(KINASE|PERT|PATH|DISEASE)-PSP_", "", ID) |>
-      substr(1, 40)
-  )
-
 # Contrast order and figure captions, assembled once for the loops below
 contrast_ids <- unique(all_clean$contrast)
 
@@ -305,7 +177,7 @@ dotplot_caps <- paste0(
   "PTMsigDB signature enrichment in contrast ", contrast_ids, " (", params$analysis_type,
   "): normalized enrichment score of the 30 signatures with the smallest FDR. Each point is ",
   "one signature; the x-axis is the NES from pre-ranked GSEA over sites ranked by ",
-  params$stat_column, ", so NES > 0 means the annotated sites of that signature accumulate ",
+  inputs$stat_column, ", so NES > 0 means the annotated sites of that signature accumulate ",
   "among up-regulated sites and NES < 0 among down-regulated ones. Point size is ",
   "-log10(FDR), point colour follows the NES (blue negative, red positive), faded points are ",
   "signatures with FDR >= 0.1, and the dashed line marks NES = 0."
@@ -358,7 +230,7 @@ gsea_plot_caps <- unlist(lapply(names(results), function(ct) {
     "Running enrichment score of signature ",
     gsub("^(KINASE|PERT|PATH|DISEASE)-PSP_", "", top_ids), " in contrast ", ct, " (",
     params$analysis_type, "). The x-axis is the rank of the sites ordered by ",
-    params$stat_column, " from most up- to most down-regulated; the upper panel traces the ",
+    inputs$stat_column, " from most up- to most down-regulated; the upper panel traces the ",
     "running enrichment score, whose extreme is the enrichment score of the signature, the ",
     "tick marks below mark the positions of the signature's own sites in that ranking, and ",
     "the bottom panel repeats the ranking statistic. A curve peaking early with ticks ",
@@ -602,53 +474,33 @@ DT::datatable(all_clean_dt,
 
 # Export Results
 
-```{r export, eval=pipeline_mode && has_ptmsea_results}
-# Create output directory
-dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+The result workbook and the RDS this report renders from were written by the
+computation step, `prophosqua::compute_ptmsea()`, before this render. Both are
+written whether or not anything was enriched, so the pipeline can declare them
+as outputs and an empty enrichment is a recorded fact rather than a missing
+file.
 
-# Prepare export data
-export_data <- all_clean |> arrange(contrast, pvalue)
+```{r exportedFiles}
+stem <- file.path(output_dir, paste0("PTMSEA_", params$analysis_type, "_results"))
+exported <- paste0(stem, c(".xlsx", ".rds"))
 
-export_list <- list(all_clean = export_data)
-
-# Add per-contrast sheets
-for (ct in unique(export_data$contrast)) {
-  sheet_name <- gsub("[^a-zA-Z0-9_]", "_", substr(ct, 1, 31))
-  export_list[[sheet_name]] <- export_data |> filter(contrast == ct)
-}
-
-# Add significant results sheet
-export_list[["significant_FDR10"]] <- export_data |> filter(p.adjust < 0.1)
-
-# Write Excel
-xlsx_file <- file.path(output_dir, paste0("PTMSEA_", params$analysis_type, "_results.xlsx"))
-writexl::write_xlsx(export_list, xlsx_file)
-
-# Save RDS with full results objects
-rds_file <- file.path(output_dir, paste0("PTMSEA_", params$analysis_type, "_results.rds"))
-saveRDS(results, rds_file)
-
-# Export summary
-export_summary <- tibble(
-  Output = c("Excel results", "RDS object"),
-  File = c(xlsx_file, rds_file),
-  Size = c(
-    paste(round(file.size(xlsx_file) / 1024, 1), "KB"),
-    paste(round(file.size(rds_file) / 1024, 1), "KB")
-  )
-)
 knitr::kable(
-  export_summary,
+  tibble(
+    Output = c("Excel results", "RDS object"),
+    File = basename(exported),
+    Size = ifelse(
+      file.exists(exported),
+      paste(round(file.size(exported) / 1024, 1), "KB"),
+      "not found"
+    )
+  ),
   caption = paste0(
-    "Files written by this report next to the HTML: the Excel workbook holding one sheet per ",
-    "contrast plus a significant-only sheet, and the RDS with the full GSEA result objects for ",
-    "reuse in R. Sizes are given to show at a glance whether a result set is empty."
+    "Files the computation step wrote next to this report: the Excel workbook holding one ",
+    "sheet per contrast plus a significant-only sheet, and the RDS with the full GSEA result ",
+    "objects and the tables shown above. Sizes are given to show at a glance whether a result ",
+    "set is empty."
   )
 )
-```
-
-```{r exportVignette, eval=!pipeline_mode && has_ptmsea_results}
-message("Vignette mode: File export skipped.")
 ```
 
 # Session Info

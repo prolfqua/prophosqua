@@ -1,5 +1,39 @@
 # prophosqua 0.3.0
 
+- The PTM pipeline's analysis code now lives here. Every computation the workflow performs
+  is a documented, tested package function, and every script and report template it runs is
+  installed with the package under `inst/application`: `compute_dpa_dpu()`,
+  `compute_cf_dea()`, `combine_ptm_results()`, `prepare_ptmsigdb()`,
+  `prep_kinaselib_inputs()`, `compute_ptmsea()`, `compute_kinaselib_gsea()` and
+  `compute_mea()`, reached from the workflow through `CMD_*.R` front ends and the one
+  `inst/application/bin/ptm.sh` wrapper, which takes the step as its first argument:
+  `ptm.sh dpa_dpu`, `ptm.sh render`, `ptm.sh help`. An analysis project no longer carries a
+  copy of any of it, so there is nothing left to edit in a working directory that a rerun
+  would silently discard. `copy_ptm_shell_script()` places the wrapper in a working
+  directory for running the same steps by hand.
+- Computing and reporting are separate steps. `Analysis_DPA_DPU.Rmd`,
+  `Analysis_CorrectFirst_DEA.Rmd`, `Analysis_PTMSEA.Rmd`, `Analysis_KinaseLibrary.Rmd` and
+  `Analysis_MEA.Rmd` render from a saved result object instead of producing it, so
+  correcting a caption or a sentence costs a render rather than a full reanalysis: the
+  CorrectFirst report went from about 85 seconds and a refit of every site model to about
+  15 seconds, and the enrichment reports no longer repeat their permutation tests.
+- The three enrichment analyses always write their result workbook and RDS, with zero rows
+  when nothing was enriched, instead of writing nothing at all. Their export used to sit
+  inside a chunk that only ran when something was found, so an empty enrichment left a
+  stale workbook from an earlier run looking current, and no workflow could declare the
+  files as expected outputs.
+- `standardize_ptm_results()` replaces the `standardize_results()` script function, with the
+  column selection of all three analyses and their order covered by tests. A column absent
+  from an analysis is still dropped silently, which is why a column can be present in
+  `Result_DPU.xlsx` and missing from every report; the selection is now documented and
+  visible in one place.
+- `render_ptm_report()` renders any of the installed reports, and `render_dpu_overview()`
+  the integration overview. Both render from the install path into a private
+  intermediates directory, so no project directory collects knitr leftovers and two
+  concurrent renders of one template cannot overwrite each other's intermediates.
+- `prophosqua` now imports arrow, bookdown, optparse, prolfquapp, rmarkdown and writexl,
+  which the moved code needs at run time.
+
 - The nine helpers that locate and normalize prolfquapp DEA outputs are now package
   functions (`get_dea_xlsx()`, `get_dea_file()`, `get_dea_parquet()`, `get_dea_yaml()`,
   `get_sample_name_column()`, `get_dea_sample_name_column()`,

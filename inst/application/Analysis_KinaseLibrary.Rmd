@@ -4,14 +4,9 @@ subtitle: "`r params$analysis_type`"
 author: "FGCZ"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 params:
-  xlsx_file: NULL
-  term2gene_file: NULL
+  objects_rds: NULL
   analysis_type: "DPA"
-  sheet: NULL
   output_dir: NULL
-  min_size: 15
-  max_size: 5000
-  n_perm: 100
   top_genesets: 3
 output:
   bookdown::html_document2:
@@ -35,7 +30,7 @@ knitr::opts_chunk$set(
 )
 
 # Detect pipeline vs vignette mode
-pipeline_mode <- !is.null(params$xlsx_file)
+pipeline_mode <- !is.null(params$objects_rds)
 ```
 
 ## Introduction
@@ -72,50 +67,27 @@ library(prophosqua)
 
 ```{r load-data}
 if (pipeline_mode) {
-  # Pipeline mode: load from files
-  # Use explicit sheet param if provided, otherwise use analysis type as sheet name
-  if (!is.null(params$sheet)) {
-    sheet_name <- params$sheet
-  } else {
-    # Default: use analysis type as sheet name (works for combined PTM_results.xlsx)
-    sheet_name <- params$analysis_type
-  }
-
-  # Load differential analysis data
-  data <- read_xlsx(params$xlsx_file, sheet = sheet_name)
-  output_dir <- if (!is.null(params$output_dir)) params$output_dir else dirname(params$xlsx_file)
-
-  # Define config for stat_col (used in GSEA ranking)
-  # Combined PTM_results.xlsx uses standardized column names
-  config <- list(
-    sheet = sheet_name,
-    stat_col = "statistic.site"
-  )
+  kl <- readRDS(params$objects_rds)
 } else {
-  # Vignette mode: use example data
-  data("combined_test_diff_example", package = "prophosqua")
-  data <- combined_test_diff_example
-  output_dir <- tempdir()
-
-  # Define config for vignette mode
-  config <- list(
-    sheet = "DPA",
-    stat_col = "statistic.site"
-  )
+  # Standalone mode: compute from the example data shipped with the package,
+  # through the same function the pipeline calls.
+  kl <- prophosqua:::compute_kinaselib_gsea_example()
 }
 
-# Ensure SequenceWindow column exists
-if (!"SequenceWindow" %in% names(data) && "PTM_FlankingRegion" %in% names(data)) {
-  data <- data |> rename(SequenceWindow = PTM_FlankingRegion)
+# The settings the computation actually ran with, so that the captions below
+# quote the analysis rather than a second copy of its configuration. `params` is
+# a locked binding during a render and cannot be extended, so they get their own
+# name; `params` keeps only what the caller passed.
+inputs <- kl$analysis_inputs
+
+output_dir <- if (!is.null(params$output_dir)) {
+  params$output_dir
+} else {
+  dirname(inputs$xlsx_file)
 }
 
-data_info <- tibble(
-  Property = c("Rows", "Columns", "Contrasts"),
-  Value = c(nrow(data), ncol(data),
-            paste(unique(data$contrast), collapse = ", "))
-)
 knitr::kable(
-  data_info,
+  kl$data_info,
   caption = paste0(
     "Input of this kinase-library GSEA report: source workbook, sheet, table dimensions and ",
     "the contrasts covered. Every row is one phosphosite in one contrast, before ranking."
@@ -124,33 +96,11 @@ knitr::kable(
 ```
 
 ```{r load-kinase-library}
-# Load term2gene - try multiple sources
-term2gene_file <- params$term2gene_file
+term2gene <- kl$term2gene
+term2gene_df <- kl$term2gene_df
 
-if (is.null(term2gene_file) || !file.exists(term2gene_file)) {
-  # Try bundled resource (compressed)
-  bundled_zip <- system.file("extdata", "term2gene.csv.zip", package = "prophosqua")
-  if (file.exists(bundled_zip)) {
-    temp_dir <- tempdir()
-    unzip(bundled_zip, exdir = temp_dir)
-    term2gene_file <- file.path(temp_dir, "term2gene.csv")
-    message("Using bundled term2gene from prophosqua package")
-  }
-}
-
-if (is.null(term2gene_file) || !file.exists(term2gene_file)) {
-  stop("term2gene file not found. Provide via params$term2gene_file or install prophosqua with bundled data.")
-}
-
-# Load term2gene from scan-motifs output
-term2gene <- read.csv(term2gene_file, stringsAsFactors = FALSE)
-
-kl_info <- tibble(
-  Property = c("Total assignments", "Unique kinases", "Unique sequences"),
-  Value = c(nrow(term2gene), n_distinct(term2gene$term), n_distinct(term2gene$gene))
-)
 knitr::kable(
-  kl_info,
+  kl$kl_info,
   caption = paste0(
     "Kinase-substrate predictions used as gene sets: the term2gene file produced by the ",
     "kinase-library motif scan, with the number of kinases and of predicted kinase-site ",
@@ -158,48 +108,13 @@ knitr::kable(
     "above the configured motif percentile, so one site can belong to several kinases."
   )
 )
-
-# IMPORTANT: Kinase Library sequences have lowercase letters for phosphorylated residues
-# (e.g., "PETITIRsGPPSPLP"). Convert to uppercase to match our data.
-term2gene <- term2gene |>
-  mutate(gene = toupper(gene))
-
-# Keep as TERM2GENE format for clusterProfiler GSEA
-term2gene_df <- term2gene |>
-  select(term, gene)
-
-# Vignette mode: subsample to 50 kinase sets for speed
-if (!pipeline_mode) {
-  set.seed(42)
-  keep_sets <- sample(unique(term2gene_df$term), min(50, n_distinct(term2gene_df$term)))
-  term2gene_df <- term2gene_df |> filter(term %in% keep_sets)
-  message("Vignette mode: subsampled to ", length(keep_sets), " kinase sets")
-}
 ```
 
 ## Kinase-Substrate Assignment Statistics
 
 ```{r assignment-stats}
-our_sequences <- data |>
-  pull(SequenceWindow) |>
-  trimws() |>
-  toupper() |>
-  unique()
-assigned_sequences <- unique(term2gene$gene)
-overlap_seqs <- intersect(our_sequences, assigned_sequences)
-
-assignment_stats <- tibble(
-  Metric = c("Phosphosites in differential analysis",
-             "Sites with kinase assignments",
-             "Sites usable for GSEA",
-             "Coverage (%)"),
-  Value = c(length(our_sequences),
-            length(assigned_sequences),
-            length(overlap_seqs),
-            round(100 * length(overlap_seqs) / length(our_sequences), 1))
-)
 knitr::kable(
-  assignment_stats,
+  kl$assignment_stats,
   caption = paste0(
     "How much of the measured phosphoproteome carries a kinase motif assignment. The first ",
     "row counts the distinct sequence windows in the differential analysis, the second the ",
@@ -211,27 +126,8 @@ knitr::kable(
 ```
 
 ```{r kinase-stats}
-# Calculate kinase set sizes from term2gene
-kinase_sizes <- term2gene_df |>
-  count(term, name = "size")
-
-kinase_overlap <- term2gene_df |>
-  filter(gene %in% our_sequences) |>
-  count(term, name = "overlap")
-
-kinase_stats <- tibble(
-  Metric = c("Number of kinases", "Mean substrates/kinase", "Median substrates/kinase",
-             "Range (min-max)", "Mean substrates in our data",
-             "Kinases with >= 15 substrates"),
-  Value = c(nrow(kinase_sizes),
-            round(mean(kinase_sizes$size)),
-            median(kinase_sizes$size),
-            paste(min(kinase_sizes$size), "-", max(kinase_sizes$size)),
-            round(mean(kinase_overlap$overlap, na.rm = TRUE)),
-            sum(kinase_overlap$overlap >= 15, na.rm = TRUE))
-)
 knitr::kable(
-  kinase_stats,
+  kl$kinase_stats,
   caption = paste0(
     "Size of the kinase substrate sets that GSEA tests. The first rows describe the predicted ",
     "set sizes over all kinases (count, mean, median and range of substrates per kinase), the ",
@@ -245,24 +141,12 @@ knitr::kable(
 ## Prepare Ranked Lists
 
 ```{r prepare-ranks}
-# Prepare ranked lists using prophosqua function
-ranks <- prepare_gsea_ranks(
-  data,
-  stat_col = config$stat_col,
-  seq_col = "SequenceWindow",
-  contrast_col = "contrast"
-)
-
-ranks_info <- tibble(
-  Contrast = names(ranks),
-  Sites = map_int(ranks, length)
-)
 knitr::kable(
-  ranks_info,
+  kl$ranks_info,
   caption = paste0(
     "Ranked site list submitted to GSEA per contrast (", params$analysis_type,
     "): Sites is the number of ranked sequence windows in that contrast's input vector, ",
-    "ordered by ", config$stat_col, " from most up- to most down-regulated. Contrasts differ ",
+    "ordered by ", inputs$stat_col, " from most up- to most down-regulated. Contrasts differ ",
     "when sites are missing values in one comparison but not another."
   )
 )
@@ -271,24 +155,10 @@ knitr::kable(
 ## GSEA Analysis
 
 ```{r run-gsea}
-gsea_results <- names(ranks) |>
-  set_names() |>
-  map(function(ct) {
-    GSEA(
-      geneList = ranks[[ct]],
-      TERM2GENE = term2gene_df,
-      minGSSize = params$min_size,
-      maxGSSize = params$max_size,
-      pvalueCutoff = 0.25,
-      nPermSimple = params$n_perm,
-      verbose = FALSE
-    )
-  })
+gsea_results <- kl$gsea_results
+gsea_info <- kl$gsea_info
+has_gsea_results <- kl$has_results
 
-gsea_info <- tibble(
-  Contrast = names(gsea_results),
-  `Significant Kinases (FDR < 0.25)` = map_int(gsea_results, ~sum(.x@result$p.adjust < 0.25, na.rm = TRUE))
-)
 knitr::kable(
   gsea_info,
   caption = paste0(
@@ -297,15 +167,13 @@ knitr::kable(
     "A contrast with zero hits points at low motif coverage or a weak overall response."
   )
 )
-
-has_gsea_results <- sum(map_int(gsea_results, ~nrow(.x@result))) > 0
 ```
 
 ```{r noGseaResults, eval=!has_gsea_results, results='asis'}
 cat("\n\n# No GSEA Results\n\n")
-cat("No kinase gene sets passed the size filter (min_size=", params$min_size, ").\n")
+cat("No kinase gene sets passed the size filter (min_size=", inputs$min_size, ").\n")
 cat("This typically means too few phosphosites overlap with kinase library assignments.\n\n")
-cat("**Coverage was:", length(overlap_seqs), "sites out of", length(our_sequences), "**\n\n")
+cat("**Coverage was:", kl$n_overlap_seqs, "sites out of", kl$n_our_sequences, "**\n\n")
 ```
 
 ```{r prepareCaptions, eval=has_gsea_results}
@@ -320,7 +188,7 @@ dotplot_caps <- paste0(
   "Kinase enrichment in contrast ", contrast_ids, " (", params$analysis_type,
   "): normalized enrichment score of the 30 kinases with the smallest FDR. Each point is one ",
   "kinase substrate set predicted by the kinase-library motif scan; the x-axis is the NES from ",
-  "GSEA over sites ranked by ", config$stat_col, ", so NES > 0 means the predicted substrates ",
+  "GSEA over sites ranked by ", inputs$stat_col, ", so NES > 0 means the predicted substrates ",
   "accumulate among up-regulated sites and NES < 0 among down-regulated ones. Point size is ",
   "-log10(FDR), point colour follows the NES (blue negative, red positive), faded points are ",
   "kinases with FDR >= 0.1, and the dashed line marks NES = 0."
@@ -371,7 +239,7 @@ gsea_plot_caps <- unlist(lapply(names(gsea_results), function(ct) {
     pull(ID)
   paste0(
     "Running enrichment score of the ", top_ids, " substrate set in contrast ", ct, " (",
-    params$analysis_type, "). The x-axis is the rank of the sites ordered by ", config$stat_col,
+    params$analysis_type, "). The x-axis is the rank of the sites ordered by ", inputs$stat_col,
     " from most up- to most down-regulated; the upper panel traces the running enrichment ",
     "score, whose extreme is the enrichment score of the set, the tick marks below mark where ",
     "that kinase's predicted substrates sit in the ranking, and the bottom panel repeats the ",
@@ -585,37 +453,32 @@ DT::datatable(all_results_dt,
 
 # Export Results
 
-```{r export, eval=pipeline_mode && has_gsea_results}
-dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+The result workbook and the RDS this report renders from were written by the
+computation step, `prophosqua::compute_kinaselib_gsea()`, before this render.
+Both are written whether or not anything was enriched, so the pipeline can
+declare them as outputs and an empty enrichment is a recorded fact rather than a
+missing file.
 
-# Combine all results
-all_results_export <- names(gsea_results) |>
-  map_dfr(function(ct) {
-    gsea_results[[ct]]@result |>
-      as_tibble() |>
-      mutate(contrast = ct) |>
-      select(contrast, kinase = ID, NES, pvalue, FDR = p.adjust, setSize)
-  })
+```{r exportedFiles}
+stem <- file.path(output_dir, paste0("KinaseLib_GSEA_", params$analysis_type))
+exported <- paste0(stem, c(".xlsx", ".rds"))
 
-# Export to Excel
-export_list <- list(
-  all_results = all_results_export |> arrange(contrast, FDR),
-  significant = all_results_export |> filter(FDR < 0.1) |> arrange(contrast, FDR),
-  summary = gsea_info
+knitr::kable(
+  tibble(
+    Output = c("Excel results", "RDS object"),
+    File = basename(exported),
+    Size = ifelse(
+      file.exists(exported),
+      paste(round(file.size(exported) / 1024, 1), "KB"),
+      "not found"
+    )
+  ),
+  caption = paste0(
+    "Files the computation step wrote next to this report: the Excel workbook with all ",
+    "kinase results, a significant-only sheet and the per-contrast summary, and the RDS with ",
+    "the full GSEA result objects and the tables shown above."
+  )
 )
-
-xlsx_file <- file.path(output_dir, paste0("KinaseLib_GSEA_", params$analysis_type, ".xlsx"))
-writexl::write_xlsx(export_list, xlsx_file)
-cat("Exported Excel:", xlsx_file, "\n")
-
-# Export RDS with full clusterProfiler result objects
-rds_file <- file.path(output_dir, paste0("KinaseLib_GSEA_", params$analysis_type, ".rds"))
-saveRDS(gsea_results, rds_file)
-cat("Exported RDS:", rds_file, "\n")
-```
-
-```{r export-vignette, eval=!pipeline_mode && has_gsea_results}
-message("Vignette mode: File export skipped.")
 ```
 
 ## Session Info

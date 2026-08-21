@@ -1,0 +1,222 @@
+---
+title: "Correct First Approach - Differential Expression Analysis"
+author: "FGCZ"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+running_head: "CorrectFirst DEA"
+params:
+  objects_rds: "PTM_CF_DPU/cf_objects.rds"
+  results_xlsx: "CorrectFirst_PTM_usage_results.xlsx"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+  bookdown::html_document2:
+    toc: true
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 10,
+  fig.height = 6,
+  dpi = 300
+)
+
+suppressPackageStartupMessages({
+  library(prolfqua)
+  library(prophosqua)
+  library(dplyr)
+})
+
+cf <- readRDS(params$objects_rds)
+```
+
+# Introduction
+
+This document implements the "Correct First" approach for estimating PTM feature usage. Instead of the standard approach where protein-level corrections are applied after modeling PTM abundances, this approach performs protein normalization **before** modeling.
+
+**Workflow:**
+
+1. Load normalized total proteome abundances
+2. Load normalized PTM site abundances
+3. Correct PTM abundances by subtracting protein abundances
+4. Model the corrected PTM usage values
+5. Compute contrasts and evaluate significance
+6. Export results
+
+Steps 1 to 6 were carried out by `prophosqua::compute_cf_dea()` before this
+report was rendered. This document describes that result and plots it; it does
+not refit the model, which is why a change to its prose or captions costs a
+render rather than a full analysis.
+
+# Data Loading
+
+The three inputs of this analysis are the sample annotation that defines the
+groups and contrasts, the normalized protein abundances from the total-proteome
+DEA run, and the normalized phosphosite abundances from the phospho DEA run. All
+three come from runs that already happened; nothing is re-quantified.
+
+## Project Setup
+
+The annotation is the control file of the analysis: its grouping column becomes
+the model term and its contrast definitions become the comparisons evaluated
+further below.
+
+```{r annotation}
+knitr::kable(
+  head(cf$annot),
+  caption = paste0(
+    "First rows of the sample annotation driving this CorrectFirst analysis: one row per ",
+    "sample, with the grouping columns that define the linear model and the contrasts ",
+    "evaluated further below."
+  )
+)
+```
+
+## Abundances
+
+`r format(cf$n_protein_measurements, big.mark = ",")` normalized protein
+abundance measurements and
+`r format(cf$n_site_measurements, big.mark = ",")` normalized phosphosite
+abundance measurements were loaded. Reverse (decoy) entries were removed from
+the protein side and identifiers canonicalized, so that sites and proteins can
+be matched.
+
+# Protein Normalization
+
+## Merge and Correct PTM Data
+
+PTM abundances are corrected by subtracting protein abundances; on the log2
+scale this is a division. Joining sites to their proteins leaves
+`r format(cf$n_merged_measurements, big.mark = ",")` measurements that carry
+both a site and a protein value and can therefore be corrected; sites whose
+protein was not quantified drop out here.
+
+## Visualize Corrected PTM Usage
+
+```{r fig1densityCorrected, fig.cap="Distribution of the protein-corrected phosphosite abundances, one curve per sample. The x-axis is the corrected abundance on log2 scale (site abundance minus the abundance of its protein in the same sample, shifted by a constant to keep values positive) and the y-axis its density. Curves that overlay each other indicate comparable correction across samples; a shifted or differently shaped curve marks a sample whose correction behaves differently and that will influence the model."}
+cf$ptm_data$get_Plotter()$intensity_distribution_density()
+```
+
+```{r pca, fig.cap="Principal component analysis of the protein-corrected phosphosite abundances. Each point is one sample positioned by its first two principal components, coloured by experimental group and labelled with the sample name. Missing values are imputed for this projection only, not for the statistical model. Samples of the same group clustering together indicates that PTM usage separates the conditions; an outlying sample is a candidate explanation for weak contrasts."}
+pca_data <- prolfqua::AggregateLimpa$new(
+  cf$ptm_data,
+  impute_only = TRUE
+)$aggregate()
+pca_data$get_Plotter()$pca()
+```
+
+# Statistical Modeling
+
+The corrected usage values are treated as an ordinary response: one linear model
+per phosphosite, then the contrasts of interest evaluated on those models.
+Because the correction already happened, no protein-level adjustment is applied
+afterwards.
+
+## Fit Linear Model
+
+`ptm_usage ~ G_` was fitted per phosphosite, that is one group effect per
+experimental group, `r format(cf$n_models, big.mark = ",")` models in total.
+
+## Define Contrasts
+
+Two annotation styles are accepted: an explicit one carrying `Contrast` and
+`ContrastName` columns, or a dataset style carrying `Group` and `Control`, from
+which every treatment-versus-control pair is generated.
+
+```{r defineContrasts}
+knitr::kable(
+  data.frame(Contrast_Name = names(cf$contrasts), Contrast = cf$contrasts),
+  caption = paste0(
+    "Contrasts evaluated on the corrected PTM usage. Contrast_Name is the label used ",
+    "throughout the downstream reports, Contrast the linear-model expression it stands for, ",
+    "with G_ marking the group coefficients of the fitted model; a positive fold change means ",
+    "higher PTM usage in the first named group."
+  )
+)
+```
+
+## Compute Contrasts
+
+The contrasts were evaluated on the fitted models with variance moderation,
+which stabilises the per-site variance estimates by borrowing information across
+all sites. `r format(cf$n_site_contrast, big.mark = ",")` site-contrast pairs
+were estimated (`r format(cf$n_models, big.mark = ",")` sites x
+`r length(cf$contrasts)` contrasts, minus sites the model could not estimate for
+a given contrast).
+
+# Results
+
+## Volcano Plot
+
+Overview of the result: effect size against significance, one panel per contrast.
+
+```{r figVolcanoModelOnly, fig.cap="Differential PTM usage per contrast, from the model fitted on protein-corrected abundances. Each point is one phosphosite; the x-axis is the estimated log2 fold change of corrected usage and the y-axis -log10(FDR) from the moderated t-test, so points to the left and right are sites used less or more, and points high up are the confident ones. Sites imputed rather than measured in a condition are excluded from the exported results."}
+cf$ctr$get_Plotter()$volcano()$FDR
+```
+
+# Export Results
+
+The contrast results were written to a single-sheet Excel workbook, which is the
+file every downstream report of this analysis reads. Only site-contrast pairs
+estimated from measured values are exported: a pair whose estimate would rest on
+an imputed value in one of the two groups is dropped, because a fold change
+measured against an imputed level is not interpretable.
+
+Column names follow the same convention as the DPA and DPU results, so the
+reports can read all three interchangeably: `diff.site` is the log2 fold change
+of protein-corrected PTM usage, `FDR.site` its adjusted p-value and
+`statistic.site` the moderated t-statistic. Alongside these sit the site
+annotation columns (`protein_Id`, `site`, `posInProtein`, `modAA`,
+`SequenceWindow`, `gene_name`, `protein_length`) and `estimate_type`, which
+records whether the underlying value was observed or filled in by
+limit-of-detection imputation.
+
+```{r exportCounts}
+knitr::kable(
+  cf$model_counts,
+  caption = paste0(
+    "How the site-contrast pairs were estimated, counted before the imputation filter. ",
+    "Linear_Model_Moderated pairs come from the moderated linear model on measured values ",
+    "and are exported; MissingInOneCondition pairs would rest on an imputed value in one of ",
+    "the two groups and are dropped. Exported: ",
+    format(nrow(cf$results), big.mark = ","), " of ", format(cf$n_before, big.mark = ","),
+    " site-contrast pairs, over ", dplyr::n_distinct(cf$results$contrast), " contrasts."
+  )
+)
+```
+
+The workbook is named `` `r params$results_xlsx` `` and its single sheet is
+called `results`. It holds `r nrow(cf$results)` rows and
+`r ncol(cf$results)` columns.
+
+## Output Location
+
+| File | Content |
+|:-----|:--------|
+| `` `r params$results_xlsx` `` | the contrast results, sheet `results`. This is the file the N-to-C, seqlogo and enrichment reports read. |
+| `CorrectFirst_intensities_wide.xlsx` | the protein-corrected PTM usage matrix, one column per sample, as it entered the linear model. |
+| `CorrectFirst_intensities_file_annotation.xlsx` | the sample annotation belonging to that matrix. |
+| `cf_objects.rds` | the fitted contrasts and counts this report renders from. |
+| `Analysis_CorrectFirst_DEA.html` | this report. |
+
+# Summary
+
+This "Correct First" approach:
+
+1. **Normalizes PTM abundances by protein abundances** before statistical modeling
+2. **Models the corrected PTM usage** values directly
+3. **Computes contrasts** on the protein-normalized PTM values
+
+This differs from the "correct last" approach (DPU/MSstatsPTM method) where PTM and protein abundances are modeled separately, then protein-level corrections are applied at the contrast level.
+
+# Session Info
+
+```{r sessionInfo}
+sessionInfo()
+```
