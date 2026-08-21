@@ -63,4 +63,4 @@ Suggests:
     testthat (>= 3.0.0)
 Remotes:
     github::fgcz/prolfqua,
-    github::fgcz/prolfquapp
+    github::prolfqua/prolfquapp
