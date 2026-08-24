@@ -16,3 +16,6 @@ temp_backup/
 vignettes/QCReport_cache/
 vignettes/ptm_example-main/
 *.tar.gz
+
+# Publisher proofs -- never commit, never ship
+inst/proofread/

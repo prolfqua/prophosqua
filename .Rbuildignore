@@ -67,3 +67,4 @@
 ^.*\.BiocCheck$
 ^\.github$
 ^AGENTS\.md$
+^inst/proofread$
