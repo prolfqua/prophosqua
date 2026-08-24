@@ -84,7 +84,13 @@ data_info <- tibble(
   Value = c(nrow(data), ncol(data),
             paste(unique(data$contrast), collapse = ", "))
 )
-knitr::kable(data_info, caption = "Differential Analysis Data")
+knitr::kable(
+  data_info,
+  caption = paste0(
+    "Input of this kinase-library GSEA report: source workbook, sheet, table dimensions and ",
+    "the contrasts covered. Every row is one phosphosite in one contrast, before ranking."
+  )
+)
 ```
 
 | Property | Value |
@@ -93,7 +99,9 @@ knitr::kable(data_info, caption = "Differential Analysis Data")
 | Columns | 56 |
 | Contrasts | KO_vs_WT, KO_vs_WT_at_Early, KO_vs_WT_at_Late, KO_vs_WT_at_Uninfect |
 
-Differential Analysis Data {.table}
+Input of this kinase-library GSEA report: source workbook, sheet, table
+dimensions and the contrasts covered. Every row is one phosphosite in
+one contrast, before ranking. {.table}
 
 ``` r
 
@@ -122,7 +130,15 @@ kl_info <- tibble(
   Property = c("Total assignments", "Unique kinases", "Unique sequences"),
   Value = c(nrow(term2gene), n_distinct(term2gene$term), n_distinct(term2gene$gene))
 )
-knitr::kable(kl_info, caption = "Kinase Library Predictions")
+knitr::kable(
+  kl_info,
+  caption = paste0(
+    "Kinase-substrate predictions used as gene sets: the term2gene file produced by the ",
+    "kinase-library motif scan, with the number of kinases and of predicted kinase-site ",
+    "assignments it contains. A site is assigned to a kinase when its sequence window scores ",
+    "above the configured motif percentile, so one site can belong to several kinases."
+  )
+)
 ```
 
 | Property          |  Value |
@@ -131,7 +147,11 @@ knitr::kable(kl_info, caption = "Kinase Library Predictions")
 | Unique kinases    |    311 |
 | Unique sequences  |  18935 |
 
-Kinase Library Predictions {.table}
+Kinase-substrate predictions used as gene sets: the term2gene file
+produced by the kinase-library motif scan, with the number of kinases
+and of predicted kinase-site assignments it contains. A site is assigned
+to a kinase when its sequence window scores above the configured motif
+percentile, so one site can belong to several kinases. {.table}
 
 ``` r
 
@@ -175,7 +195,16 @@ assignment_stats <- tibble(
             length(overlap_seqs),
             round(100 * length(overlap_seqs) / length(our_sequences), 1))
 )
-knitr::kable(assignment_stats, caption = "Assignment Statistics")
+knitr::kable(
+  assignment_stats,
+  caption = paste0(
+    "How much of the measured phosphoproteome carries a kinase motif assignment. The first ",
+    "row counts the distinct sequence windows in the differential analysis, the second the ",
+    "windows the motif scan assigned to at least one kinase, the third those present in both ",
+    "and therefore usable for GSEA, and Coverage is that intersection as a percentage of the ",
+    "measured windows. Low coverage limits how many kinase sets can be tested."
+  )
+)
 ```
 
 | Metric                                |   Value |
@@ -185,7 +214,13 @@ knitr::kable(assignment_stats, caption = "Assignment Statistics")
 | Sites usable for GSEA                 | 18902.0 |
 | Coverage (%)                          |    87.2 |
 
-Assignment Statistics {.table}
+How much of the measured phosphoproteome carries a kinase motif
+assignment. The first row counts the distinct sequence windows in the
+differential analysis, the second the windows the motif scan assigned to
+at least one kinase, the third those present in both and therefore
+usable for GSEA, and Coverage is that intersection as a percentage of
+the measured windows. Low coverage limits how many kinase sets can be
+tested. {.table}
 
 ``` r
 
@@ -208,7 +243,16 @@ kinase_stats <- tibble(
             round(mean(kinase_overlap$overlap, na.rm = TRUE)),
             sum(kinase_overlap$overlap >= 15, na.rm = TRUE))
 )
-knitr::kable(kinase_stats, caption = "Kinase Set Size Distribution")
+knitr::kable(
+  kinase_stats,
+  caption = paste0(
+    "Size of the kinase substrate sets that GSEA tests. The first rows describe the predicted ",
+    "set sizes over all kinases (count, mean, median and range of substrates per kinase), the ",
+    "last two how many of those substrates are actually measured here on average and how many ",
+    "kinases keep at least 15 measured substrates. Sets that stay below the min_size ",
+    "threshold are dropped before testing."
+  )
+)
 ```
 
 | Metric                         | Value      |
@@ -220,7 +264,12 @@ knitr::kable(kinase_stats, caption = "Kinase Set Size Distribution")
 | Mean substrates in our data    | 1246       |
 | Kinases with \>= 15 substrates | 50         |
 
-Kinase Set Size Distribution {.table}
+Size of the kinase substrate sets that GSEA tests. The first rows
+describe the predicted set sizes over all kinases (count, mean, median
+and range of substrates per kinase), the last two how many of those
+substrates are actually measured here on average and how many kinases
+keep at least 15 measured substrates. Sets that stay below the min_size
+threshold are dropped before testing. {.table}
 
 ### Prepare Ranked Lists
 
@@ -238,7 +287,15 @@ ranks_info <- tibble(
   Contrast = names(ranks),
   Sites = map_int(ranks, length)
 )
-knitr::kable(ranks_info, caption = paste(params$analysis_type, "Ranks Prepared"))
+knitr::kable(
+  ranks_info,
+  caption = paste0(
+    "Ranked site list submitted to GSEA per contrast (", params$analysis_type,
+    "): Sites is the number of ranked sequence windows in that contrast's input vector, ",
+    "ordered by ", config$stat_col, " from most up- to most down-regulated. Contrasts differ ",
+    "when sites are missing values in one comparison but not another."
+  )
+)
 ```
 
 | Contrast             | Sites |
@@ -248,7 +305,11 @@ knitr::kable(ranks_info, caption = paste(params$analysis_type, "Ranks Prepared")
 | KO_vs_WT_at_Late     | 21682 |
 | KO_vs_WT_at_Uninfect | 21682 |
 
-DPA Ranks Prepared {.table}
+Ranked site list submitted to GSEA per contrast (DPA): Sites is the
+number of ranked sequence windows in that contrast’s input vector,
+ordered by statistic.site from most up- to most down-regulated.
+Contrasts differ when sites are missing values in one comparison but not
+another. {.table}
 
 ### GSEA Analysis
 
@@ -272,7 +333,14 @@ gsea_info <- tibble(
   Contrast = names(gsea_results),
   `Significant Kinases (FDR < 0.25)` = map_int(gsea_results, ~sum(.x@result$p.adjust < 0.25, na.rm = TRUE))
 )
-knitr::kable(gsea_info, caption = paste(params$analysis_type, "GSEA Results Summary"))
+knitr::kable(
+  gsea_info,
+  caption = paste0(
+    "GSEA outcome per contrast (", params$analysis_type, "): number of kinase substrate sets ",
+    "reaching FDR < 0.25, in either direction, out of the sets that passed the size filter. ",
+    "A contrast with zero hits points at low motif coverage or a weak overall response."
+  )
+)
 ```
 
 | Contrast             | Significant Kinases (FDR \< 0.25) |
@@ -282,7 +350,10 @@ knitr::kable(gsea_info, caption = paste(params$analysis_type, "GSEA Results Summ
 | KO_vs_WT_at_Late     |                                36 |
 | KO_vs_WT_at_Uninfect |                                41 |
 
-DPA GSEA Results Summary {.table}
+GSEA outcome per contrast (DPA): number of kinase substrate sets
+reaching FDR \< 0.25, in either direction, out of the sets that passed
+the size filter. A contrast with zero hits points at low motif coverage
+or a weak overall response. {.table}
 
 ``` r
 
@@ -297,15 +368,85 @@ cat("This typically means too few phosphosites overlap with kinase library assig
 cat("**Coverage was:", length(overlap_seqs), "sites out of", length(our_sequences), "**\n\n")
 ```
 
-## Results by Contrast
-
 ``` r
 
 # Extract all results into data frame using shared function
 all_clean <- extract_gsea_results(gsea_results) |>
   mutate(kinase = ID)
 
-for (ctr in unique(all_clean$contrast)) {
+# Contrast order and figure captions, assembled once for the loops below
+contrast_ids <- unique(all_clean$contrast)
+
+dotplot_caps <- paste0(
+  "Kinase enrichment in contrast ", contrast_ids, " (", params$analysis_type,
+  "): normalized enrichment score of the 30 kinases with the smallest FDR. Each point is one ",
+  "kinase substrate set predicted by the kinase-library motif scan; the x-axis is the NES from ",
+  "GSEA over sites ranked by ", config$stat_col, ", so NES > 0 means the predicted substrates ",
+  "accumulate among up-regulated sites and NES < 0 among down-regulated ones. Point size is ",
+  "-log10(FDR), point colour follows the NES (blue negative, red positive), faded points are ",
+  "kinases with FDR >= 0.1, and the dashed line marks NES = 0."
+)
+
+merged_dotplot_cap <- paste0(
+  "The 15 most enriched kinase substrate sets compared across all contrasts (",
+  params$analysis_type, ", FDR < 0.25). Rows are kinases, columns are contrasts, the x-axis ",
+  "position within a column is the fraction of the kinase's substrates found in the leading ",
+  "edge, point size the number of those substrates and point colour the adjusted p-value. ",
+  "Gaps mark kinases that missed the cutoff in that contrast, which makes contrast-specific ",
+  "kinase responses visible."
+)
+
+individual_dotplot_cap <- paste0(
+  "Per-contrast kinase enrichment as clusterProfiler dotplots (", params$analysis_type,
+  "), one panel per contrast, two panels per row. Within a panel each row is one of the 15 ",
+  "most enriched kinases, the x-axis is the fraction of its substrates in the leading edge, ",
+  "point size the number of those substrates and point colour the adjusted p-value. A panel ",
+  "reading \"No significant kinases\" means no set passed the cutoff in that contrast."
+)
+
+heatmap_cap <- paste0(
+  "Normalized enrichment score per kinase and contrast (", params$analysis_type, "). Rows are ",
+  "the 30 kinases with the smallest FDR in any contrast (only kinases reaching FDR < 0.25 ",
+  "somewhere are eligible), ordered by NES; columns are the contrasts. Tile colour is the NES ",
+  "(blue: predicted substrates enriched among down-regulated sites, red: among up-regulated ",
+  "sites, white: no enrichment) and asterisks give the FDR of that kinase in that contrast ",
+  "(* < 0.1, ** < 0.05, *** < 0.01). Empty tiles mean the kinase was not tested there."
+)
+
+volcano_cap <- paste0(
+  "Enrichment strength versus significance for every tested kinase substrate set, one panel ",
+  "per contrast (", params$analysis_type, "). Each point is one kinase; the x-axis is the NES ",
+  "(negative: substrates enriched among down-regulated sites, positive: among up-regulated ",
+  "sites) and the y-axis -log10(FDR), with the horizontal dashed line at FDR = 0.1 and the ",
+  "vertical dashed line at NES = 0. Colour encodes the direction, faded points are kinases ",
+  "above the FDR cutoff, and the five kinases with the smallest FDR per contrast are labelled. ",
+  "Axes are free per panel."
+)
+
+# Running-enrichment plots: one caption per contrast/kinase, in printing order
+gsea_plot_caps <- unlist(lapply(names(gsea_results), function(ct) {
+  top_ids <- gsea_results[[ct]]@result |>
+    as_tibble() |>
+    arrange(pvalue) |>
+    head(params$top_genesets) |>
+    pull(ID)
+  paste0(
+    "Running enrichment score of the ", top_ids, " substrate set in contrast ", ct, " (",
+    params$analysis_type, "). The x-axis is the rank of the sites ordered by ", config$stat_col,
+    " from most up- to most down-regulated; the upper panel traces the running enrichment ",
+    "score, whose extreme is the enrichment score of the set, the tick marks below mark where ",
+    "that kinase's predicted substrates sit in the ranking, and the bottom panel repeats the ",
+    "ranking statistic. A curve peaking early with ticks clustered on the left means the ",
+    "kinase's substrates are enriched among up-regulated sites."
+  )
+}), use.names = FALSE)
+```
+
+## Results by Contrast
+
+``` r
+
+for (ctr in contrast_ids) {
   cat("\n\n## ", ctr, "\n\n")
 
   ctr_data <- all_clean |> filter(contrast == ctr)
@@ -334,7 +475,14 @@ for (ctr in unique(all_clean$contrast)) {
     DT::datatable(sig_table,
                   extensions = 'Buttons',
                   options = list(pageLength = 15, scrollX = TRUE,
-                                 dom = 'Bfrtip', buttons = c('copy', 'csv', 'excel')))
+                                 dom = 'Bfrtip', buttons = c('copy', 'csv', 'excel')),
+                  caption = paste0(
+                    "Kinases enriched at FDR < 0.1 in contrast ", ctr, ", sorted by FDR. NES ",
+                    "is the normalized enrichment score (> 0 predicted substrates enriched ",
+                    "among up-regulated sites, < 0 among down-regulated sites), pvalue the ",
+                    "GSEA permutation p-value, FDR its Benjamini-Hochberg adjustment and ",
+                    "setSize the number of ranked sites assigned to that kinase."
+                  ))
   ))
   cat("\n\n")
 }
@@ -344,7 +492,24 @@ for (ctr in unique(all_clean$contrast)) {
 
 **Significant kinases (FDR \< 0.1):** 26
 
-![](Analysis_KinaseLibrary_files/figure-html/contrastPlots-1.png)
+![Kinase enrichment in contrast KO_vs_WT (DPA): normalized enrichment
+score of the 30 kinases with the smallest FDR. Each point is one kinase
+substrate set predicted by the kinase-library motif scan; the x-axis is
+the NES from GSEA over sites ranked by statistic.site, so NES \> 0 means
+the predicted substrates accumulate among up-regulated sites and NES \<
+0 among down-regulated ones. Point size is -log10(FDR), point colour
+follows the NES (blue negative, red positive), faded points are kinases
+with FDR \>= 0.1, and the dashed line marks NES =
+0.](Analysis_KinaseLibrary_files/figure-html/contrastPlots-1.png)
+
+Kinase enrichment in contrast KO_vs_WT (DPA): normalized enrichment
+score of the 30 kinases with the smallest FDR. Each point is one kinase
+substrate set predicted by the kinase-library motif scan; the x-axis is
+the NES from GSEA over sites ranked by statistic.site, so NES \> 0 means
+the predicted substrates accumulate among up-regulated sites and NES \<
+0 among down-regulated ones. Point size is -log10(FDR), point colour
+follows the NES (blue negative, red positive), faded points are kinases
+with FDR \>= 0.1, and the dashed line marks NES = 0.
 
 **Significant Kinases (FDR \< 0.1):**
 
@@ -352,7 +517,24 @@ for (ctr in unique(all_clean$contrast)) {
 
 **Significant kinases (FDR \< 0.1):** 28
 
-![](Analysis_KinaseLibrary_files/figure-html/contrastPlots-2.png)
+![Kinase enrichment in contrast KO_vs_WT_at_Early (DPA): normalized
+enrichment score of the 30 kinases with the smallest FDR. Each point is
+one kinase substrate set predicted by the kinase-library motif scan; the
+x-axis is the NES from GSEA over sites ranked by statistic.site, so NES
+\> 0 means the predicted substrates accumulate among up-regulated sites
+and NES \< 0 among down-regulated ones. Point size is -log10(FDR), point
+colour follows the NES (blue negative, red positive), faded points are
+kinases with FDR \>= 0.1, and the dashed line marks NES =
+0.](Analysis_KinaseLibrary_files/figure-html/contrastPlots-2.png)
+
+Kinase enrichment in contrast KO_vs_WT_at_Early (DPA): normalized
+enrichment score of the 30 kinases with the smallest FDR. Each point is
+one kinase substrate set predicted by the kinase-library motif scan; the
+x-axis is the NES from GSEA over sites ranked by statistic.site, so NES
+\> 0 means the predicted substrates accumulate among up-regulated sites
+and NES \< 0 among down-regulated ones. Point size is -log10(FDR), point
+colour follows the NES (blue negative, red positive), faded points are
+kinases with FDR \>= 0.1, and the dashed line marks NES = 0.
 
 **Significant Kinases (FDR \< 0.1):**
 
@@ -360,7 +542,24 @@ for (ctr in unique(all_clean$contrast)) {
 
 **Significant kinases (FDR \< 0.1):** 31
 
-![](Analysis_KinaseLibrary_files/figure-html/contrastPlots-3.png)
+![Kinase enrichment in contrast KO_vs_WT_at_Late (DPA): normalized
+enrichment score of the 30 kinases with the smallest FDR. Each point is
+one kinase substrate set predicted by the kinase-library motif scan; the
+x-axis is the NES from GSEA over sites ranked by statistic.site, so NES
+\> 0 means the predicted substrates accumulate among up-regulated sites
+and NES \< 0 among down-regulated ones. Point size is -log10(FDR), point
+colour follows the NES (blue negative, red positive), faded points are
+kinases with FDR \>= 0.1, and the dashed line marks NES =
+0.](Analysis_KinaseLibrary_files/figure-html/contrastPlots-3.png)
+
+Kinase enrichment in contrast KO_vs_WT_at_Late (DPA): normalized
+enrichment score of the 30 kinases with the smallest FDR. Each point is
+one kinase substrate set predicted by the kinase-library motif scan; the
+x-axis is the NES from GSEA over sites ranked by statistic.site, so NES
+\> 0 means the predicted substrates accumulate among up-regulated sites
+and NES \< 0 among down-regulated ones. Point size is -log10(FDR), point
+colour follows the NES (blue negative, red positive), faded points are
+kinases with FDR \>= 0.1, and the dashed line marks NES = 0.
 
 **Significant Kinases (FDR \< 0.1):**
 
@@ -368,7 +567,24 @@ for (ctr in unique(all_clean$contrast)) {
 
 **Significant kinases (FDR \< 0.1):** 37
 
-![](Analysis_KinaseLibrary_files/figure-html/contrastPlots-4.png)
+![Kinase enrichment in contrast KO_vs_WT_at_Uninfect (DPA): normalized
+enrichment score of the 30 kinases with the smallest FDR. Each point is
+one kinase substrate set predicted by the kinase-library motif scan; the
+x-axis is the NES from GSEA over sites ranked by statistic.site, so NES
+\> 0 means the predicted substrates accumulate among up-regulated sites
+and NES \< 0 among down-regulated ones. Point size is -log10(FDR), point
+colour follows the NES (blue negative, red positive), faded points are
+kinases with FDR \>= 0.1, and the dashed line marks NES =
+0.](Analysis_KinaseLibrary_files/figure-html/contrastPlots-4.png)
+
+Kinase enrichment in contrast KO_vs_WT_at_Uninfect (DPA): normalized
+enrichment score of the 30 kinases with the smallest FDR. Each point is
+one kinase substrate set predicted by the kinase-library motif scan; the
+x-axis is the NES from GSEA over sites ranked by statistic.site, so NES
+\> 0 means the predicted substrates accumulate among up-regulated sites
+and NES \< 0 among down-regulated ones. Point size is -log10(FDR), point
+colour follows the NES (blue negative, red positive), faded points are
+kinases with FDR \>= 0.1, and the dashed line marks NES = 0.
 
 **Significant Kinases (FDR \< 0.1):**
 
@@ -384,7 +600,22 @@ dotplot(merged, showCategory = 15,
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-![](Analysis_KinaseLibrary_files/figure-html/merged-dotplot-1.png)
+![The 15 most enriched kinase substrate sets compared across all
+contrasts (DPA, FDR \< 0.25). Rows are kinases, columns are contrasts,
+the x-axis position within a column is the fraction of the kinase's
+substrates found in the leading edge, point size the number of those
+substrates and point colour the adjusted p-value. Gaps mark kinases that
+missed the cutoff in that contrast, which makes contrast-specific kinase
+responses
+visible.](Analysis_KinaseLibrary_files/figure-html/merged-dotplot-1.png)
+
+The 15 most enriched kinase substrate sets compared across all contrasts
+(DPA, FDR \< 0.25). Rows are kinases, columns are contrasts, the x-axis
+position within a column is the fraction of the kinase’s substrates
+found in the leading edge, point size the number of those substrates and
+point colour the adjusted p-value. Gaps mark kinases that missed the
+cutoff in that contrast, which makes contrast-specific kinase responses
+visible.
 
 #### Individual Contrasts
 
@@ -405,7 +636,22 @@ plots <- names(gsea_results) |>
 wrap_plots(plots, ncol = 2)
 ```
 
-![](Analysis_KinaseLibrary_files/figure-html/individual-dotplots-1.png)
+\<img
+src=“/tmp/RtmpCLA3fI/file315d38a95ac0/articles/Analysis_KinaseLibrary_files/figure-html/individual-dotplots-1.png”
+class=“r-plt” alt=“Per-contrast kinase enrichment as clusterProfiler
+dotplots (DPA), one panel per contrast, two panels per row. Within a
+panel each row is one of the 15 most enriched kinases, the x-axis is the
+fraction of its substrates in the leading edge, point size the number of
+those substrates and point colour the adjusted p-value. A panel
+reading”No significant kinases” means no set passed the cutoff in that
+contrast.” width=“1344” /\>
+
+Per-contrast kinase enrichment as clusterProfiler dotplots (DPA), one
+panel per contrast, two panels per row. Within a panel each row is one
+of the 15 most enriched kinases, the x-axis is the fraction of its
+substrates in the leading edge, point size the number of those
+substrates and point colour the adjusted p-value. A panel reading “No
+significant kinases” means no set passed the cutoff in that contrast.
 
 #### NES Heatmap
 
@@ -422,7 +668,24 @@ plot_enrichment_heatmap(
 )
 ```
 
-![](Analysis_KinaseLibrary_files/figure-html/nes-heatmap-1.png)
+![Normalized enrichment score per kinase and contrast (DPA). Rows are
+the 30 kinases with the smallest FDR in any contrast (only kinases
+reaching FDR \< 0.25 somewhere are eligible), ordered by NES; columns
+are the contrasts. Tile colour is the NES (blue: predicted substrates
+enriched among down-regulated sites, red: among up-regulated sites,
+white: no enrichment) and asterisks give the FDR of that kinase in that
+contrast (\* \< 0.1, \*\* \< 0.05, \*\*\* \< 0.01). Empty tiles mean the
+kinase was not tested
+there.](Analysis_KinaseLibrary_files/figure-html/nes-heatmap-1.png)
+
+Normalized enrichment score per kinase and contrast (DPA). Rows are the
+30 kinases with the smallest FDR in any contrast (only kinases reaching
+FDR \< 0.25 somewhere are eligible), ordered by NES; columns are the
+contrasts. Tile colour is the NES (blue: predicted substrates enriched
+among down-regulated sites, red: among up-regulated sites, white: no
+enrichment) and asterisks give the FDR of that kinase in that contrast
+(\* \< 0.1, \*\* \< 0.05, \*\*\* \< 0.01). Empty tiles mean the kinase
+was not tested there.
 
 ## Volcano Plot
 
@@ -437,7 +700,24 @@ plot_enrichment_volcano(
 )
 ```
 
-![](Analysis_KinaseLibrary_files/figure-html/volcano-plot-1.png)
+![Enrichment strength versus significance for every tested kinase
+substrate set, one panel per contrast (DPA). Each point is one kinase;
+the x-axis is the NES (negative: substrates enriched among
+down-regulated sites, positive: among up-regulated sites) and the y-axis
+-log10(FDR), with the horizontal dashed line at FDR = 0.1 and the
+vertical dashed line at NES = 0. Colour encodes the direction, faded
+points are kinases above the FDR cutoff, and the five kinases with the
+smallest FDR per contrast are labelled. Axes are free per
+panel.](Analysis_KinaseLibrary_files/figure-html/volcano-plot-1.png)
+
+Enrichment strength versus significance for every tested kinase
+substrate set, one panel per contrast (DPA). Each point is one kinase;
+the x-axis is the NES (negative: substrates enriched among
+down-regulated sites, positive: among up-regulated sites) and the y-axis
+-log10(FDR), with the horizontal dashed line at FDR = 0.1 and the
+vertical dashed line at NES = 0. Colour encodes the direction, faded
+points are kinases above the FDR cutoff, and the five kinases with the
+smallest FDR per contrast are labelled. Axes are free per panel.
 
 ## Diagnostics
 
@@ -454,7 +734,15 @@ pval_diag <- names(gsea_results) |>
       Total = nrow(res)
     )
   })
-knitr::kable(pval_diag, caption = paste("Raw p-value Distribution (", params$analysis_type, ")"))
+knitr::kable(
+  pval_diag,
+  caption = paste0(
+    "Distribution of the unadjusted GSEA permutation p-values per contrast (",
+    params$analysis_type, "), before FDR adjustment. Total is the number of kinase sets ",
+    "tested; a contrast with a real kinase signal shows more sets below the thresholds than ",
+    "the roughly 5% and 1% of Total expected by chance."
+  )
+)
 ```
 
 | Contrast             | Min p-value | p \< 0.05 | p \< 0.01 | Total |
@@ -464,7 +752,11 @@ knitr::kable(pval_diag, caption = paste("Raw p-value Distribution (", params$ana
 | KO_vs_WT_at_Late     |           0 |        31 |        24 |    38 |
 | KO_vs_WT_at_Uninfect |           0 |        37 |        33 |    42 |
 
-Raw p-value Distribution ( DPA ) {.table}
+Distribution of the unadjusted GSEA permutation p-values per contrast
+(DPA), before FDR adjustment. Total is the number of kinase sets tested;
+a contrast with a real kinase signal shows more sets below the
+thresholds than the roughly 5% and 1% of Total expected by chance.
+{.table}
 
 ## Export All GSEA Plots to PDF
 
@@ -521,57 +813,270 @@ for (ct in names(gsea_results)) {
 
 ##### CDK2
 
-![](Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-1.png)
+![Running enrichment score of the CDK2 substrate set in contrast
+KO_vs_WT (DPA). The x-axis is the rank of the sites ordered by
+statistic.site from most up- to most down-regulated; the upper panel
+traces the running enrichment score, whose extreme is the enrichment
+score of the set, the tick marks below mark where that kinase's
+predicted substrates sit in the ranking, and the bottom panel repeats
+the ranking statistic. A curve peaking early with ticks clustered on the
+left means the kinase's substrates are enriched among up-regulated
+sites.](Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-1.png)
+
+Running enrichment score of the CDK2 substrate set in contrast KO_vs_WT
+(DPA). The x-axis is the rank of the sites ordered by statistic.site
+from most up- to most down-regulated; the upper panel traces the running
+enrichment score, whose extreme is the enrichment score of the set, the
+tick marks below mark where that kinase’s predicted substrates sit in
+the ranking, and the bottom panel repeats the ranking statistic. A curve
+peaking early with ticks clustered on the left means the kinase’s
+substrates are enriched among up-regulated sites.
 
 ##### CDK3
 
-![](Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-2.png)
+![Running enrichment score of the CDK3 substrate set in contrast
+KO_vs_WT (DPA). The x-axis is the rank of the sites ordered by
+statistic.site from most up- to most down-regulated; the upper panel
+traces the running enrichment score, whose extreme is the enrichment
+score of the set, the tick marks below mark where that kinase's
+predicted substrates sit in the ranking, and the bottom panel repeats
+the ranking statistic. A curve peaking early with ticks clustered on the
+left means the kinase's substrates are enriched among up-regulated
+sites.](Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-2.png)
+
+Running enrichment score of the CDK3 substrate set in contrast KO_vs_WT
+(DPA). The x-axis is the rank of the sites ordered by statistic.site
+from most up- to most down-regulated; the upper panel traces the running
+enrichment score, whose extreme is the enrichment score of the set, the
+tick marks below mark where that kinase’s predicted substrates sit in
+the ranking, and the bottom panel repeats the ranking statistic. A curve
+peaking early with ticks clustered on the left means the kinase’s
+substrates are enriched among up-regulated sites.
 
 ##### TBK1
 
-![](Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-3.png)
+![Running enrichment score of the TBK1 substrate set in contrast
+KO_vs_WT (DPA). The x-axis is the rank of the sites ordered by
+statistic.site from most up- to most down-regulated; the upper panel
+traces the running enrichment score, whose extreme is the enrichment
+score of the set, the tick marks below mark where that kinase's
+predicted substrates sit in the ranking, and the bottom panel repeats
+the ranking statistic. A curve peaking early with ticks clustered on the
+left means the kinase's substrates are enriched among up-regulated
+sites.](Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-3.png)
+
+Running enrichment score of the TBK1 substrate set in contrast KO_vs_WT
+(DPA). The x-axis is the rank of the sites ordered by statistic.site
+from most up- to most down-regulated; the upper panel traces the running
+enrichment score, whose extreme is the enrichment score of the set, the
+tick marks below mark where that kinase’s predicted substrates sit in
+the ranking, and the bottom panel repeats the ranking statistic. A curve
+peaking early with ticks clustered on the left means the kinase’s
+substrates are enriched among up-regulated sites.
 
 #### KO_vs_WT_at_Early
 
 ##### CDK2
 
-![](Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-4.png)
+![Running enrichment score of the CDK2 substrate set in contrast
+KO_vs_WT_at_Early (DPA). The x-axis is the rank of the sites ordered by
+statistic.site from most up- to most down-regulated; the upper panel
+traces the running enrichment score, whose extreme is the enrichment
+score of the set, the tick marks below mark where that kinase's
+predicted substrates sit in the ranking, and the bottom panel repeats
+the ranking statistic. A curve peaking early with ticks clustered on the
+left means the kinase's substrates are enriched among up-regulated
+sites.](Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-4.png)
+
+Running enrichment score of the CDK2 substrate set in contrast
+KO_vs_WT_at_Early (DPA). The x-axis is the rank of the sites ordered by
+statistic.site from most up- to most down-regulated; the upper panel
+traces the running enrichment score, whose extreme is the enrichment
+score of the set, the tick marks below mark where that kinase’s
+predicted substrates sit in the ranking, and the bottom panel repeats
+the ranking statistic. A curve peaking early with ticks clustered on the
+left means the kinase’s substrates are enriched among up-regulated
+sites.
 
 ##### CDK3
 
-![](Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-5.png)
+![Running enrichment score of the CDK3 substrate set in contrast
+KO_vs_WT_at_Early (DPA). The x-axis is the rank of the sites ordered by
+statistic.site from most up- to most down-regulated; the upper panel
+traces the running enrichment score, whose extreme is the enrichment
+score of the set, the tick marks below mark where that kinase's
+predicted substrates sit in the ranking, and the bottom panel repeats
+the ranking statistic. A curve peaking early with ticks clustered on the
+left means the kinase's substrates are enriched among up-regulated
+sites.](Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-5.png)
+
+Running enrichment score of the CDK3 substrate set in contrast
+KO_vs_WT_at_Early (DPA). The x-axis is the rank of the sites ordered by
+statistic.site from most up- to most down-regulated; the upper panel
+traces the running enrichment score, whose extreme is the enrichment
+score of the set, the tick marks below mark where that kinase’s
+predicted substrates sit in the ranking, and the bottom panel repeats
+the ranking statistic. A curve peaking early with ticks clustered on the
+left means the kinase’s substrates are enriched among up-regulated
+sites.
 
 ##### CDK1
 
-![](Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-6.png)
+![Running enrichment score of the CDK1 substrate set in contrast
+KO_vs_WT_at_Early (DPA). The x-axis is the rank of the sites ordered by
+statistic.site from most up- to most down-regulated; the upper panel
+traces the running enrichment score, whose extreme is the enrichment
+score of the set, the tick marks below mark where that kinase's
+predicted substrates sit in the ranking, and the bottom panel repeats
+the ranking statistic. A curve peaking early with ticks clustered on the
+left means the kinase's substrates are enriched among up-regulated
+sites.](Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-6.png)
+
+Running enrichment score of the CDK1 substrate set in contrast
+KO_vs_WT_at_Early (DPA). The x-axis is the rank of the sites ordered by
+statistic.site from most up- to most down-regulated; the upper panel
+traces the running enrichment score, whose extreme is the enrichment
+score of the set, the tick marks below mark where that kinase’s
+predicted substrates sit in the ranking, and the bottom panel repeats
+the ranking statistic. A curve peaking early with ticks clustered on the
+left means the kinase’s substrates are enriched among up-regulated
+sites.
 
 #### KO_vs_WT_at_Late
 
 ##### CDK2
 
-![](Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-7.png)
+![Running enrichment score of the CDK2 substrate set in contrast
+KO_vs_WT_at_Late (DPA). The x-axis is the rank of the sites ordered by
+statistic.site from most up- to most down-regulated; the upper panel
+traces the running enrichment score, whose extreme is the enrichment
+score of the set, the tick marks below mark where that kinase's
+predicted substrates sit in the ranking, and the bottom panel repeats
+the ranking statistic. A curve peaking early with ticks clustered on the
+left means the kinase's substrates are enriched among up-regulated
+sites.](Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-7.png)
+
+Running enrichment score of the CDK2 substrate set in contrast
+KO_vs_WT_at_Late (DPA). The x-axis is the rank of the sites ordered by
+statistic.site from most up- to most down-regulated; the upper panel
+traces the running enrichment score, whose extreme is the enrichment
+score of the set, the tick marks below mark where that kinase’s
+predicted substrates sit in the ranking, and the bottom panel repeats
+the ranking statistic. A curve peaking early with ticks clustered on the
+left means the kinase’s substrates are enriched among up-regulated
+sites.
 
 ##### CDK3
 
-![](Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-8.png)
+![Running enrichment score of the CDK3 substrate set in contrast
+KO_vs_WT_at_Late (DPA). The x-axis is the rank of the sites ordered by
+statistic.site from most up- to most down-regulated; the upper panel
+traces the running enrichment score, whose extreme is the enrichment
+score of the set, the tick marks below mark where that kinase's
+predicted substrates sit in the ranking, and the bottom panel repeats
+the ranking statistic. A curve peaking early with ticks clustered on the
+left means the kinase's substrates are enriched among up-regulated
+sites.](Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-8.png)
+
+Running enrichment score of the CDK3 substrate set in contrast
+KO_vs_WT_at_Late (DPA). The x-axis is the rank of the sites ordered by
+statistic.site from most up- to most down-regulated; the upper panel
+traces the running enrichment score, whose extreme is the enrichment
+score of the set, the tick marks below mark where that kinase’s
+predicted substrates sit in the ranking, and the bottom panel repeats
+the ranking statistic. A curve peaking early with ticks clustered on the
+left means the kinase’s substrates are enriched among up-regulated
+sites.
 
 ##### CDK1
 
-![](Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-9.png)
+![Running enrichment score of the CDK1 substrate set in contrast
+KO_vs_WT_at_Late (DPA). The x-axis is the rank of the sites ordered by
+statistic.site from most up- to most down-regulated; the upper panel
+traces the running enrichment score, whose extreme is the enrichment
+score of the set, the tick marks below mark where that kinase's
+predicted substrates sit in the ranking, and the bottom panel repeats
+the ranking statistic. A curve peaking early with ticks clustered on the
+left means the kinase's substrates are enriched among up-regulated
+sites.](Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-9.png)
+
+Running enrichment score of the CDK1 substrate set in contrast
+KO_vs_WT_at_Late (DPA). The x-axis is the rank of the sites ordered by
+statistic.site from most up- to most down-regulated; the upper panel
+traces the running enrichment score, whose extreme is the enrichment
+score of the set, the tick marks below mark where that kinase’s
+predicted substrates sit in the ranking, and the bottom panel repeats
+the ranking statistic. A curve peaking early with ticks clustered on the
+left means the kinase’s substrates are enriched among up-regulated
+sites.
 
 #### KO_vs_WT_at_Uninfect
 
 ##### TBK1
 
-![](Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-10.png)
+![Running enrichment score of the TBK1 substrate set in contrast
+KO_vs_WT_at_Uninfect (DPA). The x-axis is the rank of the sites ordered
+by statistic.site from most up- to most down-regulated; the upper panel
+traces the running enrichment score, whose extreme is the enrichment
+score of the set, the tick marks below mark where that kinase's
+predicted substrates sit in the ranking, and the bottom panel repeats
+the ranking statistic. A curve peaking early with ticks clustered on the
+left means the kinase's substrates are enriched among up-regulated
+sites.](Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-10.png)
+
+Running enrichment score of the TBK1 substrate set in contrast
+KO_vs_WT_at_Uninfect (DPA). The x-axis is the rank of the sites ordered
+by statistic.site from most up- to most down-regulated; the upper panel
+traces the running enrichment score, whose extreme is the enrichment
+score of the set, the tick marks below mark where that kinase’s
+predicted substrates sit in the ranking, and the bottom panel repeats
+the ranking statistic. A curve peaking early with ticks clustered on the
+left means the kinase’s substrates are enriched among up-regulated
+sites.
 
 ##### YSK4
 
-![](Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-11.png)
+![Running enrichment score of the YSK4 substrate set in contrast
+KO_vs_WT_at_Uninfect (DPA). The x-axis is the rank of the sites ordered
+by statistic.site from most up- to most down-regulated; the upper panel
+traces the running enrichment score, whose extreme is the enrichment
+score of the set, the tick marks below mark where that kinase's
+predicted substrates sit in the ranking, and the bottom panel repeats
+the ranking statistic. A curve peaking early with ticks clustered on the
+left means the kinase's substrates are enriched among up-regulated
+sites.](Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-11.png)
+
+Running enrichment score of the YSK4 substrate set in contrast
+KO_vs_WT_at_Uninfect (DPA). The x-axis is the rank of the sites ordered
+by statistic.site from most up- to most down-regulated; the upper panel
+traces the running enrichment score, whose extreme is the enrichment
+score of the set, the tick marks below mark where that kinase’s
+predicted substrates sit in the ranking, and the bottom panel repeats
+the ranking statistic. A curve peaking early with ticks clustered on the
+left means the kinase’s substrates are enriched among up-regulated
+sites.
 
 ##### IKKA
 
-![](Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-12.png)
+![Running enrichment score of the IKKA substrate set in contrast
+KO_vs_WT_at_Uninfect (DPA). The x-axis is the rank of the sites ordered
+by statistic.site from most up- to most down-regulated; the upper panel
+traces the running enrichment score, whose extreme is the enrichment
+score of the set, the tick marks below mark where that kinase's
+predicted substrates sit in the ranking, and the bottom panel repeats
+the ranking statistic. A curve peaking early with ticks clustered on the
+left means the kinase's substrates are enriched among up-regulated
+sites.](Analysis_KinaseLibrary_files/figure-html/gsea-example-plots-12.png)
+
+Running enrichment score of the IKKA substrate set in contrast
+KO_vs_WT_at_Uninfect (DPA). The x-axis is the rank of the sites ordered
+by statistic.site from most up- to most down-regulated; the upper panel
+traces the running enrichment score, whose extreme is the enrichment
+score of the set, the tick marks below mark where that kinase’s
+predicted substrates sit in the ranking, and the bottom panel repeats
+the ranking statistic. A curve peaking early with ticks clustered on the
+left means the kinase’s substrates are enriched among up-regulated
+sites.
 
 ## All Results
 
@@ -593,7 +1098,14 @@ DT::datatable(all_results_dt,
   extensions = 'Buttons',
   options = list(pageLength = 15, scrollX = TRUE,
                  dom = 'Bfrtip', buttons = c('copy', 'csv', 'excel')),
-  caption = "All kinases across all contrasts")
+  caption = paste0(
+    "Complete GSEA result table: every tested kinase substrate set in every contrast (",
+    params$analysis_type, "), sorted by contrast and FDR, including the non-significant ones. ",
+    "NES is the normalized enrichment score (> 0 predicted substrates enriched among ",
+    "up-regulated sites, < 0 among down-regulated sites), pvalue the permutation p-value, FDR ",
+    "its Benjamini-Hochberg adjustment and setSize the number of ranked sites assigned to the ",
+    "kinase. Use the column filters to search a kinase."
+  ))
 ```
 
 ## Export Results
@@ -662,12 +1174,12 @@ sessionInfo()
     ## 
     ## other attached packages:
     ##  [1] prophosqua_0.3.0       DT_0.34.0              patchwork_1.3.2       
-    ##  [4] writexl_1.5.4          forcats_1.0.1          purrr_1.2.2           
+    ##  [4] writexl_2.0.1          forcats_1.0.1          purrr_1.2.2           
     ##  [7] enrichplot_1.32.0      ggplot2_4.0.3          readxl_1.5.0          
     ## [10] tidyr_1.3.2            dplyr_1.2.1            clusterProfiler_4.20.0
     ## 
     ## loaded via a namespace (and not attached):
-    ##   [1] DBI_1.3.0               gson_0.2.0              httr2_1.3.0            
+    ##   [1] DBI_1.3.0               gson_0.2.1              httr2_1.3.0            
     ##   [4] rlang_1.3.0             magrittr_2.0.5          DOSE_4.6.0             
     ##   [7] otel_0.2.0              compiler_4.6.1          RSQLite_3.53.3         
     ##  [10] png_0.1-9               systemfonts_1.3.2       callr_3.8.0            
@@ -678,9 +1190,9 @@ sessionInfo()
     ##  [25] xfun_0.60               ggseqlogo_0.2.2         cachem_1.1.0           
     ##  [28] aplot_0.3.1             jsonlite_2.0.0          blob_1.3.0             
     ##  [31] tidydr_0.0.6            tweenr_2.0.3            cluster_2.1.8.2        
-    ##  [34] parallel_4.6.1          R6_2.6.1                bslib_0.11.0           
-    ##  [37] stringi_1.8.7           RColorBrewer_1.1-3      cellranger_1.1.0       
-    ##  [40] enrichit_0.2.0          jquerylib_0.1.4         GOSemSim_2.38.3        
+    ##  [34] parallel_4.6.1          R6_2.6.1                bslib_0.12.0           
+    ##  [37] stringi_1.8.9           RColorBrewer_1.1-3      cellranger_1.1.0       
+    ##  [40] enrichit_0.2.1          jquerylib_0.1.4         GOSemSim_2.38.3        
     ##  [43] Rcpp_1.1.2              Seqinfo_1.2.0           bookdown_0.47          
     ##  [46] knitr_1.51              ggtangle_0.1.2          IRanges_2.46.0         
     ##  [49] splines_4.6.1           Matrix_1.7-5            igraph_2.3.3           
@@ -695,13 +1207,14 @@ sessionInfo()
     ##  [76] S4Vectors_0.50.1        scales_1.4.0            tidytree_0.4.8         
     ##  [79] glue_1.8.1              gdtools_0.5.1           lazyeval_0.2.3         
     ##  [82] tools_4.6.1             ggnewscale_0.5.2        ggiraph_0.9.6          
-    ##  [85] fs_2.1.0                grid_4.6.1              ape_5.8-1              
-    ##  [88] crosstalk_1.2.2         AnnotationDbi_1.74.0    nlme_3.1-169           
-    ##  [91] ggforce_0.5.0           cli_3.6.6               rappdirs_0.3.4         
-    ##  [94] textshaping_1.0.5       fontBitstreamVera_0.1.1 gtable_0.3.6           
-    ##  [97] yulab.utils_0.2.4       sass_0.4.10             digest_0.6.39          
-    ## [100] fontquiver_0.2.1        BiocGenerics_0.58.1     ggrepel_0.9.8          
-    ## [103] ggplotify_0.1.3         htmlwidgets_1.6.4       farver_2.1.2           
-    ## [106] memoise_2.0.1           htmltools_0.5.9         pkgdown_2.2.1          
-    ## [109] lifecycle_1.0.5         httr_1.4.8              GO.db_3.23.1           
-    ## [112] fontLiberation_0.1.0    bit64_4.8.2             MASS_7.3-65
+    ##  [85] fs_2.1.0                grid_4.6.1              optparse_1.8.2         
+    ##  [88] ape_5.8-1               crosstalk_1.2.2         AnnotationDbi_1.74.0   
+    ##  [91] nlme_3.1-169            ggforce_0.5.0           cli_3.6.6              
+    ##  [94] rappdirs_0.3.4          textshaping_1.0.5       fontBitstreamVera_0.1.1
+    ##  [97] gtable_0.3.6            yulab.utils_0.2.4       sass_0.4.10            
+    ## [100] digest_0.6.39           fontquiver_0.2.1        BiocGenerics_0.58.1    
+    ## [103] ggrepel_0.9.8           ggplotify_0.1.3         htmlwidgets_1.6.4      
+    ## [106] farver_2.1.2            memoise_2.0.1           htmltools_0.5.9        
+    ## [109] pkgdown_2.2.1           lifecycle_1.0.5         httr_1.4.8             
+    ## [112] GO.db_3.23.1            fontLiberation_0.1.0    bit64_4.8.4            
+    ## [115] MASS_7.3-65

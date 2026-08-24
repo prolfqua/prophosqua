@@ -1,0 +1,49 @@
+# Load PTM Site Metadata from a DEA Result
+
+Uses metadata exported in the normalized-abundance sheet when available.
+FragPipe single-site DEA currently omits its sequence window there, so
+the preserved input table is used as the authoritative fallback.
+
+## Usage
+
+``` r
+get_dea_ptm_site_info(dea_dir)
+```
+
+## Arguments
+
+- dea_dir:
+
+  Path to a phosphosite DEA output directory
+
+## Value
+
+One row per site with position, modified residue, and sequence window
+
+## Examples
+
+``` r
+dea_dir <- file.path(tempdir(), "DEA_sites")
+results <- file.path(dea_dir, "Results_WU_sites")
+dir.create(results, recursive = TRUE, showWarnings = FALSE)
+writexl::write_xlsx(
+  list(normalized_abundances = data.frame(
+    site = c("P12345_S10~PEP", "P12345_T20~PEP"),
+    posInProtein = c(10L, 20L),
+    modAA = c("S", "T"),
+    SequenceWindow = c("AAAAAAASAAAAAAA", "AAAAAAATAAAAAAA"),
+    protein_Id = "P12345",
+    gene_name = "GENE",
+    protein_length = 100L
+  )),
+  file.path(results, "DE_sites.xlsx")
+)
+
+get_dea_ptm_site_info(dea_dir)
+#> Using: DE_sites.xlsx
+#> # A tibble: 2 × 7
+#>   site     posInProtein modAA SequenceWindow protein_Id gene_name protein_length
+#>   <chr>           <dbl> <chr> <chr>          <chr>      <chr>              <dbl>
+#> 1 P12345_…           10 S     AAAAAAASAAAAA… P12345     GENE                 100
+#> 2 P12345_…           20 T     AAAAAAATAAAAA… P12345     GENE                 100
+```

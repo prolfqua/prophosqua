@@ -43,7 +43,14 @@ data_info <- tibble(
     nrow(data), paste(unique(data$contrast), collapse = ", ")
   )
 )
-knitr::kable(data_info, caption = "Data Summary")
+knitr::kable(
+  data_info,
+  caption = paste0(
+    "Input of this N-to-C report: source workbook, sheet, analysis type, number of ",
+    "site-by-contrast rows read and the contrasts they cover. Every row is one phosphosite ",
+    "in one contrast, before the significance filter that selects the plotted proteins."
+  )
+)
 ```
 
 | Property | Value |
@@ -54,7 +61,10 @@ knitr::kable(data_info, caption = "Data Summary")
 | Rows | 105824 |
 | Contrasts | KO_vs_WT, KO_vs_WT_at_Early, KO_vs_WT_at_Late, KO_vs_WT_at_Uninfect |
 
-Data Summary {.table}
+Input of this N-to-C report: source workbook, sheet, analysis type,
+number of site-by-contrast rows read and the contrasts they cover. Every
+row is one phosphosite in one contrast, before the significance filter
+that selects the plotted proteins. {.table}
 
 ``` r
 
@@ -104,56 +114,69 @@ data and one WITHOUT (if available).
 
 ``` r
 
-if (n_plots > 0 && params$analysis_type == "dpa") {
-  # For DPA: show examples of proteins with and without protein-level data
-  # Find proteins with matched protein data (has diff.protein)
+# Pick the examples first, so that each one can be given its own figure caption.
+matched_proteins <- character(0)
+protein_note <- NULL
+
+if (params$analysis_type == "dpa") {
+  # DPA: show one protein with and one without matched protein-level data
   matched_proteins <- plot_data |>
     dplyr::filter(!is.na(diff.protein)) |>
     dplyr::pull(protein_Id) |>
     unique()
 
-  # Find proteins without matched protein data
   unmatched_proteins <- plot_data |>
     dplyr::filter(is.na(diff.protein)) |>
     dplyr::pull(protein_Id) |>
     unique()
 
-  # Get indices in plot_result for each type
   matched_idx <- which(plot_result$protein_Id %in% matched_proteins)
   unmatched_idx <- which(plot_result$protein_Id %in% unmatched_proteins)
 
-  examples_to_show <- c()
-
-  # Add one matched protein if available
-  if (length(matched_idx) > 0) {
-    examples_to_show <- c(examples_to_show, matched_idx[1])
+  example_idx <- c(
+    if (length(matched_idx) > 0) matched_idx[1],
+    if (length(unmatched_idx) > 0) unmatched_idx[1]
+  )
+  if (length(example_idx) == 0) {
+    example_idx <- seq_len(min(2, n_plots))
   }
 
-  # Add one unmatched protein if available
-  if (length(unmatched_idx) > 0) {
-    examples_to_show <- c(examples_to_show, unmatched_idx[1])
-  }
+  protein_note <- paste0(
+    "**Note:** ", length(matched_idx), " proteins have protein-level data, ",
+    length(unmatched_idx), " proteins do not."
+  )
+} else {
+  # DPU/CF: no protein-level track to compare against, show the first two
+  example_idx <- seq_len(min(2, n_plots))
+}
 
-  # Fallback: if no examples found, use first 2
-  if (length(examples_to_show) == 0) {
-    examples_to_show <- seq_len(min(2, n_plots))
-  }
+example_has_protein <- plot_result$protein_Id[example_idx] %in% matched_proteins
+example_labels <- ifelse(example_has_protein, " (with protein data)", "")
+if (params$analysis_type == "dpa") {
+  example_labels <- ifelse(example_has_protein, " (with protein data)", " (NO protein data)")
+}
 
-  cat("\n\n**Note:** ", length(matched_idx), " proteins have protein-level data, ",
-      length(unmatched_idx), " proteins do not.\n\n", sep = "")
+example_caps <- paste0(
+  "Position-resolved ", toupper(params$analysis_type), " changes along protein ",
+  plot_result$protein_Id[example_idx], example_labels,
+  ", one panel per contrast. The x-axis is the residue position from the N- to the ",
+  "C-terminus of the protein and the y-axis is the site-level log2 fold change of that ",
+  "contrast; each vertical stick is one PTM site, coloured by modified residue (S blue, ",
+  "T green, Y brown, not localized pink) and dashed when the value was imputed. Asterisks ",
+  "give the site FDR (** < 0.05, * < 0.2), and the yellow rectangle spans the protein from ",
+  "N to C at the protein-level log2 fold change, so sticks reaching beyond it change more ",
+  "than the protein itself. Proteins are shown when at least one site has FDR < ",
+  params$fdr, " and |log2FC| > ", params$fc, "."
+)
+```
 
-  for (i in examples_to_show) {
-    has_protein <- plot_result$protein_Id[i] %in% matched_proteins
-    label <- if (has_protein) "(with protein data)" else "(NO protein data)"
-    cat("\n\n### ", plot_result$protein_Id[i], " ", label, "\n\n", sep = "")
-    print(plot_result$plot[[i]])
-    cat("\n\n")
-  }
-} else if (n_plots > 0) {
-  # DPU/CF: just show first 2
-  n_examples <- min(2, n_plots)
-  for (i in seq_len(n_examples)) {
-    cat("\n\n### ", plot_result$protein_Id[i], "\n\n")
+**Note:** 5 proteins have protein-level data, 0 proteins do not.
+
+``` r
+
+if (n_plots > 0) {
+  for (i in example_idx) {
+    cat("\n\n### ", plot_result$protein_Id[i], example_labels[match(i, example_idx)], "\n\n", sep = "")
     print(plot_result$plot[[i]])
     cat("\n\n")
   }
@@ -162,11 +185,31 @@ if (n_plots > 0 && params$analysis_type == "dpa") {
 }
 ```
 
-**Note:** 5 proteins have protein-level data, 0 proteins do not.
-
 #### sp\|A0A140LIF8\|IRGM2_MOUSE (with protein data)
 
-![](Analysis_n_to_c_files/figure-html/displayExamples-1.png)
+![Position-resolved DPA changes along protein
+sp\|A0A140LIF8\|IRGM2_MOUSE (with protein data), one panel per contrast.
+The x-axis is the residue position from the N- to the C-terminus of the
+protein and the y-axis is the site-level log2 fold change of that
+contrast; each vertical stick is one PTM site, coloured by modified
+residue (S blue, T green, Y brown, not localized pink) and dashed when
+the value was imputed. Asterisks give the site FDR (\*\* \< 0.05, \* \<
+0.2), and the yellow rectangle spans the protein from N to C at the
+protein-level log2 fold change, so sticks reaching beyond it change more
+than the protein itself. Proteins are shown when at least one site has
+FDR \< 0.05 and \|log2FC\| \>
+0.6.](Analysis_n_to_c_files/figure-html/displayExamples-1.png)
+
+Position-resolved DPA changes along protein sp\|A0A140LIF8\|IRGM2_MOUSE
+(with protein data), one panel per contrast. The x-axis is the residue
+position from the N- to the C-terminus of the protein and the y-axis is
+the site-level log2 fold change of that contrast; each vertical stick is
+one PTM site, coloured by modified residue (S blue, T green, Y brown,
+not localized pink) and dashed when the value was imputed. Asterisks
+give the site FDR (\*\* \< 0.05, \* \< 0.2), and the yellow rectangle
+spans the protein from N to C at the protein-level log2 fold change, so
+sticks reaching beyond it change more than the protein itself. Proteins
+are shown when at least one site has FDR \< 0.05 and \|log2FC\| \> 0.6.
 
 ## Export Plots
 
@@ -216,7 +259,16 @@ summary_info <- tibble(
   Value = c(toupper(params$analysis_type), n_distinct(plot_data$protein_Id),
             n_plots, min(2, n_plots), params$fdr, params$fc)
 )
-knitr::kable(summary_info, caption = "Analysis Summary")
+knitr::kable(
+  summary_info,
+  caption = paste0(
+    "Coverage of this report: how many proteins carry data, how many passed the significance ",
+    "filter and were plotted, and how many of those plots are embedded here. Total Proteins ",
+    "counts all proteins in the sheet, Plots Generated the proteins with at least one site ",
+    "below the FDR threshold and above the fold-change threshold (capped by the max_fig ",
+    "setting), and the remaining plots are available in the exported PDF."
+  )
+)
 ```
 
 | Metric          | Value |
@@ -228,7 +280,13 @@ knitr::kable(summary_info, caption = "Analysis Summary")
 | FDR Threshold   | 0.05  |
 | FC Threshold    | 0.6   |
 
-Analysis Summary {.table}
+Coverage of this report: how many proteins carry data, how many passed
+the significance filter and were plotted, and how many of those plots
+are embedded here. Total Proteins counts all proteins in the sheet,
+Plots Generated the proteins with at least one site below the FDR
+threshold and above the fold-change threshold (capped by the max_fig
+setting), and the remaining plots are available in the exported PDF.
+{.table}
 
 ``` r
 
@@ -269,15 +327,15 @@ sessionInfo()
     ## 
     ## loaded via a namespace (and not attached):
     ##  [1] gtable_0.3.6       jsonlite_2.0.0     compiler_4.6.1     tidyselect_1.2.1  
-    ##  [5] jquerylib_0.1.4    systemfonts_1.3.2  scales_1.4.0       textshaping_1.0.5 
-    ##  [9] yaml_2.3.12        fastmap_1.2.0      ggplot2_4.0.3      R6_2.6.1          
-    ## [13] labeling_0.4.3     generics_0.1.4     knitr_1.51         htmlwidgets_1.6.4 
-    ## [17] forcats_1.0.1      tibble_3.3.1       bookdown_0.47      desc_1.4.3        
-    ## [21] RColorBrewer_1.1-3 bslib_0.11.0       pillar_1.11.1      rlang_1.3.0       
-    ## [25] cachem_1.1.0       xfun_0.60          S7_0.2.2           fs_2.1.0          
-    ## [29] sass_0.4.10        otel_0.2.0         cli_3.6.6          withr_3.0.3       
-    ## [33] pkgdown_2.2.1      magrittr_2.0.5     digest_0.6.39      grid_4.6.1        
-    ## [37] lifecycle_1.0.5    vctrs_0.7.3        evaluate_1.0.5     glue_1.8.1        
-    ## [41] cellranger_1.1.0   farver_2.1.2       ggseqlogo_0.2.2    ragg_1.5.2        
-    ## [45] purrr_1.2.2        rmarkdown_2.31     tools_4.6.1        pkgconfig_2.0.3   
-    ## [49] htmltools_0.5.9
+    ##  [5] optparse_1.8.2     jquerylib_0.1.4    systemfonts_1.3.2  scales_1.4.0      
+    ##  [9] textshaping_1.0.5  yaml_2.3.12        fastmap_1.2.0      ggplot2_4.0.3     
+    ## [13] R6_2.6.1           labeling_0.4.3     generics_0.1.4     knitr_1.51        
+    ## [17] htmlwidgets_1.6.4  forcats_1.0.1      tibble_3.3.1       bookdown_0.47     
+    ## [21] desc_1.4.3         RColorBrewer_1.1-3 bslib_0.12.0       pillar_1.11.1     
+    ## [25] rlang_1.3.0        cachem_1.1.0       xfun_0.60          S7_0.2.2          
+    ## [29] fs_2.1.0           sass_0.4.10        otel_0.2.0         cli_3.6.6         
+    ## [33] withr_3.0.3        pkgdown_2.2.1      magrittr_2.0.5     digest_0.6.39     
+    ## [37] grid_4.6.1         lifecycle_1.0.5    vctrs_0.7.3        evaluate_1.0.5    
+    ## [41] glue_1.8.1         cellranger_1.1.0   farver_2.1.2       ggseqlogo_0.2.2   
+    ## [45] ragg_1.5.2         purrr_1.2.2        rmarkdown_2.31     tools_4.6.1       
+    ## [49] pkgconfig_2.0.3    htmltools_0.5.9

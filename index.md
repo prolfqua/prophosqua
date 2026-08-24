@@ -99,15 +99,20 @@ plot_data <- n_to_c_usage(combined_test_diff, contrast_name, FDR_threshold = 0.0
 
 The package includes vignettes demonstrating the analysis workflow:
 
-- **`_MiMBIntegratedPTM.Rmd`** - Integrated analysis of PTM and total
-  proteome (DPA, DPU, CorrectFirst)
 - **`Analysis_n_to_c.Rmd`** - N-to-C plots for PTM site visualization
 - **`Analysis_seqlogo.Rmd`** - Sequence logo analysis
 - **`Analysis_PTMSEA.Rmd`** - PTM-SEA analysis
 - **`Analysis_KinaseLibrary.Rmd`** - Kinase activity inference from
   phosphoproteomics data
 - **`Analysis_MEA.Rmd`** - Motif enrichment analysis visualization
-- **`_QCReport.qmd`** - FragPipe TMT quality control report
+
+Two further sources live in `vignettes/` but are not package vignettes:
+they carry no vignette engine and are rendered by
+`inst/MiMB_build/Snakefile`.
+
+- **`vignettes/_MiMBIntegratedPTM.Rmd`** - Integrated analysis of PTM
+  and total proteome (DPA, DPU, CorrectFirst); the MiMB manuscript
+- **`vignettes/_QCReport.qmd`** - FragPipe TMT quality control report
 
 ## Citation
 

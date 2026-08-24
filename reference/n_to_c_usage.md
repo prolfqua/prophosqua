@@ -10,7 +10,7 @@ n_to_c_usage(
   contrast_name,
   FDR_threshold = 0.05,
   fc_threshold = 0,
-  impute_flag = "Imputed_Mean_moderated",
+  impute_flag = "lod_imputed",
   protein_Id = "protein_Id"
 )
 ```
@@ -35,7 +35,8 @@ n_to_c_usage(
 
 - impute_flag:
 
-  Flag for imputed values (default "Imputed_Mean_moderated")
+  Value of estimate_type marking an imputed estimate (default
+  "lod_imputed")
 
 - protein_Id:
 

@@ -1,0 +1,63 @@
+# Compute Differential PTM Abundance and Differential PTM Usage
+
+Pairs the site-level results of a phospho DEA run with the protein-level
+results of a total-proteome run and derives the two integrated views the
+PTM pipeline reports on:
+
+## Usage
+
+``` r
+compute_dpa_dpu(phospho_dea_dir, protein_dea_dir)
+```
+
+## Arguments
+
+- phospho_dea_dir:
+
+  Path to the phospho DEA output directory.
+
+- protein_dea_dir:
+
+  Path to the total-proteome DEA output directory.
+
+## Value
+
+A list with \`combined_site_prot\`, the DPA table;
+\`combined_test_diff\`, the DPU table; \`match_rates\`, sites tested and
+sites paired with a protein, per contrast.
+
+## Details
+
+\* \*\*DPA\*\*, differential PTM abundance: the site result with its
+protein counterpart joined alongside, suffixed \`.site\` and
+\`.protein\`. \* \*\*DPU\*\*, differential PTM usage: the
+protein-normalized site result computed by \[test_diff()\], where the
+effect size is the difference of the two log2 fold changes and its
+standard error the root of the summed squares.
+
+Sites whose protein was not quantified keep a DPA row with empty
+\`.protein\` columns; they cannot carry a DPU value. \`match_rates\`
+reports that split per contrast so a report can state it without
+recomputing the join.
+
+Nothing is re-quantified here. Both DEA runs must already have happened;
+this function only reads their output.
+
+## See also
+
+\[compute_cf_dea()\] for the alternative that corrects before modelling
+rather than after.
+
+## Examples
+
+``` r
+# Needs two prolfquapp DEA output directories; see
+# tests/testthat/helper-dea_fixture.R for the synthetic pair the tests use.
+if (FALSE) { # \dontrun{
+res <- compute_dpa_dpu(
+  phospho_dea_dir = "DEA_20260814_WUphospho_vsn",
+  protein_dea_dir = "DEA_20260814_WUtotal_vsn"
+)
+res$match_rates
+} # }
+```

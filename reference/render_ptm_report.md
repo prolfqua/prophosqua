@@ -1,0 +1,74 @@
+# Render a Report Shipped with prophosqua
+
+Renders one of the R Markdown documents under \`inst/application\` from
+where it is installed. A project therefore never carries a copy of a
+report template, and cannot end up rendering an edited copy while the
+package holds a newer one.
+
+## Usage
+
+``` r
+render_ptm_report(
+  name,
+  output_file,
+  output_dir,
+  params = list(),
+  intermediates_dir = NULL
+)
+```
+
+## Arguments
+
+- name:
+
+  File name of the report, e.g. \`"Analysis_seqlogo.Rmd"\`.
+
+- output_file:
+
+  File name to write, e.g. \`"Analysis_seqlogo.html"\`.
+
+- output_dir:
+
+  Directory to write the report to.
+
+- params:
+
+  Named list passed to the report's \`params\`.
+
+- intermediates_dir:
+
+  Directory for knitr's intermediates. Defaults to a private directory
+  of this R process, removed when it exits.
+
+## Value
+
+Invisibly, the path of the rendered file.
+
+## Details
+
+\`knit_root_dir\` is the working directory, not the template's
+directory, so relative paths in \`params\` mean what they mean to the
+caller.
+
+The output format is the one the report's own YAML declares. Forcing one
+here would be wrong for the reports that ask for something specific: the
+index page declares its own theme, and only some reports want bookdown's
+numbered sections and cross-references.
+
+Each render is given its own \`intermediates_dir\` because knitr names
+its intermediate files after the input document: two renders of the same
+template running at once would otherwise overwrite each other's
+\`.knit.md\` and both reports would end up with whichever content
+finished last.
+
+## Examples
+
+``` r
+# Renders one of the installed templates; needs the data it asks for.
+if (FALSE) { # \dontrun{
+render_ptm_report(
+  "Analysis_seqlogo.Rmd", "Analysis_seqlogo.html", "PTM_DPA",
+  params = list(xlsx_file = "PTM_results.xlsx", sheet = "DPA")
+)
+} # }
+```
