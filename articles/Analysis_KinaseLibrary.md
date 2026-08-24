@@ -637,7 +637,7 @@ wrap_plots(plots, ncol = 2)
 ```
 
 \<img
-src=“/tmp/RtmpCLA3fI/file315d38a95ac0/articles/Analysis_KinaseLibrary_files/figure-html/individual-dotplots-1.png”
+src=“/tmp/RtmpO4XXFX/file1bfa726dc691/articles/Analysis_KinaseLibrary_files/figure-html/individual-dotplots-1.png”
 class=“r-plt” alt=“Per-contrast kinase enrichment as clusterProfiler
 dotplots (DPA), one panel per contrast, two panels per row. Within a
 panel each row is one of the 15 most enriched kinases, the x-axis is the

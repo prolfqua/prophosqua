@@ -33,7 +33,7 @@ pipeline's steps through the same entry point the Snakefile uses.
 
 ``` r
 basename(copy_ptm_shell_script(tempdir()))
-#> copy /home/runner/work/_temp/Library/prophosqua/application/bin/ptm.sh to /tmp/RtmpCLA3fI/ptm.sh
+#> copy /home/runner/work/_temp/Library/prophosqua/application/bin/ptm.sh to /tmp/RtmpO4XXFX/ptm.sh
 #> your working directory now should contain: 1 new files:
 #> [1] "ptm.sh"
 ```
