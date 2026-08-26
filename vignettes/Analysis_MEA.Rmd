@@ -4,7 +4,7 @@ subtitle: "`r params$analysis_type`"
 author: "FGCZ"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 params:
-  kinaselib_dir: NULL
+  objects_rds: NULL
   analysis_type: "DPA"
 output:
   bookdown::html_document2:
@@ -37,7 +37,7 @@ library(writexl)
 library(prophosqua)
 
 # Detect pipeline vs vignette mode
-pipeline_mode <- !is.null(params$kinaselib_dir)
+pipeline_mode <- !is.null(params$objects_rds)
 ```
 
 # Overview
@@ -122,75 +122,25 @@ Two limitations to keep in mind when interpreting the tables below:
 
 ```{r loadMEA}
 if (pipeline_mode) {
-  # Pipeline mode: load from kinaselib directory
-  mea_files <- list.files(params$kinaselib_dir, pattern = "^mea_.*\\.csv$", full.names = TRUE)
-
-  if (length(mea_files) == 0) {
-    stop("No MEA result files found in: ", params$kinaselib_dir)
-  }
-
-  # Load all MEA results
-  mea_results <- mea_files |>
-    set_names(gsub("^mea_|\\.csv$", "", basename(mea_files))) |>
-    map_dfr(~ read.csv(.x, stringsAsFactors = FALSE), .id = "contrast")
-
-  output_dir <- params$kinaselib_dir
+  mea <- readRDS(params$objects_rds)
 } else {
-  # Vignette mode: use bundled example data
-  bundled_zip <- system.file("extdata", "mea_results.zip", package = "prophosqua")
-
-  if (!file.exists(bundled_zip)) {
-    stop("Bundled MEA example data not found. Run in pipeline mode with actual data.")
-  }
-
-  temp_dir <- tempdir()
-  unzip(bundled_zip, exdir = temp_dir)
-  mea_files <- list.files(temp_dir, pattern = "^mea_.*\\.csv$", full.names = TRUE)
-
-  mea_results <- mea_files |>
-    set_names(gsub("^mea_|\\.csv$", "", basename(mea_files))) |>
-    map_dfr(~ read.csv(.x, stringsAsFactors = FALSE), .id = "contrast")
-
-  output_dir <- tempdir()
-  message("Using bundled MEA example data from prophosqua package")
+  # Standalone mode: compute from the example data shipped with the package,
+  # through the same function the pipeline calls.
+  mea <- prophosqua:::compute_mea_example()
 }
 
-# Standardize column names (MEA output uses Kinase, we need kinase)
-if ("Kinase" %in% names(mea_results)) {
-  mea_results <- mea_results |> rename(kinase = Kinase)
-}
-if ("p.value" %in% names(mea_results)) {
-  mea_results <- mea_results |> rename(pvalue = `p.value`)
-} else if ("p-value" %in% names(mea_results)) {
-  mea_results <- mea_results |> rename(pvalue = `p-value`)
-}
-# Split the "Subs fraction" column ("85/471") into leading-edge count and set size
-subs_col <- intersect(c("Subs.fraction", "Subs fraction"), names(mea_results))
-if (length(subs_col) > 0) {
-  mea_results <- mea_results |>
-    mutate(
-      n_leading = as.numeric(sub("/.*", "", .data[[subs_col[1]]])),
-      set_size = as.numeric(sub(".*/", "", .data[[subs_col[1]]]))
-    )
-}
+# The settings the collection step ran with. `params` is a locked binding
+# during a render and cannot be extended, so they get their own name.
+inputs <- mea$analysis_inputs
+output_dir <- inputs$kinaselib_dir
 
-cat("Loaded", nrow(mea_results), "results from", length(mea_files), "contrasts\n")
-cat("Contrasts:", paste(unique(mea_results$contrast), collapse = ", "), "\n")
+cat("Loaded", nrow(mea$mea_clean), "results from", mea$n_files, "contrasts\n")
+cat("Contrasts:", paste(unique(mea$mea_clean$contrast), collapse = ", "), "\n")
 ```
 
 ```{r cleanResults}
-# Clean and prepare results using shared helper
-mea_clean <- prepare_enrichment_data(mea_results, "FDR", 0.1)
-
-# Summary
-summary_df <- mea_clean |>
-  group_by(contrast) |>
-  summarize(
-    total_kinases = n(),
-    sig_up = sum(FDR < 0.1 & NES > 0, na.rm = TRUE),
-    sig_down = sum(FDR < 0.1 & NES < 0, na.rm = TRUE),
-    .groups = "drop"
-  )
+mea_clean <- mea$mea_clean
+summary_df <- mea$summary_df
 
 knitr::kable(
   summary_df,
@@ -362,30 +312,26 @@ DT::datatable(all_results_dt,
 
 # Export Results
 
-```{r export, eval=pipeline_mode}
-# Export to Excel
-export_list <- list(
-  all_results = mea_clean |>
-    select(contrast, kinase, NES, pvalue, FDR, n_leading, set_size) |>
-    arrange(contrast, FDR),
-  significant = mea_clean |>
-    filter(FDR < 0.1) |>
-    select(contrast, kinase, NES, pvalue, FDR, n_leading, set_size) |>
-    arrange(contrast, FDR),
-  summary = summary_df
+```{r exportedFiles}
+stem <- file.path(output_dir, paste0("MEA_", params$analysis_type, "_results"))
+exported <- paste0(stem, c(".xlsx", ".rds"))
+
+knitr::kable(
+  tibble(
+    Output = c("Excel results", "RDS object"),
+    File = basename(exported),
+    Size = ifelse(
+      file.exists(exported),
+      paste(round(file.size(exported) / 1024, 1), "KB"),
+      "not found"
+    )
+  ),
+  caption = paste0(
+    "Files the collection step, prophosqua::compute_mea(), wrote next to this report: the ",
+    "Excel workbook with all kinase results, a significant-only sheet and the per-contrast ",
+    "summary, and the RDS with the cleaned table this report renders from."
+  )
 )
-
-xlsx_file <- file.path(output_dir, paste0("MEA_", params$analysis_type, "_results.xlsx"))
-writexl::write_xlsx(export_list, xlsx_file)
-
-rds_file <- file.path(output_dir, paste0("MEA_", params$analysis_type, "_results.rds"))
-saveRDS(mea_clean, rds_file)
-
-cat("Exported:\n -", xlsx_file, "\n -", rds_file, "\n")
-```
-
-```{r export-vignette, eval=!pipeline_mode}
-message("Vignette mode: File export skipped.")
 ```
 
 # Session Info

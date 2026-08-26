@@ -4,12 +4,16 @@ author:
   - FGCZ
 date: "`r format(Sys.Date(), '%Y-%m-%d')`"
 params:
-  objects_rds: "PTM_DPA/dpa_dpu_objects.rds"
+  objects_rds: NULL
 output:
   html_document:
     toc: true
     toc_float: true
     code_folding: hide
+vignette: >
+  %\VignetteIndexEntry{DPA and DPU Integration Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 editor_options:
   chunk_output_type: console
 ---
@@ -29,7 +33,14 @@ suppressPackageStartupMessages({
   library(dplyr)
 })
 
-objects <- readRDS(params$objects_rds)
+# The pipeline hands over what its compute step wrote; without it the report
+# renders against the example data the package ships.
+pipeline_mode <- !is.null(params$objects_rds)
+objects <- if (pipeline_mode) {
+  readRDS(params$objects_rds)
+} else {
+  prophosqua:::compute_dpa_dpu_example()
+}
 ```
 
 # Introduction

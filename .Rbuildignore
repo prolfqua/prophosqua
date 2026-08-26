@@ -68,3 +68,4 @@
 ^\.github$
 ^AGENTS\.md$
 ^inst/proofread$
+^vignettes/\.build\.timestamp$

@@ -229,3 +229,19 @@ derive_contrasts <- function(annot, annot_label = "the annotation") {
 
   contrasts
 }
+
+#' Compute the CorrectFirst Analysis from the Bundled Example Data
+#'
+#' As [compute_dpa_dpu_example()], for the CorrectFirst report: it corrects the
+#' example site abundances by their protein abundance and fits the model, then
+#' drops the two wide tables the pipeline also leaves out of the report's
+#' object, so the standalone render reads the same shape a run produces.
+#'
+#' @return [compute_cf_dea()]'s result without `wide_data` and
+#'   `wide_annotation`.
+#' @keywords internal
+compute_cf_dea_example <- function() {
+  dirs <- example_dea_pair()
+  res <- compute_cf_dea(dirs$phospho, dirs$protein, dirs$annot_file)
+  res[setdiff(names(res), c("wide_data", "wide_annotation"))]
+}

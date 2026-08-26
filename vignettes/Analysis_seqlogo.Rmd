@@ -44,10 +44,6 @@ suppressPackageStartupMessages({
 # Detect pipeline vs vignette mode
 pipeline_mode <- !is.null(params$xlsx_file)
 
-# Load shared utilities if in pipeline mode
-if (pipeline_mode && file.exists("src/feature_preparation.R")) {
-  source("src/feature_preparation.R")
-}
 
 ```
 

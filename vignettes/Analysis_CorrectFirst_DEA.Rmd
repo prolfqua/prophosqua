@@ -4,7 +4,7 @@ author: "FGCZ"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 running_head: "CorrectFirst DEA"
 params:
-  objects_rds: "PTM_CF_DPU/cf_objects.rds"
+  objects_rds: NULL
   results_xlsx: "CorrectFirst_PTM_usage_results.xlsx"
 output:
   html_document:
@@ -13,6 +13,10 @@ output:
     code_folding: hide
   bookdown::html_document2:
     toc: true
+vignette: >
+  %\VignetteIndexEntry{Correct First Approach - Differential Expression Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 editor_options:
   chunk_output_type: console
 ---
@@ -33,7 +37,14 @@ suppressPackageStartupMessages({
   library(dplyr)
 })
 
-cf <- readRDS(params$objects_rds)
+# The pipeline hands over what its compute step wrote; without it the report
+# renders against the example data the package ships.
+pipeline_mode <- !is.null(params$objects_rds)
+cf <- if (pipeline_mode) {
+  readRDS(params$objects_rds)
+} else {
+  prophosqua:::compute_cf_dea_example()
+}
 ```
 
 # Introduction

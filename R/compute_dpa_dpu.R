@@ -135,3 +135,40 @@ site_column <- function(x) {
   }
   candidates[[1]]
 }
+
+#' Compute DPA and DPU from the Bundled Example Data
+#'
+#' The DPA/DPU report can be rendered without a pipeline run. This assembles a
+#' synthetic pair of DEA output directories and calls [compute_dpa_dpu()] on
+#' them, so a standalone render exercises the real code path rather than a
+#' parallel one, and returns what the pipeline's compute step saves for the
+#' report -- including the two workbooks, so the report's own account of what
+#' was written stays true.
+#'
+#' @return The list the report reads: `match_rates`, `n_dpa_rows`,
+#'   `n_dpu_rows`, `phospho_dea_dir`, `protein_dea_dir`, `dpa_xlsx`, `dpu_xlsx`.
+#' @keywords internal
+compute_dpa_dpu_example <- function() {
+  dirs <- example_dea_pair()
+  res <- compute_dpa_dpu(dirs$phospho, dirs$protein)
+
+  out_dir <- file.path(tempdir(), "prophosqua_example_dpa_dpu")
+  dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+  dpa_xlsx <- file.path(out_dir, "Result_DPA.xlsx")
+  dpu_xlsx <- file.path(out_dir, "Result_DPU.xlsx")
+  writexl::write_xlsx(
+    list(combinedSiteProteinData = res$combined_site_prot),
+    path = dpa_xlsx
+  )
+  writexl::write_xlsx(list(combinedStats = res$combined_test_diff), path = dpu_xlsx)
+
+  list(
+    match_rates = res$match_rates,
+    n_dpa_rows = nrow(res$combined_site_prot),
+    n_dpu_rows = nrow(res$combined_test_diff),
+    phospho_dea_dir = dirs$phospho,
+    protein_dea_dir = dirs$protein,
+    dpa_xlsx = dpa_xlsx,
+    dpu_xlsx = dpu_xlsx
+  )
+}

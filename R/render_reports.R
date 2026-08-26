@@ -35,7 +35,7 @@
 #' )
 #' }
 render_ptm_report <- function(name, output_file, output_dir, params = list(), intermediates_dir = NULL) {
-  rmd_path <- application_file(name)
+  rmd_path <- report_file(name)
 
   if (is.null(intermediates_dir)) {
     intermediates_dir <- file.path(tempdir(), paste0("render_", basename(name)))
@@ -120,6 +120,40 @@ render_dpu_overview <- function(input_rds, output_dir, project_id = "PTM_analysi
   message("DPU overview report saved to: ", output_file)
 
   invisible(output_file)
+}
+
+#' Resolve an Installed Report Template
+#'
+#' The analysis reports are the package's vignettes: they are authored in
+#' `vignettes/`, which is the one place an analysis lives, and the vignette
+#' machinery installs their sources into the package's `doc/` directory, from
+#' where a run renders them with its own parameters. The templates that are not
+#' analyses -- the index page -- ship under `inst/application` instead, so both
+#' places are consulted.
+#'
+#' A package installed without its vignettes built has no `doc/`, and then the
+#' reports cannot be rendered at all; the error says so rather than reporting a
+#' missing file.
+#'
+#' @param name File name, e.g. `"Analysis_seqlogo.Rmd"`.
+#' @return Full path to the installed template.
+#' @keywords internal
+report_file <- function(name) {
+  path <- system.file("doc", name, package = "prophosqua")
+  if (nzchar(path) && file.exists(path)) {
+    return(path)
+  }
+  path <- system.file("application", name, package = "prophosqua")
+  if (nzchar(path) && file.exists(path)) {
+    return(path)
+  }
+  stop(
+    "prophosqua report template not found: ",
+    name,
+    ". The analysis reports are installed from vignettes/ into doc/, so the ",
+    "package has to be installed with its vignettes built (make install).",
+    call. = FALSE
+  )
 }
 
 #' Resolve a File Shipped under inst/application

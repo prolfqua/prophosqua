@@ -18,7 +18,15 @@ run_ptm_sh <- function(...) {
   ))
 }
 
-test_that("application_file resolves every report the pipeline renders", {
+test_that("report_file resolves every analysis report from the installed doc/", {
+  # The analysis reports are the package's vignettes, so they are only installed
+  # when the vignettes were built; an install that skipped them has no doc/ and
+  # nothing to resolve. R CMD check --no-build-vignettes is exactly that case.
+  skip_if(
+    !nzchar(system.file("doc", "Analysis_DPA_DPU.Rmd", package = "prophosqua")),
+    "package installed without vignettes built"
+  )
+
   reports <- c(
     "Analysis_DPA_DPU.Rmd",
     "Analysis_CorrectFirst_DEA.Rmd",
@@ -26,13 +34,33 @@ test_that("application_file resolves every report the pipeline renders", {
     "Analysis_seqlogo.Rmd",
     "Analysis_PTMSEA.Rmd",
     "Analysis_KinaseLibrary.Rmd",
-    "Analysis_MEA.Rmd",
-    "_Overview_PhosphoAndIntegration_site.Rmd",
-    "create_top_index.Rmd",
-    "bibliography2025.bib"
+    "Analysis_MEA.Rmd"
   )
   for (report in reports) {
-    expect_true(file.exists(application_file(report)), info = report)
+    path <- report_file(report)
+    expect_true(file.exists(path), info = report)
+    expect_equal(basename(dirname(path)), "doc", info = report)
+  }
+})
+
+test_that("report_file resolves the templates that are not analyses from inst/application", {
+  for (template in c("create_top_index.Rmd", "_Overview_PhosphoAndIntegration_site.Rmd")) {
+    path <- report_file(template)
+    expect_true(file.exists(path), info = template)
+    expect_equal(basename(dirname(path)), "application", info = template)
+  }
+})
+
+test_that("report_file says what an install without vignettes is missing", {
+  expect_error(
+    report_file("Analysis_NoSuchReport.Rmd"),
+    "installed with its vignettes built"
+  )
+})
+
+test_that("application_file resolves the overview include and its bibliography", {
+  for (file in c("_Overview_PhosphoAndIntegration_site.Rmd", "bibliography2025.bib")) {
+    expect_true(file.exists(application_file(file)), info = file)
   }
 })
 

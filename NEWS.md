@@ -1,5 +1,18 @@
 # prophosqua 0.3.0
 
+- The analysis reports are the package's vignettes again. All seven -- DPA/DPU,
+  CorrectFirst, PTM-SEA, KinaseLibrary, MEA, N-to-C and seqlogo -- live in
+  `vignettes/`, the one place an analysis lives, and the vignette machinery
+  installs them into `doc/`, from where a pipeline run renders them with its own
+  parameters. There is no second copy under `inst/application` to drift from the
+  documented one; only the index page and the overview include, which are not
+  analyses, still ship there.
+- Every report renders without a pipeline run. Each declares parameter defaults
+  that fall back to the example data the package bundles, so `make
+  build-vignettes` builds all seven, and the DPA/DPU and CorrectFirst reports --
+  which previously defaulted to hardcoded paths inside a project directory --
+  now compute their example from a synthetic pair of DEA output directories via
+  the same functions the pipeline calls.
 - The PTM pipeline's analysis code now lives here. Every computation the workflow performs
   is a documented, tested package function, and every script and report template it runs is
   installed with the package under `inst/application`: `compute_dpa_dpu()`,
