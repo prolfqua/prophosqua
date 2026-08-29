@@ -32,6 +32,8 @@ Imports:
     forcats,
     ggplot2,
     ggseqlogo,
+    jsonlite,
+    methods,
     optparse,
     patchwork,
     prolfqua,

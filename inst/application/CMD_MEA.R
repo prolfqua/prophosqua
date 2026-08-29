@@ -56,4 +56,15 @@ writexl::write_xlsx(export_list, paste0(stem, ".xlsx"))
 message("Writing ", paste0(stem, ".rds"))
 saveRDS(res, paste0(stem, ".rds"))
 
+message("Writing ", paste0(stem, ".json"))
+ranks <- prophosqua::read_mea_ranks(opt$kinaselib_dir)
+term2gene <- utils::read.csv(
+  file.path(opt$kinaselib_dir, "term2gene.csv"),
+  stringsAsFactors = FALSE
+)
+prophosqua::write_gsea_result_json(
+  prophosqua::mea_gsea_result_data(res$mea_clean, ranks, term2gene),
+  paste0(stem, ".json")
+)
+
 message("Done.")

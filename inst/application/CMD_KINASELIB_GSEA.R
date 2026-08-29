@@ -54,4 +54,10 @@ writexl::write_xlsx(export_list, paste0(stem, ".xlsx"))
 message("Writing ", paste0(stem, ".rds"))
 saveRDS(res, paste0(stem, ".rds"))
 
+message("Writing ", paste0(stem, ".json"))
+prophosqua::write_gsea_result_json(
+  prophosqua::gsea_result_data(res$gsea_results, category = "KinaseLib"),
+  paste0(stem, ".json")
+)
+
 message("Done.")

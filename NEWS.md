@@ -1,5 +1,21 @@
 # prophosqua 0.3.0
 
+- The three enrichment CMD scripts (PTM-SEA, kinase-library GSEA, MEA) now also
+  write their results as `*.json` in the string_gsea `GSEAResult` structure
+  (per contrast: the ranked sequence windows as a shared pool, per term the
+  full mapped membership plus the leading edge), via the new exported
+  `gsea_result_data()`, `mea_gsea_result_data()`, `read_mea_ranks()` and
+  `write_gsea_result_json()`. Pool ids are the canonical upper-case sequence
+  windows of the differential table; the form submitted to the enrichment
+  (PTMsigDB `-p` suffix, kinase-library lower-case phospho residue) is kept in
+  `input_label`. Downstream tools such as ptm3d consume these files.
+- `test_diff()` now explicitly selects a coherent moderated or unmoderated
+  standard-error/degrees-of-freedom pair. `compute_dpa_dpu()` keeps moderated
+  DPU as the published result and also returns an unmoderated comparison table,
+  together with the count of rows that cannot be tested because their raw
+  degrees of freedom are invalid. Older DEA outputs without the new raw
+  contrast columns are rejected and must be regenerated with current
+  `prolfqua`.
 - The analysis reports are the package's vignettes again. All seven -- DPA/DPU,
   CorrectFirst, PTM-SEA, KinaseLibrary, MEA, N-to-C and seqlogo -- live in
   `vignettes/`, the one place an analysis lives, and the vignette machinery
