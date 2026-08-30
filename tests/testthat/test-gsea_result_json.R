@@ -100,8 +100,14 @@ test_that("read_mea_ranks reads the per-contrast rnk files", {
   dir <- file.path(tempdir(), "mea_rnk_test")
   dir.create(dir, showWarnings = FALSE)
   on.exit(unlink(dir, recursive = TRUE), add = TRUE)
+  # The header row is what prep_kinaselib.R writes; reading it as data would
+  # add a bogus rank entry and coerce every statistic to a string.
   writeLines(
-    c("AAAAAAASAAAAAAA\t2.5", "CCCCCCCSCCCCCCC\t-2.0"),
+    c(
+      "SequenceWindow\tstatistic.site",
+      "AAAAAAASAAAAAAA\t2.5",
+      "CCCCCCCSCCCCCCC\t-2.0"
+    ),
     file.path(dir, "DPA_MEA_A_vs_B.rnk")
   )
 
@@ -109,6 +115,7 @@ test_that("read_mea_ranks reads the per-contrast rnk files", {
 
   expect_equal(names(ranks), "A_vs_B")
   expect_equal(ranks$A_vs_B, c("AAAAAAASAAAAAAA" = 2.5, "CCCCCCCSCCCCCCC" = -2.0))
+  expect_type(ranks$A_vs_B, "double")
   empty_dir <- file.path(tempdir(), "mea_rnk_empty")
   dir.create(empty_dir, showWarnings = FALSE)
   on.exit(unlink(empty_dir, recursive = TRUE), add = TRUE)

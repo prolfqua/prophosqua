@@ -1,5 +1,10 @@
 # prophosqua 0.3.0
 
+- Fixed the MEA ranked lists in the enrichment JSON: the `.rnk` files carry a
+  header row, which was read as data, so every MEA gene pool began with a bogus
+  `SEQUENCEWINDOW` entry, all ranking statistics were strings instead of numbers,
+  and every rank was off by one. Regenerate `MEA_*_results.json` to pick up the
+  fix.
 - The three enrichment CMD scripts (PTM-SEA, kinase-library GSEA, MEA) now also
   write their results as `*.json` in the string_gsea `GSEAResult` structure
   (per contrast: the ranked sequence windows as a shared pool, per term the

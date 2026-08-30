@@ -237,8 +237,9 @@ mea_gsea_result_data <- function(mea_clean, ranks, term2gene, category = "MEA") 
 #' Read the Per-Contrast Ranked Lists the Pipeline Wrote for MEA
 #'
 #' The pipeline writes one `<sheet>_MEA_<contrast>.rnk` per contrast next to
-#' the `mea_*.csv` results: tab-separated, no header, sequence window and
-#' statistic, sorted descending.
+#' the `mea_*.csv` results: tab-separated with a header row (`SequenceWindow`,
+#' `statistic.site`), sorted descending. Reading it headerless would turn the
+#' header into a rank entry and coerce every statistic to a string.
 #'
 #' @param kinaselib_dir Directory holding the `.rnk` files.
 #' @return Named list of named numeric vectors, one per contrast.
@@ -257,8 +258,8 @@ read_mea_ranks <- function(kinaselib_dir) {
   purrr::map(
     rlang::set_names(rnk_files, contrasts),
     function(path) {
-      tab <- utils::read.delim(path, header = FALSE, col.names = c("window", "statistic"))
-      rlang::set_names(tab$statistic, tab$window)
+      tab <- utils::read.delim(path, header = TRUE)
+      rlang::set_names(as.numeric(tab[[2]]), as.character(tab[[1]]))
     }
   )
 }
