@@ -177,6 +177,8 @@ example_dea_pair <- function() {
     diff = seq(-1, 1, length.out = length(proteins)),
     std.error = 0.2,
     df = 6,
+    std.error.unmoderated = 0.2,
+    df.unmoderated = 6,
     statistic = seq(-3, 3, length.out = length(proteins)),
     FDR = 0.01,
     estimate_type = "observed",

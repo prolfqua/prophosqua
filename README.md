@@ -55,7 +55,8 @@ devtools::install_github('prolfqua/prophosqua', dependencies = TRUE, build_vigne
 ### Basic Workflow
 
 1. **Run differential expression analysis** using `prolfquapp` for both total proteome and PTM data
-2. **Integrate the results** using `prophosqua::test_diff()`
+2. **Integrate the results** from the paired `AnnData.h5ad` files and write one
+   site-level `PTM_results.h5ad` using `prophosqua::compute_ptm_results_h5ad()`
 3. **Visualize the data** with N-to-C plots and sequence logos
 4. **Generate comprehensive reports** with statistical summaries
 
@@ -64,14 +65,22 @@ devtools::install_github('prolfqua/prophosqua', dependencies = TRUE, build_vigne
 ```r
 library(prophosqua)
 
-# Load your data
-tot_res <- load_and_preprocess_data(total_proteome_file, required_cols)
-phospho_res <- load_and_preprocess_data(ptm_file, required_cols)
+# Validate and integrate the two prolfquapp DEA artifacts. The inputs stay
+# unchanged; the output preserves the site measurements and adds DPA, DPU,
+# unmoderated DPU, and CorrectFirst statistics aligned to the site axis.
+compute_ptm_results_h5ad(
+  site_h5ad = "phospho/AnnData.h5ad",
+  protein_h5ad = "total_proteome/AnnData.h5ad",
+  annot_file = "phospho_dataset.tsv",
+  output_h5ad = "PTM_results.h5ad"
+)
 
-# Integrate analysis
-combined_test_diff <- test_diff(phospho_res, tot_res, join_column = join_column)
-
-# Create visualizations
+# Existing in-memory functions remain available during migration.
+combined <- compute_dpa_dpu_h5ad(
+  site_h5ad = "phospho/AnnData.h5ad",
+  protein_h5ad = "total_proteome/AnnData.h5ad"
+)
+combined_test_diff <- combined$combined_test_diff
 plot_data <- n_to_c_usage(combined_test_diff, contrast_name, FDR_threshold = 0.05)
 ```
 

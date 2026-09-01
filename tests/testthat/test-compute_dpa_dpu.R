@@ -72,4 +72,26 @@ test_that("compute_dpa_dpu computes the usage difference of a matched pair", {
   expect_true(nrow(paired) > 0)
   expect_equal(paired$diff_diff, paired$diff.site - paired$diff.protein)
   expect_equal(paired$SE_I, sqrt(paired$std.error.site^2 + paired$std.error.protein^2))
+  expect_equal(
+    res$combined_test_diff_unmoderated$SE_I[
+      res$combined_test_diff_unmoderated$measured_In == "both"
+    ],
+    sqrt(paired$std.error.unmoderated.site^2 + paired$std.error.unmoderated.protein^2)
+  )
+  expect_equal(res$n_unmoderated_untestable, 0)
+})
+
+test_that("compute_dpa_dpu counts paired rows with invalid raw degrees of freedom", {
+  site <- site_dea_table(protein_ids = "P1", contrasts = c("a_vs_b", "c_vs_b"))
+  protein <- protein_dea_table(protein_ids = "P1", contrasts = c("a_vs_b", "c_vs_b"))
+  protein$df.unmoderated[protein$contrast == "a_vs_b"] <- 0
+  phospho_dir <- make_dea_output(site, site_annotation_table("P1"), name = "DEA_phospho_df")
+  protein_dir <- make_dea_output(protein, name = "DEA_protein_df")
+
+  res <- suppressMessages(compute_dpa_dpu(phospho_dir, protein_dir))
+  raw <- res$combined_test_diff_unmoderated
+
+  expect_equal(res$n_unmoderated_untestable, 1)
+  expect_true(is.na(raw$pValue_I[raw$contrast == "a_vs_b"]))
+  expect_false(is.na(raw$pValue_I[raw$contrast == "c_vs_b"]))
 })

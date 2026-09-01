@@ -15,24 +15,48 @@ suppressPackageStartupMessages({
 option_list <- list(
   make_option("--phospho_dea_dir", type = "character", help = "phospho DEA output directory"),
   make_option("--protein_dea_dir", type = "character", help = "total-proteome DEA output directory"),
+  make_option("--site_h5ad", type = "character", help = "site-level prolfquapp AnnData.h5ad"),
+  make_option("--protein_h5ad", type = "character", help = "total-proteome prolfquapp AnnData.h5ad"),
   make_option("--annot_file", type = "character", help = "sample annotation defining groups and contrasts"),
   make_option("--output_dir", type = "character", help = "output directory for the CorrectFirst results")
 )
 opt <- parse_args(OptionParser(option_list = option_list))
 
-for (required in c("phospho_dea_dir", "protein_dea_dir", "annot_file", "output_dir")) {
+for (required in c("annot_file", "output_dir")) {
   if (is.null(opt[[required]])) {
     stop("--", required, " is required", call. = FALSE)
   }
 }
 
+h5ad_any <- !is.null(opt$site_h5ad) || !is.null(opt$protein_h5ad)
+h5ad_pair <- !is.null(opt$site_h5ad) && !is.null(opt$protein_h5ad)
+dea_dir_any <- !is.null(opt$phospho_dea_dir) || !is.null(opt$protein_dea_dir)
+dea_dir_pair <- !is.null(opt$phospho_dea_dir) && !is.null(opt$protein_dea_dir)
+valid_h5ad_input <- h5ad_pair && !dea_dir_any
+valid_dea_dir_input <- dea_dir_pair && !h5ad_any
+if (!valid_h5ad_input && !valid_dea_dir_input) {
+  stop(
+    "Provide exactly one complete input pair: --site_h5ad and --protein_h5ad, ",
+    "or --phospho_dea_dir and --protein_dea_dir.",
+    call. = FALSE
+  )
+}
+
 dir.create(opt$output_dir, recursive = TRUE, showWarnings = FALSE)
 
-res <- prophosqua::compute_cf_dea(
-  phospho_dea_dir = opt$phospho_dea_dir,
-  protein_dea_dir = opt$protein_dea_dir,
-  annot_file = opt$annot_file
-)
+if (h5ad_pair) {
+  res <- prophosqua::compute_cf_dea_h5ad(
+    site_h5ad = opt$site_h5ad,
+    protein_h5ad = opt$protein_h5ad,
+    annot_file = opt$annot_file
+  )
+} else {
+  res <- prophosqua::compute_cf_dea(
+    phospho_dea_dir = opt$phospho_dea_dir,
+    protein_dea_dir = opt$protein_dea_dir,
+    annot_file = opt$annot_file
+  )
+}
 
 results_xlsx <- file.path(opt$output_dir, "CorrectFirst_PTM_usage_results.xlsx")
 

@@ -26,6 +26,7 @@ VignetteBuilder: knitr
 Depends:
     R (>= 4.1.0)
 Imports:
+    anndataR,
     arrow,
     bookdown,
     dplyr,
@@ -43,6 +44,7 @@ Imports:
     readxl,
     rlang,
     rmarkdown,
+    rhdf5,
     seqinr,
     tidyr,
     tidyselect,

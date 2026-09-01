@@ -31,6 +31,7 @@ test_that("compute_dpa_dpu_example returns what the report reads", {
       "match_rates",
       "n_dpa_rows",
       "n_dpu_rows",
+      "n_unmoderated_untestable",
       "phospho_dea_dir",
       "protein_dea_dir",
       "dpa_xlsx",
@@ -41,6 +42,7 @@ test_that("compute_dpa_dpu_example returns what the report reads", {
   expect_gt(objects$n_dpu_rows, 0)
   expect_true(file.exists(objects$dpa_xlsx))
   expect_true(file.exists(objects$dpu_xlsx))
+  expect_equal(objects$n_unmoderated_untestable, 0)
 })
 
 

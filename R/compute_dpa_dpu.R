@@ -22,7 +22,10 @@
 #' @param protein_dea_dir Path to the total-proteome DEA output directory.
 #' @return A list with
 #'   `combined_site_prot`, the DPA table;
-#'   `combined_test_diff`, the DPU table;
+#'   `combined_test_diff`, the moderated DPU table;
+#'   `combined_test_diff_unmoderated`, the unmoderated DPU table;
+#'   `n_unmoderated_untestable`, the number of paired rows whose raw degrees of
+#'   freedom do not permit an unmoderated t-test;
 #'   `match_rates`, sites tested and sites paired with a protein, per contrast.
 #' @seealso [compute_cf_dea()] for the alternative that corrects before
 #'   modelling rather than after.
@@ -51,6 +54,58 @@ compute_dpa_dpu <- function(phospho_dea_dir, protein_dea_dir) {
 
   phospho_res <- load_and_preprocess_data(ptm_file, required_cols)
   phospho_res <- filter_contaminants(phospho_res)
+
+  .compute_dpa_dpu_from_tables(phospho_res, tot_res)
+}
+
+#' Compute Differential PTM Abundance and Usage from AnnData
+#'
+#' This is the AnnData-backed application boundary for [compute_dpa_dpu()]. It
+#' accepts the explicit site and total-proteome H5AD files written by
+#' prolfquapp, validates them as a pair, and delegates the statistical work to
+#' the same table-level implementation as the legacy DEA-directory path.
+#'
+#' @param site_h5ad Path to the site-level prolfquapp DEA H5AD file.
+#' @param protein_h5ad Path to the total-proteome prolfquapp DEA H5AD file.
+#' @return The same result structure as [compute_dpa_dpu()].
+#' @export
+#' @examples
+#' \dontrun{
+#' res <- compute_dpa_dpu_h5ad(
+#'   site_h5ad = "site/AnnData.h5ad",
+#'   protein_h5ad = "protein/AnnData.h5ad"
+#' )
+#' }
+compute_dpa_dpu_h5ad <- function(site_h5ad, protein_h5ad) {
+  pair <- read_ptm_anndata_pair(site_h5ad, protein_h5ad)
+  .compute_dpa_dpu_from_pair(pair)
+}
+
+.compute_dpa_dpu_from_pair <- function(pair) {
+  site_results <- filter_contaminants(pair$site$differential_results)
+  protein_results <- pair$protein$differential_results |>
+    filter_contaminants() |>
+    canonicalize_uniprot_ids()
+  .compute_dpa_dpu_from_tables(
+    site_results,
+    protein_results
+  )
+}
+
+.compute_dpa_dpu_from_tables <- function(phospho_res, tot_res) {
+  required_cols <- c(
+    "protein_Id",
+    "protein_length",
+    "contrast",
+    "diff",
+    "std.error",
+    "df",
+    "std.error.unmoderated",
+    "df.unmoderated",
+    "FDR"
+  )
+  .require_columns(phospho_res, required_cols, "site DEA results")
+  .require_columns(tot_res, required_cols, "protein DEA results")
 
   # The site annotation -- modAA, posInProtein, SequenceWindow -- arrives with
   # the DEA result: every PTM reader attaches it to the analysis rows, so it is
@@ -96,7 +151,27 @@ compute_dpa_dpu <- function(phospho_dea_dir, protein_dea_dir) {
       match_rate = round(.data$matched_sites / .data$total_sites * 100, 1)
     )
 
-  combined_test_diff <- test_diff(phospho_res, tot_res, join_column = join_column)
+  combined_test_diff <- test_diff(
+    phospho_res,
+    tot_res,
+    join_column = join_column,
+    variant = "moderated"
+  )
+  combined_test_diff_unmoderated <- test_diff(
+    phospho_res,
+    tot_res,
+    join_column = join_column,
+    variant = "unmoderated"
+  )
+
+  paired_unmoderated <- combined_test_diff_unmoderated$measured_In == "both"
+  site_df_unmoderated <- combined_test_diff_unmoderated$df.unmoderated.site
+  protein_df_unmoderated <- combined_test_diff_unmoderated$df.unmoderated.protein
+  invalid_unmoderated_df <- !is.finite(site_df_unmoderated) |
+    site_df_unmoderated <= 0 |
+    !is.finite(protein_df_unmoderated) |
+    protein_df_unmoderated <= 0
+  n_unmoderated_untestable <- sum(paired_unmoderated & invalid_unmoderated_df)
 
   # Downstream reports and combine_ptm_results() key on `site`; a newer DEA
   # writes the column as protein_Id_site.
@@ -107,10 +182,19 @@ compute_dpa_dpu <- function(phospho_dea_dir, protein_dea_dir) {
     combined_test_diff <- combined_test_diff |>
       dplyr::mutate(site = .data$protein_Id_site)
   }
+  if (
+    !"site" %in% colnames(combined_test_diff_unmoderated) &&
+      "protein_Id_site" %in% colnames(combined_test_diff_unmoderated)
+  ) {
+    combined_test_diff_unmoderated <- combined_test_diff_unmoderated |>
+      dplyr::mutate(site = .data$protein_Id_site)
+  }
 
   list(
     combined_site_prot = combined_site_prot,
     combined_test_diff = combined_test_diff,
+    combined_test_diff_unmoderated = combined_test_diff_unmoderated,
+    n_unmoderated_untestable = n_unmoderated_untestable,
     match_rates = match_rates
   )
 }
@@ -146,7 +230,8 @@ site_column <- function(x) {
 #' was written stays true.
 #'
 #' @return The list the report reads: `match_rates`, `n_dpa_rows`,
-#'   `n_dpu_rows`, `phospho_dea_dir`, `protein_dea_dir`, `dpa_xlsx`, `dpu_xlsx`.
+#'   `n_dpu_rows`, `n_unmoderated_untestable`, `phospho_dea_dir`,
+#'   `protein_dea_dir`, `dpa_xlsx`, `dpu_xlsx`.
 #' @keywords internal
 compute_dpa_dpu_example <- function() {
   dirs <- example_dea_pair()
@@ -166,6 +251,7 @@ compute_dpa_dpu_example <- function() {
     match_rates = res$match_rates,
     n_dpa_rows = nrow(res$combined_site_prot),
     n_dpu_rows = nrow(res$combined_test_diff),
+    n_unmoderated_untestable = res$n_unmoderated_untestable,
     phospho_dea_dir = dirs$phospho,
     protein_dea_dir = dirs$protein,
     dpa_xlsx = dpa_xlsx,

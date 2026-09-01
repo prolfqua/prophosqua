@@ -1,5 +1,15 @@
 # prophosqua 0.3.0
 
+- A paired site and total-proteome AnnData analysis can now be written as one
+  `PTM_results.h5ad` with `compute_ptm_results_h5ad()`. The new artifact keeps
+  the site measurements and upstream DEA results intact, adds feature-aligned
+  DPA, moderated and unmoderated DPU, and CorrectFirst matrices, and records a
+  versioned result mapping plus hashes and schema versions for both inputs.
+- DPA, DPU, and CorrectFirst can now consume an explicit pair of site-level
+  and total-proteome `AnnData.h5ad` files written by prolfquapp. The reader
+  validates schema, experiment roles, sample identity, and shared design before
+  reconstructing the existing statistical inputs; the legacy DEA-directory
+  entry points remain available during numerical comparison.
 - Fixed the MEA ranked lists in the enrichment JSON: the `.rnk` files carry a
   header row, which was read as data, so every MEA gene pool began with a bogus
   `SEQUENCEWINDOW` entry, all ranking statistics were strings instead of numbers,

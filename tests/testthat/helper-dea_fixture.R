@@ -23,6 +23,8 @@ protein_dea_table <- function(protein_ids = c("P1", "P2", "P3"), contrasts = c("
     diff = seq(-1, 1, length.out = n),
     std.error = rep(0.2, n),
     df = rep(6, n),
+    std.error.unmoderated = rep(0.25, n),
+    df.unmoderated = rep(4, n),
     statistic = seq(-3, 3, length.out = n),
     FDR = rep(0.01, n),
     estimate_type = rep("observed", n),

@@ -68,6 +68,7 @@ test_that("application_file resolves every command script and its wrapper", {
   scripts <- c(
     "CMD_DPA_DPU.R",
     "CMD_CF_DEA.R",
+    "CMD_PTM_H5AD.R",
     "CMD_COMBINE_RESULTS.R",
     "CMD_PREP_PTMSIGDB.R",
     "CMD_PREP_KINASELIB.R",

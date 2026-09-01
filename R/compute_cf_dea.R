@@ -39,15 +39,93 @@
 #' }
 compute_cf_dea <- function(phospho_dea_dir, protein_dea_dir, annot_file) {
   annot <- readr::read_tsv(annot_file, show_col_types = FALSE)
+  protein_data <- arrow::read_parquet(get_dea_parquet(protein_dea_dir))
+  protein_sample_col <- get_dea_sample_name_column(protein_dea_dir)
+  site_data <- arrow::read_parquet(get_dea_parquet(phospho_dea_dir))
+  config <- prolfqua::list_to_AnalysisConfiguration(
+    yaml::read_yaml(get_dea_yaml(phospho_dea_dir))
+  )
+  ptm_sample_col <- get_dea_sample_name_column(phospho_dea_dir)
+  site_info <- get_dea_ptm_site_info(phospho_dea_dir)
+
+  .compute_cf_dea_from_inputs(
+    site_data = site_data,
+    protein_data = protein_data,
+    site_config = config,
+    site_sample_col = ptm_sample_col,
+    protein_sample_col = protein_sample_col,
+    site_info = site_info,
+    annot = annot,
+    annot_label = basename(annot_file)
+  )
+}
+
+#' Compute CorrectFirst PTM Usage from AnnData
+#'
+#' This is the AnnData-backed application boundary for [compute_cf_dea()]. It
+#' validates the paired prolfquapp DEA artifacts and passes their ordinary R
+#' records to the same CorrectFirst implementation as the legacy directory
+#' reader.
+#'
+#' @param site_h5ad Path to the site-level prolfquapp DEA H5AD file.
+#' @param protein_h5ad Path to the total-proteome prolfquapp DEA H5AD file.
+#' @param annot_file Sample annotation defining groups and contrasts.
+#' @return The same result structure as [compute_cf_dea()].
+#' @export
+#' @examples
+#' \dontrun{
+#' res <- compute_cf_dea_h5ad(
+#'   site_h5ad = "site/AnnData.h5ad",
+#'   protein_h5ad = "protein/AnnData.h5ad",
+#'   annot_file = "phospho_dataset.tsv"
+#' )
+#' }
+compute_cf_dea_h5ad <- function(site_h5ad, protein_h5ad, annot_file) {
+  pair <- read_ptm_anndata_pair(site_h5ad, protein_h5ad)
+  annot <- readr::read_tsv(annot_file, show_col_types = FALSE)
+
+  .compute_cf_dea_from_pair(pair, annot, basename(annot_file))
+}
+
+.compute_cf_dea_from_pair <- function(pair, annot, annot_label) {
+  .compute_cf_dea_from_inputs(
+    site_data = pair$site$normalized_abundances,
+    protein_data = pair$protein$normalized_abundances,
+    site_config = pair$site$configuration,
+    site_sample_col = pair$site$sample_key,
+    protein_sample_col = pair$protein$sample_key,
+    site_info = pair$site$site_info,
+    annot = annot,
+    annot_label = annot_label
+  )
+}
+
+.compute_cf_dea_from_inputs <- function(
+  site_data,
+  protein_data,
+  site_config,
+  site_sample_col,
+  protein_sample_col,
+  site_info,
+  annot,
+  annot_label
+) {
+  .require_columns(
+    protein_data,
+    c(protein_sample_col, "protein_Id", "normalized_abundance"),
+    "protein normalized abundances"
+  )
+  .require_columns(
+    site_data,
+    c(site_sample_col, "protein_Id", "site", "G_", "normalized_abundance"),
+    "site normalized abundances"
+  )
 
   # --- the correction baseline: protein abundances -------------------------
-  ldata <- arrow::read_parquet(get_dea_parquet(protein_dea_dir))
-  ldata <- ldata |>
+  protein_data <- protein_data |>
     dplyr::filter(!grepl("^rev_", .data$protein_Id)) |>
     canonicalize_uniprot_ids()
-  protein_sample_col <- get_dea_sample_name_column(protein_dea_dir)
-
-  tot_d <- ldata |>
+  tot_d <- protein_data |>
     dplyr::select(
       tidyselect::all_of(protein_sample_col),
       "protein_Id",
@@ -56,16 +134,11 @@ compute_cf_dea <- function(phospho_dea_dir, protein_dea_dir, annot_file) {
   n_protein_measurements <- nrow(tot_d)
 
   # --- the response: site abundances --------------------------------------
-  ldata <- arrow::read_parquet(get_dea_parquet(phospho_dea_dir))
-  config <- prolfqua::list_to_AnalysisConfiguration(
-    yaml::read_yaml(get_dea_yaml(phospho_dea_dir))
-  )
-  ptm_data <- prolfqua::LFQData$new(ldata, config)
-  ptm_sample_col <- get_dea_sample_name_column(phospho_dea_dir)
+  ptm_data <- prolfqua::LFQData$new(site_data, site_config)
   n_site_measurements <- nrow(ptm_data$data_long())
 
   # --- correct: site minus its protein, in the same sample ----------------
-  sample_join <- stats::setNames(protein_sample_col, ptm_sample_col)
+  sample_join <- stats::setNames(protein_sample_col, site_sample_col)
   join_columns <- c(sample_join, protein_Id = "protein_Id")
 
   ptm_data$set_data(dplyr::inner_join(
@@ -101,7 +174,7 @@ compute_cf_dea <- function(phospho_dea_dir, protein_dea_dir, annot_file) {
   models <- prolfqua::build_model(data = ptm_data, model_strategy = strategy_lm)
   n_models <- nrow(models$model_df)
 
-  contrasts <- derive_contrasts(annot, basename(annot_file))
+  contrasts <- derive_contrasts(annot, annot_label)
 
   ctr <- prolfqua::Contrasts$new(models, contrasts)
   ctr <- prolfqua::ContrastsModerated$new(ctr)
@@ -109,7 +182,7 @@ compute_cf_dea <- function(phospho_dea_dir, protein_dea_dir, annot_file) {
   n_site_contrast <- nrow(ctr_df)
 
   # --- annotate and export shape -----------------------------------------
-  site_info <- get_dea_ptm_site_info(phospho_dea_dir) |>
+  site_info <- site_info |>
     dplyr::select(-"protein_Id")
   contrast_site_col <- site_column(ctr_df)
   ctr_df <- dplyr::left_join(

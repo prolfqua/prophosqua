@@ -8,7 +8,8 @@ compute_dpa_dpu_example()
 }
 \value{
 The list the report reads: `match_rates`, `n_dpa_rows`,
-  `n_dpu_rows`, `phospho_dea_dir`, `protein_dea_dir`, `dpa_xlsx`, `dpu_xlsx`.
+  `n_dpu_rows`, `n_unmoderated_untestable`, `phospho_dea_dir`,
+  `protein_dea_dir`, `dpa_xlsx`, `dpu_xlsx`.
 }
 \description{
 The DPA/DPU report can be rendered without a pipeline run. This assembles a

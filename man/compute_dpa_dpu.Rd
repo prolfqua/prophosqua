@@ -14,7 +14,10 @@ compute_dpa_dpu(phospho_dea_dir, protein_dea_dir)
 \value{
 A list with
   `combined_site_prot`, the DPA table;
-  `combined_test_diff`, the DPU table;
+  `combined_test_diff`, the moderated DPU table;
+  `combined_test_diff_unmoderated`, the unmoderated DPU table;
+  `n_unmoderated_untestable`, the number of paired rows whose raw degrees of
+  freedom do not permit an unmoderated t-test;
   `match_rates`, sites tested and sites paired with a protein, per contrast.
 }
 \description{

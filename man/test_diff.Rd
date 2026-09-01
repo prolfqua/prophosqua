@@ -8,7 +8,8 @@ test_diff(
   phos_res,
   tot_res,
   join_column = c("protein_Id", "contrast", "description", "protein_length",
-    "nr_tryptic_peptides")
+    "nr_tryptic_peptides"),
+  variant = c("moderated", "unmoderated")
 )
 }
 \arguments{
@@ -17,6 +18,10 @@ test_diff(
 \item{tot_res}{Data frame with protein-level results}
 
 \item{join_column}{Character vector of columns to join by}
+
+\item{variant}{Variance and degrees-of-freedom pair to use. `moderated`
+uses the reported moderated pair; `unmoderated` uses the pre-moderation
+pair retained in the DEA output.}
 }
 \value{
 Data frame with combined results including diff_diff test statistics

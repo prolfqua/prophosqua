@@ -12,7 +12,8 @@
   std_err = c("std.error"),
   df = c("df"),
   suffix_a = ".site",
-  suffix_b = ".protein"
+  suffix_b = ".protein",
+  require_positive_df = FALSE
 )
 }
 \arguments{
@@ -31,6 +32,9 @@
 \item{suffix_a}{Suffix for columns from dataframe_a}
 
 \item{suffix_b}{Suffix for columns from dataframe_b}
+
+\item{require_positive_df}{Whether non-finite or non-positive degrees of
+freedom make a row untestable.}
 }
 \value{
 Data frame with diff_diff test results
