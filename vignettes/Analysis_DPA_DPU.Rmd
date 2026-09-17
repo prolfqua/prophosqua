@@ -50,14 +50,10 @@ This analysis integrates total proteome and phosphoproteome DEA results to compu
 - **DPA** (Differential PTM Abundance): Raw phosphosite signal changes
 - **DPU** (Differential PTM Usage): Protein-normalized changes (site - protein) reflecting modification stoichiometry
 
-Both were computed by `prophosqua::compute_dpa_dpu()` before this report was
-rendered; this document describes and summarizes that result rather than
-producing it. Nothing here is re-quantified: the two DEA runs it reads from,
+This report summarizes the completed DPA and DPU results stored in MuData. The original DEA inputs are:
 
 - phospho: `` `r basename(objects$phospho_dea_dir)` ``
 - total proteome: `` `r basename(objects$protein_dea_dir)` ``
-
-had already happened.
 
 # DPA: Integrate PTM and Protein Data
 
@@ -96,12 +92,13 @@ column says which of the three each row is.
 
 # Output Files
 
+The report reads `PTM_results.h5mu`, which retains the analysis tables, counts, and match rates. The delivery files below are exported after all reports finish.
+
 | File | Content |
 |:-----|:--------|
 | `` `r basename(objects$dpa_xlsx)` `` | Differential PTM Abundance, sheet `combinedSiteProteinData` |
 | `` `r basename(objects$dpu_xlsx)` `` | Differential PTM Usage, sheet `combinedStats` |
-| `combined_test_diff.rds` | the DPU table, as the integration overview reads it |
-| `dpa_dpu_objects.rds` | the counts and match rates quoted in this report |
+| `combined_test_diff.rds` | The DPU table for use outside this pipeline |
 
 # Session Info
 

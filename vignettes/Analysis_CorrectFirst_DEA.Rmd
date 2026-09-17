@@ -213,7 +213,7 @@ called `results`. It holds `r nrow(cf$results)` rows and
 | `` `r params$results_xlsx` `` | the contrast results, sheet `results`. Terminal delivery export; all reports and analyses read MuData. |
 | `CorrectFirst_intensities_wide.xlsx` | the protein-corrected PTM usage matrix, one column per sample, as it entered the linear model. |
 | `CorrectFirst_intensities_file_annotation.xlsx` | the sample annotation belonging to that matrix. |
-| `cf_objects.rds` | the fitted contrasts and counts this report renders from. |
+| `PTM_results.h5mu` | The completed analysis, including the contrasts and counts used by this report. |
 | `Analysis_CorrectFirst_DEA.html` | this report. |
 
 # Summary
