@@ -46,29 +46,7 @@ prepare_ptmsigdb <- function(output_dir = "data/ptmsigdb", keep_sources = "KINAS
   message(sprintf("Human pathways: %d", length(pathways_human)))
   message(sprintf("Mouse pathways: %d", length(pathways_mouse)))
 
-  message("Merging human and mouse pathways...")
-  all_names <- union(names(pathways_human), names(pathways_mouse))
-  pathways_merged <- lapply(all_names, function(name) {
-    unique(c(pathways_human[[name]], pathways_mouse[[name]]))
-  })
-  names(pathways_merged) <- all_names
-  message(sprintf("Total pathways before filtering: %d", length(pathways_merged)))
-
-  keep_pattern <- paste0("^(", paste(keep_sources, collapse = "|"), ")_")
-  pathways_filtered <- pathways_merged[grepl(keep_pattern, names(pathways_merged))]
-  message(sprintf(
-    "Pathways after filtering (keeping %s): %d",
-    paste(keep_sources, collapse = ","),
-    length(pathways_filtered)
-  ))
-
-  report_ptmsigdb_sources(pathways_merged, pathways_filtered)
-
-  message(sprintf("Trimming flanking sequences to %d-mer...", trim_to))
-  pathways_trimmed <- trim_ptmsigdb_pathways(
-    pathways_filtered,
-    trim_to = as.character(trim_to)
-  )
+  pathways_trimmed <- .prepare_ptmsigdb_pathways(pathways_human, pathways_mouse, keep_sources, trim_to)
 
   stem <- sprintf(
     "ptmsigdb_filtered_%s_%dmer",
@@ -152,4 +130,32 @@ report_ptmsigdb_sources <- function(merged, filtered) {
     ))
   }
   invisible(NULL)
+}
+
+.prepare_ptmsigdb_pathways <- function(pathways_human, pathways_mouse, keep_sources, trim_to) {
+  message("Merging human and mouse pathways...")
+  all_names <- union(names(pathways_human), names(pathways_mouse))
+  pathways_merged <- lapply(all_names, function(name) {
+    unique(c(pathways_human[[name]], pathways_mouse[[name]]))
+  })
+  names(pathways_merged) <- all_names
+  message(sprintf("Total pathways before filtering: %d", length(pathways_merged)))
+
+  keep_pattern <- paste0("^(", paste(keep_sources, collapse = "|"), ")_")
+  pathways_filtered <- pathways_merged[grepl(keep_pattern, names(pathways_merged))]
+  message(sprintf(
+    "Pathways after filtering (keeping %s): %d",
+    paste(keep_sources, collapse = ","),
+    length(pathways_filtered)
+  ))
+
+  report_ptmsigdb_sources(pathways_merged, pathways_filtered)
+
+  message(sprintf("Trimming flanking sequences to %d-mer...", trim_to))
+  pathways_trimmed <- trim_ptmsigdb_pathways(
+    pathways_filtered,
+    trim_to = as.character(trim_to)
+  )
+
+  pathways_trimmed
 }

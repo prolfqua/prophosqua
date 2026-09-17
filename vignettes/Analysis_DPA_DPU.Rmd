@@ -4,7 +4,7 @@ author:
   - FGCZ
 date: "`r format(Sys.Date(), '%Y-%m-%d')`"
 params:
-  objects_rds: NULL
+  input_h5mu: NULL
 output:
   html_document:
     toc: true
@@ -35,9 +35,9 @@ suppressPackageStartupMessages({
 
 # The pipeline hands over what its compute step wrote; without it the report
 # renders against the example data the package ships.
-pipeline_mode <- !is.null(params$objects_rds)
+pipeline_mode <- !is.null(params$input_h5mu)
 objects <- if (pipeline_mode) {
-  readRDS(params$objects_rds)
+  prophosqua::ptm_dpa_dpu_report_data(params$input_h5mu)
 } else {
   prophosqua:::compute_dpa_dpu_example()
 }

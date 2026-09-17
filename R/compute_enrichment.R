@@ -56,10 +56,33 @@ compute_ptmsea <- function(
   max_size = 500,
   n_perm = 1000
 ) {
-  data <- readxl::read_xlsx(xlsx_file, sheet = sheet)
-  data <- canonicalize_sequence_window(data)
+  .compute_ptmsea_tables(
+    readxl::read_xlsx(xlsx_file, sheet = sheet),
+    read_ptmsigdb(ptmsigdb_file),
+    sheet,
+    stat_column,
+    trim_to,
+    min_size,
+    max_size,
+    n_perm,
+    xlsx_file,
+    ptmsigdb_file
+  )
+}
 
-  pathways <- read_ptmsigdb(ptmsigdb_file)
+.compute_ptmsea_tables <- function(
+  data,
+  pathways,
+  sheet,
+  stat_column,
+  trim_to,
+  min_size,
+  max_size,
+  n_perm,
+  xlsx_file = "PTM_statistics.h5mu",
+  ptmsigdb_file = "MuData references"
+) {
+  data <- canonicalize_sequence_window(data)
 
   data_info <- dplyr::tibble(
     Property = c("Mode", "Sheet", "Stat Column", "Rows", "Columns", "Contrasts"),
@@ -138,6 +161,7 @@ compute_ptmsea <- function(
 
   list(
     results = results,
+    ranks = prep$ranks,
     all_clean = all_clean,
     pathways = pathways,
     data_info = data_info,
@@ -197,11 +221,32 @@ compute_kinaselib_gsea <- function(
     stop("clusterProfiler is required to run the kinase-library GSEA.", call. = FALSE)
   }
 
-  data <- readxl::read_xlsx(xlsx_file, sheet = sheet)
+  .compute_kinase_tables(
+    readxl::read_xlsx(xlsx_file, sheet = sheet),
+    utils::read.csv(term2gene_file, stringsAsFactors = FALSE),
+    sheet,
+    min_size,
+    max_size,
+    n_perm,
+    max_kinase_sets,
+    xlsx_file,
+    term2gene_file
+  )
+}
+
+.compute_kinase_tables <- function(
+  data,
+  term2gene,
+  sheet,
+  min_size,
+  max_size,
+  n_perm,
+  max_kinase_sets = NULL,
+  xlsx_file = "PTM_statistics.h5mu",
+  term2gene_file = "MuData assignments"
+) {
   data <- canonicalize_sequence_window(data)
   stat_col <- "statistic.site"
-
-  term2gene <- utils::read.csv(term2gene_file, stringsAsFactors = FALSE)
 
   data_info <- dplyr::tibble(
     Property = c("Rows", "Columns", "Contrasts"),
@@ -335,6 +380,7 @@ compute_kinaselib_gsea <- function(
 
   list(
     gsea_results = gsea_results,
+    ranks = ranks,
     all_results = all_results,
     term2gene = term2gene,
     term2gene_df = term2gene_df,
@@ -391,9 +437,13 @@ compute_mea <- function(kinaselib_dir) {
     ~ utils::read.csv(.x, stringsAsFactors = FALSE),
     .id = "contrast"
   )
+  .compute_mea_tables(mea_results, length(mea_files), kinaselib_dir)
+}
+
+.compute_mea_tables <- function(mea_results, n_files, kinaselib_dir = "MuData MEA") {
   mea_results <- canonicalize_mea_columns(mea_results)
 
-  message("Loaded ", nrow(mea_results), " results from ", length(mea_files), " contrasts")
+  message("Loaded ", nrow(mea_results), " results from ", n_files, " contrasts")
 
   mea_clean <- prepare_enrichment_data(mea_results, "FDR", 0.1)
 
@@ -409,7 +459,7 @@ compute_mea <- function(kinaselib_dir) {
   list(
     mea_clean = mea_clean,
     summary_df = summary_df,
-    n_files = length(mea_files),
+    n_files = n_files,
     has_results = nrow(mea_clean) > 0,
     analysis_inputs = list(kinaselib_dir = kinaselib_dir)
   )

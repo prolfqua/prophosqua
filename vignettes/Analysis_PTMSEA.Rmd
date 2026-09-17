@@ -4,7 +4,7 @@ subtitle: "`r params$analysis_type`"
 author: "FGCZ"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 params:
-  objects_rds: NULL
+  input_h5mu: NULL
   analysis_type: "DPA"
   output_dir: NULL
   top_genesets: 3
@@ -30,7 +30,7 @@ knitr::opts_chunk$set(
 )
 
 # Detect pipeline vs vignette mode
-pipeline_mode <- !is.null(params$objects_rds)
+pipeline_mode <- !is.null(params$input_h5mu)
 ```
 
 # Overview
@@ -63,7 +63,7 @@ library(ggplot2)
 
 ```{r loadData}
 if (pipeline_mode) {
-  ptmsea <- readRDS(params$objects_rds)
+  ptmsea <- prophosqua::ptm_enrichment_report_data(params$input_h5mu, "PTMSEA", params$analysis_type)
 } else {
   # Standalone mode: compute from the example data shipped with the package,
   # through the same function the pipeline calls.
@@ -85,7 +85,7 @@ output_dir <- if (!is.null(params$output_dir)) {
 knitr::kable(
   ptmsea$data_info,
   caption = paste0(
-    "Input of this PTM-SEA report: source workbook, sheet, the per-site statistic the sites ",
+    "Input of this PTM-SEA report: source data, analysis, the per-site statistic the sites ",
     "are ranked on, the table dimensions and the contrasts covered. Every row is one ",
     "phosphosite in one contrast; the ranking statistic decides the order of the GSEA input."
   )
@@ -472,36 +472,20 @@ DT::datatable(all_clean_dt,
 )
 ```
 
-# Export Results
+# Delivery exports
 
-The result workbook and the RDS this report renders from were written by the
-computation step, `prophosqua::compute_ptmsea()`, before this render. Both are
-written whether or not anything was enriched, so the pipeline can declare them
-as outputs and an empty enrichment is a recorded fact rather than a missing
-file.
+This report reads completed PTM-SEA results from `PTM_results.h5mu`. The terminal export step writes the following delivery files after all reports finish, including valid empty results.
 
 ```{r exportedFiles}
-stem <- file.path(output_dir, paste0("PTMSEA_", params$analysis_type, "_results"))
-exported <- paste0(stem, c(".xlsx", ".rds"))
-
 knitr::kable(
   tibble(
     Output = c("Excel results", "RDS object"),
-    File = basename(exported),
-    Size = ifelse(
-      file.exists(exported),
-      paste(round(file.size(exported) / 1024, 1), "KB"),
-      "not found"
-    )
+    File = paste0("PTMSEA_", params$analysis_type, "_results", c(".xlsx", ".rds"))
   ),
-  caption = paste0(
-    "Files the computation step wrote next to this report: the Excel workbook holding one ",
-    "sheet per contrast plus a significant-only sheet, and the RDS with the full GSEA result ",
-    "objects and the tables shown above. Sizes are given to show at a glance whether a result ",
-    "set is empty."
-  )
+  caption = "Delivery files exported from final MuData after report generation."
 )
 ```
+
 
 # Session Info
 

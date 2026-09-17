@@ -4,7 +4,7 @@ subtitle: "`r params$analysis_type` Analysis"
 author: "FGCZ"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 params:
-  xlsx_file: NULL
+  input_h5mu: NULL
   sheet: "DPA"
   analysis_type: "dpa"
   output_dir: NULL
@@ -45,7 +45,7 @@ suppressPackageStartupMessages({
 })
 
 # Detect pipeline vs vignette mode
-pipeline_mode <- !is.null(params$xlsx_file)
+pipeline_mode <- !is.null(params$input_h5mu)
 
 
 max_fig <- params$max_fig
@@ -68,9 +68,9 @@ cat(desc)
 
 ```{r loadData}
 if (pipeline_mode) {
-  message("Loading data from: ", params$xlsx_file, " (sheet: ", params$sheet, ")")
-  data <- readxl::read_xlsx(params$xlsx_file, sheet = params$sheet)
-  output_dir <- if (!is.null(params$output_dir)) params$output_dir else dirname(params$xlsx_file)
+  message("Loading data from: ", params$input_h5mu, " (sheet: ", params$sheet, ")")
+  data <- prophosqua::read_ptm_h5mu(params$input_h5mu, prophosqua::PTM_results)$get_tables()[[params$sheet]]
+  output_dir <- if (!is.null(params$output_dir)) params$output_dir else dirname(params$input_h5mu)
 } else {
   # Vignette mode: use example data
   data("combined_test_diff_example", package = "prophosqua")
@@ -83,7 +83,7 @@ if (pipeline_mode) {
 data_info <- tibble(
   Property = c("Mode", "Sheet", "Analysis Type", "Rows", "Contrasts"),
   Value = c(
-    if (pipeline_mode) basename(params$xlsx_file) else "Example data",
+    if (pipeline_mode) basename(params$input_h5mu) else "Example data",
     params$sheet, toupper(params$analysis_type),
     nrow(data), paste(unique(data$contrast), collapse = ", ")
   )

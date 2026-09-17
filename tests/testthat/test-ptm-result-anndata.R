@@ -11,10 +11,11 @@ ptm_result_row <- function(adata, key, site) {
   ptm_varm_frame(adata, key)[feature, , drop = FALSE]
 }
 
-test_that("PTM result H5AD preserves the complete site input", {
+test_that("PTM result MuData preserves both complete inputs", {
   fixture <- ptm_result_fixture()
   site <- anndataR::read_h5ad(fixture$site)
-  result <- anndataR::read_h5ad(fixture$output)
+  container <- prolfquapp::read_h5mu(fixture$output)
+  result <- container$modalities$enriched
 
   expect_equal(
     unname(tools::md5sum(c(fixture$site, fixture$protein))),
@@ -32,34 +33,11 @@ test_that("PTM result H5AD preserves the complete site input", {
     expect_equal(as.matrix(result$varm[[key]]), as.matrix(site$varm[[key]]), info = key)
   }
   expect_null(site$uns[["prophosqua"]])
-})
-
-test_that("PTM result H5AD exposes a versioned, complete result contract", {
-  fixture <- ptm_result_fixture()
-  result <- anndataR::read_h5ad(fixture$output)
-  namespace <- result$uns[["prophosqua"]]
-  expected_keys <- c(
-    "dpa__a_vs_b",
-    "dpu__a_vs_b",
-    "dpu_unmoderated__a_vs_b",
-    "correct_first__a_vs_b"
-  )
-
-  expect_equal(namespace$artifact_type, "ptm_results")
-  expect_equal(namespace$schema_version, "1.0.0")
-  expect_equal(namespace$source_software, "prophosqua")
-  expect_setequal(names(namespace$varm_columns), expected_keys)
-  expect_setequal(names(namespace$varm_annotations), expected_keys)
-  expect_setequal(names(namespace$varm_present), expected_keys)
-  expect_setequal(unlist(namespace$result_keys, use.names = FALSE), expected_keys)
-  expect_setequal(result$varm_keys(), c("dea__a_vs_b", expected_keys))
-
-  expect_equal(namespace$site_input$path, normalizePath(fixture$site))
-  expect_equal(namespace$protein_input$path, normalizePath(fixture$protein))
-  expect_equal(namespace$site_input$hash, fixture$input_hashes[[1]])
-  expect_equal(namespace$protein_input$hash, fixture$input_hashes[[2]])
-  expect_equal(namespace$site_input$schema_version, "1.0.0")
-  expect_equal(namespace$protein_input$schema_version, "1.0.0")
+  total <- anndataR::read_h5ad(fixture$protein)
+  expect_equal(container$modalities$total$X, total$X)
+  expect_equal(container$modalities$total$var, total$var)
+  expect_equal(container$uns$prophosqua$schema_version, "2.0.0")
+  expect_equal(container$uns$prophosqua$stage, "PTM_statistics")
 })
 
 test_that("PTM result matrices retain statistics, annotations, and alignment", {
@@ -71,7 +49,8 @@ test_that("PTM result matrices retain statistics, annotations, and alignment", {
     readr::read_tsv(fixture$annot_file, show_col_types = FALSE),
     basename(fixture$annot_file)
   ))
-  result <- anndataR::read_h5ad(fixture$output)
+  container <- prolfquapp::read_h5mu(fixture$output)
+  result <- container$modalities$enriched
   site <- "P1~S10"
 
   expected_dpa <- dpa_dpu$combined_site_prot[
@@ -88,12 +67,12 @@ test_that("PTM result matrices retain statistics, annotations, and alignment", {
     ,
     drop = FALSE
   ]
-  actual_dpu <- ptm_result_row(result, "dpu__a_vs_b", site)
+  actual_dpu <- ptm_result_row(container$modalities$cf, "dpu__a_vs_b", site)
   expect_equal(actual_dpu$diff_diff, expected_dpu$diff_diff)
   expect_equal(actual_dpu$FDR_I, expected_dpu$FDR_I)
   expect_equal(
-    as.character(result$uns$prophosqua$varm_annotations$dpu__a_vs_b$measured_In)[
-      match(site, as.data.frame(result$var)$site)
+    as.character(container$modalities$cf$uns$prophosqua$varm_annotations$dpu__a_vs_b$measured_In)[
+      match(site, as.data.frame(container$modalities$cf$var)$site)
     ],
     expected_dpu$measured_In
   )
@@ -103,7 +82,7 @@ test_that("PTM result matrices retain statistics, annotations, and alignment", {
     ,
     drop = FALSE
   ]
-  actual_unmoderated <- ptm_result_row(result, "dpu_unmoderated__a_vs_b", site)
+  actual_unmoderated <- ptm_result_row(container$modalities$cf, "dpu_unmoderated__a_vs_b", site)
   expect_equal(actual_unmoderated$diff_diff, expected_unmoderated$diff_diff)
   expect_equal(actual_unmoderated$FDR_I, expected_unmoderated$FDR_I)
 
@@ -112,10 +91,10 @@ test_that("PTM result matrices retain statistics, annotations, and alignment", {
     ,
     drop = FALSE
   ]
-  actual_cf <- ptm_result_row(result, "correct_first__a_vs_b", site)
+  actual_cf <- ptm_result_row(container$modalities$cf, "correct_first__a_vs_b", site)
   expect_equal(actual_cf$diff.site, expected_cf$diff.site)
   expect_equal(actual_cf$FDR.site, expected_cf$FDR.site)
-  expect_true(result$uns$prophosqua$varm_present$dpa__a_vs_b[
+  expect_true(as.vector(result$varm$dpa__a_vs_b__present)[
     match(site, as.data.frame(result$var)$site)
   ])
 })
@@ -156,33 +135,20 @@ test_that("PTM result alignment rejects unknown and duplicate site identities", 
   )
 })
 
-test_that("PTM result writer validates its destination before computation", {
+test_that("contrast encoding and presence distinguish missing statistics from absent rows", {
   fixture <- anndata_pair_fixture()
-  expect_error(
-    compute_ptm_results_h5ad(
-      fixture$site,
-      fixture$protein,
-      fixture$annot_file,
-      fixture$site
-    ),
-    "must not overwrite either input"
-  )
-  expect_error(
-    compute_ptm_results_h5ad(
-      fixture$site,
-      fixture$protein,
-      fixture$annot_file,
-      file.path(tempfile(), "PTM_results.h5ad")
-    ),
-    "output directory does not exist"
-  )
-  expect_error(
-    compute_ptm_results_h5ad(
-      fixture$site,
-      fixture$protein,
-      tempfile(fileext = ".tsv"),
-      tempfile(fileext = ".h5ad")
-    ),
-    "Annotation file not found"
-  )
+  pair <- read_ptm_anndata_pair(fixture$site, fixture$protein)
+  data <- .compute_dpa_dpu_from_pair(pair)$combined_site_prot
+  first <- data[1, , drop = FALSE]
+  first$contrast <- "a/b"
+  numeric <- vapply(first, is.numeric, logical(1))
+  first[, numeric] <- NA_real_
+  second <- data[2, , drop = FALSE]
+  second$contrast <- "a%2Fb"
+  payload <- .ptm_analysis_payload(rbind(first, second), pair$site$var, "dpa", c("a/b", "a%2Fb"))
+  expect_equal(unname(payload$keys), c("dpa__a%2Fb", "dpa__a%252Fb"))
+  feature <- match(first$site, pair$site$var$site)
+  expect_true(payload$present[[1]][feature])
+  expect_false(payload$present[[2]][feature])
+  expect_true(all(is.na(payload$values[[1]][feature, ])))
 })

@@ -52,6 +52,10 @@ read_ptm_anndata_pair <- function(site_h5ad, protein_h5ad) {
       )
     }
   )
+  .dea_anndata_record(adata, normalizePath(path, mustWork = TRUE))
+}
+
+.dea_anndata_record <- function(adata, path) {
   namespace <- .prolfquapp_namespace(adata, path)
   .validate_dea_anndata(adata, namespace, path)
 
@@ -60,11 +64,11 @@ read_ptm_anndata_pair <- function(site_h5ad, protein_h5ad) {
   config <- prolfqua::list_to_AnalysisConfiguration(
     namespace$analysis_configuration
   )
-  transformed <- as.matrix(adata$layers[["transformed"]])
+  transformed <- as.matrix(adata$layers[["transformedData"]])
 
   structure(
     list(
-      source_path = normalizePath(path, mustWork = TRUE),
+      source_path = path,
       schema_version = namespace$schema_version,
       sample_key = namespace$sample_key,
       feature_keys = as.character(namespace$feature_keys),
@@ -127,13 +131,13 @@ read_ptm_anndata_pair <- function(site_h5ad, protein_h5ad) {
       call. = FALSE
     )
   }
-  if (!identical(namespace$schema_version, "1.0.0")) {
+  if (!identical(namespace$schema_version, "2.0.0")) {
     stop(
       "Unsupported prolfquapp DEA-results schema '",
       namespace$schema_version,
       "' in ",
       path,
-      "; supported schema is 1.0.0.",
+      "; supported schema is 2.0.0.",
       call. = FALSE
     )
   }
@@ -144,7 +148,7 @@ read_ptm_anndata_pair <- function(site_h5ad, protein_h5ad) {
   .validate_axis(rownames(var), "feature", path)
   .validate_sample_key(obs, namespace$sample_key, path)
 
-  required_layers <- c("raw", "transformed")
+  required_layers <- c("rawData", "transformedData")
   missing_layers <- setdiff(required_layers, adata$layers_keys())
   if (length(missing_layers) > 0L) {
     stop(
@@ -166,7 +170,7 @@ read_ptm_anndata_pair <- function(site_h5ad, protein_h5ad) {
     }
   }
 
-  dea_keys <- grep("^dea__", adata$varm_keys(), value = TRUE)
+  dea_keys <- grep("^constrast_", adata$varm_keys(), value = TRUE)
   if (length(dea_keys) == 0L) {
     stop("AnnData file contains no DEA result matrices: ", path, call. = FALSE)
   }
@@ -311,7 +315,7 @@ read_ptm_anndata_pair <- function(site_h5ad, protein_h5ad) {
 }
 
 .anndata_dea_results <- function(adata, namespace, var) {
-  dea_keys <- grep("^dea__", adata$varm_keys(), value = TRUE)
+  dea_keys <- grep("^constrast_", adata$varm_keys(), value = TRUE)
   tables <- lapply(
     dea_keys,
     function(key) .anndata_dea_table(adata, namespace, var, key)

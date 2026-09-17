@@ -10,7 +10,7 @@ suppressPackageStartupMessages({
 })
 
 option_list <- list(
-  make_option("--input_rds", type = "character", help = "combined_test_diff.rds written by the DPU computation"),
+  make_option("--input_h5mu", type = "character", help = "completed PTM_results MuData"),
   make_option("--output_dir", type = "character", help = "directory to write Result_DPU.html to"),
   make_option(
     "--project_id",
@@ -27,14 +27,14 @@ option_list <- list(
 )
 opt <- parse_args(OptionParser(option_list = option_list))
 
-for (required in c("input_rds", "output_dir")) {
+for (required in c("input_h5mu", "output_dir")) {
   if (is.null(opt[[required]])) {
     stop("--", required, " is required", call. = FALSE)
   }
 }
 
 prophosqua::render_dpu_overview(
-  input_rds = opt$input_rds,
+  input_h5mu = opt$input_h5mu,
   output_dir = opt$output_dir,
   project_id = opt$project_id,
   work_unit_id = opt$work_unit_id

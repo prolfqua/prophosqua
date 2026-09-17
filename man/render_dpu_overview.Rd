@@ -5,14 +5,14 @@
 \title{Render the Phospho and Protein Integration Overview}
 \usage{
 render_dpu_overview(
-  input_rds,
+  input_h5mu,
   output_dir,
   project_id = "PTM_analysis",
   work_unit_id = "DPU_Integration"
 )
 }
 \arguments{
-\item{input_rds}{The `combined_test_diff.rds` written by the DPU computation.}
+\item{input_h5mu}{Complete `PTM_results.h5mu` artifact.}
 
 \item{output_dir}{Directory to write `Result_DPU.html` to.}
 
@@ -38,6 +38,6 @@ each other's intermediates.
 \examples{
 # Needs the DPU result of a pipeline run.
 \dontrun{
-render_dpu_overview("PTM_DPU/combined_test_diff.rds", "PTM_DPU")
+render_dpu_overview("PTM_results.h5mu", "PTM_DPU")
 }
 }

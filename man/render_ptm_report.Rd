@@ -52,7 +52,7 @@ reports would end up with whichever content finished last.
 \dontrun{
 render_ptm_report(
   "Analysis_seqlogo.Rmd", "Analysis_seqlogo.html", "PTM_DPA",
-  params = list(xlsx_file = "PTM_results.xlsx", sheet = "DPA")
+  params = list(input_h5mu = "PTM_results.h5mu", sheet = "DPA")
 )
 }
 }

@@ -4,7 +4,7 @@ subtitle: "`r params$analysis_type`"
 author: "FGCZ"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 params:
-  objects_rds: NULL
+  input_h5mu: NULL
   analysis_type: "DPA"
 output:
   bookdown::html_document2:
@@ -37,7 +37,7 @@ library(writexl)
 library(prophosqua)
 
 # Detect pipeline vs vignette mode
-pipeline_mode <- !is.null(params$objects_rds)
+pipeline_mode <- !is.null(params$input_h5mu)
 ```
 
 # Overview
@@ -51,16 +51,16 @@ results — not kinase abundance, which a phosphoproteomics experiment does not 
 
 | Step | What happens | Software |
 |:--|:--|:--|
-| 1. Rank the sites | All quantified sites of a contrast are sorted by their site-level moderated t-statistic (`statistic.site`: most increased first, most decreased last) and written to a `.rnk` file, one per contrast. The sites, the sheet and the ranking statistic come from the combined `PTM_results.xlsx` that PTM-SEA and the KinaseLib GSEA also read, so the three enrichment analyses rank identically. For DPU that statistic is the site-versus-protein interaction, which the combined workbook stores under the same name | `prep_kinaselib.R` of the PTM pipeline |
+| 1. Rank the sites | All quantified sites of a contrast are sorted by their site-level moderated t-statistic (`statistic.site`: most increased first, most decreased last) and stored in MuData, one ranking per contrast. The sites, the sheet and the ranking statistic come from the complete `PTM_statistics.h5mu` that PTM-SEA and the KinaseLib GSEA also read, so the three enrichment analyses rank identically. For DPU that statistic is the site-versus-protein interaction, which the statistics container stores under the same name | `KinaseInputs` in prophosqua |
 | 2. Score the motifs | The ±7-residue sequence window of every site is scored against the position-specific scoring matrix of every kinase, and each score is converted into a percentile relative to a reference phosphoproteome | [kinase-library](https://github.com/TheKinaseLibrary/kinase-library) (Python) |
 | 3. Build substrate sets | Per kinase, all sites scoring above the configured percentile threshold (95th percentile by default) form its predicted substrate set — one set per kinase (311 Ser/Thr, 78 Tyr kinases in Kinase Library v1.2.0) | kinase-library |
 | 4. Test for enrichment | Pre-ranked GSEA of those sets against the ranked site list, giving ES, NES, a permutation p-value (1000 permutations by default) and a Benjamini-Hochberg FDR per kinase | [GSEApy](https://gseapy.readthedocs.io) `prerank`, called by kinase-library |
-| 5. This report | Reads the per-contrast `mea_*.csv` files and produces the summaries, figures and Excel export below | R: `prophosqua`, `dplyr`, `ggplot2`, `DT` |
+| 5. This report | Reads completed enrichment from `PTM_results.h5mu` and produces the summaries and figures below | R: `prophosqua`, `dplyr`, `ggplot2`, `DT` |
 
-Steps 2-4 run outside R, through the `run-mea` command line entry point of the
+Steps 2-4 run outside R, through the MuData adapter calling the
 kinase-library package. The kinase type, percentile threshold and permutation count
 actually used are recorded in the pipeline log written next to the results
-(`logs/mea_<contrast>.log`).
+(`logs/run_mea.log`).
 
 ## What "enriched at the extremes of the ranked data" means
 
@@ -82,7 +82,7 @@ the **enrichment score (ES)**:
 Randomly permuting the ranks calibrates ES into the **normalized enrichment score (NES)**,
 which is comparable between kinases and contrasts, plus a p-value and an FDR. The
 **leading-edge substrates** are the sites in front of the running-sum peak: they are the
-sites that actually produce the score, and they are listed per kinase in the `mea_*.csv`
+sites that actually produce the score, and they are retained per kinase in the MuData result
 files.
 
 So a kinase with NES > 0 and a small FDR has its predicted substrates concentrated among
@@ -122,7 +122,7 @@ Two limitations to keep in mind when interpreting the tables below:
 
 ```{r loadMEA}
 if (pipeline_mode) {
-  mea <- readRDS(params$objects_rds)
+  mea <- prophosqua::ptm_enrichment_report_data(params$input_h5mu, "MEA", params$analysis_type)
 } else {
   # Standalone mode: compute from the example data shipped with the package,
   # through the same function the pipeline calls.
@@ -310,29 +310,20 @@ DT::datatable(all_results_dt,
   ))
 ```
 
-# Export Results
+# Delivery exports
+
+This report reads completed MEA results from `PTM_results.h5mu`. The terminal export step writes the following delivery files after all reports finish, including valid empty results.
 
 ```{r exportedFiles}
-stem <- file.path(output_dir, paste0("MEA_", params$analysis_type, "_results"))
-exported <- paste0(stem, c(".xlsx", ".rds"))
-
 knitr::kable(
   tibble(
     Output = c("Excel results", "RDS object"),
-    File = basename(exported),
-    Size = ifelse(
-      file.exists(exported),
-      paste(round(file.size(exported) / 1024, 1), "KB"),
-      "not found"
-    )
+    File = paste0("MEA_", params$analysis_type, "_results", c(".xlsx", ".rds"))
   ),
-  caption = paste0(
-    "Files the collection step, prophosqua::compute_mea(), wrote next to this report: the ",
-    "Excel workbook with all kinase results, a significant-only sheet and the per-contrast ",
-    "summary, and the RDS with the cleaned table this report renders from."
-  )
+  caption = "Delivery files exported from final MuData after report generation."
 )
 ```
+
 
 # Session Info
 

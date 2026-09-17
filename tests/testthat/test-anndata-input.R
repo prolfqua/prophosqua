@@ -1,21 +1,3 @@
-sort_ptm_result <- function(data) {
-  keys <- intersect(c("protein_Id", "site", "protein_Id_site", "contrast"), names(data))
-  data <- as.data.frame(data)
-  data <- data[do.call(order, data[keys]), , drop = FALSE]
-  rownames(data) <- NULL
-  data
-}
-
-expect_same_common_columns <- function(actual, expected, tolerance = 1e-10) {
-  common <- intersect(names(expected), names(actual))
-  expect_equal(
-    sort_ptm_result(actual)[, common, drop = FALSE],
-    sort_ptm_result(expected)[, common, drop = FALSE],
-    tolerance = tolerance,
-    ignore_attr = TRUE
-  )
-}
-
 test_that("paired AnnData reader returns consumer-owned experiment records", {
   paths <- anndata_pair_fixture()
   pair <- read_ptm_anndata_pair(paths$site, paths$protein)
@@ -23,7 +5,7 @@ test_that("paired AnnData reader returns consumer-owned experiment records", {
   expect_s3_class(pair, "prophosqua_anndata_pair")
   expect_s3_class(pair$site, "prophosqua_dea_experiment")
   expect_s3_class(pair$protein, "prophosqua_dea_experiment")
-  expect_equal(pair$site$schema_version, "1.0.0")
+  expect_equal(pair$site$schema_version, "2.0.0")
   expect_equal(pair$site$feature_keys, c("protein_Id", "site"))
   expect_equal(pair$protein$feature_keys, "protein_Id")
   expect_equal(nrow(pair$site$normalized_abundances), 96)
@@ -63,14 +45,14 @@ test_that("paired AnnData reader rejects unsupported schemas", {
   paths <- anndata_pair_fixture()
   unsupported <- rewrite_fixture_h5ad(paths$site, function(adata) {
     namespace <- adata$uns[["prolfquapp"]]
-    namespace$schema_version <- "2.0.0"
+    namespace$schema_version <- "99.0.0"
     adata$uns[["prolfquapp"]] <- namespace
     adata
   })
 
   expect_error(
     read_ptm_anndata_pair(unsupported, paths$protein),
-    "Unsupported prolfquapp DEA-results schema '2.0.0'"
+    "Unsupported prolfquapp DEA-results schema '99.0.0'"
   )
 })
 
@@ -136,7 +118,7 @@ test_that("paired AnnData reader rejects malformed files and missing layers", {
   )
 
   missing_raw <- rewrite_fixture_h5ad(paths$site, function(adata) {
-    adata$layers[["raw"]] <- NULL
+    adata$layers[["rawData"]] <- NULL
     adata
   })
   expect_error(
@@ -169,7 +151,7 @@ test_that("AnnData DPA and DPU reject missing required statistics", {
   paths <- anndata_pair_fixture()
   missing_statistic <- rewrite_fixture_h5ad(paths$site, function(adata) {
     namespace <- adata$uns[["prolfquapp"]]
-    for (key in grep("^dea__", adata$varm_keys(), value = TRUE)) {
+    for (key in grep("^constrast_", adata$varm_keys(), value = TRUE)) {
       columns <- namespace$varm_columns[[key]]
       keep <- columns != "std.error.unmoderated"
       adata$varm[[key]] <- as.matrix(adata$varm[[key]])[, keep, drop = FALSE]

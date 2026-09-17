@@ -34,13 +34,10 @@ ptm_result_fixture <- local({
     if (is.null(value)) {
       paths <- anndata_pair_fixture()
       input_hashes <- tools::md5sum(c(paths$site, paths$protein))
-      output <- tempfile(fileext = ".h5ad")
-      suppressWarnings(compute_ptm_results_h5ad(
-        paths$site,
-        paths$protein,
-        paths$annot_file,
-        output
-      ))
+      output <- tempfile(fileext = ".h5mu")
+      input <- tempfile(fileext = ".h5mu")
+      import_ptm_h5mu(paths$site, paths$protein, input)
+      suppressWarnings(compute_ptm_results_h5mu(input, output))
       value <<- c(
         paths,
         list(output = output, input_hashes = unname(input_hashes))
@@ -96,23 +93,26 @@ write_dea_fixture_h5ad <- function(dea_dir, path, site) {
 
   namespace <- list(
     artifact_type = "dea_results",
-    schema_version = "1.0.0",
+    schema_version = "2.0.0",
     source_software = "prophosqua-test-fixture",
     analysis_configuration = config,
-    layer_names = c("raw", "transformed", "nr_children"),
+    layer_names = c("rawData", "transformedData", "nr_children"),
     feature_keys = feature_keys,
     sample_key = sample_key,
     varm_columns = varm$columns,
     varm_annotations = varm$annotations,
-    contrasts = list(contrast_name = unique(results$contrast))
+    contrasts = list(
+      contrast_name = unique(results$contrast),
+      contrast = unname(derive_contrasts(readr::read_tsv(example_dea_pair()$annot_file, show_col_types = FALSE)))
+    )
   )
   adata <- anndataR::AnnData(
     X = transformed,
     obs = obs,
     var = var,
     layers = list(
-      raw = transformed,
-      transformed = transformed,
+      rawData = transformed,
+      transformedData = transformed,
       nr_children = nr_children
     ),
     varm = varm$values,
@@ -157,7 +157,7 @@ dea_fixture_varm <- function(results, var, feature_key) {
 
   for (contrast in unique(results$contrast)) {
     key <- paste0(
-      "dea__",
+      "constrast_",
       utils::URLencode(contrast, reserved = TRUE, repeated = TRUE)
     )
     table <- results[results$contrast == contrast, , drop = FALSE]
@@ -178,4 +178,22 @@ rewrite_fixture_h5ad <- function(path, transform) {
   output <- tempfile(fileext = ".h5ad")
   adata$write_h5ad(output, compression = "gzip", mode = "w")
   output
+}
+
+sort_ptm_result <- function(data) {
+  keys <- intersect(c("protein_Id", "site", "protein_Id_site", "contrast"), names(data))
+  data <- as.data.frame(data)
+  data <- data[do.call(order, data[keys]), , drop = FALSE]
+  rownames(data) <- NULL
+  data
+}
+
+expect_same_common_columns <- function(actual, expected, tolerance = 1e-10) {
+  common <- intersect(names(expected), names(actual))
+  expect_equal(
+    sort_ptm_result(actual)[, common, drop = FALSE],
+    sort_ptm_result(expected)[, common, drop = FALSE],
+    tolerance = tolerance,
+    ignore_attr = TRUE
+  )
 }

@@ -87,7 +87,7 @@ compute_cf_dea_h5ad <- function(site_h5ad, protein_h5ad, annot_file) {
   .compute_cf_dea_from_pair(pair, annot, basename(annot_file))
 }
 
-.compute_cf_dea_from_pair <- function(pair, annot, annot_label) {
+.compute_cf_dea_from_pair <- function(pair, annot, annot_label, contrasts = derive_contrasts(annot, annot_label)) {
   .compute_cf_dea_from_inputs(
     site_data = pair$site$normalized_abundances,
     protein_data = pair$protein$normalized_abundances,
@@ -96,7 +96,8 @@ compute_cf_dea_h5ad <- function(site_h5ad, protein_h5ad, annot_file) {
     protein_sample_col = pair$protein$sample_key,
     site_info = pair$site$site_info,
     annot = annot,
-    annot_label = annot_label
+    annot_label = annot_label,
+    contrasts = contrasts
   )
 }
 
@@ -108,7 +109,8 @@ compute_cf_dea_h5ad <- function(site_h5ad, protein_h5ad, annot_file) {
   protein_sample_col,
   site_info,
   annot,
-  annot_label
+  annot_label,
+  contrasts = derive_contrasts(annot, annot_label)
 ) {
   .require_columns(
     protein_data,
@@ -134,7 +136,7 @@ compute_cf_dea_h5ad <- function(site_h5ad, protein_h5ad, annot_file) {
   n_protein_measurements <- nrow(tot_d)
 
   # --- the response: site abundances --------------------------------------
-  ptm_data <- prolfqua::LFQData$new(site_data, site_config)
+  ptm_data <- prolfqua::LFQData$new(site_data, site_config$clone(deep = TRUE))
   n_site_measurements <- nrow(ptm_data$data_long())
 
   # --- correct: site minus its protein, in the same sample ----------------
@@ -173,8 +175,6 @@ compute_cf_dea_h5ad <- function(site_h5ad, protein_h5ad, annot_file) {
   strategy_lm <- prolfqua::strategy_lm("ptm_usage ~ G_")
   models <- prolfqua::build_model(data = ptm_data, model_strategy = strategy_lm)
   n_models <- nrow(models$model_df)
-
-  contrasts <- derive_contrasts(annot, annot_label)
 
   ctr <- prolfqua::Contrasts$new(models, contrasts)
   ctr <- prolfqua::ContrastsModerated$new(ctr)

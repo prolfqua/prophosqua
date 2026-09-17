@@ -31,7 +31,7 @@
 #' \dontrun{
 #' render_ptm_report(
 #'   "Analysis_seqlogo.Rmd", "Analysis_seqlogo.html", "PTM_DPA",
-#'   params = list(xlsx_file = "PTM_results.xlsx", sheet = "DPA")
+#'   params = list(input_h5mu = "PTM_results.h5mu", sheet = "DPA")
 #' )
 #' }
 render_ptm_report <- function(name, output_file, output_dir, params = list(), intermediates_dir = NULL) {
@@ -68,7 +68,7 @@ render_ptm_report <- function(name, output_file, output_dir, params = list(), in
 #' files into the project root, and would let two concurrent renders overwrite
 #' each other's intermediates.
 #'
-#' @param input_rds The `combined_test_diff.rds` written by the DPU computation.
+#' @param input_h5mu Complete `PTM_results.h5mu` artifact.
 #' @param output_dir Directory to write `Result_DPU.html` to.
 #' @param project_id Project identifier shown in the report header.
 #' @param work_unit_id Work unit identifier shown in the report header.
@@ -77,16 +77,16 @@ render_ptm_report <- function(name, output_file, output_dir, params = list(), in
 #' @examples
 #' # Needs the DPU result of a pipeline run.
 #' \dontrun{
-#' render_dpu_overview("PTM_DPU/combined_test_diff.rds", "PTM_DPU")
+#' render_dpu_overview("PTM_results.h5mu", "PTM_DPU")
 #' }
-render_dpu_overview <- function(input_rds, output_dir, project_id = "PTM_analysis", work_unit_id = "DPU_Integration") {
-  if (!file.exists(input_rds)) {
-    stop("Input RDS file not found: ", input_rds, call. = FALSE)
+render_dpu_overview <- function(input_h5mu, output_dir, project_id = "PTM_analysis", work_unit_id = "DPU_Integration") {
+  if (!file.exists(input_h5mu)) {
+    stop("Input MuData file not found: ", input_h5mu, call. = FALSE)
   }
   dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 
-  message("Loading data from: ", input_rds)
-  combined_test_diff <- readRDS(input_rds)
+  message("Loading data from: ", input_h5mu)
+  combined_test_diff <- read_ptm_h5mu(input_h5mu, PTM_results)$get_statistics()$get_dpa_dpu()$combined_test_diff
 
   grp <- prolfquapp::make_DEA_config_R6(
     PROJECTID = project_id,

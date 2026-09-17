@@ -1,5 +1,9 @@
 # prophosqua 0.3.0
 
+- Complete R6 stages now carry paired DEA, independent DPA/DPU and CorrectFirst, preparation, enrichment, and final results through MuData. Reports read final MuData; Excel/RDS delivery exports run last. Preserve existing joins, contrasts, and numerical computations. Replace the single-site PTM H5AD writer with the MuData commands.
+
+- Read current prolfquapp DEA artifacts and compose complete paired-input, CorrectFirst, and DPA/DPU stages in MuData.
+
 - A paired site and total-proteome AnnData analysis can now be written as one
   `PTM_results.h5ad` with `compute_ptm_results_h5ad()`. The new artifact keeps
   the site measurements and upstream DEA results intact, adds feature-aligned

@@ -2,6 +2,7 @@
 title: "PTM Analysis Results"
 params:
   folder: "PTM_20251206"
+  input_h5mu: NULL
 output:
   html_document:
     toc: true
@@ -13,6 +14,9 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 library(dplyr)
+results <- prophosqua::read_ptm_h5mu(params$input_h5mu, prophosqua::PTM_results)
+settings <- results$get_statistics()$get_inputs()$get_parameters()
+analyses <- settings$analyses
 ```
 
 This page provides an overview of all PTM (Post-Translational Modification) analysis results.
@@ -28,7 +32,8 @@ This page provides an overview of all PTM (Post-Translational Modification) anal
 # Helper to create link if file exists
 link_if_exists <- function(file_path, link_path, label = NULL) {
   if (is.null(label)) label <- basename(file_path)
-  if (file.exists(file_path)) {
+  terminal <- grepl("\\.(xlsx|rds)$", file_path)
+  if (file.exists(file_path) || terminal) {
     sprintf("[%s](%s)", label, link_path)
   } else {
     ""
@@ -59,6 +64,8 @@ generate_analysis_rows <- function(analysis_dir, relative_dir, analysis_type, nt
                                  file.path(relative_dir, "Analysis_seqlogo.html"))
   rows <- c(rows, sprintf("| Sequence Logos | %s | |", seqlogo_html))
 
+  if (!isTRUE(settings$run_kinase)) return(rows)
+
   # PTM-SEA
   ptmsea_html <- link_if_exists(file.path(analysis_dir, paste0("PTMSEA/PTMSEA_", analysis_type, ".html")),
                                 file.path(relative_dir, paste0("PTMSEA/PTMSEA_", analysis_type, ".html")))
@@ -84,22 +91,27 @@ generate_analysis_rows <- function(analysis_dir, relative_dir, analysis_type, nt
                              file.path(relative_dir, paste0("KinaseLib/MEA_", analysis_type, "_results.xlsx")), "xlsx")
   rows <- c(rows, sprintf("| KinaseLib MEA | %s | %s |", mea_html, mea_xlsx))
 
+  if (isTRUE(settings$ptm3d$run)) {
+    app <- link_if_exists(file.path(analysis_dir, "ptm3d/index.html"), file.path(relative_dir, "ptm3d/index.html"), "3D browser")
+    rows <- c(rows, sprintf("| Protein structures | %s | |", app))
+  }
   return(rows)
 }
 
 # Analysis directories
-dpa_dir <- file.path(params$folder, "PTM_DPA")
-dpu_dir <- file.path(params$folder, "PTM_DPU")
-cf_dir <- file.path(params$folder, "PTM_CF_DPU")
+dpa_dir <- file.path(params$folder, analyses$dpa$subdir)
+dpu_dir <- file.path(params$folder, analyses$dpu$subdir)
+cf_dir <- file.path(params$folder, analyses$cf$subdir)
 ```
 
 ## Combined Results
 
-All results in one file with standardized column names (diff.site, FDR.site, statistic.site) plus normalized abundances.
+The complete MuData contains the input experiments, PTM statistics, and enabled enrichment results. Excel and RDS delivery files are exported after all reports finish, with standardized columns and normalized abundances.
 
 ```{r combined_results, results='asis'}
 cat("| Description | File |\n")
 cat("|-------------|------|\n")
+cat("| Complete analysis | [PTM_results.h5mu](PTM_results.h5mu) |\n")
 cat(sprintf("| Excel (sheets: DPA, DPU, CF, abundances) | %s |\n",
     link_if_exists(file.path(params$folder, "PTM_results.xlsx"), "PTM_results.xlsx")))
 cat(sprintf("| R data file | %s |\n",
@@ -115,11 +127,11 @@ cat("| Analysis | Report | Data / PDF |\n")
 cat("|----------|--------|------------|\n")
 
 # Generate standard rows using helper
-rows <- generate_analysis_rows(dpa_dir, "PTM_DPA", "DPA", "Site_differential_Expression_MultiContrast.pdf")
+rows <- generate_analysis_rows(dpa_dir, analyses$dpa$subdir, "DPA", "Site_differential_Expression_MultiContrast.pdf")
 cat(paste0(rows, "\n", collapse = ""))
 
 # Results xlsx
-results_xlsx <- link_if_exists(file.path(dpa_dir, "Result_DPA.xlsx"), "PTM_DPA/Result_DPA.xlsx", "xlsx")
+results_xlsx <- link_if_exists(file.path(dpa_dir, "Result_DPA.xlsx"), file.path(analyses$dpa$subdir, "Result_DPA.xlsx"), "xlsx")
 cat(sprintf("| Results | | %s |\n", results_xlsx))
 ```
 
@@ -132,17 +144,17 @@ cat("| Analysis | Report | Data / PDF |\n")
 cat("|----------|--------|------------|\n")
 
 # DPU-specific rows first
-dpu_overview <- link_if_exists(file.path(dpu_dir, "Result_DPU.html"), "PTM_DPU/Result_DPU.html")
-dpu_xlsx <- link_if_exists(file.path(dpu_dir, "Result_DPU.xlsx"), "PTM_DPU/Result_DPU.xlsx", "xlsx")
+dpu_overview <- link_if_exists(file.path(dpu_dir, "Result_DPU.html"), file.path(analyses$dpu$subdir, "Result_DPU.html"))
+dpu_xlsx <- link_if_exists(file.path(dpu_dir, "Result_DPU.xlsx"), file.path(analyses$dpu$subdir, "Result_DPU.xlsx"), "xlsx")
 cat(sprintf("| DPU Integration | %s | %s |\n", dpu_overview, dpu_xlsx))
 
-main_html <- link_if_exists(file.path(dpa_dir, "Analysis_DPA_DPU.html"), "PTM_DPA/Analysis_DPA_DPU.html")
+main_html <- link_if_exists(file.path(dpa_dir, "Analysis_DPA_DPU.html"), file.path(analyses$dpa$subdir, "Analysis_DPA_DPU.html"))
 if (nchar(main_html) > 0) {
   cat(sprintf("| DPA/DPU Analysis | %s | |\n", main_html))
 }
 
 # Generate standard rows using helper
-rows <- generate_analysis_rows(dpu_dir, "PTM_DPU", "DPU", "Site_differential_UsageChange_MultiContrast.pdf")
+rows <- generate_analysis_rows(dpu_dir, analyses$dpu$subdir, "DPU", "Site_differential_UsageChange_MultiContrast.pdf")
 cat(paste0(rows, "\n", collapse = ""))
 ```
 
@@ -156,13 +168,13 @@ cat("|----------|--------|------------|\n")
 
 # CF-specific row first
 main_html <- link_if_exists(file.path(cf_dir, "Analysis_CorrectFirst_DEA.html"),
-                            "PTM_CF_DPU/Analysis_CorrectFirst_DEA.html")
+                            file.path(analyses$cf$subdir, "Analysis_CorrectFirst_DEA.html"))
 main_xlsx <- link_if_exists(file.path(cf_dir, "CorrectFirst_PTM_usage_results.xlsx"),
-                            "PTM_CF_DPU/CorrectFirst_PTM_usage_results.xlsx", "xlsx")
+                            file.path(analyses$cf$subdir, "CorrectFirst_PTM_usage_results.xlsx"), "xlsx")
 cat(sprintf("| Main Analysis | %s | %s |\n", main_html, main_xlsx))
 
 # Generate standard rows using helper
-rows <- generate_analysis_rows(cf_dir, "PTM_CF_DPU", "CF", "Site_differential_CorrectFirst_MultiContrast.pdf")
+rows <- generate_analysis_rows(cf_dir, analyses$cf$subdir, "CF", "Site_differential_CorrectFirst_MultiContrast.pdf")
 cat(paste0(rows, "\n", collapse = ""))
 ```
 
