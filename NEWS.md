@@ -1,5 +1,7 @@
 # prophosqua 0.3.0
 
+- Preserve missing gene annotations as `NA` in terminal DPA/DPU RDS exports, matching the legacy workbook reader.
+
 - Preserve the legacy model, estimate-type, contrast, and sample-design column positions in terminal delivery exports.
 
 - Describe the MuData report inputs and terminal delivery files consistently in the DPA/DPU and CorrectFirst reports.

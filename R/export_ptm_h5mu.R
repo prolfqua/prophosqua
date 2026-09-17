@@ -46,7 +46,9 @@ export_ptm_h5mu <- function(input_h5mu, output_dir) {
 }
 
 .ptm_dpa_dpu_delivery <- function(table) {
+  # The legacy DEA workbook reader represented empty annotation cells as NA.
   table |>
+    dplyr::mutate(dplyr::across(tidyselect::where(is.character), ~ dplyr::na_if(.x, ""))) |>
     dplyr::relocate(tidyselect::any_of(c("modelName.site", "estimate_type.site", "contrast")), .before = "diff.site") |>
     dplyr::relocate(tidyselect::any_of(c("modelName.protein", "estimate_type.protein")), .before = "diff.protein")
 }

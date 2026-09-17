@@ -24,3 +24,18 @@ test_that("terminal statistics exports retain the legacy metadata column order",
   }
   expect_equal(statistics$get_dpa_dpu(), before)
 })
+
+test_that("terminal DPA/DPU annotations retain legacy blank-cell missingness", {
+  source <- data.frame(
+    gene_name.site = c("", "GENE1", NA_character_),
+    diff.site = c(1, 2, NA_real_),
+    gene_name.protein = c("GENE2", "", NA_character_),
+    diff.protein = c(3, NA_real_, 4)
+  )
+  output <- .ptm_dpa_dpu_delivery(source)
+  expect_identical(output$gene_name.site, c(NA_character_, "GENE1", NA_character_))
+  expect_identical(output$gene_name.protein, c("GENE2", NA_character_, NA_character_))
+  expect_identical(output$diff.site, source$diff.site)
+  expect_identical(output$diff.protein, source$diff.protein)
+  expect_identical(source$gene_name.site[[1L]], "")
+})
