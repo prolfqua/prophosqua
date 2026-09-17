@@ -29,7 +29,11 @@ export_ptm_h5mu <- function(input_h5mu, output_dir) {
   parameters <- statistics$get_inputs()$get_parameters()
   directories <- lapply(parameters$analyses, function(value) file.path(output_dir, value$subdir))
   dpa_dpu <- statistics$get_dpa_dpu()
+  dpa_dpu$combined_site_prot <- .ptm_dpa_dpu_delivery(dpa_dpu$combined_site_prot)
+  dpa_dpu$combined_test_diff <- .ptm_dpa_dpu_delivery(dpa_dpu$combined_test_diff)
   cf <- statistics$get_cf()
+  cf$wide_annotation <- cf$wide_annotation |>
+    dplyr::relocate(tidyselect::any_of("CONTROL"), .after = "G_")
   .write_ptm_delivery(
     list(combinedSiteProteinData = dpa_dpu$combined_site_prot),
     file.path(directories$dpa, "Result_DPA")
@@ -39,6 +43,12 @@ export_ptm_h5mu <- function(input_h5mu, output_dir) {
   saveRDS(dpa_dpu$combined_test_diff, file.path(directories$dpu, "combined_test_diff.rds"))
   writexl::write_xlsx(cf$wide_data, file.path(directories$cf, "CorrectFirst_intensities_wide.xlsx"))
   writexl::write_xlsx(cf$wide_annotation, file.path(directories$cf, "CorrectFirst_intensities_file_annotation.xlsx"))
+}
+
+.ptm_dpa_dpu_delivery <- function(table) {
+  table |>
+    dplyr::relocate(tidyselect::any_of(c("modelName.site", "estimate_type.site", "contrast")), .before = "diff.site") |>
+    dplyr::relocate(tidyselect::any_of(c("modelName.protein", "estimate_type.protein")), .before = "diff.protein")
 }
 
 .enrichment_delivery_stem <- function(branch, output_dir, subdir, name) {
