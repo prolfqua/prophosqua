@@ -14,8 +14,9 @@ Named list of named numeric vectors, one per contrast.
 }
 \description{
 The pipeline writes one `<sheet>_MEA_<contrast>.rnk` per contrast next to
-the `mea_*.csv` results: tab-separated, no header, sequence window and
-statistic, sorted descending.
+the `mea_*.csv` results: tab-separated with a header row (`SequenceWindow`,
+`statistic.site`), sorted descending. Reading it headerless would turn the
+header into a rank entry and coerce every statistic to a string.
 }
 \examples{
 \dontrun{

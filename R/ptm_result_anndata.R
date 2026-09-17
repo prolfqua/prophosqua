@@ -80,24 +80,19 @@ compute_ptm_results_h5ad <- function(
 ) {
   payload <- .ptm_result_payload(pair, dpa_dpu, correct_first, source_hashes)
   adata <- .ptm_result_anndata(pair$site$source_path, payload)
-  temporary <- tempfile(
-    pattern = ".PTM-results-",
-    tmpdir = dirname(output_h5ad),
-    fileext = ".h5ad"
+  prolfquapp::write_h5ad_atomic(
+    adata,
+    output_h5ad,
+    validate = function(restored) {
+      .validate_written_ptm_result(restored, adata, payload)
+      if (!identical(.ptm_input_hashes(pair), source_hashes)) {
+        stop(
+          "An input H5AD file changed while the PTM result was being written.",
+          call. = FALSE
+        )
+      }
+    }
   )
-  on.exit(unlink(temporary), add = TRUE)
-
-  invisible(rhdf5::H5get_libversion())
-  adata$write_h5ad(temporary, compression = "gzip", mode = "w")
-  restored <- anndataR::read_h5ad(temporary)
-  .validate_written_ptm_result(restored, adata, payload)
-  if (!identical(.ptm_input_hashes(pair), source_hashes)) {
-    stop("An input H5AD file changed while the PTM result was being written.", call. = FALSE)
-  }
-  if (!file.rename(temporary, output_h5ad)) {
-    stop("Could not publish validated PTM result H5AD: ", output_h5ad, call. = FALSE)
-  }
-  invisible(normalizePath(output_h5ad, mustWork = TRUE))
 }
 
 .ptm_input_hashes <- function(pair) {
