@@ -142,38 +142,33 @@ gsea_contrast_entry <- function(contrast, pool, terms, category) {
 #' write_gsea_result_json(json_data, "PTMSEA_DPA_results.json")
 #' }
 gsea_result_data <- function(results, category, method = "fgsea") {
-  data <- purrr::imap(results, function(res, contrast) {
-    ranks <- methods::slot(res, "geneList")
-    pool <- gene_pool_from_ranks(ranks)
-    gene_sets <- methods::slot(res, "geneSets")
-    result <- methods::slot(res, "result")
-
-    terms <- purrr::map(seq_len(nrow(result)), function(i) {
-      row <- result[i, ]
-      full_set <- gene_sets[[row$ID]]
-      mapped <- normalize_window_id(intersect(full_set, names(ranks)))
-      leading <- normalize_window_id(strsplit(row$core_enrichment, "/")[[1]])
-      gsea_term_entry(
-        term_id = row$ID,
-        category = category,
-        description = row$Description,
-        nes = row$NES,
-        fdr = row$p.adjust,
-        method = method,
-        gene_ids = mapped,
-        leading_edge_ids = intersect(leading, mapped),
-        genes_in_set = length(full_set)
-      )
+  document <- protsea::gsea_result_data(results, category, method)
+  # PTM consumers join on canonical sequence windows; keep submitted IDs in
+  # input_label and the native block so protsea can reconstruct the analysis.
+  document$data <- purrr::map(document$data, function(contrast) {
+    pool <- contrast$gene_pool
+    ids <- normalize_window_id(names(pool))
+    if (anyDuplicated(ids)) {
+      stop("Sequence-window normalization creates duplicate IDs")
+    }
+    pool <- purrr::map(pool, function(hit) {
+      hit$protein_id <- normalize_window_id(hit$protein_id)
+      hit$label <- hit$protein_id
+      hit
     })
-    gsea_contrast_entry(contrast, pool, terms, category)
+    names(pool) <- ids
+    contrast$gene_pool <- pool
+    contrast$categories <- purrr::map(contrast$categories, function(cat) {
+      cat$terms <- purrr::map(cat$terms, function(term) {
+        term$gene_ids <- as.list(normalize_window_id(unlist(term$gene_ids)))
+        term$leading_edge_ids <- as.list(normalize_window_id(unlist(term$leading_edge_ids)))
+        term
+      })
+      cat
+    })
+    contrast
   })
-
-  rank_lists <- purrr::imap(results, function(res, contrast) {
-    ranks <- methods::slot(res, "geneList")
-    list(contrast = contrast, entries = as.list(ranks))
-  })
-
-  list(data = data, rank_lists = rank_lists)
+  document
 }
 
 #' Convert Collected MEA Results to the GSEAResult Structure
@@ -276,6 +271,5 @@ read_mea_ranks <- function(kinaselib_dir) {
 #' write_gsea_result_json(json_data, "PTMSEA_DPA_results.json")
 #' }
 write_gsea_result_json <- function(gsea_result, path) {
-  jsonlite::write_json(gsea_result, path, auto_unbox = TRUE, digits = NA)
-  invisible(path)
+  protsea::write_gsea_result_json(gsea_result, path)
 }

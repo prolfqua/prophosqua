@@ -41,6 +41,7 @@ Imports:
     patchwork,
     prolfqua,
     prolfquapp,
+    protsea,
     purrr,
     R6,
     readr,
@@ -70,4 +71,5 @@ Suggests:
     testthat (>= 3.0.0)
 Remotes:
     github::fgcz/prolfqua,
-    github::prolfqua/prolfquapp
+    github::prolfqua/prolfquapp,
+    github::prolfqua/protsea

@@ -1,26 +1,29 @@
 # The GSEAResult JSON export: string_gsea structure, canonical window ids.
 
-fake_gsea_class <- methods::setClass(
-  "FakeGseaResult",
-  representation = methods::representation(
-    geneList = "numeric",
-    result = "data.frame",
-    geneSets = "list"
-  )
-)
-
 make_fake_gsea <- function() {
   gene_list <- c(
     "AAAAAAASAAAAAAA-p" = 2.5,
     "BBBBBBBSBBBBBBB-p" = 1.5,
     "CCCCCCCSCCCCCCC-p" = -2.0
   )
-  fake_gsea_class(
+  methods::new(
+    "gseaResult",
+    params = list(exponent = 1.5),
+    organism = "unknown",
+    setType = "PTM-SEA",
+    keytype = "sequence",
+    readable = FALSE,
     geneList = gene_list,
     result = data.frame(
       ID = "KINASE-PSP_CDK2",
       Description = "KINASE-PSP_CDK2",
+      setSize = 2L,
+      enrichmentScore = -0.7,
       NES = -1.9,
+      pvalue = 0.001,
+      qvalues = 0.003,
+      rank = 3L,
+      leading_edge = "tags=50%, list=33%, signal=75%",
       p.adjust = 0.003,
       core_enrichment = "CCCCCCCSCCCCCCC-p",
       stringsAsFactors = FALSE
@@ -63,6 +66,13 @@ test_that("gsea_result_data builds pool and terms with canonical window ids", {
   expect_equal(unlist(term$leading_edge_ids), "CCCCCCCSCCCCCCC")
 
   expect_equal(out$rank_lists$A_vs_B$entries[["BBBBBBBSBBBBBBB-p"]], 1.5)
+  restored <- protsea::decode_gsea_json(
+    jsonlite::toJSON(out, auto_unbox = TRUE, digits = NA)
+  )$A_vs_B[["PTM-SEA"]]
+  expect_equal(restored@geneList, results$A_vs_B@geneList)
+  expect_equal(restored@result, results$A_vs_B@result)
+  expect_equal(restored@geneSets, results$A_vs_B@geneSets)
+  expect_equal(restored@params$exponent, 1.5)
 })
 
 test_that("mea_gsea_result_data maps leading substrates onto the pool", {

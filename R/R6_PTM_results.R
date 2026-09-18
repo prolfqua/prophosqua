@@ -87,7 +87,7 @@ PTM_results <- R6::R6Class(
   document <- as.character(jsonlite::toJSON(builders[[class(branch)[1L]]](branch), auto_unbox = TRUE, digits = NA))
   list(
     format = "string_gsea",
-    version = "1.0.0",
+    version = "1.1.0",
     json = document,
     sha256 = digest::digest(document, algo = "sha256", serialize = FALSE)
   )

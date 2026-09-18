@@ -1,5 +1,7 @@
 # prophosqua 0.3.0
 
+- Delegate clusterProfiler GSEA JSON writing to protsea, preserving native statistics and running-score inputs in MuData while retaining canonical sequence-window memberships for PTM consumers.
+
 - Preserve missing gene annotations as `NA` in terminal DPA/DPU RDS exports, matching the legacy workbook reader.
 
 - Preserve the legacy model, estimate-type, contrast, and sample-design column positions in terminal delivery exports.
