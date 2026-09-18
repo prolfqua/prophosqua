@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 560" role="img" aria-labelledby="title desc">
+  <title id="title">PTM statistics analysis path</title>
+  <desc id="desc">Enriched PTM and total-proteome measurements enter three analysis branches: differential PTM abundance, differential PTM usage, and CorrectFirst differential PTM usage. All branches produce comparable plots and result tables.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1575b6"/>
+    </marker>
+    <style>
+      .title { font: 700 32px Arial, sans-serif; fill: #17324d; }
+      .label { font: 700 24px Arial, sans-serif; fill: #17324d; }
+      .body { font: 20px Arial, sans-serif; fill: #29485f; }
+      .small { font: 18px Arial, sans-serif; fill: #355b73; }
+      .input { fill: #e7f4fb; stroke: #1575b6; stroke-width: 3; }
+      .analysis { fill: #f2f8fc; stroke: #1575b6; stroke-width: 3; }
+      .output { fill: #eef7ef; stroke: #2f855a; stroke-width: 3; }
+      .arrow { stroke: #1575b6; stroke-width: 5; fill: none; marker-end: url(#arrow); }
+    </style>
+  </defs>
+  <text x="800" y="48" text-anchor="middle" class="title">PTM statistics from one final MuData artifact</text>
+
+  <rect x="45" y="105" width="280" height="120" rx="18" class="input"/>
+  <text x="185" y="148" text-anchor="middle" class="label">Enriched PTM</text>
+  <text x="185" y="182" text-anchor="middle" class="body">site abundances</text>
+
+  <rect x="45" y="335" width="280" height="120" rx="18" class="input"/>
+  <text x="185" y="378" text-anchor="middle" class="label">Total proteome</text>
+  <text x="185" y="412" text-anchor="middle" class="body">protein abundances</text>
+
+  <path d="M 325 165 L 430 165" class="arrow"/>
+  <path d="M 325 395 C 375 395, 375 280, 430 280" class="arrow"/>
+  <path d="M 325 395 L 430 395" class="arrow"/>
+
+  <rect x="455" y="90" width="360" height="125" rx="18" class="analysis"/>
+  <text x="635" y="132" text-anchor="middle" class="label">DPA</text>
+  <text x="635" y="168" text-anchor="middle" class="body">site-level change</text>
+
+  <rect x="455" y="245" width="360" height="125" rx="18" class="analysis"/>
+  <text x="635" y="287" text-anchor="middle" class="label">DPU</text>
+  <text x="635" y="323" text-anchor="middle" class="body">site effect − protein effect</text>
+
+  <rect x="455" y="400" width="360" height="125" rx="18" class="analysis"/>
+  <text x="635" y="442" text-anchor="middle" class="label">CorrectFirst DPU</text>
+  <text x="635" y="478" text-anchor="middle" class="body">correct abundances, then model</text>
+
+  <path d="M 815 152 L 990 230" class="arrow"/>
+  <path d="M 815 307 L 990 307" class="arrow"/>
+  <path d="M 815 462 L 990 385" class="arrow"/>
+
+  <rect x="1020" y="185" width="525" height="245" rx="22" class="output"/>
+  <text x="1282" y="232" text-anchor="middle" class="label">Comparable report views</text>
+  <text x="1085" y="280" class="body">• coverage and model summaries</text>
+  <text x="1085" y="322" class="body">• volcano and site/protein plots</text>
+  <text x="1085" y="364" class="body">• searchable result tables</text>
+  <text x="1282" y="404" text-anchor="middle" class="small">All values read from PTM_results.h5mu</text>
+</svg>

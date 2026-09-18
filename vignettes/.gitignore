@@ -22,3 +22,7 @@ temp/
 
 /.quarto/
 **/*.quarto_ipynb
+
+# FGCZ Quarto template assets are source, not rendered output.
+!fgcz_header_quarto.html
+!fgcz-plot-finder.html

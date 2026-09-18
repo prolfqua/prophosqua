@@ -1,0 +1,534 @@
+---
+title: "PTM Statistics: DPA, DPU, and CorrectFirst"
+format:
+  html:
+    toc-location: left
+    grid:
+      sidebar-width: 300px
+    include-after-body: fgcz-plot-finder.html
+toc: true
+params:
+  input_h5mu: null
+  fdr_threshold: 0.05
+  diff_threshold: 0.5
+vignette: >
+  %\VignetteIndexEntry{PTM Statistics: DPA, DPU, and CorrectFirst}
+  %\VignetteEngine{quarto::format}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup}
+#| include: false
+required_packages <- c(
+  "DT",
+  "dplyr",
+  "fgczQuartoTemplate",
+  "ggplot2",
+  "knitr",
+  "prolfqua",
+  "prophosqua"
+)
+missing_packages <- required_packages[
+  !vapply(required_packages, requireNamespace, quietly = TRUE, FUN.VALUE = logical(1))
+]
+if (length(missing_packages)) {
+  stop(
+    "Missing package(s) required to render this report: ",
+    paste(missing_packages, collapse = ", "),
+    call. = FALSE
+  )
+}
+
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 7,
+  fig.height = 5,
+  fig.dpi = 110,
+  out.width = "100%",
+  fig.align = "center"
+)
+
+input_h5mu <- params$input_h5mu
+if (is.null(input_h5mu) || !length(input_h5mu) || !nzchar(input_h5mu)) {
+  input_h5mu <- system.file(
+    "extdata",
+    "ptm_results_example.h5mu",
+    package = "prophosqua"
+  )
+}
+if (!nzchar(input_h5mu) || !file.exists(input_h5mu)) {
+  stop("Final PTM_results.h5mu not found: ", input_h5mu, call. = FALSE)
+}
+input_h5mu <- normalizePath(input_h5mu, mustWork = TRUE)
+
+# The report has one data boundary: the complete typed final MuData object.
+ptm_results <- prophosqua::read_ptm_h5mu(
+  input_h5mu,
+  prophosqua::PTM_results
+)
+statistics <- ptm_results$get_statistics()
+inputs <- statistics$get_inputs()
+dpa_dpu <- statistics$get_dpa_dpu()
+cf <- statistics$get_cf()
+dpa <- as.data.frame(dpa_dpu$combined_site_prot)
+dpu <- as.data.frame(dpa_dpu$combined_test_diff)
+cf_results <- as.data.frame(cf$results)
+design <- inputs$get_design()
+contrasts <- inputs$get_contrasts()
+provenance <- inputs$get_provenance()
+
+empty_plot <- function(label) {
+  ggplot2::ggplot() +
+    ggplot2::annotate("text", x = 0, y = 0, label = label) +
+    ggplot2::theme_void()
+}
+
+safe_plot <- function(expr, label) {
+  tryCatch(expr, error = function(error) {
+    empty_plot(paste(label, conditionMessage(error), sep = "\n"))
+  })
+}
+
+volcano_plot <- function(data, effect, fdr, title) {
+  if (!all(c(effect, fdr, "contrast") %in% names(data))) {
+    return(empty_plot("The required volcano-plot columns are unavailable."))
+  }
+  plot_data <- data[
+    is.finite(data[[effect]]) & is.finite(data[[fdr]]),
+    ,
+    drop = FALSE
+  ]
+  if (!nrow(plot_data)) {
+    return(empty_plot("No finite estimates are available."))
+  }
+  plot_data$significant <-
+    plot_data[[fdr]] <= params$fdr_threshold &
+      abs(plot_data[[effect]]) >= params$diff_threshold
+  plot_data$negative_log10_fdr <- -log10(pmax(plot_data[[fdr]], .Machine$double.xmin))
+  ggplot2::ggplot(
+    plot_data,
+    ggplot2::aes(
+      x = .data[[effect]],
+      y = .data$negative_log10_fdr,
+      colour = .data$significant
+    )
+  ) +
+    ggplot2::geom_point(alpha = 0.55, size = 1.2) +
+    ggplot2::geom_vline(
+      xintercept = c(-params$diff_threshold, params$diff_threshold),
+      colour = "grey55",
+      linetype = "dashed"
+    ) +
+    ggplot2::geom_hline(
+      yintercept = -log10(params$fdr_threshold),
+      colour = "grey55",
+      linetype = "dashed"
+    ) +
+    ggplot2::facet_wrap(ggplot2::vars(.data$contrast), scales = "free") +
+    ggplot2::scale_colour_manual(
+      values = c(`FALSE` = "grey70", `TRUE` = "#cf3c4f"),
+      labels = c(`FALSE` = "No", `TRUE` = "Yes")
+    ) +
+    ggplot2::labs(
+      title = title,
+      x = "log2 fold change",
+      y = "-log10(FDR)",
+      colour = "Passes thresholds"
+    ) +
+    ggplot2::theme_bw() +
+    ggplot2::theme(legend.position = "bottom")
+}
+
+site_protein_plot <- function(data) {
+  required <- c("diff.protein", "diff.site", "contrast")
+  if (!all(required %in% names(data))) {
+    return(empty_plot("Site and protein fold changes are unavailable."))
+  }
+  plot_data <- data[
+    is.finite(data$diff.protein) & is.finite(data$diff.site),
+    ,
+    drop = FALSE
+  ]
+  if (!nrow(plot_data)) {
+    return(empty_plot("No paired site and protein estimates are available."))
+  }
+  plot_data$usage_change <- plot_data$diff.site - plot_data$diff.protein
+  ggplot2::ggplot(
+    plot_data,
+    ggplot2::aes(
+      x = .data$diff.protein,
+      y = .data$diff.site,
+      colour = .data$usage_change
+    )
+  ) +
+    ggplot2::geom_abline(slope = 1, intercept = 0, colour = "grey40") +
+    ggplot2::geom_point(alpha = 0.55, size = 1.2) +
+    ggplot2::facet_wrap(ggplot2::vars(.data$contrast), scales = "free") +
+    ggplot2::scale_colour_gradient2(
+      low = "#2c7bb6",
+      mid = "grey85",
+      high = "#d7191c",
+      midpoint = 0
+    ) +
+    ggplot2::labs(
+      x = "Protein log2 fold change",
+      y = "PTM-site log2 fold change",
+      colour = "DPU"
+    ) +
+    ggplot2::theme_bw() +
+    ggplot2::theme(legend.position = "bottom")
+}
+
+dt_table <- function(data, caption, columns, page_length = 15) {
+  columns <- intersect(columns, names(data))
+  table <- if (length(columns)) data[, columns, drop = FALSE] else data
+  if (!nrow(table)) {
+    table <- data.frame(message = "No result rows are available.")
+  }
+  DT::datatable(
+    table,
+    caption = caption,
+    filter = "bottom",
+    rownames = FALSE,
+    class = "compact stripe",
+    options = list(
+      pageLength = page_length,
+      scrollX = TRUE,
+      scrollY = "420px",
+      deferRender = TRUE
+    )
+  )
+}
+
+modification_counts <- function(data) {
+  if (!all(c("contrast", "modAA") %in% names(data))) {
+    return(data.frame(message = "Modification annotations are unavailable."))
+  }
+  dplyr::count(data, .data$contrast, .data$modAA, name = "sites") |>
+    dplyr::arrange(.data$contrast, dplyr::desc(.data$sites))
+}
+
+source_paths <- provenance$paths
+if (is.null(source_paths)) {
+  source_paths <- character()
+}
+generated_at <- format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z")
+```
+
+```{r report-metadata}
+#| results: asis
+cat(sprintf(
+  '<div id="fgcz-report-metadata" hidden data-generated-at="%s"></div>',
+  generated_at
+))
+```
+
+::: {.panel-tabset}
+
+# Overview
+
+<img src="`r knitr::image_uri(system.file("report-assets", "ptm-statistics.svg", package = "prophosqua"))`" alt="Visual abstract showing enriched PTM and total-proteome measurements entering DPA, DPU, and CorrectFirst DPU branches, followed by comparable plots and result tables." style="width: 100%; max-height: 22rem; object-fit: contain;">
+
+This report compares three complementary views of PTM regulation from one completed MuData analysis. **DPA** describes the observed change at each PTM site. **DPU** subtracts the protein-level change after modelling. **CorrectFirst DPU** first corrects site abundances by their protein abundances and then fits the model.
+
+```{r}
+#| label: tbl-overview-input-summary
+#| tbl-cap: "Input summary for the completed PTM statistics analysis."
+overview <- data.frame(
+  Measure = c("Samples", "PTM sites", "Proteins", "Contrasts"),
+  Count = c(
+    nrow(design),
+    dplyr::n_distinct(dpa$site),
+    dplyr::n_distinct(dpa$protein_Id),
+    length(contrasts)
+  )
+)
+knitr::kable(overview)
+```
+
+The detailed input references and software versions are recorded in **Session Info**.
+
+# DPA
+
+::: {.panel-tabset}
+
+## Summary
+
+Differential PTM abundance reports the site-level effect before protein correction. It is the direct answer to “did this measured PTM site change?”
+
+::: {layout-ncol="2"}
+
+```{r}
+#| label: tbl-dpa-match-rate
+#| tbl-cap: "PTM sites paired with a protein-level estimate in each contrast."
+knitr::kable(dpa_dpu$match_rates, digits = 1)
+```
+
+```{r}
+#| label: tbl-dpa-modification-counts
+#| tbl-cap: "DPA result rows by contrast and modified amino acid."
+knitr::kable(modification_counts(dpa))
+```
+
+:::
+
+## Volcano
+
+```{r}
+#| label: fig-dpa-volcano
+#| fig-cap: >-
+#|   Differential PTM abundance by contrast. Each point is one PTM site; the
+#|   x-axis is its site-level log2 fold change and the y-axis is -log10(FDR).
+#|   Red points pass the displayed absolute fold-change and FDR thresholds.
+#| fig-width: 8
+#| fig-height: 5
+volcano_plot(dpa, "diff.site", "FDR.site", "Differential PTM abundance")
+```
+
+## Site vs protein
+
+```{r}
+#| label: fig-dpa-site-protein
+#| fig-cap: >-
+#|   PTM-site log2 fold change as a function of the matched protein log2 fold
+#|   change. Each point is one matched site; the diagonal denotes equal site and
+#|   protein change, and colour is their difference, the DPU effect.
+#| fig-width: 8
+#| fig-height: 5
+site_protein_plot(dpa)
+```
+
+## Results
+
+```{r}
+#| label: tbl-dpa-results
+dt_table(
+  dpa,
+  "Differential PTM abundance results",
+  c(
+    "protein_Id", "site", "gene_name.site", "modAA", "posInProtein",
+    "SequenceWindow", "contrast", "diff.site", "FDR.site",
+    "diff.protein", "FDR.protein", "estimate_type.site"
+  )
+)
+```
+
+:::
+
+# DPU
+
+::: {.panel-tabset}
+
+## Summary
+
+Differential PTM usage compares the modelled site change with the modelled protein change. A positive value means the site increased more than its protein; a negative value means it increased less or decreased more.
+
+::: {layout-ncol="2"}
+
+```{r}
+#| label: tbl-dpu-measurement-counts
+#| tbl-cap: "DPU rows by contrast and availability of site and protein estimates."
+dpu_measurements <- if ("measured_In" %in% names(dpu)) {
+  dplyr::count(dpu, .data$contrast, .data$measured_In, name = "rows")
+} else {
+  data.frame(message = "Measurement-status annotations are unavailable.")
+}
+knitr::kable(dpu_measurements)
+```
+
+```{r}
+#| label: tbl-dpu-modification-counts
+#| tbl-cap: "DPU result rows by contrast and modified amino acid."
+knitr::kable(modification_counts(dpu))
+```
+
+:::
+
+## Volcano
+
+```{r}
+#| label: fig-dpu-volcano
+#| fig-cap: >-
+#|   Differential PTM usage by contrast. Each point is one PTM site; the x-axis
+#|   is the site-minus-protein log2 fold change and the y-axis is -log10(FDR)
+#|   after propagated site and protein uncertainty. Red points pass both
+#|   displayed thresholds.
+#| fig-width: 8
+#| fig-height: 5
+volcano_plot(dpu, "diff_diff", "FDR_I", "Differential PTM usage")
+```
+
+## Site vs protein
+
+```{r}
+#| label: fig-dpu-site-protein
+#| fig-cap: >-
+#|   Site and protein log2 fold changes used to calculate DPU. Points above the
+#|   diagonal have positive PTM usage changes and points below it have negative
+#|   usage changes; colour shows the signed site-minus-protein difference.
+#| fig-width: 8
+#| fig-height: 5
+site_protein_plot(dpu)
+```
+
+## Results
+
+```{r}
+#| label: tbl-dpu-results
+dt_table(
+  dpu,
+  "Differential PTM usage results",
+  c(
+    "protein_Id", "site", "gene_name.site", "modAA", "posInProtein",
+    "SequenceWindow", "contrast", "diff.site", "diff.protein", "diff_diff",
+    "SE_I", "pValue_I", "FDR_I", "measured_In"
+  )
+)
+```
+
+:::
+
+# CorrectFirst DPU
+
+::: {.panel-tabset}
+
+## Quality control
+
+CorrectFirst subtracts protein abundance from site abundance on the log2 scale before modelling. The two plots assess the corrected sample-level values entering that model.
+
+::: {layout-ncol="2"}
+
+```{r}
+#| label: fig-cf-density
+#| fig-cap: >-
+#|   Distribution of protein-corrected log2 PTM-site abundance by sample. Each
+#|   curve is one sample; shifts or shape differences indicate global changes in
+#|   the corrected values entering the CorrectFirst model.
+#| fig-width: 6
+#| fig-height: 5
+safe_plot(
+  cf$ptm_data$get_Plotter()$intensity_distribution_density(),
+  "CorrectFirst density plot unavailable."
+)
+```
+
+```{r}
+#| label: fig-cf-pca
+#| fig-cap: >-
+#|   Principal-component analysis of protein-corrected PTM-site abundances.
+#|   Points are samples, coloured by experimental group; the projection uses
+#|   imputation only for visualization and does not refit the statistical model.
+#| fig-width: 6
+#| fig-height: 5
+safe_plot(
+  prolfqua::AggregateLimpa$new(
+    cf$ptm_data,
+    impute_only = TRUE
+  )$aggregate()$get_Plotter()$pca(),
+  "CorrectFirst PCA unavailable."
+)
+```
+
+:::
+
+## Volcano
+
+```{r}
+#| label: fig-cf-volcano
+#| fig-cap: >-
+#|   CorrectFirst differential PTM usage by contrast. Each point is one PTM
+#|   site modelled after sample-level protein correction; the x-axis is its log2
+#|   fold change and the y-axis is -log10(FDR). Red points pass both displayed
+#|   thresholds.
+#| fig-width: 8
+#| fig-height: 5
+volcano_plot(cf_results, "diff.site", "FDR.site", "CorrectFirst differential PTM usage")
+```
+
+## Model summary
+
+::: {layout-ncol="2"}
+
+```{r}
+#| label: tbl-cf-contrasts
+#| tbl-cap: "Contrasts evaluated by the CorrectFirst model."
+contrast_table <- data.frame(
+  Contrast = names(cf$contrasts),
+  Definition = unname(cf$contrasts)
+)
+knitr::kable(contrast_table)
+```
+
+```{r}
+#| label: tbl-cf-model-counts
+#| tbl-cap: "CorrectFirst site-contrast pairs by estimation method."
+knitr::kable(cf$model_counts)
+```
+
+:::
+
+## Results
+
+```{r}
+#| label: tbl-cf-results
+dt_table(
+  cf_results,
+  "CorrectFirst differential PTM usage results",
+  c(
+    "protein_Id", "site", "gene_name", "modAA", "posInProtein",
+    "SequenceWindow", "contrast", "diff.site", "std.error",
+    "statistic.site", "p.value", "FDR.site", "estimate_type"
+  )
+)
+```
+
+:::
+
+# Session Info
+
+::: {.panel-tabset}
+
+## Report provenance
+
+```{r}
+#| label: tbl-report-provenance
+#| tbl-cap: "Report provenance and the final MuData input reference."
+qmd_source <- fgczQuartoTemplate::fgcz_qmd_source_link()
+provenance_table <- data.frame(
+  Field = c(
+    "Input MuData",
+    "Source DEA artifacts",
+    "Contrasts",
+    "FDR threshold",
+    "Absolute log2 fold-change threshold",
+    "Report package",
+    "Generated at",
+    "Qmd source"
+  ),
+  Value = c(
+    input_h5mu,
+    paste(source_paths, collapse = "; "),
+    paste(names(contrasts), collapse = "; "),
+    format(params$fdr_threshold),
+    format(params$diff_threshold),
+    paste0("prophosqua ", utils::packageVersion("prophosqua")),
+    generated_at,
+    qmd_source
+  ),
+  stringsAsFactors = FALSE
+)
+provenance_table <- provenance_table[nzchar(provenance_table$Value), , drop = FALSE]
+knitr::kable(provenance_table, escape = FALSE)
+```
+
+## R session info
+
+```{r session-info}
+sessionInfo()
+```
+
+:::
+
+:::

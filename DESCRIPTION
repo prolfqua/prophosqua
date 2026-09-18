@@ -22,7 +22,7 @@ Encoding: UTF-8
 LazyData: true
 LazyDataCompression: xz
 RoxygenNote: 7.3.3
-VignetteBuilder: knitr
+VignetteBuilder: knitr, quarto
 Depends:
     R (>= 4.1.0)
 Imports:
@@ -61,16 +61,19 @@ Suggests:
     DT,
     enrichplot,
     fgsea,
+    fgczQuartoTemplate,
     here,
     htmltools,
     knitr,
     limpa,
     lintr,
     pkgdown,
+    quarto,
     rcmdcheck,
     roxygen2,
     testthat (>= 3.0.0)
 Remotes:
+    github::fgcz/fgczQuartoTemplate@dbeb852bc14f4374d59ff8b94350faf84f4513e1,
     github::fgcz/prolfqua,
     github::prolfqua/prolfquapp,
     github::prolfqua/protsea

@@ -1,5 +1,7 @@
 # prophosqua 0.3.0
 
+- Add the first FGCZ Quarto multitab report, `ptm_statistics.qmd`, covering DPA, DPU, and CorrectFirst DPU from one final MuData input. Package vignette builds use a small deterministic final H5MU and synchronized `fgczQuartoTemplate` assets.
+
 - Store every PTMSEA, KinaseGSEA, and MEA result as validated JSON in MuData. The final typed result exposes complete document getters, verifies schema and checksums when reading, and reconstructs temporary clusterProfiler objects through protsea without persisting `gseaResult` objects.
 
 - Declare the `limpa` dependency used by the existing CorrectFirst vignette so an isolated `R CMD check` can rebuild it.
