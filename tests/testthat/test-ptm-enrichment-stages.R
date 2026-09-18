@@ -14,6 +14,8 @@ test_that("enabled enrichment collection determines final completeness", {
   final$write_h5mu(path)
   restored <- read_ptm_h5mu(path, PTM_results)
   expect_length(restored$get_enrichments(), 0L)
+  expect_length(restored$get_enrichment_documents(), 0L)
+  expect_error(restored$get_enrichment_document("PTMSEA", "DPA"), "not enabled")
   expect_equal(restored$get_tables(), statistics$get_tables())
   expect_error(KinaseAssignments$new(statistics, "DPA", list(term2gene = data.frame())), "requires KinaseInputs")
 })

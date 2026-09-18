@@ -58,6 +58,12 @@
   analysis <- container$uns$prophosqua$analysis
   modality <- .ptm_analysis_modality(analysis)
   key <- .ptm_varm_key(Type$classname, analysis)
+  if (Type$classname %in% c("PTMSEA", "KinaseGSEA", "MEA")) {
+    documents <- container$modalities[[modality]]$uns$prophosqua$enrichment_documents
+    .require_ptm_fields(documents, key, Type$classname)
+    result <- .restore_ptm_enrichment_result(documents[[key]], key) # nolint: object_usage_linter.
+    return(Type$new(load_source(container), analysis, result))
+  }
   stages <- container$modalities[[modality]]$uns$prophosqua$completed_stages
   .require_ptm_fields(stages, key, Type$classname)
   Type$new(load_source(container), analysis, .unpack_ptm_value(stages[[key]]))
@@ -92,7 +98,11 @@
   modality <- .ptm_analysis_modality(analysis)
   namespace <- container$modalities[[modality]]$uns$prophosqua
   key <- .ptm_varm_key(classname, analysis)
-  namespace$completed_stages[[key]] <- .pack_ptm_value(stage$get_results())
+  if (classname %in% c("PTMSEA", "KinaseGSEA", "MEA")) {
+    namespace$enrichment_documents[[key]] <- .ptm_enrichment_document(stage)
+  } else {
+    namespace$completed_stages[[key]] <- .pack_ptm_value(stage$get_results())
+  }
   container$modalities[[modality]]$uns$prophosqua <- namespace
   container
 }

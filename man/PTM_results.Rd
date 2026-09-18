@@ -14,6 +14,8 @@ Final PTM results with every enabled enrichment completed
 \item \href{#method-PTM_results-new}{\code{PTM_results$new()}}
 \item \href{#method-PTM_results-get_statistics}{\code{PTM_results$get_statistics()}}
 \item \href{#method-PTM_results-get_enrichments}{\code{PTM_results$get_enrichments()}}
+\item \href{#method-PTM_results-get_enrichment_documents}{\code{PTM_results$get_enrichment_documents()}}
+\item \href{#method-PTM_results-get_enrichment_document}{\code{PTM_results$get_enrichment_document()}}
 \item \href{#method-PTM_results-get_tables}{\code{PTM_results$get_tables()}}
 \item \href{#method-PTM_results-as_container}{\code{PTM_results$as_container()}}
 \item \href{#method-PTM_results-write_h5mu}{\code{PTM_results$write_h5mu()}}
@@ -26,7 +28,7 @@ Final PTM results with every enabled enrichment completed
 \subsection{Method \code{new()}}{
 Assemble all enabled analyses from their completed stages.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{PTM_results$new(statistics, enrichments)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{PTM_results$new(statistics, enrichments, enrichment_documents = NULL)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -35,6 +37,8 @@ Assemble all enabled analyses from their completed stages.
 \item{\code{statistics}}{Complete PTM_statistics stage.}
 
 \item{\code{enrichments}}{List of complete PTMSEA, KinaseGSEA and MEA objects.}
+
+\item{\code{enrichment_documents}}{Stored JSON documents when restoring MuData.}
 }
 \if{html}{\out{</div>}}
 }
@@ -58,6 +62,35 @@ Return the collection of complete enabled enrichment objects.
 \if{html}{\out{<div class="r">}}\preformatted{PTM_results$get_enrichments()}\if{html}{\out{</div>}}
 }
 
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-PTM_results-get_enrichment_documents"></a>}}
+\if{latex}{\out{\hypertarget{method-PTM_results-get_enrichment_documents}{}}}
+\subsection{Method \code{get_enrichment_documents()}}{
+Return every complete JSON enrichment document.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{PTM_results$get_enrichment_documents()}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-PTM_results-get_enrichment_document"></a>}}
+\if{latex}{\out{\hypertarget{method-PTM_results-get_enrichment_document}{}}}
+\subsection{Method \code{get_enrichment_document()}}{
+Return one complete JSON enrichment document.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{PTM_results$get_enrichment_document(method, analysis)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{method}}{PTMSEA, KinaseGSEA or MEA.}
+
+\item{\code{analysis}}{DPA, DPU or CF.}
+}
+\if{html}{\out{</div>}}
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-PTM_results-get_tables"></a>}}

@@ -2,12 +2,13 @@
 #' @export
 PTM_results <- R6::R6Class(
   "PTM_results",
-  private = list(statistics = NULL, enrichments = NULL),
+  private = list(statistics = NULL, enrichments = NULL, enrichment_documents = NULL),
   public = list(
     #' @description Assemble all enabled analyses from their completed stages.
     #' @param statistics Complete PTM_statistics stage.
     #' @param enrichments List of complete PTMSEA, KinaseGSEA and MEA objects.
-    initialize = function(statistics, enrichments) {
+    #' @param enrichment_documents Stored JSON documents when restoring MuData.
+    initialize = function(statistics, enrichments, enrichment_documents = NULL) {
       stopifnot(inherits(statistics, "PTM_statistics"))
       keys <- vapply(enrichments, function(value) .ptm_varm_key(class(value)[1L], value$get_analysis()), character(1))
       expected <- .enabled_ptm_enrichments(statistics$get_inputs()$get_parameters())
@@ -19,11 +20,35 @@ PTM_results <- R6::R6Class(
       }
       private$statistics <- statistics
       private$enrichments <- stats::setNames(enrichments, keys)[expected]
+      if (is.null(enrichment_documents)) {
+        enrichment_documents <- lapply(private$enrichments, .ptm_enrichment_document)
+      }
+      private$enrichment_documents <- .validate_ptm_enrichment_documents(enrichment_documents, expected)
     },
     #' @description Return the complete statistics component.
     get_statistics = function() private$statistics,
     #' @description Return the collection of complete enabled enrichment objects.
     get_enrichments = function() private$enrichments,
+    #' @description Return every complete JSON enrichment document.
+    get_enrichment_documents = function() private$enrichment_documents,
+    #' @description Return one complete JSON enrichment document.
+    #' @param method PTMSEA, KinaseGSEA or MEA.
+    #' @param analysis DPA, DPU or CF.
+    get_enrichment_document = function(method, analysis) {
+      if (length(method) != 1L || !method %in% .ptm_json_enrichment_methods) {
+        stop("Unknown enrichment method: ", paste(method, collapse = ", "))
+      }
+      if (length(analysis) != 1L) {
+        stop("Analysis must be one of DPA, DPU or CF.")
+      }
+      analysis <- toupper(analysis)
+      .validate_enrichment_analysis(analysis)
+      key <- .ptm_varm_key(method, analysis)
+      if (!key %in% names(private$enrichment_documents)) {
+        stop("Enrichment document is not enabled: ", key)
+      }
+      private$enrichment_documents[[key]]
+    },
     #' @description Return standard statistics and abundance tables.
     get_tables = function() private$statistics$get_tables(),
     #' @description Return a detached storage representation.
@@ -34,21 +59,24 @@ PTM_results <- R6::R6Class(
   )
 )
 
+.ptm_json_enrichment_methods <- c("PTMSEA", "KinaseGSEA", "MEA")
+
 .enabled_ptm_enrichments <- function(parameters) {
   analyses <- toupper(names(parameters$analyses))
   methods <- if (isTRUE(parameters$run_kinase)) c("PTMSEA", "KinaseGSEA", "MEA") else character()
-  unlist(
+  as.character(unlist(
     lapply(methods, function(method) {
       vapply(analyses, function(analysis) .ptm_varm_key(method, analysis), character(1))
     }),
     use.names = FALSE
-  )
+  ))
 }
 
 .final_ptm_container <- function(results) {
   container <- results$get_statistics()$as_container()
   container$uns$prophosqua$stage <- "PTM_results"
   enrichments <- results$get_enrichments()
+  documents <- results$get_enrichment_documents()
   container$uns$prophosqua$completed_enrichments <- names(enrichments)
   for (key in names(enrichments)) {
     branch <- enrichments[[key]]
@@ -58,7 +86,7 @@ PTM_results <- R6::R6Class(
     for (stage in names(completed)) {
       namespace$completed_stages[[stage]] <- completed[[stage]]
     }
-    namespace$enrichment_documents[[key]] <- .ptm_enrichment_document(branch)
+    namespace$enrichment_documents[[key]] <- documents[[key]]
     container$modalities[[modality]]$uns$prophosqua <- namespace
   }
   container
@@ -67,12 +95,18 @@ PTM_results <- R6::R6Class(
 .completed_enrichment_stages <- function(stage) {
   source <- stage$get_source()
   preceding <- if (inherits(source, "PTM_statistics")) list() else .completed_enrichment_stages(source)
+  if (class(stage)[1L] %in% .ptm_json_enrichment_methods) {
+    return(preceding)
+  }
   key <- .ptm_varm_key(class(stage)[1L], stage$get_analysis())
   preceding[[key]] <- .pack_ptm_value(stage$get_results())
   preceding
 }
 
 .ptm_enrichment_document <- function(branch) {
+  method <- class(branch)[1L]
+  analysis <- branch$get_analysis()
+  result <- branch$get_results()
   builders <- list(
     PTMSEA = function(x) gsea_result_data(x$get_results()$results, category = "PTM-SEA"),
     KinaseGSEA = function(x) gsea_result_data(x$get_results()$gsea_results, category = "KinaseLib"),
@@ -84,18 +118,191 @@ PTM_results <- R6::R6Class(
       mea_gsea_result_data(x$get_results()$mea_clean, ranks, assignments$get_results()$term2gene)
     }
   )
-  document <- as.character(jsonlite::toJSON(builders[[class(branch)[1L]]](branch), auto_unbox = TRUE, digits = NA))
-  list(
+  object_field <- c(PTMSEA = "results", KinaseGSEA = "gsea_results", MEA = NA_character_)[[method]]
+  portable_result <- result
+  if (!is.na(object_field)) {
+    portable_result[[object_field]] <- NULL
+  }
+  contents <- builders[[method]](branch)
+  contents$prophosqua <- list(
+    method = method,
+    analysis = analysis,
+    result_names = names(result),
+    result = .pack_ptm_value(portable_result)
+  )
+  document <- as.character(jsonlite::toJSON(contents, auto_unbox = TRUE, digits = NA, na = "null"))
+  wrapper <- list(
     format = "string_gsea",
     version = "1.1.0",
     json = document,
     sha256 = digest::digest(document, algo = "sha256", serialize = FALSE)
   )
+  .validate_ptm_enrichment_document(wrapper, .ptm_varm_key(method, analysis))
+  wrapper
+}
+
+.validate_ptm_enrichment_documents <- function(documents, expected) {
+  if (!is.list(documents) || is.null(names(documents))) {
+    if (!length(documents) && !length(expected)) {
+      return(list())
+    }
+    stop("Enrichment documents must be a named list.")
+  }
+  if (anyDuplicated(names(documents)) || !setequal(names(documents), expected)) {
+    stop("Final PTM results require every enabled enrichment document.")
+  }
+  documents <- documents[expected]
+  for (key in names(documents)) {
+    .validate_ptm_enrichment_document(documents[[key]], key)
+  }
+  documents
+}
+
+.validate_ptm_enrichment_document <- function(document, key) {
+  payload <- .ptm_enrichment_payload(document, key)
+  method <- .validate_ptm_enrichment_identity(payload, key)
+  .validate_ptm_enrichment_contrasts(payload, key, method)
+  if (method %in% c("PTMSEA", "KinaseGSEA")) {
+    protsea::decode_gsea_json(document$json)
+  }
+  invisible(payload)
+}
+
+.ptm_enrichment_payload <- function(document, key) {
+  fields <- c("format", "version", "json", "sha256")
+  .require_ptm_fields(document, fields, paste0("Enrichment document ", key))
+  if (length(document) != length(fields) || anyDuplicated(names(document)) || !setequal(names(document), fields)) {
+    stop("Enrichment document wrapper has unexpected fields: ", key)
+  }
+  scalar_text <- vapply(document[fields], function(value) is.character(value) && length(value) == 1L, logical(1))
+  if (!all(scalar_text) || !identical(document$format, "string_gsea") || !identical(document$version, "1.1.0")) {
+    stop("Unsupported enrichment document: ", key)
+  }
+  checksum <- digest::digest(document$json, algo = "sha256", serialize = FALSE)
+  if (!identical(document$sha256, checksum)) {
+    stop("Enrichment document checksum mismatch: ", key)
+  }
+  payload <- tryCatch(
+    jsonlite::fromJSON(document$json, simplifyVector = FALSE),
+    error = function(error) stop("Invalid enrichment JSON for ", key, ": ", conditionMessage(error), call. = FALSE)
+  )
+  .require_ptm_fields(payload, c("data", "rank_lists", "prophosqua"), paste0("Enrichment JSON ", key))
+  payload
+}
+
+.validate_ptm_enrichment_identity <- function(payload, key) {
+  extension <- payload$prophosqua
+  .require_ptm_fields(extension, c("method", "analysis", "result_names", "result"), paste0("PTM JSON ", key))
+  method <- sub("__.*$", "", key)
+  analysis <- utils::URLdecode(sub("^.*?__", "", key))
+  if (!identical(extension$method, method) || !identical(extension$analysis, analysis)) {
+    stop("Enrichment JSON identity differs from its MuData key: ", key)
+  }
+  if (.contains_packed_gsea_result(extension$result)) {
+    stop("Enrichment JSON contains a serialized gseaResult: ", key)
+  }
+  method
+}
+
+.validate_ptm_enrichment_contrasts <- function(payload, key, method) {
+  if (!setequal(names(payload$data), names(payload$rank_lists))) {
+    stop("Enrichment JSON contrast names differ between data and rank lists: ", key)
+  }
+  category <- c(PTMSEA = "PTM-SEA", KinaseGSEA = "KinaseLib", MEA = "MEA")[[method]]
+  if (is.null(category)) {
+    stop("Unknown enrichment document: ", key)
+  }
+  for (contrast_name in names(payload$data)) {
+    contrast <- payload$data[[contrast_name]]
+    .require_ptm_fields(contrast, c("contrast", "gene_pool", "categories"), paste0("Contrast ", contrast_name))
+    if (!identical(contrast$contrast, contrast_name) || !identical(names(contrast$categories), category)) {
+      stop("Enrichment JSON contrast or category identity is invalid: ", key)
+    }
+    rank_list <- payload$rank_lists[[contrast_name]]
+    .require_ptm_fields(rank_list, c("contrast", "entries"), paste0("Rank list ", contrast_name))
+    if (!identical(rank_list$contrast, contrast_name)) {
+      stop("Enrichment JSON rank-list identity is invalid: ", key)
+    }
+    category_data <- contrast$categories[[category]]
+    .require_ptm_fields(category_data, c("category", "contrast", "terms"), paste0("Category ", category))
+    if (!identical(category_data$category, category) || !identical(category_data$contrast, contrast_name)) {
+      stop("Enrichment JSON category identity is invalid: ", key)
+    }
+    required_term_fields <- c(
+      "term_id",
+      "category",
+      "description",
+      "enrichment_score",
+      "direction",
+      "fdr",
+      "method",
+      "genes_mapped",
+      "genes_in_set",
+      "gene_ids",
+      "leading_edge_ids"
+    )
+    for (term in category_data$terms) {
+      .require_ptm_fields(term, required_term_fields, paste0("Enrichment term in ", key))
+    }
+  }
+  invisible(payload)
+}
+
+.contains_packed_gsea_result <- function(value) {
+  if (!is.list(value)) {
+    return(FALSE)
+  }
+  if (identical(value$type, "gseaResult")) {
+    return(TRUE)
+  }
+  any(vapply(value, .contains_packed_gsea_result, logical(1)))
+}
+
+.restore_ptm_enrichment_result <- function(document, key) {
+  payload <- .validate_ptm_enrichment_document(document, key)
+  result <- .unpack_ptm_value(payload$prophosqua$result)
+  method <- payload$prophosqua$method
+  object_field <- c(PTMSEA = "results", KinaseGSEA = "gsea_results", MEA = NA_character_)[[method]]
+  if (!is.na(object_field)) {
+    category <- c(PTMSEA = "PTM-SEA", KinaseGSEA = "KinaseLib")[[method]]
+    decoded <- protsea::decode_gsea_json(document$json)
+    result[[object_field]] <- lapply(decoded, function(contrast) contrast[[category]])
+  }
+  result_names <- as.character(unlist(payload$prophosqua$result_names, use.names = FALSE))
+  result[result_names]
+}
+
+.collect_ptm_enrichment_documents <- function(container, expected) {
+  documents <- list()
+  locations <- list()
+  for (modality in names(container$modalities)) {
+    current <- container$modalities[[modality]]$uns$prophosqua$enrichment_documents
+    if (!is.null(current)) {
+      documents <- c(documents, current)
+      locations <- c(locations, stats::setNames(as.list(rep(modality, length(current))), names(current)))
+    }
+  }
+  if (anyDuplicated(names(documents))) {
+    stop("MuData contains duplicate enrichment document keys.")
+  }
+  documents <- .validate_ptm_enrichment_documents(documents, expected)
+  for (key in names(documents)) {
+    analysis <- utils::URLdecode(sub("^.*?__", "", key))
+    if (!identical(locations[[key]], .ptm_analysis_modality(analysis))) {
+      stop("Enrichment document is stored in the wrong modality: ", key)
+    }
+  }
+  documents
 }
 
 .load_ptm_results <- function(container) {
   statistics <- .load_ptm_statistics(container)
   keys <- as.character(container$uns$prophosqua$completed_enrichments)
+  expected <- .enabled_ptm_enrichments(statistics$get_inputs()$get_parameters())
+  if (anyDuplicated(keys) || !identical(keys, expected)) {
+    stop("Final PTM results list does not match enabled enrichments.")
+  }
+  documents <- .collect_ptm_enrichment_documents(container, expected)
   readers <- list(PTMSEA = .load_ptmsea, KinaseGSEA = .load_kinase_gsea, MEA = .load_mea)
   branches <- lapply(keys, function(key) {
     method <- sub("__.*$", "", key)
@@ -106,7 +313,7 @@ PTM_results <- R6::R6Class(
     }
     reader(container)
   })
-  PTM_results$new(statistics, branches)
+  PTM_results$new(statistics, branches, documents)
 }
 
 #' Assemble completed statistics and enrichment MuData artifacts

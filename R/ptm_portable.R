@@ -73,11 +73,15 @@
     atomic = function(x) {
       result <- as.vector(x$values, mode = x$storage)
       result[as.logical(x$missing)] <- NA
-      if (length(x$dimensions)) {
-        dim(result) <- as.integer(x$dimensions)
+      dimensions <- unlist(x$dimensions, use.names = FALSE)
+      if (length(dimensions)) {
+        dim(result) <- as.integer(dimensions)
         dimnames(result) <- .unpack_ptm_value(x$dimnames)
       } else {
-        names(result) <- x$names
+        value_names <- unlist(x$names, use.names = FALSE)
+        if (length(value_names)) {
+          names(result) <- as.character(value_names)
+        }
       }
       result
     }

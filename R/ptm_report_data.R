@@ -24,8 +24,8 @@ ptm_dpa_dpu_report_data <- function(path) {
 #' @return Complete report result; absent analyses raise an error.
 #' @export
 ptm_enrichment_report_data <- function(path, method, analysis) {
-  branches <- read_ptm_h5mu(path, PTM_results)$get_enrichments()
+  result <- read_ptm_h5mu(path, PTM_results)
   key <- .ptm_varm_key(method, analysis)
-  .require_ptm_fields(branches, key, "Enabled enrichment collection")
-  branches[[key]]$get_results()
+  document <- result$get_enrichment_document(method, analysis)
+  .restore_ptm_enrichment_result(document, key) # nolint: object_usage_linter.
 }

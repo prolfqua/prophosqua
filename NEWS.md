@@ -1,6 +1,8 @@
 # prophosqua 0.3.0
 
-- Delegate clusterProfiler GSEA JSON writing to protsea, preserving native statistics and running-score inputs in MuData while retaining canonical sequence-window memberships for PTM consumers.
+- Store every PTMSEA, KinaseGSEA, and MEA result as validated JSON in MuData. The final typed result exposes complete document getters, verifies schema and checksums when reading, and reconstructs temporary clusterProfiler objects through protsea without persisting `gseaResult` objects.
+
+- Declare the `limpa` dependency used by the existing CorrectFirst vignette so an isolated `R CMD check` can rebuild it.
 
 - Preserve missing gene annotations as `NA` in terminal DPA/DPU RDS exports, matching the legacy workbook reader.
 
