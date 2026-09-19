@@ -1,4 +1,4 @@
-## Rebuild the small final MuData artifact used by the statistics vignette.
+## Rebuild the final two-contrast MuData artifact used by the statistics vignette.
 ##
 ##   Rscript data-raw/make_ptm_results_example.R
 

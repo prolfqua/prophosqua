@@ -24,6 +24,7 @@ required_packages <- c(
   "dplyr",
   "fgczQuartoTemplate",
   "ggplot2",
+  "ggseqlogo",
   "knitr",
   "prolfqua",
   "prophosqua"
@@ -210,6 +211,89 @@ modification_counts <- function(data) {
     dplyr::arrange(.data$contrast, dplyr::desc(.data$sites))
 }
 
+prepare_logo_sites <- function(data, effect, fdr) {
+  required <- c("contrast", "SequenceWindow", "modAA", effect, fdr)
+  if (!all(required %in% names(data))) {
+    return(data.frame())
+  }
+  sites <- prophosqua::filter_significant_sites(
+    data,
+    fdr_col = fdr,
+    diff_col = effect,
+    fdr_threshold = params$fdr_threshold,
+    fc_threshold = params$diff_threshold,
+    require_sequence = TRUE
+  )
+  if (!nrow(sites)) {
+    return(sites)
+  }
+  prophosqua::validate_sequence_window(sites)
+}
+
+logo_counts <- function(data) {
+  if (!nrow(data)) {
+    return(data.frame(message = "No sites pass the displayed thresholds."))
+  }
+  dplyr::count(
+    data,
+    .data$contrast,
+    .data$regulation,
+    .data$modAA,
+    name = "sites"
+  ) |>
+    dplyr::arrange(.data$contrast, .data$regulation, .data$modAA)
+}
+
+sequence_logo_plot <- function(data, title) {
+  if (!nrow(data)) {
+    return(empty_plot("No sites pass the displayed thresholds."))
+  }
+  sequence_groups <- data |>
+    dplyr::mutate(group = paste(.data$contrast, .data$regulation, sep = " · ")) |>
+    dplyr::group_by(.data$group) |>
+    dplyr::summarize(
+      sequences = list(toupper(.data$SequenceWindow)),
+      .groups = "drop"
+    )
+  sequence_groups <- stats::setNames(
+    sequence_groups$sequences,
+    sequence_groups$group
+  )
+  ggseqlogo::ggseqlogo(
+    sequence_groups,
+    ncol = 2,
+    seq_type = "aa",
+    method = "probability"
+  ) +
+    ggplot2::labs(
+      title = title,
+      x = "Position in sequence window",
+      y = "Amino-acid probability"
+    ) +
+    ggplot2::theme(legend.position = "bottom")
+}
+
+difference_logo_plot <- function(data, title) {
+  if (!nrow(data)) {
+    return(empty_plot("No sites pass the displayed thresholds."))
+  }
+  plot <- prophosqua::plot_diff_logo(data)
+  if (is.null(plot)) {
+    return(empty_plot("Both directions are required for a difference logo."))
+  }
+  plot +
+    ggplot2::labs(
+      title = title,
+      x = "Position in sequence window",
+      y = "Probability difference (up - down)"
+    ) +
+    ggplot2::theme(legend.position = "bottom")
+}
+
+dpa_logo_sites <- prepare_logo_sites(dpa, "diff.site", "FDR.site")
+dpu_logo_sites <- prepare_logo_sites(dpu, "diff_diff", "FDR_I")
+cf_logo_sites <- prepare_logo_sites(cf_results, "diff.site", "FDR.site")
+
 source_paths <- provenance$paths
 if (is.null(source_paths)) {
   source_paths <- character()
@@ -300,6 +384,40 @@ volcano_plot(dpa, "diff.site", "FDR.site", "Differential PTM abundance")
 site_protein_plot(dpa)
 ```
 
+## Sequence logos
+
+The logos use significant, sequence-validated PTM sites and separate each contrast and regulation direction. Letter height is the amino-acid probability at that position.
+
+```{r}
+#| label: tbl-dpa-logo-counts
+#| tbl-cap: "DPA sites entering the sequence logos by contrast, direction, and modified residue."
+knitr::kable(logo_counts(dpa_logo_sites))
+```
+
+```{r}
+#| label: fig-dpa-sequence-logos
+#| fig-cap: >-
+#|   Sequence motifs around differentially abundant PTM sites. Each panel
+#|   contains one contrast and regulation direction after applying the displayed
+#|   FDR and absolute fold-change thresholds.
+#| fig-width: 10
+#| fig-height: 10
+sequence_logo_plot(dpa_logo_sites, "DPA sequence motifs")
+```
+
+## Difference logos
+
+```{r}
+#| label: fig-dpa-difference-logos
+#| fig-cap: >-
+#|   Difference logos for DPA. Letters above zero are enriched around
+#|   upregulated sites; letters below zero are enriched around downregulated
+#|   sites in the same contrast.
+#| fig-width: 10
+#| fig-height: 8
+difference_logo_plot(dpa_logo_sites, "DPA motif difference: up - down")
+```
+
 ## Results
 
 ```{r}
@@ -371,6 +489,38 @@ volcano_plot(dpu, "diff_diff", "FDR_I", "Differential PTM usage")
 #| fig-width: 8
 #| fig-height: 5
 site_protein_plot(dpu)
+```
+
+## Sequence logos
+
+The DPU logos group sites by the direction of their protein-adjusted change.
+
+```{r}
+#| label: tbl-dpu-logo-counts
+#| tbl-cap: "DPU sites entering the sequence logos by contrast, direction, and modified residue."
+knitr::kable(logo_counts(dpu_logo_sites))
+```
+
+```{r}
+#| label: fig-dpu-sequence-logos
+#| fig-cap: >-
+#|   Sequence motifs around sites with significant differential PTM usage,
+#|   separated by contrast and direction.
+#| fig-width: 10
+#| fig-height: 10
+sequence_logo_plot(dpu_logo_sites, "DPU sequence motifs")
+```
+
+## Difference logos
+
+```{r}
+#| label: fig-dpu-difference-logos
+#| fig-cap: >-
+#|   Difference logos for DPU, showing the amino-acid probability around
+#|   upregulated sites minus that around downregulated sites in each contrast.
+#| fig-width: 10
+#| fig-height: 8
+difference_logo_plot(dpu_logo_sites, "DPU motif difference: up - down")
 ```
 
 ## Results
@@ -445,6 +595,38 @@ safe_plot(
 #| fig-width: 8
 #| fig-height: 5
 volcano_plot(cf_results, "diff.site", "FDR.site", "CorrectFirst differential PTM usage")
+```
+
+## Sequence logos
+
+The CorrectFirst logos use the direction of the effect fitted after sample-level protein correction.
+
+```{r}
+#| label: tbl-cf-logo-counts
+#| tbl-cap: "CorrectFirst sites entering the sequence logos by contrast, direction, and modified residue."
+knitr::kable(logo_counts(cf_logo_sites))
+```
+
+```{r}
+#| label: fig-cf-sequence-logos
+#| fig-cap: >-
+#|   Sequence motifs around sites with significant CorrectFirst differential
+#|   PTM usage, separated by contrast and direction.
+#| fig-width: 10
+#| fig-height: 10
+sequence_logo_plot(cf_logo_sites, "CorrectFirst sequence motifs")
+```
+
+## Difference logos
+
+```{r}
+#| label: fig-cf-difference-logos
+#| fig-cap: >-
+#|   Difference logos for CorrectFirst DPU, showing the amino-acid probability
+#|   around upregulated sites minus that around downregulated sites.
+#| fig-width: 10
+#| fig-height: 8
+difference_logo_plot(cf_logo_sites, "CorrectFirst motif difference: up - down")
 ```
 
 ## Model summary

@@ -2,7 +2,7 @@
 % Please edit documentation in R/example_ptm_results.R
 \name{example_ptm_results_h5mu}
 \alias{example_ptm_results_h5mu}
-\title{Build the Small Final MuData Used by Package Vignettes}
+\title{Build the Final MuData Used by Package Vignettes}
 \usage{
 example_ptm_results_h5mu(path = tempfile(fileext = ".h5mu"))
 }
