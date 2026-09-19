@@ -29,7 +29,8 @@
 # Notes:
 #   - Package is automatically reinstalled when R/*.R or DESCRIPTION changes
 #   - Use 'rm .package_installed' to force package reinstall
-#   - Vignette sources are in ../../vignettes/
+#   - The manuscript source and its assets are in ../../manuscript/
+#   - Package vignette sources are in ../../vignettes/
 #   - Outputs are written to this directory (inst/MiMB_build/)
 #   - Analysis vignettes (PTMSEA, KinaseLibrary, MEA, seqlogo, n_to_c)
 #     are now standard package vignettes built via devtools::build_vignettes()
@@ -40,7 +41,8 @@ import datetime
 # Path configuration (relative to inst/MiMB_build/)
 PKG_ROOT = "../.."
 VIGNETTES = f"{PKG_ROOT}/vignettes"
-METHODS_RMD = f"{VIGNETTES}/_MiMBIntegratedPTM.Rmd"
+MANUSCRIPT = f"{PKG_ROOT}/manuscript"
+METHODS_RMD = f"{MANUSCRIPT}/_MiMBIntegratedPTM.Rmd"
 QC_REPORT_QMD = f"{VIGNETTES}/_QCReport.qmd"
 R_FILES = glob.glob(f"{PKG_ROOT}/R/*.R")
 DESCRIPTION = f"{PKG_ROOT}/DESCRIPTION"
@@ -180,8 +182,8 @@ rule archive:
     input:
         docx="MiMBIntegratedPTM_renumbered.docx",
         pdf="MiMBIntegratedPTM.pdf",
-        bib=f"{VIGNETTES}/doi_references_key.bib",
-        csl=f"{VIGNETTES}/springer-basic-brackets.csl"
+        bib=f"{MANUSCRIPT}/doi_references_key.bib",
+        csl=f"{MANUSCRIPT}/springer-basic-brackets.csl"
     output:
         "MiMB_submission_{date}.zip".format(date=datetime.datetime.now().strftime("%Y%m%d"))
     params:

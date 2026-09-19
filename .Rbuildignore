@@ -19,7 +19,6 @@
 ^vignettes/\.package_installed$
 ^vignettes/\.quarto$
 ^vignettes/Vis_Ksea\.Rmd$
-^vignettes/MiMBIntegratedPTM\.Rmd$
 ^vignettes/.*\.xlsx$
 ^vignettes/kinase_lib_cli_error\.log$
 ^vignettes/ptm_example-main$
@@ -64,6 +63,7 @@
 ^Meta$
 ^\.githooks$
 ^make$
+^manuscript$
 ^.*\.BiocCheck$
 ^\.github$
 ^AGENTS\.md$

@@ -86,11 +86,14 @@ The package includes vignettes demonstrating the analysis workflow:
 - **`Analysis_KinaseLibrary.Rmd`** - Kinase activity inference from phosphoproteomics data
 - **`Analysis_MEA.Rmd`** - Motif enrichment analysis visualization
 
-Two further sources live in `vignettes/` but are not package vignettes: they carry no
-vignette engine and are rendered by `inst/MiMB_build/Snakefile`.
+The MiMB manuscript source is kept outside `vignettes/` and is rendered by
+`inst/MiMB_build/Snakefile`:
 
-- **`vignettes/_MiMBIntegratedPTM.Rmd`** - Integrated analysis of PTM and total proteome
+- **`manuscript/_MiMBIntegratedPTM.Rmd`** - Integrated analysis of PTM and total proteome
   (DPA, DPU, CorrectFirst); the MiMB manuscript
+
+The separate quality-control source is a Quarto vignette:
+
 - **`vignettes/_QCReport.qmd`** - FragPipe TMT quality control report
 
 ## Citation
