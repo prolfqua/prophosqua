@@ -91,8 +91,8 @@ generate_analysis_rows <- function(analysis_dir, relative_dir, analysis_type, nt
                              file.path(relative_dir, paste0("KinaseLib/MEA_", analysis_type, "_results.xlsx")), "xlsx")
   rows <- c(rows, sprintf("| KinaseLib MEA | %s | %s |", mea_html, mea_xlsx))
 
-  if (isTRUE(settings$ptm3d$run)) {
-    app <- link_if_exists(file.path(analysis_dir, "ptm3d/index.html"), file.path(relative_dir, "ptm3d/index.html"), "3D browser")
+  if (isTRUE(settings$proptm3d$run)) {
+    app <- link_if_exists(file.path(analysis_dir, "proptm3d/index.html"), file.path(relative_dir, "proptm3d/index.html"), "3D browser")
     rows <- c(rows, sprintf("| Protein structures | %s | |", app))
   }
   return(rows)
