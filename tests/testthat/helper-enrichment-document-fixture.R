@@ -22,7 +22,7 @@ make_stage_gsea <- function(category, empty = FALSE) {
     result <- result[FALSE, , drop = FALSE]
   }
   methods::new(
-    "gseaResult",
+    methods::getClass("gseaResult", where = asNamespace("DOSE")),
     params = list(exponent = 1.5),
     organism = "unknown",
     setType = category,
@@ -31,6 +31,20 @@ make_stage_gsea <- function(category, empty = FALSE) {
     geneList = genes,
     result = result,
     geneSets = list(CDK2 = c("AAAAAAASAAAAAAA-p", "CCCCCCCSCCCCCCC-p"))
+  )
+}
+
+expected_gsea_trace <- function(ranks, members, exponent) {
+  hits <- names(ranks) %in% members
+  weights <- abs(ranks)^exponent
+  increments <- ifelse(
+    hits,
+    weights / sum(weights[hits]),
+    -1 / sum(!hits)
+  )
+  data.frame(
+    runningScore = cumsum(increments),
+    position = as.integer(hits)
   )
 }
 

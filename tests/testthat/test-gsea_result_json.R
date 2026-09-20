@@ -7,7 +7,7 @@ make_fake_gsea <- function() {
     "CCCCCCCSCCCCCCC-p" = -2.0
   )
   methods::new(
-    "gseaResult",
+    methods::getClass("gseaResult", where = asNamespace("DOSE")),
     params = list(exponent = 1.5),
     organism = "unknown",
     setType = "PTM-SEA",

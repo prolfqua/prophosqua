@@ -55,12 +55,11 @@ test_that("enrichment vignette fixture contains nine portable JSON documents", {
         ))
         native <- category_payload$gsea_result
         for (term_id in object@result$ID) {
-          reproduced <- DOSE:::gseaScores(
+          reproduced <- expected_gsea_trace(
             object@geneList,
             object@geneSets[[term_id]],
-            exponent = object@params$exponent,
-            fortify = FALSE
-          )$runningES
+            exponent = object@params$exponent
+          )
           expect_equal(
             unlist(native$running_scores[[term_id]], use.names = FALSE),
             reproduced$runningScore,
