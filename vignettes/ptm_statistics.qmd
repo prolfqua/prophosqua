@@ -250,6 +250,30 @@ format_contrast <- function(contrast) {
   gsub("_", " ", contrast, fixed = TRUE)
 }
 
+logo_counts <- function(data) {
+  if (!nrow(data)) {
+    return(data.frame(Message = "No sites pass the displayed thresholds."))
+  }
+  data |>
+    dplyr::count(
+      .data$contrast,
+      .data$regulation,
+      .data$modAA,
+      name = "Sites"
+    ) |>
+    dplyr::transmute(
+      Contrast = format_contrast(.data$contrast),
+      Direction = dplyr::if_else(
+        .data$regulation == "upregulated",
+        "Up",
+        "Down"
+      ),
+      `Modified residue` = .data$modAA,
+      .data$Sites
+    ) |>
+    dplyr::arrange(.data$Contrast, .data$Direction, .data$`Modified residue`)
+}
+
 logo_theme <- function() {
   ggplot2::theme(
     plot.title = ggplot2::element_blank(),
@@ -455,6 +479,10 @@ site_protein_plot(dpa)
 
 ## Sequence logos
 
+::: {.panel-tabset}
+
+### Plot
+
 The logos use significant, sequence-validated PTM sites and separate each contrast and regulation direction. Panel labels report the number of sites; letter height is the amino-acid probability at that position. **On-render selection:** `r logo_selection`.
 
 ```{r}
@@ -469,6 +497,16 @@ The logos use significant, sequence-validated PTM sites and separate each contra
 #| out-width: "82%"
 sequence_logo_plot(dpa_logo_sites)
 ```
+
+### Table
+
+```{r}
+#| label: tbl-dpa-logo-counts
+#| tbl-cap: "DPA sites entering the sequence logos by contrast, direction, and modified residue."
+knitr::kable(logo_counts(dpa_logo_sites), align = c("l", "l", "c", "r"))
+```
+
+:::
 
 ## Difference logos
 
@@ -562,6 +600,10 @@ site_protein_plot(dpu)
 
 ## Sequence logos
 
+::: {.panel-tabset}
+
+### Plot
+
 The DPU logos group sites by the direction of their protein-adjusted change. Panel labels report the number of sites entering each motif. **On-render selection:** `r logo_selection`.
 
 ```{r}
@@ -575,6 +617,16 @@ The DPU logos group sites by the direction of their protein-adjusted change. Pan
 #| out-width: "82%"
 sequence_logo_plot(dpu_logo_sites)
 ```
+
+### Table
+
+```{r}
+#| label: tbl-dpu-logo-counts
+#| tbl-cap: "DPU sites entering the sequence logos by contrast, direction, and modified residue."
+knitr::kable(logo_counts(dpu_logo_sites), align = c("l", "l", "c", "r"))
+```
+
+:::
 
 ## Difference logos
 
@@ -668,6 +720,10 @@ volcano_plot(cf_results, "diff.site", "FDR.site", "CorrectFirst differential PTM
 
 ## Sequence logos
 
+::: {.panel-tabset}
+
+### Plot
+
 The CorrectFirst logos use the direction of the effect fitted after sample-level protein correction. Panel labels report the number of sites entering each motif. **On-render selection:** `r logo_selection`.
 
 ```{r}
@@ -681,6 +737,16 @@ The CorrectFirst logos use the direction of the effect fitted after sample-level
 #| out-width: "82%"
 sequence_logo_plot(cf_logo_sites)
 ```
+
+### Table
+
+```{r}
+#| label: tbl-cf-logo-counts
+#| tbl-cap: "CorrectFirst sites entering the sequence logos by contrast, direction, and modified residue."
+knitr::kable(logo_counts(cf_logo_sites), align = c("l", "l", "c", "r"))
+```
+
+:::
 
 ## Difference logos
 

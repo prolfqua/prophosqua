@@ -96,7 +96,22 @@ test_that("statistics vignette has the required shallow tab structure", {
     grep("^## ", session_source[session_outside_code], value = TRUE)
   )
   expect_identical(session_tabs, c("Report provenance", "R session info"))
-  expect_equal(sum(source == "## Sequence logos"), 3L)
+  sequence_starts <- which(source == "## Sequence logos")
+  expect_length(sequence_starts, 3L)
+  for (start in sequence_starts) {
+    following_section <- which(
+      seq_along(source) > start & grepl("^## ", source)
+    )
+    end <- if (length(following_section)) following_section[[1L]] - 1L else length(source)
+    child_tabs <- sub(
+      "^### ",
+      "",
+      grep("^### ", source[start:end], value = TRUE)
+    )
+    expect_identical(source[[start + 2L]], "::: {.panel-tabset}")
+    expect_true(any(source[start:end] == ":::"))
+    expect_identical(child_tabs, c("Plot", "Table"))
+  }
   expect_equal(sum(source == "## Difference logos"), 3L)
   expect_true(any(grepl("plot_diff_logo", source, fixed = TRUE)))
   expect_true(any(grepl("read_ptm_h5mu", source, fixed = TRUE)))
