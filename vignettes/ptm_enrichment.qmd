@@ -399,8 +399,7 @@ gene_set_network_plot <- function(data) {
   enrichplot::cnetplot(
     object,
     showCategory = min(4L, top_terms),
-    node_label = "category",
-    cex.params = list(category_label = 0.65)
+    node_label = "category"
   ) +
     ggplot2::labs(
       title = paste0(analysis_labels[[data$analysis]], " · ", data$label),
