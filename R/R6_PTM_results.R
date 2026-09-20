@@ -109,36 +109,61 @@ PTM_results <- R6::R6Class(
   result <- branch$get_results()
   builders <- list(
     PTMSEA = function(x) gsea_result_data(x$get_results()$results, category = "PTM-SEA"),
-    KinaseGSEA = function(x) gsea_result_data(x$get_results()$gsea_results, category = "KinaseLib"),
-    MEA = function(x) {
-      assignments <- x$get_source()$get_source()
-      ranks <- lapply(assignments$get_source()$get_results()$ranks, function(table) {
-        stats::setNames(table$statistic.site, table$SequenceWindow)
-      })
-      mea_gsea_result_data(x$get_results()$mea_clean, ranks, assignments$get_results()$term2gene)
-    }
+    KinaseGSEA = function(x) gsea_result_data(x$get_results()$gsea_results, category = "KinaseLib")
   )
   object_field <- c(PTMSEA = "results", KinaseGSEA = "gsea_results", MEA = NA_character_)[[method]]
   portable_result <- result
   if (!is.na(object_field)) {
     portable_result[[object_field]] <- NULL
   }
-  contents <- builders[[method]](branch)
-  contents$prophosqua <- list(
+  extension <- list(
     method = method,
     analysis = analysis,
     result_names = names(result),
     result = .pack_ptm_value(portable_result)
   )
-  document <- as.character(jsonlite::toJSON(contents, auto_unbox = TRUE, digits = NA, na = "null"))
+  if (identical(method, "MEA")) {
+    document <- .append_ptm_json_extension(
+      branch$get_source()$get_results()$gsea_json,
+      extension
+    )
+  } else {
+    contents <- builders[[method]](branch)
+    contents$prophosqua <- extension
+    document <- as.character(jsonlite::toJSON(contents, auto_unbox = TRUE, digits = NA, na = "null"))
+  }
   wrapper <- list(
     format = "string_gsea",
-    version = "1.1.0",
+    version = "1.2.0",
     json = document,
     sha256 = digest::digest(document, algo = "sha256", serialize = FALSE)
   )
   .validate_ptm_enrichment_document(wrapper, .ptm_varm_key(method, analysis))
   wrapper
+}
+
+.append_ptm_json_extension <- function(json, extension) {
+  source <- tryCatch(
+    jsonlite::fromJSON(json, simplifyVector = FALSE),
+    error = function(error) {
+      stop("Invalid native MEA JSON: ", conditionMessage(error), call. = FALSE)
+    }
+  )
+  .require_ptm_fields(source, c("data", "rank_lists"), "Native MEA JSON")
+  if ("prophosqua" %in% names(source)) {
+    stop("Native MEA JSON already contains a prophosqua extension.")
+  }
+  json <- trimws(json)
+  if (!startsWith(json, "{") || !endsWith(json, "}")) {
+    stop("Native MEA JSON must be one JSON object.")
+  }
+  extension_json <- as.character(jsonlite::toJSON(
+    extension,
+    auto_unbox = TRUE,
+    digits = NA,
+    na = "null"
+  ))
+  paste0(substr(json, 1L, nchar(json) - 1L), ',"prophosqua":', extension_json, "}")
 }
 
 .validate_ptm_enrichment_documents <- function(documents, expected) {
@@ -162,9 +187,7 @@ PTM_results <- R6::R6Class(
   payload <- .ptm_enrichment_payload(document, key)
   method <- .validate_ptm_enrichment_identity(payload, key)
   .validate_ptm_enrichment_contrasts(payload, key, method)
-  if (method %in% c("PTMSEA", "KinaseGSEA")) {
-    protsea::decode_gsea_json(document$json)
-  }
+  protsea::decode_gsea_json(document$json)
   invisible(payload)
 }
 
@@ -175,7 +198,7 @@ PTM_results <- R6::R6Class(
     stop("Enrichment document wrapper has unexpected fields: ", key)
   }
   scalar_text <- vapply(document[fields], function(value) is.character(value) && length(value) == 1L, logical(1))
-  if (!all(scalar_text) || !identical(document$format, "string_gsea") || !identical(document$version, "1.1.0")) {
+  if (!all(scalar_text) || !identical(document$format, "string_gsea") || !identical(document$version, "1.2.0")) {
     stop("Unsupported enrichment document: ", key)
   }
   checksum <- digest::digest(document$json, algo = "sha256", serialize = FALSE)
@@ -224,7 +247,11 @@ PTM_results <- R6::R6Class(
       stop("Enrichment JSON rank-list identity is invalid: ", key)
     }
     category_data <- contrast$categories[[category]]
-    .require_ptm_fields(category_data, c("category", "contrast", "terms"), paste0("Category ", category))
+    .require_ptm_fields(
+      category_data,
+      c("category", "contrast", "terms", "gsea_result"),
+      paste0("Category ", category)
+    )
     if (!identical(category_data$category, category) || !identical(category_data$contrast, contrast_name)) {
       stop("Enrichment JSON category identity is invalid: ", key)
     }
@@ -244,8 +271,72 @@ PTM_results <- R6::R6Class(
     for (term in category_data$terms) {
       .require_ptm_fields(term, required_term_fields, paste0("Enrichment term in ", key))
     }
+    .validate_ptm_enrichment_traces(
+      category_data,
+      length(rank_list$entries),
+      key
+    )
   }
   invisible(payload)
+}
+
+.validate_ptm_enrichment_traces <- function(category_data, rank_count, key) {
+  native <- category_data$gsea_result
+  .require_ptm_fields(
+    native,
+    c("result", "gene_sets", "params", "running_scores", "hit_indices"),
+    paste0("Native GSEA result in ", key)
+  )
+  .require_ptm_fields(
+    native$result,
+    c("columns", "types", "row_names", "row_name_type"),
+    paste0("Native GSEA table in ", key)
+  )
+  .require_ptm_fields(native$result$columns, "ID", paste0("Native GSEA table in ", key))
+  term_ids <- vapply(
+    category_data$terms,
+    function(term) as.character(term$term_id),
+    character(1)
+  )
+  result_ids <- as.character(unlist(native$result$columns$ID, use.names = FALSE))
+  if (!identical(result_ids, term_ids)) {
+    stop("Native GSEA table and term identifiers differ: ", key)
+  }
+  .validate_ptm_enrichment_trace_names(native, term_ids, key)
+  for (term_id in term_ids) {
+    .validate_ptm_enrichment_term_trace(native, term_id, rank_count, key)
+  }
+  invisible(category_data)
+}
+
+.validate_ptm_enrichment_trace_names <- function(native, term_ids, key) {
+  for (field in c("running_scores", "hit_indices")) {
+    value_names <- names(native[[field]])
+    if (is.null(value_names)) {
+      value_names <- character()
+    }
+    if (anyDuplicated(value_names) || !setequal(value_names, term_ids)) {
+      stop("Native GSEA ", field, " names differ from term identifiers: ", key)
+    }
+  }
+  invisible(native)
+}
+
+.validate_ptm_enrichment_term_trace <- function(native, term_id, rank_count, key) {
+  running <- as.numeric(unlist(native$running_scores[[term_id]], use.names = FALSE))
+  if (length(running) != rank_count || any(!is.finite(running))) {
+    stop("Native GSEA running score is invalid for ", term_id, ": ", key)
+  }
+  hits <- as.numeric(unlist(native$hit_indices[[term_id]], use.names = FALSE))
+  invalid_hits <- any(!is.finite(hits)) ||
+    any(hits != floor(hits)) ||
+    any(hits < 1 | hits > rank_count) ||
+    anyDuplicated(hits) ||
+    is.unsorted(hits, strictly = TRUE)
+  if (invalid_hits) {
+    stop("Native GSEA hit positions are invalid for ", term_id, ": ", key)
+  }
+  invisible(native)
 }
 
 .contains_packed_gsea_result <- function(value) {

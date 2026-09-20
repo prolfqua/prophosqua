@@ -18,7 +18,20 @@ MotifEnrichment <- R6::R6Class(
       if (!identical(analysis, source$get_analysis())) {
         stop("Source analysis differs from target analysis.")
       }
-      .require_ptm_fields(result, "mea_results", "MotifEnrichment")
+      .require_ptm_fields(result, c("mea_results", "gsea_json"), "MotifEnrichment")
+      if (!is.character(result$gsea_json) || length(result$gsea_json) != 1L || !nzchar(result$gsea_json)) {
+        stop("MotifEnrichment gsea_json must be one non-empty JSON string.")
+      }
+      tryCatch(
+        protsea::decode_gsea_json(result$gsea_json),
+        error = function(error) {
+          stop(
+            "MotifEnrichment gsea_json is invalid: ",
+            conditionMessage(error),
+            call. = FALSE
+          )
+        }
+      )
       private$source <- source
       private$analysis <- analysis
       private$result <- .pack_ptm_value(result)

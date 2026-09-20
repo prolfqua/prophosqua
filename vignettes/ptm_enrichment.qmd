@@ -1,0 +1,991 @@
+---
+title: "PTM Enrichment: PTM-SEA, Kinase GSEA, and MEA"
+format:
+  html:
+    toc-location: left
+    grid:
+      sidebar-width: 300px
+    include-after-body: fgcz-plot-finder.html
+toc: true
+params:
+  input_h5mu: null
+  fdr_threshold: 0.1
+  top_terms: 10
+  running_terms: 1
+vignette: >
+  %\VignetteIndexEntry{PTM Enrichment: PTM-SEA, Kinase GSEA, and MEA}
+  %\VignetteEngine{quarto::format}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup}
+#| include: false
+required_packages <- c(
+  "clusterProfiler",
+  "DT",
+  "dplyr",
+  "enrichplot",
+  "fgczQuartoTemplate",
+  "ggplot2",
+  "jsonlite",
+  "knitr",
+  "prophosqua",
+  "protsea"
+)
+missing_packages <- required_packages[
+  !vapply(required_packages, requireNamespace, quietly = TRUE, FUN.VALUE = logical(1))
+]
+if (length(missing_packages)) {
+  stop(
+    "Missing package(s) required to render this report: ",
+    paste(missing_packages, collapse = ", "),
+    call. = FALSE
+  )
+}
+
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 9,
+  fig.height = 5.5,
+  fig.dpi = 110,
+  out.width = "88%",
+  fig.align = "center"
+)
+
+input_h5mu <- params$input_h5mu
+if (is.null(input_h5mu) || !length(input_h5mu) || !nzchar(input_h5mu)) {
+  input_h5mu <- system.file(
+    "extdata",
+    "ptm_results_example.h5mu",
+    package = "prophosqua"
+  )
+}
+if (!nzchar(input_h5mu) || !file.exists(input_h5mu)) {
+  stop("Final PTM_results.h5mu not found: ", input_h5mu, call. = FALSE)
+}
+input_h5mu <- normalizePath(input_h5mu, mustWork = TRUE)
+fdr_threshold <- as.numeric(params$fdr_threshold)
+top_terms <- as.integer(params$top_terms)
+running_terms <- as.integer(params$running_terms)
+if (length(fdr_threshold) != 1L || !is.finite(fdr_threshold) ||
+    fdr_threshold <= 0 || fdr_threshold > 1) {
+  stop("fdr_threshold must be one number in (0, 1].", call. = FALSE)
+}
+if (length(top_terms) != 1L || is.na(top_terms) || top_terms < 1L) {
+  stop("top_terms must be one positive integer.", call. = FALSE)
+}
+if (length(running_terms) != 1L || is.na(running_terms) || running_terms < 1L) {
+  stop("running_terms must be one positive integer.", call. = FALSE)
+}
+
+# The report has one data boundary: the complete typed final MuData object.
+ptm_results <- prophosqua::read_ptm_h5mu(
+  input_h5mu,
+  prophosqua::PTM_results
+)
+statistics <- ptm_results$get_statistics()
+inputs <- statistics$get_inputs()
+provenance <- inputs$get_provenance()
+source_paths <- provenance$paths
+if (is.null(source_paths)) {
+  source_paths <- character()
+}
+
+analysis_labels <- c(DPA = "DPA", DPU = "DPU", CF = "CorrectFirst DPU")
+method_labels <- c(
+  PTMSEA = "PTM-SEA",
+  KinaseGSEA = "Kinase GSEA",
+  MEA = "MEA"
+)
+category_names <- c(PTMSEA = "PTM-SEA", KinaseGSEA = "KinaseLib", MEA = "MEA")
+
+empty_terms <- function() {
+  data.frame(
+    analysis = character(),
+    method = character(),
+    contrast = character(),
+    term = character(),
+    NES = numeric(),
+    FDR = numeric(),
+    direction = character(),
+    mapped_sites = integer(),
+    set_size = integer(),
+    leading_edge_sites = character(),
+    stringsAsFactors = FALSE
+  )
+}
+
+scalar_number <- function(value) {
+  if (is.null(value) || !length(value)) {
+    return(NA_real_)
+  }
+  as.numeric(unlist(value, use.names = FALSE)[[1L]])
+}
+
+term_table_from_payload <- function(payload, analysis, method) {
+  category <- category_names[[method]]
+  tables <- lapply(names(payload$data), function(contrast_name) {
+    terms <- payload$data[[contrast_name]]$categories[[category]]$terms
+    if (!length(terms)) {
+      return(empty_terms())
+    }
+    do.call(rbind, lapply(terms, function(term) {
+      data.frame(
+        analysis = analysis,
+        method = method_labels[[method]],
+        contrast = contrast_name,
+        term = as.character(term$description),
+        NES = scalar_number(term$enrichment_score),
+        FDR = scalar_number(term$fdr),
+        direction = as.character(term$direction),
+        mapped_sites = as.integer(scalar_number(term$genes_mapped)),
+        set_size = as.integer(scalar_number(term$genes_in_set)),
+        leading_edge_sites = paste(
+          as.character(unlist(term$leading_edge_ids, use.names = FALSE)),
+          collapse = ";"
+        ),
+        stringsAsFactors = FALSE
+      )
+    }))
+  })
+  dplyr::bind_rows(tables)
+}
+
+read_method_data <- function(analysis, method) {
+  document <- ptm_results$get_enrichment_document(method, analysis)
+  payload <- jsonlite::fromJSON(document$json, simplifyVector = FALSE)
+  category <- category_names[[method]]
+  decoded <- protsea::decode_gsea_json(document$json)
+  native <- lapply(decoded, function(contrast) contrast[[category]])
+  list(
+    analysis = analysis,
+    method = method,
+    label = method_labels[[method]],
+    category = category,
+    version = document$version,
+    checksum = document$sha256,
+    contrasts = names(payload$data),
+    table = term_table_from_payload(payload, analysis, method),
+    native = native
+  )
+}
+
+enrichment <- lapply(names(analysis_labels), function(analysis) {
+  stats::setNames(
+    lapply(names(method_labels), function(method) {
+      read_method_data(analysis, method)
+    }),
+    names(method_labels)
+  )
+})
+names(enrichment) <- names(analysis_labels)
+
+summary_table <- function(data) {
+  dplyr::bind_rows(lapply(data$contrasts, function(contrast_name) {
+    current <- data$table[data$table$contrast == contrast_name, , drop = FALSE]
+    data.frame(
+      Contrast = gsub("_", " ", contrast_name, fixed = TRUE),
+      `Tested terms` = nrow(current),
+      `FDR-significant` = sum(current$FDR <= fdr_threshold, na.rm = TRUE),
+      `Positive NES` = sum(
+        current$FDR <= fdr_threshold & current$NES > 0,
+        na.rm = TRUE
+      ),
+      `Negative NES` = sum(
+        current$FDR <= fdr_threshold & current$NES < 0,
+        na.rm = TRUE
+      ),
+      check.names = FALSE
+    )
+  }))
+}
+
+empty_plot <- function(label) {
+  ggplot2::ggplot() +
+    ggplot2::annotate("text", x = 0, y = 0, label = label) +
+    ggplot2::theme_void()
+}
+
+dot_plot <- function(data) {
+  if (!nrow(data$table)) {
+    return(empty_plot("No enrichment terms are available."))
+  }
+  if (!is.null(data$native)) {
+    usable <- data$native[vapply(data$native, function(x) nrow(x@result) > 0L, logical(1))]
+    if (!length(usable)) {
+      return(empty_plot("No enrichment terms are available."))
+    }
+    object <- if (length(usable) == 1L) {
+      usable[[1L]]
+    } else {
+      clusterProfiler::merge_result(usable)
+    }
+    return(
+      enrichplot::dotplot(object, showCategory = top_terms) +
+        ggplot2::theme(
+          axis.text.y = ggplot2::element_text(size = 8),
+          legend.position = "bottom"
+        )
+    )
+  }
+  plot_data <- data$table |>
+    dplyr::group_by(.data$contrast) |>
+    dplyr::slice_min(.data$FDR, n = top_terms, with_ties = FALSE) |>
+    dplyr::ungroup() |>
+    dplyr::mutate(negative_log10_fdr = -log10(pmax(.data$FDR, 1e-12)))
+  ggplot2::ggplot(
+    plot_data,
+    ggplot2::aes(
+      x = .data$NES,
+      y = stats::reorder(.data$term, .data$NES),
+      colour = .data$NES,
+      size = .data$negative_log10_fdr
+    )
+  ) +
+    ggplot2::geom_point() +
+    ggplot2::geom_vline(xintercept = 0, colour = "grey60", linetype = "dashed") +
+    ggplot2::scale_colour_gradient2(low = "#2b6cb0", mid = "grey85", high = "#c53030") +
+    ggplot2::facet_wrap(~ .data$contrast, scales = "free_y") +
+    ggplot2::theme_bw() +
+    ggplot2::theme(legend.position = "bottom", axis.text.y = ggplot2::element_text(size = 8)) +
+    ggplot2::labs(x = "Normalized enrichment score", y = NULL, colour = "NES", size = "-log10(FDR)")
+}
+
+heatmap_plot <- function(data) {
+  if (!nrow(data$table)) {
+    return(empty_plot("No enrichment terms are available."))
+  }
+  filter_threshold <- if (any(data$table$FDR <= 0.15, na.rm = TRUE)) 0.15 else 1
+  prophosqua::plot_enrichment_heatmap(
+    data$table,
+    item_col = "term",
+    fdr_col = "FDR",
+    fdr_filter = filter_threshold,
+    n_top = top_terms,
+    item_label_col = "term"
+  ) +
+    ggplot2::theme(axis.text.y = ggplot2::element_text(size = 8))
+}
+
+volcano_plot <- function(data) {
+  finite <- data$table[
+    is.finite(data$table$NES) & is.finite(data$table$FDR),
+    ,
+    drop = FALSE
+  ]
+  if (!nrow(finite)) {
+    return(empty_plot("No finite enrichment statistics are available."))
+  }
+  prophosqua::plot_enrichment_volcano(
+    finite,
+    item_col = "term",
+    fdr_col = "FDR",
+    fdr_threshold = fdr_threshold,
+    label_fdr_threshold = fdr_threshold,
+    n_labels = min(5L, top_terms)
+  ) +
+    ggplot2::theme(legend.position = "bottom")
+}
+
+running_score_plots <- function(data) {
+  if (is.null(data$native)) {
+    return(list())
+  }
+  plots <- list()
+  for (contrast_name in names(data$native)) {
+    result <- data$native[[contrast_name]]
+    if (!nrow(result@result)) {
+      next
+    }
+    top <- result@result |>
+      dplyr::arrange(.data$p.adjust, .data$pvalue) |>
+      utils::head(running_terms)
+    for (i in seq_len(nrow(top))) {
+      term_id <- top$ID[[i]]
+      title <- paste0(
+        gsub("_", " ", contrast_name, fixed = TRUE),
+        " · ",
+        top$Description[[i]],
+        " (NES=", round(top$NES[[i]], 2),
+        ", FDR=", signif(top$p.adjust[[i]], 2), ")"
+      )
+      plots[[paste(contrast_name, term_id, sep = "__")]] <- enrichplot::gseaplot2(
+        result,
+        geneSetID = term_id,
+        title = title,
+        pvalue_table = FALSE
+      )
+    }
+  }
+  plots
+}
+
+print_running_scores <- function(data) {
+  plots <- running_score_plots(data)
+  if (!length(plots)) {
+    cat("::: {.callout-note}\nNo enrichment term is available for a running-score plot.\n:::\n")
+    return(invisible(NULL))
+  }
+  for (plot in plots) {
+    print(plot)
+  }
+  invisible(NULL)
+}
+
+result_table <- function(data) {
+  if (!nrow(data$table)) {
+    return(knitr::kable(data.frame(Status = "No enrichment terms are available.")))
+  }
+  display <- data$table |>
+    dplyr::transmute(
+      Contrast = gsub("_", " ", .data$contrast, fixed = TRUE),
+      Term = .data$term,
+      NES = round(.data$NES, 3),
+      FDR = signif(.data$FDR, 3),
+      Direction = .data$direction,
+      `Mapped sites` = .data$mapped_sites,
+      `Set size` = .data$set_size,
+      `Leading-edge sites` = .data$leading_edge_sites
+    ) |>
+    dplyr::arrange(.data$Contrast, .data$FDR)
+  DT::datatable(
+    display,
+    filter = "top",
+    rownames = FALSE,
+    class = "compact stripe",
+    extensions = "Buttons",
+    options = list(
+      pageLength = 12,
+      scrollX = TRUE,
+      scrollY = "420px",
+      deferRender = TRUE,
+      dom = "Bfrtip",
+      buttons = c("copy", "csv", "excel")
+    )
+  )
+}
+
+overview <- dplyr::bind_rows(lapply(names(enrichment), function(analysis) {
+  dplyr::bind_rows(lapply(enrichment[[analysis]], function(method) {
+    data.frame(
+      Analysis = analysis_labels[[analysis]],
+      Method = method$label,
+      Contrasts = length(method$contrasts),
+      Terms = nrow(method$table),
+      `FDR-significant` = sum(
+        method$table$FDR <= fdr_threshold,
+        na.rm = TRUE
+      ),
+      check.names = FALSE
+    )
+  }))
+}))
+generated_at <- format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z")
+```
+
+```{r report-metadata}
+#| results: asis
+cat(sprintf(
+  '<div id="fgcz-report-metadata" hidden data-generated-at="%s"></div>',
+  generated_at
+))
+```
+
+::: {.panel-tabset}
+
+# Overview
+
+<img src="`r knitr::image_uri(system.file("report-assets", "ptm-enrichment.svg", package = "prophosqua"))`" alt="Visual abstract showing DPA, DPU, and CorrectFirst rankings entering PTM-SEA, Kinase GSEA, and MEA, followed by comparable plots and tables decoded from JSON in MuData." style="width: 100%; max-height: 22rem; object-fit: contain;">
+
+This report compares three enrichment methods for each PTM analysis. **PTM-SEA** tests curated PTM signatures, **Kinase GSEA** tests predicted kinase substrate sets with clusterProfiler, and **MEA** reports the native motif enrichment produced by the kinase-library Python workflow. Every value is read from validated JSON stored in the final MuData; the report performs no enrichment computation.
+
+```{r}
+#| label: tbl-enrichment-overview
+#| tbl-cap: "Stored enrichment documents and result counts by PTM analysis and method."
+knitr::kable(overview)
+```
+
+# DPA
+
+::: {.panel-tabset}
+
+## PTM-SEA
+
+::: {.panel-tabset}
+
+### Summary
+
+PTM-SEA tests curated kinase, perturbation, pathway, and disease-associated PTM signatures against the DPA site ranking.
+
+```{r}
+#| label: tbl-dpa-ptmsea-summary
+#| tbl-cap: "DPA PTM-SEA result counts by contrast and enrichment direction."
+knitr::kable(summary_table(enrichment$DPA$PTMSEA))
+```
+
+### Dot plot
+
+```{r}
+#| label: fig-dpa-ptmsea-dotplot
+#| fig-cap: "DPA PTM-SEA terms reconstructed from JSON and shown with clusterProfiler enrichment visualization. Position encodes NES, colour encodes adjusted significance, and panels identify contrasts."
+dot_plot(enrichment$DPA$PTMSEA)
+```
+
+### Heatmap
+
+```{r}
+#| label: fig-dpa-ptmsea-heatmap
+#| fig-cap: "Normalized enrichment scores for the leading DPA PTM-SEA signatures across contrasts. Tile colour gives NES and symbols indicate FDR thresholds."
+heatmap_plot(enrichment$DPA$PTMSEA)
+```
+
+### Volcano
+
+```{r}
+#| label: fig-dpa-ptmsea-volcano
+#| fig-cap: "DPA PTM-SEA normalized enrichment score as a function of FDR. Each point is one signature and each panel is one contrast."
+volcano_plot(enrichment$DPA$PTMSEA)
+```
+
+### Running score
+
+```{r}
+#| label: fig-dpa-ptmsea-running
+#| fig-cap: "Running enrichment scores for the leading DPA PTM-SEA signature in each contrast, reconstructed from the ordered ranks, signature membership, and weighting parameters stored in JSON."
+#| results: asis
+print_running_scores(enrichment$DPA$PTMSEA)
+```
+
+### Results
+
+```{r}
+#| label: tbl-dpa-ptmsea-results
+#| tbl-cap: "Complete DPA PTM-SEA result table decoded from MuData JSON."
+result_table(enrichment$DPA$PTMSEA)
+```
+
+:::
+
+## Kinase GSEA
+
+::: {.panel-tabset}
+
+### Summary
+
+Kinase GSEA tests predicted kinase substrate sets against the DPA site ranking and preserves the native clusterProfiler result needed for faithful plots.
+
+```{r}
+#| label: tbl-dpa-kinase-summary
+#| tbl-cap: "DPA Kinase GSEA result counts by contrast and enrichment direction."
+knitr::kable(summary_table(enrichment$DPA$KinaseGSEA))
+```
+
+### Dot plot
+
+```{r}
+#| label: fig-dpa-kinase-dotplot
+#| fig-cap: "DPA Kinase GSEA terms reconstructed from JSON and shown with clusterProfiler enrichment visualization."
+dot_plot(enrichment$DPA$KinaseGSEA)
+```
+
+### Heatmap
+
+```{r}
+#| label: fig-dpa-kinase-heatmap
+#| fig-cap: "Normalized enrichment scores for the leading DPA kinase substrate sets across contrasts."
+heatmap_plot(enrichment$DPA$KinaseGSEA)
+```
+
+### Volcano
+
+```{r}
+#| label: fig-dpa-kinase-volcano
+#| fig-cap: "DPA Kinase GSEA normalized enrichment score as a function of FDR."
+volcano_plot(enrichment$DPA$KinaseGSEA)
+```
+
+### Running score
+
+```{r}
+#| label: fig-dpa-kinase-running
+#| fig-cap: "Running enrichment scores for the leading DPA kinase substrate set in each contrast, reconstructed from JSON."
+#| results: asis
+print_running_scores(enrichment$DPA$KinaseGSEA)
+```
+
+### Results
+
+```{r}
+#| label: tbl-dpa-kinase-results
+#| tbl-cap: "Complete DPA Kinase GSEA result table decoded from MuData JSON."
+result_table(enrichment$DPA$KinaseGSEA)
+```
+
+:::
+
+## MEA
+
+::: {.panel-tabset}
+
+### Summary
+
+MEA is the native kinase-library/GSEApy motif enrichment. Its ranks, substrate sets, leading substrates, statistics, source running scores, and hit positions are stored in the shared JSON structure. Protsea constructs a temporary clusterProfiler result from that JSON only for plotting.
+
+```{r}
+#| label: tbl-dpa-mea-summary
+#| tbl-cap: "DPA MEA result counts by contrast and enrichment direction."
+knitr::kable(summary_table(enrichment$DPA$MEA))
+```
+
+### Dot plot
+
+```{r}
+#| label: fig-dpa-mea-dotplot
+#| fig-cap: "DPA MEA motif enrichment. Position and colour encode the native NES and point size encodes FDR."
+dot_plot(enrichment$DPA$MEA)
+```
+
+### Heatmap
+
+```{r}
+#| label: fig-dpa-mea-heatmap
+#| fig-cap: "Native MEA normalized enrichment scores for the leading DPA kinase motif sets across contrasts."
+heatmap_plot(enrichment$DPA$MEA)
+```
+
+### Volcano
+
+```{r}
+#| label: fig-dpa-mea-volcano
+#| fig-cap: "Native DPA MEA normalized enrichment score as a function of FDR."
+volcano_plot(enrichment$DPA$MEA)
+```
+
+### Running score
+
+```{r}
+#| label: mea-dpa-running-note
+#| results: asis
+print_running_scores(enrichment$DPA$MEA)
+```
+
+### Results
+
+```{r}
+#| label: tbl-dpa-mea-results
+#| tbl-cap: "Complete native DPA MEA result table decoded from MuData JSON."
+result_table(enrichment$DPA$MEA)
+```
+
+:::
+
+:::
+
+# DPU
+
+::: {.panel-tabset}
+
+## PTM-SEA
+
+::: {.panel-tabset}
+
+### Summary
+
+PTM-SEA tests curated PTM signatures against the DPU ranking of site change relative to protein change.
+
+```{r}
+#| label: tbl-dpu-ptmsea-summary
+#| tbl-cap: "DPU PTM-SEA result counts by contrast and enrichment direction."
+knitr::kable(summary_table(enrichment$DPU$PTMSEA))
+```
+
+### Dot plot
+
+```{r}
+#| label: fig-dpu-ptmsea-dotplot
+#| fig-cap: "DPU PTM-SEA terms reconstructed from JSON and shown with clusterProfiler enrichment visualization."
+dot_plot(enrichment$DPU$PTMSEA)
+```
+
+### Heatmap
+
+```{r}
+#| label: fig-dpu-ptmsea-heatmap
+#| fig-cap: "Normalized enrichment scores for the leading DPU PTM-SEA signatures across contrasts."
+heatmap_plot(enrichment$DPU$PTMSEA)
+```
+
+### Volcano
+
+```{r}
+#| label: fig-dpu-ptmsea-volcano
+#| fig-cap: "DPU PTM-SEA normalized enrichment score as a function of FDR."
+volcano_plot(enrichment$DPU$PTMSEA)
+```
+
+### Running score
+
+```{r}
+#| label: fig-dpu-ptmsea-running
+#| fig-cap: "Running enrichment scores for the leading DPU PTM-SEA signature in each contrast, reconstructed from JSON."
+#| results: asis
+print_running_scores(enrichment$DPU$PTMSEA)
+```
+
+### Results
+
+```{r}
+#| label: tbl-dpu-ptmsea-results
+#| tbl-cap: "Complete DPU PTM-SEA result table decoded from MuData JSON."
+result_table(enrichment$DPU$PTMSEA)
+```
+
+:::
+
+## Kinase GSEA
+
+::: {.panel-tabset}
+
+### Summary
+
+Kinase GSEA tests predicted kinase substrate sets against the DPU ranking.
+
+```{r}
+#| label: tbl-dpu-kinase-summary
+#| tbl-cap: "DPU Kinase GSEA result counts by contrast and enrichment direction."
+knitr::kable(summary_table(enrichment$DPU$KinaseGSEA))
+```
+
+### Dot plot
+
+```{r}
+#| label: fig-dpu-kinase-dotplot
+#| fig-cap: "DPU Kinase GSEA terms reconstructed from JSON and shown with clusterProfiler enrichment visualization."
+dot_plot(enrichment$DPU$KinaseGSEA)
+```
+
+### Heatmap
+
+```{r}
+#| label: fig-dpu-kinase-heatmap
+#| fig-cap: "Normalized enrichment scores for the leading DPU kinase substrate sets across contrasts."
+heatmap_plot(enrichment$DPU$KinaseGSEA)
+```
+
+### Volcano
+
+```{r}
+#| label: fig-dpu-kinase-volcano
+#| fig-cap: "DPU Kinase GSEA normalized enrichment score as a function of FDR."
+volcano_plot(enrichment$DPU$KinaseGSEA)
+```
+
+### Running score
+
+```{r}
+#| label: fig-dpu-kinase-running
+#| fig-cap: "Running enrichment scores for the leading DPU kinase substrate set in each contrast, reconstructed from JSON."
+#| results: asis
+print_running_scores(enrichment$DPU$KinaseGSEA)
+```
+
+### Results
+
+```{r}
+#| label: tbl-dpu-kinase-results
+#| tbl-cap: "Complete DPU Kinase GSEA result table decoded from MuData JSON."
+result_table(enrichment$DPU$KinaseGSEA)
+```
+
+:::
+
+## MEA
+
+::: {.panel-tabset}
+
+### Summary
+
+MEA reports the native kinase-library motif enrichment over the DPU ranking.
+
+```{r}
+#| label: tbl-dpu-mea-summary
+#| tbl-cap: "DPU MEA result counts by contrast and enrichment direction."
+knitr::kable(summary_table(enrichment$DPU$MEA))
+```
+
+### Dot plot
+
+```{r}
+#| label: fig-dpu-mea-dotplot
+#| fig-cap: "DPU MEA motif enrichment using the native NES and FDR stored in JSON."
+dot_plot(enrichment$DPU$MEA)
+```
+
+### Heatmap
+
+```{r}
+#| label: fig-dpu-mea-heatmap
+#| fig-cap: "Native MEA normalized enrichment scores for the leading DPU kinase motif sets across contrasts."
+heatmap_plot(enrichment$DPU$MEA)
+```
+
+### Volcano
+
+```{r}
+#| label: fig-dpu-mea-volcano
+#| fig-cap: "Native DPU MEA normalized enrichment score as a function of FDR."
+volcano_plot(enrichment$DPU$MEA)
+```
+
+### Running score
+
+```{r}
+#| label: mea-dpu-running-note
+#| results: asis
+print_running_scores(enrichment$DPU$MEA)
+```
+
+### Results
+
+```{r}
+#| label: tbl-dpu-mea-results
+#| tbl-cap: "Complete native DPU MEA result table decoded from MuData JSON."
+result_table(enrichment$DPU$MEA)
+```
+
+:::
+
+:::
+
+# CorrectFirst DPU
+
+::: {.panel-tabset}
+
+## PTM-SEA
+
+::: {.panel-tabset}
+
+### Summary
+
+PTM-SEA tests curated PTM signatures against the ranking fitted after sample-level protein correction.
+
+```{r}
+#| label: tbl-cf-ptmsea-summary
+#| tbl-cap: "CorrectFirst PTM-SEA result counts by contrast and enrichment direction."
+knitr::kable(summary_table(enrichment$CF$PTMSEA))
+```
+
+### Dot plot
+
+```{r}
+#| label: fig-cf-ptmsea-dotplot
+#| fig-cap: "CorrectFirst PTM-SEA terms reconstructed from JSON and shown with clusterProfiler enrichment visualization."
+dot_plot(enrichment$CF$PTMSEA)
+```
+
+### Heatmap
+
+```{r}
+#| label: fig-cf-ptmsea-heatmap
+#| fig-cap: "Normalized enrichment scores for the leading CorrectFirst PTM-SEA signatures across contrasts."
+heatmap_plot(enrichment$CF$PTMSEA)
+```
+
+### Volcano
+
+```{r}
+#| label: fig-cf-ptmsea-volcano
+#| fig-cap: "CorrectFirst PTM-SEA normalized enrichment score as a function of FDR."
+volcano_plot(enrichment$CF$PTMSEA)
+```
+
+### Running score
+
+```{r}
+#| label: fig-cf-ptmsea-running
+#| fig-cap: "Running enrichment scores for the leading CorrectFirst PTM-SEA signature in each contrast, reconstructed from JSON."
+#| results: asis
+print_running_scores(enrichment$CF$PTMSEA)
+```
+
+### Results
+
+```{r}
+#| label: tbl-cf-ptmsea-results
+#| tbl-cap: "Complete CorrectFirst PTM-SEA result table decoded from MuData JSON."
+result_table(enrichment$CF$PTMSEA)
+```
+
+:::
+
+## Kinase GSEA
+
+::: {.panel-tabset}
+
+### Summary
+
+Kinase GSEA tests predicted kinase substrate sets against the CorrectFirst ranking.
+
+```{r}
+#| label: tbl-cf-kinase-summary
+#| tbl-cap: "CorrectFirst Kinase GSEA result counts by contrast and enrichment direction."
+knitr::kable(summary_table(enrichment$CF$KinaseGSEA))
+```
+
+### Dot plot
+
+```{r}
+#| label: fig-cf-kinase-dotplot
+#| fig-cap: "CorrectFirst Kinase GSEA terms reconstructed from JSON and shown with clusterProfiler enrichment visualization."
+dot_plot(enrichment$CF$KinaseGSEA)
+```
+
+### Heatmap
+
+```{r}
+#| label: fig-cf-kinase-heatmap
+#| fig-cap: "Normalized enrichment scores for the leading CorrectFirst kinase substrate sets across contrasts."
+heatmap_plot(enrichment$CF$KinaseGSEA)
+```
+
+### Volcano
+
+```{r}
+#| label: fig-cf-kinase-volcano
+#| fig-cap: "CorrectFirst Kinase GSEA normalized enrichment score as a function of FDR."
+volcano_plot(enrichment$CF$KinaseGSEA)
+```
+
+### Running score
+
+```{r}
+#| label: fig-cf-kinase-running
+#| fig-cap: "Running enrichment scores for the leading CorrectFirst kinase substrate set in each contrast, reconstructed from JSON."
+#| results: asis
+print_running_scores(enrichment$CF$KinaseGSEA)
+```
+
+### Results
+
+```{r}
+#| label: tbl-cf-kinase-results
+#| tbl-cap: "Complete CorrectFirst Kinase GSEA result table decoded from MuData JSON."
+result_table(enrichment$CF$KinaseGSEA)
+```
+
+:::
+
+## MEA
+
+::: {.panel-tabset}
+
+### Summary
+
+MEA reports the native kinase-library motif enrichment over the CorrectFirst ranking.
+
+```{r}
+#| label: tbl-cf-mea-summary
+#| tbl-cap: "CorrectFirst MEA result counts by contrast and enrichment direction."
+knitr::kable(summary_table(enrichment$CF$MEA))
+```
+
+### Dot plot
+
+```{r}
+#| label: fig-cf-mea-dotplot
+#| fig-cap: "CorrectFirst MEA motif enrichment using the native NES and FDR stored in JSON."
+dot_plot(enrichment$CF$MEA)
+```
+
+### Heatmap
+
+```{r}
+#| label: fig-cf-mea-heatmap
+#| fig-cap: "Native MEA normalized enrichment scores for the leading CorrectFirst kinase motif sets across contrasts."
+heatmap_plot(enrichment$CF$MEA)
+```
+
+### Volcano
+
+```{r}
+#| label: fig-cf-mea-volcano
+#| fig-cap: "Native CorrectFirst MEA normalized enrichment score as a function of FDR."
+volcano_plot(enrichment$CF$MEA)
+```
+
+### Running score
+
+```{r}
+#| label: mea-cf-running-note
+#| results: asis
+print_running_scores(enrichment$CF$MEA)
+```
+
+### Results
+
+```{r}
+#| label: tbl-cf-mea-results
+#| tbl-cap: "Complete native CorrectFirst MEA result table decoded from MuData JSON."
+result_table(enrichment$CF$MEA)
+```
+
+:::
+
+:::
+
+# Session Info
+
+::: {.panel-tabset}
+
+## Report provenance
+
+```{r}
+#| label: tbl-enrichment-provenance
+#| tbl-cap: "Report provenance, JSON parameters, and final MuData input reference."
+qmd_source <- fgczQuartoTemplate::fgcz_qmd_source_link()
+provenance_table <- data.frame(
+  Field = c(
+    "Input MuData",
+    "Source DEA artifacts",
+    "Stored documents",
+    "JSON schema versions",
+    "FDR threshold",
+    "Top terms per summary plot",
+    "Running-score terms per contrast",
+    "Report package",
+    "Generated at",
+    "Qmd source"
+  ),
+  Value = c(
+    input_h5mu,
+    paste(source_paths, collapse = "; "),
+    length(ptm_results$get_enrichment_documents()),
+    paste(unique(vapply(
+      unlist(enrichment, recursive = FALSE),
+      function(x) x$version,
+      character(1)
+    )), collapse = "; "),
+    format(fdr_threshold),
+    top_terms,
+    running_terms,
+    paste0("prophosqua ", utils::packageVersion("prophosqua")),
+    generated_at,
+    qmd_source
+  ),
+  stringsAsFactors = FALSE
+)
+provenance_table <- provenance_table[nzchar(provenance_table$Value), , drop = FALSE]
+knitr::kable(provenance_table, escape = FALSE)
+```
+
+## R session info
+
+```{r session-info}
+sessionInfo()
+```
+
+:::
+
+:::

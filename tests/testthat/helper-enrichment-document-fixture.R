@@ -113,7 +113,17 @@ make_ptm_enrichment_branches <- function(analysis, statistics, empty) {
   )
   kinase <- KinaseGSEA$new(assignments, analysis, kinase_result)
 
-  motif <- MotifEnrichment$new(assignments, analysis, list(mea_results = data.frame(value = 1)))
+  mea_document <- gsea_result_data(
+    list(a_vs_b = kinase_gsea),
+    category = "MEA",
+    method = "gseapy"
+  )
+  mea_json <- as.character(jsonlite::toJSON(
+    mea_document,
+    auto_unbox = TRUE,
+    digits = NA,
+    na = "null"
+  ))
   mea_clean <- data.frame(
     contrast = "a_vs_b",
     kinase = "CDK2",
@@ -127,6 +137,11 @@ make_ptm_enrichment_branches <- function(analysis, statistics, empty) {
   if (empty) {
     mea_clean <- mea_clean[FALSE, , drop = FALSE]
   }
+  motif <- MotifEnrichment$new(
+    assignments,
+    analysis,
+    list(mea_results = mea_clean, gsea_json = mea_json)
+  )
   mea <- MEA$new(
     motif,
     analysis,

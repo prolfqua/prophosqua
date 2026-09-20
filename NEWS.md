@@ -4,6 +4,8 @@
 
 - Add the first FGCZ Quarto multitab report, `ptm_statistics.qmd`, covering DPA, DPU, and CorrectFirst DPU from one final MuData input. Each analysis now includes compact sequence and difference logos generated during rendering, with relative residue positions and site counts. Sequence-logo sections place the plot first and their counts table second in a third-level tabset. The FDR and absolute log2 fold-change thresholds are report parameters. Package vignette builds use a deterministic two-contrast, 72-site final H5MU with mixed sequence backgrounds and visible position-zero differences, plus synchronized `fgczQuartoTemplate` assets.
 
+- Add the companion FGCZ Quarto multitab report, `ptm_enrichment.qmd`. DPA, DPU, and CorrectFirst each expose PTM-SEA, Kinase GSEA, and MEA summaries, plots, complete searchable result tables, and running-score plots decoded exclusively from the nine versioned JSON documents in final MuData. Native MEA JSON now preserves GSEApy's source running scores and hit positions in the same schema used by the R GSEA methods.
+
 - Store every PTMSEA, KinaseGSEA, and MEA result as validated JSON in MuData. The final typed result exposes complete document getters, verifies schema and checksums when reading, and reconstructs temporary clusterProfiler objects through protsea without persisting `gseaResult` objects.
 
 - Declare the `limpa` dependency used by the existing CorrectFirst vignette so an isolated `R CMD check` can rebuild it.

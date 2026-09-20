@@ -338,6 +338,244 @@
   paths
 }
 
+.example_enrichment_rank_tables <- function(data) {
+  ranked <- data |>
+    dplyr::group_by(.data$contrast, .data$SequenceWindow) |>
+    dplyr::summarize(
+      statistic.site = mean(.data$statistic.site),
+      .groups = "drop"
+    )
+  lapply(split(ranked, ranked$contrast), function(table) {
+    table |>
+      dplyr::select("SequenceWindow", "statistic.site") |>
+      dplyr::arrange(dplyr::desc(.data$statistic.site), .data$SequenceWindow)
+  })
+}
+
+.example_enrichment_sets <- function(sequences, method) {
+  sets <- list(
+    proline_directed = sequences[substr(sequences, 9L, 9L) == "P"],
+    basophilic = sequences[substr(sequences, 5L, 6L) == "RR"],
+    acidophilic = sequences[substr(sequences, 3L, 4L) == "DE"],
+    hydrophobic = sequences[substr(sequences, 11L, 12L) == "LV"],
+    serine = sequences[substr(sequences, 8L, 8L) == "S"],
+    tyrosine = sequences[substr(sequences, 8L, 8L) == "Y"]
+  )
+  labels <- switch(
+    method,
+    PTMSEA = c(
+      "KINASE-PSP_CDK2",
+      "KINASE-PSP_PKACA",
+      "KINASE-PSP_CSNK2A1",
+      "PERT-PSP_GROWTH_FACTOR",
+      "PATHWAY-PSP_SERINE_SIGNALING",
+      "DISEASE-PSP_TYROSINE_SIGNALING"
+    ),
+    KinaseGSEA = c("CDK2", "PKACA", "CSNK2A1", "MAPK1", "PKC", "SRC")
+  )
+  stats::setNames(sets, labels)
+}
+
+.example_term2gene <- function(sets) {
+  data.frame(
+    term = rep(names(sets), lengths(sets)),
+    gene = unlist(sets, use.names = FALSE),
+    stringsAsFactors = FALSE
+  )
+}
+
+.example_gsea_results <- function(rank_tables, term2gene, seed) {
+  results <- vector("list", length(rank_tables))
+  names(results) <- names(rank_tables)
+  for (i in seq_along(rank_tables)) {
+    table <- rank_tables[[i]]
+    ranks <- stats::setNames(table$statistic.site, table$SequenceWindow)
+    set.seed(seed + i)
+    results[[i]] <- suppressWarnings(clusterProfiler::GSEA(
+      sort(ranks, decreasing = TRUE),
+      TERM2GENE = term2gene,
+      minGSSize = 5L,
+      maxGSSize = 100L,
+      pvalueCutoff = 1,
+      verbose = FALSE,
+      seed = TRUE
+    ))
+  }
+  results
+}
+
+.example_gsea_table <- function(results, item = "ID") {
+  table <- purrr::imap_dfr(results, function(result, contrast) {
+    as.data.frame(result) |>
+      dplyr::select(
+        "ID",
+        "Description",
+        "setSize",
+        "enrichmentScore",
+        "NES",
+        "pvalue",
+        "p.adjust",
+        "rank",
+        "core_enrichment"
+      ) |>
+      dplyr::mutate(contrast = contrast, .before = 1L)
+  })
+  if (!identical(item, "ID")) {
+    names(table)[names(table) == "ID"] <- item
+  }
+  table
+}
+
+.example_mea_table <- function(results) {
+  purrr::imap_dfr(results, function(result, contrast) {
+    table <- as.data.frame(result)
+    leading <- strsplit(table$core_enrichment, "/", fixed = TRUE)
+    data.frame(
+      contrast = contrast,
+      kinase = table$ID,
+      ES = table$enrichmentScore,
+      NES = table$NES,
+      pvalue = table$pvalue,
+      FDR = table$p.adjust,
+      n_leading = lengths(leading),
+      set_size = table$setSize,
+      Leading.substrates = vapply(
+        leading,
+        paste,
+        collapse = ";",
+        FUN.VALUE = character(1)
+      ),
+      stringsAsFactors = FALSE
+    )
+  })
+}
+
+.example_ptm_enrichment_branches <- function(statistics, analysis, table, seed) {
+  rank_tables <- .example_enrichment_rank_tables(table)
+  ranked_sites <- vapply(rank_tables, nrow, integer(1))
+  sequences <- unique(table$SequenceWindow)
+
+  ptm_sets <- .example_enrichment_sets(sequences, "PTMSEA")
+  ptm_term2gene <- .example_term2gene(ptm_sets)
+  ptm_results <- .example_gsea_results(rank_tables, ptm_term2gene, seed)
+  ptm_table <- .example_gsea_table(ptm_results)
+  ptmsea <- PTMSEA$new(
+    statistics,
+    analysis,
+    list(
+      results = ptm_results,
+      ranks = lapply(ptm_results, methods::slot, "geneList"),
+      all_clean = ptm_table,
+      pathways = ptm_sets,
+      data_info = data.frame(contrast = names(rank_tables), ranked_sites = ranked_sites),
+      ptmsigdb_summary = data.frame(signatures = length(ptm_sets)),
+      overlap_stats = data.frame(overlap = length(sequences)),
+      n_overlap = length(sequences),
+      n_our_sites = length(sequences),
+      prep_info = data.frame(contrast = names(rank_tables), ranked_sites = ranked_sites),
+      results_info = dplyr::count(ptm_table, .data$contrast, name = "terms"),
+      has_results = nrow(ptm_table) > 0L,
+      analysis_inputs = list(source = "deterministic package example")
+    )
+  )
+
+  kinase_sets <- .example_enrichment_sets(sequences, "KinaseGSEA")
+  kinase_term2gene <- .example_term2gene(kinase_sets)
+  kinase_inputs <- KinaseInputs$new(
+    statistics,
+    analysis,
+    list(
+      seqwindows = data.frame(SequenceWindow = sequences),
+      ranks = rank_tables
+    )
+  )
+  assignments <- KinaseAssignments$new(
+    kinase_inputs,
+    analysis,
+    list(term2gene = kinase_term2gene)
+  )
+  kinase_results <- .example_gsea_results(
+    rank_tables,
+    kinase_term2gene,
+    seed + 100L
+  )
+  kinase_table <- .example_gsea_table(kinase_results)
+  kinase <- KinaseGSEA$new(
+    assignments,
+    analysis,
+    list(
+      gsea_results = kinase_results,
+      ranks = lapply(kinase_results, methods::slot, "geneList"),
+      all_results = kinase_table,
+      term2gene = kinase_term2gene,
+      term2gene_df = kinase_term2gene,
+      data_info = data.frame(contrast = names(rank_tables), ranked_sites = ranked_sites),
+      kl_info = data.frame(kinases = length(kinase_sets)),
+      assignment_stats = data.frame(assignments = nrow(kinase_term2gene)),
+      kinase_stats = data.frame(kinase = names(kinase_sets), sites = lengths(kinase_sets)),
+      ranks_info = data.frame(contrast = names(rank_tables), ranked_sites = ranked_sites),
+      gsea_info = dplyr::count(kinase_table, .data$contrast, name = "terms"),
+      has_results = nrow(kinase_table) > 0L,
+      analysis_inputs = list(source = "deterministic package example")
+    )
+  )
+
+  mea_clean <- .example_mea_table(kinase_results)
+  mea_document <- gsea_result_data(
+    kinase_results,
+    category = "MEA",
+    method = "gseapy"
+  )
+  mea_json <- as.character(jsonlite::toJSON(
+    mea_document,
+    auto_unbox = TRUE,
+    digits = NA,
+    na = "null"
+  ))
+  motif <- MotifEnrichment$new(
+    assignments,
+    analysis,
+    list(mea_results = mea_clean, gsea_json = mea_json)
+  )
+  mea_summary <- mea_clean |>
+    dplyr::group_by(.data$contrast) |>
+    dplyr::summarize(
+      total_kinases = dplyr::n(),
+      sig_up = sum(.data$FDR < 0.1 & .data$NES > 0),
+      sig_down = sum(.data$FDR < 0.1 & .data$NES < 0),
+      .groups = "drop"
+    )
+  mea <- MEA$new(
+    motif,
+    analysis,
+    list(
+      mea_clean = mea_clean,
+      summary_df = mea_summary,
+      n_files = length(rank_tables),
+      has_results = nrow(mea_clean) > 0L,
+      analysis_inputs = list(source = "deterministic package example")
+    )
+  )
+  list(ptmsea, kinase, mea)
+}
+
+.example_ptm_enrichments <- function(statistics) {
+  tables <- statistics$get_tables()
+  analyses <- c("DPA", "DPU", "CF")
+  unlist(
+    lapply(seq_along(analyses), function(i) {
+      analysis <- analyses[[i]]
+      .example_ptm_enrichment_branches(
+        statistics,
+        analysis,
+        tables[[analysis]],
+        seed = 4100L + i * 1000L
+      )
+    }),
+    recursive = FALSE
+  )
+}
+
 #' Build the Final MuData Used by Package Vignettes
 #'
 #' The artifact follows the same H5AD import, typed R6 build, and H5MU storage
@@ -370,7 +608,7 @@ example_ptm_results_h5mu <- function(path = tempfile(fileext = ".h5mu")) {
     annot_file = dirs$annot_file
   )
   parameters <- list(
-    run_kinase = FALSE,
+    run_kinase = TRUE,
     analyses = list(
       dpa = list(stat_column = "statistic.site"),
       dpu = list(stat_column = "statistic.site"),
@@ -387,7 +625,10 @@ example_ptm_results_h5mu <- function(path = tempfile(fileext = ".h5mu")) {
     input_h5mu,
     statistics_h5mu
   ))
-  result <- PTM_results$new(statistics, enrichments = list())
+  result <- PTM_results$new(
+    statistics,
+    enrichments = .example_ptm_enrichments(statistics)
+  )
   dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
   result$write_h5mu(path)
   invisible(normalizePath(path, mustWork = TRUE))
