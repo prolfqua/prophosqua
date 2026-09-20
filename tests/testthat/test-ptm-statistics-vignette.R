@@ -106,6 +106,10 @@ test_that("statistics vignette has the required shallow tab structure", {
   if (!file.exists(path)) {
     path <- system.file("doc", "ptm_statistics.qmd", package = "prophosqua")
   }
+  skip_if(
+    !nzchar(path) || !file.exists(path),
+    "package installed without vignette sources"
+  )
   source <- readLines(path, warn = FALSE)
   fence <- grepl("^```", source)
   outside_code <- cumsum(fence) %% 2L == 0L & !fence

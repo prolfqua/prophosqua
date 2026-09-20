@@ -43,6 +43,63 @@ get_significance <- function(fdr, thr_a = 0.05, thr_b = 0.2) {
   }
 }
 
+mod_aa_colors <- c(
+  S = "#0072B2",
+  T = "#009E73",
+  Y = "#D55E00",
+  NotLoc = "#CC79A7"
+)
+
+site_label <- function(modAA, posInProtein, significance) {
+  residue <- ifelse(modAA == "NotLoc", "~", modAA)
+  paste0(residue, round(posInProtein), significance)
+}
+
+#' Layers shared by the DPA and DPU N-to-C panels
+#'
+#' One stick with a head per site, coloured by residue, dashed with an open
+#' head when the estimate was imputed, and a repelled residue-position label
+#' for every site that passes a significance threshold.
+#'
+#' @param y name of the column holding the per site log2 fold change
+#' @param prot_length protein length
+#' @return list of ggplot2 layers and scales
+#' @keywords internal
+n_to_c_site_layers <- function(y, prot_length) {
+  list(
+    geom_segment(aes(
+      x = .data$posInProtein,
+      xend = .data$posInProtein,
+      y = 0,
+      yend = .data[[y]],
+      color = .data$modAA,
+      linetype = .data$imputation_status
+    )),
+    geom_point(
+      aes(
+        x = .data$posInProtein,
+        y = .data[[y]],
+        color = .data$modAA,
+        shape = .data$imputation_status
+      ),
+      size = 2
+    ),
+    ggrepel::geom_text_repel(
+      data = function(sites) sites[sites$significance != "", , drop = FALSE],
+      aes(x = .data$posInProtein, y = .data[[y]], label = .data$label),
+      size = 3,
+      min.segment.length = 0,
+      max.overlaps = Inf,
+      segment.color = "grey50"
+    ),
+    annotate("segment", x = 0, xend = prot_length, y = 0, yend = 0, color = "black"),
+    scale_color_manual(values = mod_aa_colors, breaks = names(mod_aa_colors), name = "Residue"),
+    scale_linetype_manual(values = c(imputed = "dashed", observed = "solid"), name = "Estimate"),
+    scale_shape_manual(values = c(imputed = 1, observed = 16), name = "Estimate"),
+    scale_x_continuous(limits = c(0, prot_length))
+  )
+}
+
 #' Prepare data for N-to-C plotting
 #' @param poi_matrix_min data.frame with phosphorylation data
 #' @export
@@ -126,6 +183,11 @@ n_to_c_plot <- function(
 
   mean_diff_prot <- mean(poi_matrix_min$diff.protein, na.rm = TRUE)
   poi_matrix_min$significance <- sapply(poi_matrix_min$FDR.site, get_significance, thr_a, thr_b)
+  poi_matrix_min$label <- site_label(
+    poi_matrix_min$modAA,
+    poi_matrix_min$posInProtein,
+    poi_matrix_min$significance
+  )
 
   plot_title <- paste0(
     "Prot : ",
@@ -139,24 +201,7 @@ n_to_c_plot <- function(
   )
 
   p <- ggplot(data = poi_matrix_min) +
-    geom_segment(aes(
-      x = .data$posInProtein,
-      xend = .data$posInProtein,
-      y = 0,
-      yend = .data$diff.site,
-      color = .data$modAA,
-      linetype = .data$imputation_status
-    )) +
-    scale_linetype_manual(values = c("imputed" = "dashed", "observed" = "solid")) +
-    annotate("segment", x = 0, xend = prot_length, y = 0, yend = 0, color = "black") +
-    scale_color_manual(values = c("S" = "blue", "T" = "green", Y = "brown", NotLoc = "pink")) +
-    scale_x_continuous(limits = c(0, prot_length)) +
-    geom_text(
-      aes(x = .data$posInProtein, y = .data$diff.site, label = .data$significance),
-      vjust = 0.4,
-      size = 7,
-      color = "red"
-    ) +
+    n_to_c_site_layers("diff.site", prot_length) +
     labs(y = paste0("diff : ", contrast), title = plot_title) +
     theme_minimal()
 
@@ -186,7 +231,7 @@ n_to_c_plot <- function(
         alpha = 0.3
       ) +
       scale_fill_manual(values = c("diff of protein" = color_protein)) +
-      guides(fill = guide_legend(title = "Rectangle"))
+      guides(fill = guide_legend(title = "Protein"))
   } else {
     yext <- max(poi_matrix_min$diff.site, na.rm = TRUE)
     p <- p +
@@ -196,8 +241,7 @@ n_to_c_plot <- function(
         xmax = prot_length,
         ymin = -yext / 2,
         ymax = +yext / 2,
-        alpha = 0.3,
-        fill = "white",
+        fill = NA,
         color = "red",
         linetype = "dashed"
       ) +
@@ -249,6 +293,11 @@ n_to_c_plot_integrated <- function(
   }
 
   poi_matrix_min$significance <- sapply(poi_matrix_min$FDR_I, get_significance, thr_a, thr_b)
+  poi_matrix_min$label <- site_label(
+    poi_matrix_min$modAA,
+    poi_matrix_min$posInProtein,
+    poi_matrix_min$significance
+  )
 
   plot_title <- paste0(
     "Prot : ",
@@ -261,28 +310,10 @@ n_to_c_plot_integrated <- function(
     sum(poi_matrix_min$modAA == "NotLoc")
   )
 
-  mean_diff_prot <- 0
   p <- ggplot(data = poi_matrix_min) +
-    geom_segment(aes(
-      x = .data$posInProtein,
-      xend = .data$posInProtein,
-      y = 0,
-      yend = .data$diff_diff,
-      color = .data$modAA,
-      linetype = .data$imputation_status
-    )) +
-    scale_linetype_manual(values = c("imputed" = "dashed", "observed" = "solid")) +
-    annotate("segment", x = 0, xend = prot_length, y = 0, yend = 0, color = "black") +
-    scale_color_manual(values = c("S" = "blue", "T" = "green", Y = "brown", NotLoc = "pink")) +
-    scale_x_continuous(limits = c(0, prot_length)) +
-    annotate("text", x = 0, y = mean_diff_prot, label = "N", vjust = 0, hjust = 0) +
-    annotate("text", x = prot_length, y = mean_diff_prot, label = "C", vjust = 0, hjust = 0) +
-    geom_text(
-      aes(x = .data$posInProtein, y = .data$diff_diff, label = .data$significance),
-      vjust = 0.4,
-      size = 7,
-      color = "red"
-    ) +
+    n_to_c_site_layers("diff_diff", prot_length) +
+    annotate("text", x = 0, y = 0, label = "N", vjust = 0, hjust = 0) +
+    annotate("text", x = prot_length, y = 0, label = "C", vjust = 0, hjust = 0) +
     labs(y = paste0("diff : ", contrast), title = plot_title) +
     theme_minimal()
 

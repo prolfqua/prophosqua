@@ -27,6 +27,7 @@ required_packages <- c(
   "enrichplot",
   "fgczQuartoTemplate",
   "ggplot2",
+  "ggridges",
   "jsonlite",
   "knitr",
   "prophosqua",
@@ -334,6 +335,120 @@ print_running_scores <- function(data) {
   invisible(NULL)
 }
 
+nonempty_native_results <- function(data) {
+  if (is.null(data$native)) {
+    return(list())
+  }
+  data$native[vapply(
+    data$native,
+    function(result) nrow(result@result) > 0L,
+    logical(1)
+  )]
+}
+
+combined_native_result <- function(data) {
+  usable <- nonempty_native_results(data)
+  if (!length(usable)) {
+    return(NULL)
+  }
+  if (length(usable) == 1L) {
+    return(usable[[1L]])
+  }
+  clusterProfiler::merge_result(usable)
+}
+
+rank_distribution_plots <- function(data) {
+  usable <- nonempty_native_results(data)
+  lapply(names(usable), function(contrast_name) {
+    result <- usable[[contrast_name]]
+    n_show <- min(top_terms, nrow(result@result))
+    enrichplot::ridgeplot(
+      result,
+      showCategory = as.numeric(n_show),
+      fill = "p.adjust"
+    ) +
+      ggplot2::labs(
+        title = paste0(
+          gsub("_", " ", contrast_name, fixed = TRUE),
+          " · ranked-site distributions"
+        ),
+        x = "Site ranking statistic",
+        fill = "FDR"
+      ) +
+      ggplot2::theme(legend.position = "bottom")
+  })
+}
+
+print_rank_distributions <- function(data) {
+  plots <- rank_distribution_plots(data)
+  if (!length(plots)) {
+    cat("::: {.callout-note}\nNo enrichment term is available for a rank-distribution plot.\n:::\n")
+    return(invisible(NULL))
+  }
+  for (plot in plots) {
+    print(plot)
+  }
+  invisible(NULL)
+}
+
+gene_set_network_plot <- function(data) {
+  object <- combined_native_result(data)
+  if (is.null(object)) {
+    return(empty_plot("No enrichment term is available for a gene-set network."))
+  }
+  enrichplot::cnetplot(
+    object,
+    showCategory = min(4L, top_terms),
+    node_label = "category",
+    cex.params = list(category_label = 0.65)
+  ) +
+    ggplot2::labs(
+      title = paste0(analysis_labels[[data$analysis]], " · ", data$label),
+      subtitle = "Leading terms and their shared ranked sites"
+    )
+}
+
+term_similarity_plots <- function(data) {
+  object <- combined_native_result(data)
+  if (is.null(object)) {
+    return(list())
+  }
+  result <- if (methods::is(object, "compareClusterResult")) {
+    object@compareClusterResult
+  } else {
+    object@result
+  }
+  if (length(unique(result$ID)) < 3L) {
+    return(list())
+  }
+  n_show <- min(12L, top_terms, length(unique(result$ID)))
+  similarity <- enrichplot::pairwise_termsim(object)
+  list(
+    enrichplot::emapplot(similarity, showCategory = n_show) +
+      ggplot2::labs(
+        title = "Enrichment map",
+        subtitle = "Terms are connected by ranked-site overlap"
+      ),
+    enrichplot::treeplot(similarity, showCategory = n_show) +
+      ggplot2::labs(
+        title = "Term-similarity tree",
+        subtitle = "Terms are grouped by ranked-site overlap"
+      )
+  )
+}
+
+print_term_similarity <- function(data) {
+  plots <- term_similarity_plots(data)
+  if (!length(plots)) {
+    cat("::: {.callout-note}\nAt least three enrichment terms are required for term-similarity plots.\n:::\n")
+    return(invisible(NULL))
+  }
+  for (plot in plots) {
+    print(plot)
+  }
+  invisible(NULL)
+}
+
 result_table <- function(data) {
   if (!nrow(data$table)) {
     return(knitr::kable(data.frame(Status = "No enrichment terms are available.")))
@@ -482,6 +597,9 @@ knitr::kable(summary_table(enrichment$DPA$PTMSEA))
 
 ```{r}
 #| label: fig-dpa-ptmsea-dotplot
+#| fig-width: 11
+#| fig-height: 5.2
+#| out-width: "94%"
 #| fig-cap: "DPA PTM-SEA terms reconstructed from JSON and shown with clusterProfiler enrichment visualization. Position encodes NES, colour encodes adjusted significance, and panels identify contrasts."
 dot_plot(enrichment$DPA$PTMSEA)
 ```
@@ -490,6 +608,9 @@ dot_plot(enrichment$DPA$PTMSEA)
 
 ```{r}
 #| label: fig-dpa-ptmsea-heatmap
+#| fig-width: 11
+#| fig-height: 5.2
+#| out-width: "94%"
 #| fig-cap: "Normalized enrichment scores for the leading DPA PTM-SEA signatures across contrasts. Tile colour gives NES and symbols indicate FDR thresholds."
 heatmap_plot(enrichment$DPA$PTMSEA)
 ```
@@ -498,6 +619,9 @@ heatmap_plot(enrichment$DPA$PTMSEA)
 
 ```{r}
 #| label: fig-dpa-ptmsea-volcano
+#| fig-width: 12
+#| fig-height: 4.4
+#| out-width: "96%"
 #| fig-cap: "DPA PTM-SEA normalized enrichment score as a function of FDR. Each point is one signature and each panel is one contrast."
 volcano_plot(enrichment$DPA$PTMSEA)
 ```
@@ -506,9 +630,47 @@ volcano_plot(enrichment$DPA$PTMSEA)
 
 ```{r}
 #| label: fig-dpa-ptmsea-running
+#| fig-width: 10.5
+#| fig-height: 6.2
+#| out-width: "92%"
 #| fig-cap: "Running enrichment scores for the leading DPA PTM-SEA signature in each contrast, reconstructed from the ordered ranks, signature membership, and weighting parameters stored in JSON."
 #| results: asis
 print_running_scores(enrichment$DPA$PTMSEA)
+```
+
+### Rank distributions
+
+```{r}
+#| label: fig-dpa-ptmsea-ridge
+#| fig-width: 11
+#| fig-height: 5.4
+#| out-width: "94%"
+#| fig-cap: "DPA PTM-SEA ranked-site distributions for the leading terms. Each ridge shows the ranking statistics of sites belonging to one enriched set and colour encodes FDR."
+#| results: asis
+print_rank_distributions(enrichment$DPA$PTMSEA)
+```
+
+### Gene-set network
+
+```{r}
+#| label: fig-dpa-ptmsea-network
+#| fig-width: 11
+#| fig-height: 6.2
+#| out-width: "94%"
+#| fig-cap: "DPA PTM-SEA gene-set network. Term nodes connect to their member sites, exposing shared sites across leading enrichment terms and contrasts."
+gene_set_network_plot(enrichment$DPA$PTMSEA)
+```
+
+### Term similarity
+
+```{r}
+#| label: fig-dpa-ptmsea-similarity
+#| fig-width: 11
+#| fig-height: 6.2
+#| out-width: "94%"
+#| fig-cap: "DPA PTM-SEA enrichment map and similarity tree. Terms are related by overlap among their ranked-site members."
+#| results: asis
+print_term_similarity(enrichment$DPA$PTMSEA)
 ```
 
 ### Results
@@ -539,6 +701,9 @@ knitr::kable(summary_table(enrichment$DPA$KinaseGSEA))
 
 ```{r}
 #| label: fig-dpa-kinase-dotplot
+#| fig-width: 11
+#| fig-height: 5.2
+#| out-width: "94%"
 #| fig-cap: "DPA Kinase GSEA terms reconstructed from JSON and shown with clusterProfiler enrichment visualization."
 dot_plot(enrichment$DPA$KinaseGSEA)
 ```
@@ -547,6 +712,9 @@ dot_plot(enrichment$DPA$KinaseGSEA)
 
 ```{r}
 #| label: fig-dpa-kinase-heatmap
+#| fig-width: 11
+#| fig-height: 5.2
+#| out-width: "94%"
 #| fig-cap: "Normalized enrichment scores for the leading DPA kinase substrate sets across contrasts."
 heatmap_plot(enrichment$DPA$KinaseGSEA)
 ```
@@ -555,6 +723,9 @@ heatmap_plot(enrichment$DPA$KinaseGSEA)
 
 ```{r}
 #| label: fig-dpa-kinase-volcano
+#| fig-width: 12
+#| fig-height: 4.4
+#| out-width: "96%"
 #| fig-cap: "DPA Kinase GSEA normalized enrichment score as a function of FDR."
 volcano_plot(enrichment$DPA$KinaseGSEA)
 ```
@@ -563,9 +734,47 @@ volcano_plot(enrichment$DPA$KinaseGSEA)
 
 ```{r}
 #| label: fig-dpa-kinase-running
+#| fig-width: 10.5
+#| fig-height: 6.2
+#| out-width: "92%"
 #| fig-cap: "Running enrichment scores for the leading DPA kinase substrate set in each contrast, reconstructed from JSON."
 #| results: asis
 print_running_scores(enrichment$DPA$KinaseGSEA)
+```
+
+### Rank distributions
+
+```{r}
+#| label: fig-dpa-kinase-ridge
+#| fig-width: 11
+#| fig-height: 5.4
+#| out-width: "94%"
+#| fig-cap: "DPA Kinase GSEA ranked-site distributions for the leading terms. Each ridge shows the ranking statistics of sites belonging to one enriched set and colour encodes FDR."
+#| results: asis
+print_rank_distributions(enrichment$DPA$KinaseGSEA)
+```
+
+### Gene-set network
+
+```{r}
+#| label: fig-dpa-kinase-network
+#| fig-width: 11
+#| fig-height: 6.2
+#| out-width: "94%"
+#| fig-cap: "DPA Kinase GSEA gene-set network. Term nodes connect to their member sites, exposing shared sites across leading enrichment terms and contrasts."
+gene_set_network_plot(enrichment$DPA$KinaseGSEA)
+```
+
+### Term similarity
+
+```{r}
+#| label: fig-dpa-kinase-similarity
+#| fig-width: 11
+#| fig-height: 6.2
+#| out-width: "94%"
+#| fig-cap: "DPA Kinase GSEA enrichment map and similarity tree. Terms are related by overlap among their ranked-site members."
+#| results: asis
+print_term_similarity(enrichment$DPA$KinaseGSEA)
 ```
 
 ### Results
@@ -596,6 +805,9 @@ knitr::kable(summary_table(enrichment$DPA$MEA))
 
 ```{r}
 #| label: fig-dpa-mea-dotplot
+#| fig-width: 11
+#| fig-height: 5.2
+#| out-width: "94%"
 #| fig-cap: "DPA MEA motif enrichment. Position and colour encode the native NES and point size encodes FDR."
 dot_plot(enrichment$DPA$MEA)
 ```
@@ -604,6 +816,9 @@ dot_plot(enrichment$DPA$MEA)
 
 ```{r}
 #| label: fig-dpa-mea-heatmap
+#| fig-width: 11
+#| fig-height: 5.2
+#| out-width: "94%"
 #| fig-cap: "Native MEA normalized enrichment scores for the leading DPA kinase motif sets across contrasts."
 heatmap_plot(enrichment$DPA$MEA)
 ```
@@ -612,6 +827,9 @@ heatmap_plot(enrichment$DPA$MEA)
 
 ```{r}
 #| label: fig-dpa-mea-volcano
+#| fig-width: 12
+#| fig-height: 4.4
+#| out-width: "96%"
 #| fig-cap: "Native DPA MEA normalized enrichment score as a function of FDR."
 volcano_plot(enrichment$DPA$MEA)
 ```
@@ -622,6 +840,41 @@ volcano_plot(enrichment$DPA$MEA)
 #| label: mea-dpa-running-note
 #| results: asis
 print_running_scores(enrichment$DPA$MEA)
+```
+
+### Rank distributions
+
+```{r}
+#| label: fig-dpa-mea-ridge
+#| fig-width: 11
+#| fig-height: 5.4
+#| out-width: "94%"
+#| fig-cap: "DPA MEA ranked-site distributions for the leading terms. Each ridge shows the ranking statistics of sites belonging to one enriched set and colour encodes FDR."
+#| results: asis
+print_rank_distributions(enrichment$DPA$MEA)
+```
+
+### Gene-set network
+
+```{r}
+#| label: fig-dpa-mea-network
+#| fig-width: 11
+#| fig-height: 6.2
+#| out-width: "94%"
+#| fig-cap: "DPA MEA gene-set network. Term nodes connect to their member sites, exposing shared sites across leading enrichment terms and contrasts."
+gene_set_network_plot(enrichment$DPA$MEA)
+```
+
+### Term similarity
+
+```{r}
+#| label: fig-dpa-mea-similarity
+#| fig-width: 11
+#| fig-height: 6.2
+#| out-width: "94%"
+#| fig-cap: "DPA MEA enrichment map and similarity tree. Terms are related by overlap among their ranked-site members."
+#| results: asis
+print_term_similarity(enrichment$DPA$MEA)
 ```
 
 ### Results
@@ -658,6 +911,9 @@ knitr::kable(summary_table(enrichment$DPU$PTMSEA))
 
 ```{r}
 #| label: fig-dpu-ptmsea-dotplot
+#| fig-width: 11
+#| fig-height: 5.2
+#| out-width: "94%"
 #| fig-cap: "DPU PTM-SEA terms reconstructed from JSON and shown with clusterProfiler enrichment visualization."
 dot_plot(enrichment$DPU$PTMSEA)
 ```
@@ -666,6 +922,9 @@ dot_plot(enrichment$DPU$PTMSEA)
 
 ```{r}
 #| label: fig-dpu-ptmsea-heatmap
+#| fig-width: 11
+#| fig-height: 5.2
+#| out-width: "94%"
 #| fig-cap: "Normalized enrichment scores for the leading DPU PTM-SEA signatures across contrasts."
 heatmap_plot(enrichment$DPU$PTMSEA)
 ```
@@ -674,6 +933,9 @@ heatmap_plot(enrichment$DPU$PTMSEA)
 
 ```{r}
 #| label: fig-dpu-ptmsea-volcano
+#| fig-width: 12
+#| fig-height: 4.4
+#| out-width: "96%"
 #| fig-cap: "DPU PTM-SEA normalized enrichment score as a function of FDR."
 volcano_plot(enrichment$DPU$PTMSEA)
 ```
@@ -682,9 +944,47 @@ volcano_plot(enrichment$DPU$PTMSEA)
 
 ```{r}
 #| label: fig-dpu-ptmsea-running
+#| fig-width: 10.5
+#| fig-height: 6.2
+#| out-width: "92%"
 #| fig-cap: "Running enrichment scores for the leading DPU PTM-SEA signature in each contrast, reconstructed from JSON."
 #| results: asis
 print_running_scores(enrichment$DPU$PTMSEA)
+```
+
+### Rank distributions
+
+```{r}
+#| label: fig-dpu-ptmsea-ridge
+#| fig-width: 11
+#| fig-height: 5.4
+#| out-width: "94%"
+#| fig-cap: "DPU PTM-SEA ranked-site distributions for the leading terms. Each ridge shows the ranking statistics of sites belonging to one enriched set and colour encodes FDR."
+#| results: asis
+print_rank_distributions(enrichment$DPU$PTMSEA)
+```
+
+### Gene-set network
+
+```{r}
+#| label: fig-dpu-ptmsea-network
+#| fig-width: 11
+#| fig-height: 6.2
+#| out-width: "94%"
+#| fig-cap: "DPU PTM-SEA gene-set network. Term nodes connect to their member sites, exposing shared sites across leading enrichment terms and contrasts."
+gene_set_network_plot(enrichment$DPU$PTMSEA)
+```
+
+### Term similarity
+
+```{r}
+#| label: fig-dpu-ptmsea-similarity
+#| fig-width: 11
+#| fig-height: 6.2
+#| out-width: "94%"
+#| fig-cap: "DPU PTM-SEA enrichment map and similarity tree. Terms are related by overlap among their ranked-site members."
+#| results: asis
+print_term_similarity(enrichment$DPU$PTMSEA)
 ```
 
 ### Results
@@ -715,6 +1015,9 @@ knitr::kable(summary_table(enrichment$DPU$KinaseGSEA))
 
 ```{r}
 #| label: fig-dpu-kinase-dotplot
+#| fig-width: 11
+#| fig-height: 5.2
+#| out-width: "94%"
 #| fig-cap: "DPU Kinase GSEA terms reconstructed from JSON and shown with clusterProfiler enrichment visualization."
 dot_plot(enrichment$DPU$KinaseGSEA)
 ```
@@ -723,6 +1026,9 @@ dot_plot(enrichment$DPU$KinaseGSEA)
 
 ```{r}
 #| label: fig-dpu-kinase-heatmap
+#| fig-width: 11
+#| fig-height: 5.2
+#| out-width: "94%"
 #| fig-cap: "Normalized enrichment scores for the leading DPU kinase substrate sets across contrasts."
 heatmap_plot(enrichment$DPU$KinaseGSEA)
 ```
@@ -731,6 +1037,9 @@ heatmap_plot(enrichment$DPU$KinaseGSEA)
 
 ```{r}
 #| label: fig-dpu-kinase-volcano
+#| fig-width: 12
+#| fig-height: 4.4
+#| out-width: "96%"
 #| fig-cap: "DPU Kinase GSEA normalized enrichment score as a function of FDR."
 volcano_plot(enrichment$DPU$KinaseGSEA)
 ```
@@ -739,9 +1048,47 @@ volcano_plot(enrichment$DPU$KinaseGSEA)
 
 ```{r}
 #| label: fig-dpu-kinase-running
+#| fig-width: 10.5
+#| fig-height: 6.2
+#| out-width: "92%"
 #| fig-cap: "Running enrichment scores for the leading DPU kinase substrate set in each contrast, reconstructed from JSON."
 #| results: asis
 print_running_scores(enrichment$DPU$KinaseGSEA)
+```
+
+### Rank distributions
+
+```{r}
+#| label: fig-dpu-kinase-ridge
+#| fig-width: 11
+#| fig-height: 5.4
+#| out-width: "94%"
+#| fig-cap: "DPU Kinase GSEA ranked-site distributions for the leading terms. Each ridge shows the ranking statistics of sites belonging to one enriched set and colour encodes FDR."
+#| results: asis
+print_rank_distributions(enrichment$DPU$KinaseGSEA)
+```
+
+### Gene-set network
+
+```{r}
+#| label: fig-dpu-kinase-network
+#| fig-width: 11
+#| fig-height: 6.2
+#| out-width: "94%"
+#| fig-cap: "DPU Kinase GSEA gene-set network. Term nodes connect to their member sites, exposing shared sites across leading enrichment terms and contrasts."
+gene_set_network_plot(enrichment$DPU$KinaseGSEA)
+```
+
+### Term similarity
+
+```{r}
+#| label: fig-dpu-kinase-similarity
+#| fig-width: 11
+#| fig-height: 6.2
+#| out-width: "94%"
+#| fig-cap: "DPU Kinase GSEA enrichment map and similarity tree. Terms are related by overlap among their ranked-site members."
+#| results: asis
+print_term_similarity(enrichment$DPU$KinaseGSEA)
 ```
 
 ### Results
@@ -772,6 +1119,9 @@ knitr::kable(summary_table(enrichment$DPU$MEA))
 
 ```{r}
 #| label: fig-dpu-mea-dotplot
+#| fig-width: 11
+#| fig-height: 5.2
+#| out-width: "94%"
 #| fig-cap: "DPU MEA motif enrichment using the native NES and FDR stored in JSON."
 dot_plot(enrichment$DPU$MEA)
 ```
@@ -780,6 +1130,9 @@ dot_plot(enrichment$DPU$MEA)
 
 ```{r}
 #| label: fig-dpu-mea-heatmap
+#| fig-width: 11
+#| fig-height: 5.2
+#| out-width: "94%"
 #| fig-cap: "Native MEA normalized enrichment scores for the leading DPU kinase motif sets across contrasts."
 heatmap_plot(enrichment$DPU$MEA)
 ```
@@ -788,6 +1141,9 @@ heatmap_plot(enrichment$DPU$MEA)
 
 ```{r}
 #| label: fig-dpu-mea-volcano
+#| fig-width: 12
+#| fig-height: 4.4
+#| out-width: "96%"
 #| fig-cap: "Native DPU MEA normalized enrichment score as a function of FDR."
 volcano_plot(enrichment$DPU$MEA)
 ```
@@ -798,6 +1154,41 @@ volcano_plot(enrichment$DPU$MEA)
 #| label: mea-dpu-running-note
 #| results: asis
 print_running_scores(enrichment$DPU$MEA)
+```
+
+### Rank distributions
+
+```{r}
+#| label: fig-dpu-mea-ridge
+#| fig-width: 11
+#| fig-height: 5.4
+#| out-width: "94%"
+#| fig-cap: "DPU MEA ranked-site distributions for the leading terms. Each ridge shows the ranking statistics of sites belonging to one enriched set and colour encodes FDR."
+#| results: asis
+print_rank_distributions(enrichment$DPU$MEA)
+```
+
+### Gene-set network
+
+```{r}
+#| label: fig-dpu-mea-network
+#| fig-width: 11
+#| fig-height: 6.2
+#| out-width: "94%"
+#| fig-cap: "DPU MEA gene-set network. Term nodes connect to their member sites, exposing shared sites across leading enrichment terms and contrasts."
+gene_set_network_plot(enrichment$DPU$MEA)
+```
+
+### Term similarity
+
+```{r}
+#| label: fig-dpu-mea-similarity
+#| fig-width: 11
+#| fig-height: 6.2
+#| out-width: "94%"
+#| fig-cap: "DPU MEA enrichment map and similarity tree. Terms are related by overlap among their ranked-site members."
+#| results: asis
+print_term_similarity(enrichment$DPU$MEA)
 ```
 
 ### Results
@@ -834,6 +1225,9 @@ knitr::kable(summary_table(enrichment$CF$PTMSEA))
 
 ```{r}
 #| label: fig-cf-ptmsea-dotplot
+#| fig-width: 11
+#| fig-height: 5.2
+#| out-width: "94%"
 #| fig-cap: "CorrectFirst PTM-SEA terms reconstructed from JSON and shown with clusterProfiler enrichment visualization."
 dot_plot(enrichment$CF$PTMSEA)
 ```
@@ -842,6 +1236,9 @@ dot_plot(enrichment$CF$PTMSEA)
 
 ```{r}
 #| label: fig-cf-ptmsea-heatmap
+#| fig-width: 11
+#| fig-height: 5.2
+#| out-width: "94%"
 #| fig-cap: "Normalized enrichment scores for the leading CorrectFirst PTM-SEA signatures across contrasts."
 heatmap_plot(enrichment$CF$PTMSEA)
 ```
@@ -850,6 +1247,9 @@ heatmap_plot(enrichment$CF$PTMSEA)
 
 ```{r}
 #| label: fig-cf-ptmsea-volcano
+#| fig-width: 12
+#| fig-height: 4.4
+#| out-width: "96%"
 #| fig-cap: "CorrectFirst PTM-SEA normalized enrichment score as a function of FDR."
 volcano_plot(enrichment$CF$PTMSEA)
 ```
@@ -858,9 +1258,47 @@ volcano_plot(enrichment$CF$PTMSEA)
 
 ```{r}
 #| label: fig-cf-ptmsea-running
+#| fig-width: 10.5
+#| fig-height: 6.2
+#| out-width: "92%"
 #| fig-cap: "Running enrichment scores for the leading CorrectFirst PTM-SEA signature in each contrast, reconstructed from JSON."
 #| results: asis
 print_running_scores(enrichment$CF$PTMSEA)
+```
+
+### Rank distributions
+
+```{r}
+#| label: fig-cf-ptmsea-ridge
+#| fig-width: 11
+#| fig-height: 5.4
+#| out-width: "94%"
+#| fig-cap: "CorrectFirst PTM-SEA ranked-site distributions for the leading terms. Each ridge shows the ranking statistics of sites belonging to one enriched set and colour encodes FDR."
+#| results: asis
+print_rank_distributions(enrichment$CF$PTMSEA)
+```
+
+### Gene-set network
+
+```{r}
+#| label: fig-cf-ptmsea-network
+#| fig-width: 11
+#| fig-height: 6.2
+#| out-width: "94%"
+#| fig-cap: "CorrectFirst PTM-SEA gene-set network. Term nodes connect to their member sites, exposing shared sites across leading enrichment terms and contrasts."
+gene_set_network_plot(enrichment$CF$PTMSEA)
+```
+
+### Term similarity
+
+```{r}
+#| label: fig-cf-ptmsea-similarity
+#| fig-width: 11
+#| fig-height: 6.2
+#| out-width: "94%"
+#| fig-cap: "CorrectFirst PTM-SEA enrichment map and similarity tree. Terms are related by overlap among their ranked-site members."
+#| results: asis
+print_term_similarity(enrichment$CF$PTMSEA)
 ```
 
 ### Results
@@ -891,6 +1329,9 @@ knitr::kable(summary_table(enrichment$CF$KinaseGSEA))
 
 ```{r}
 #| label: fig-cf-kinase-dotplot
+#| fig-width: 11
+#| fig-height: 5.2
+#| out-width: "94%"
 #| fig-cap: "CorrectFirst Kinase GSEA terms reconstructed from JSON and shown with clusterProfiler enrichment visualization."
 dot_plot(enrichment$CF$KinaseGSEA)
 ```
@@ -899,6 +1340,9 @@ dot_plot(enrichment$CF$KinaseGSEA)
 
 ```{r}
 #| label: fig-cf-kinase-heatmap
+#| fig-width: 11
+#| fig-height: 5.2
+#| out-width: "94%"
 #| fig-cap: "Normalized enrichment scores for the leading CorrectFirst kinase substrate sets across contrasts."
 heatmap_plot(enrichment$CF$KinaseGSEA)
 ```
@@ -907,6 +1351,9 @@ heatmap_plot(enrichment$CF$KinaseGSEA)
 
 ```{r}
 #| label: fig-cf-kinase-volcano
+#| fig-width: 12
+#| fig-height: 4.4
+#| out-width: "96%"
 #| fig-cap: "CorrectFirst Kinase GSEA normalized enrichment score as a function of FDR."
 volcano_plot(enrichment$CF$KinaseGSEA)
 ```
@@ -915,9 +1362,47 @@ volcano_plot(enrichment$CF$KinaseGSEA)
 
 ```{r}
 #| label: fig-cf-kinase-running
+#| fig-width: 10.5
+#| fig-height: 6.2
+#| out-width: "92%"
 #| fig-cap: "Running enrichment scores for the leading CorrectFirst kinase substrate set in each contrast, reconstructed from JSON."
 #| results: asis
 print_running_scores(enrichment$CF$KinaseGSEA)
+```
+
+### Rank distributions
+
+```{r}
+#| label: fig-cf-kinase-ridge
+#| fig-width: 11
+#| fig-height: 5.4
+#| out-width: "94%"
+#| fig-cap: "CorrectFirst Kinase GSEA ranked-site distributions for the leading terms. Each ridge shows the ranking statistics of sites belonging to one enriched set and colour encodes FDR."
+#| results: asis
+print_rank_distributions(enrichment$CF$KinaseGSEA)
+```
+
+### Gene-set network
+
+```{r}
+#| label: fig-cf-kinase-network
+#| fig-width: 11
+#| fig-height: 6.2
+#| out-width: "94%"
+#| fig-cap: "CorrectFirst Kinase GSEA gene-set network. Term nodes connect to their member sites, exposing shared sites across leading enrichment terms and contrasts."
+gene_set_network_plot(enrichment$CF$KinaseGSEA)
+```
+
+### Term similarity
+
+```{r}
+#| label: fig-cf-kinase-similarity
+#| fig-width: 11
+#| fig-height: 6.2
+#| out-width: "94%"
+#| fig-cap: "CorrectFirst Kinase GSEA enrichment map and similarity tree. Terms are related by overlap among their ranked-site members."
+#| results: asis
+print_term_similarity(enrichment$CF$KinaseGSEA)
 ```
 
 ### Results
@@ -948,6 +1433,9 @@ knitr::kable(summary_table(enrichment$CF$MEA))
 
 ```{r}
 #| label: fig-cf-mea-dotplot
+#| fig-width: 11
+#| fig-height: 5.2
+#| out-width: "94%"
 #| fig-cap: "CorrectFirst MEA motif enrichment using the native NES and FDR stored in JSON."
 dot_plot(enrichment$CF$MEA)
 ```
@@ -956,6 +1444,9 @@ dot_plot(enrichment$CF$MEA)
 
 ```{r}
 #| label: fig-cf-mea-heatmap
+#| fig-width: 11
+#| fig-height: 5.2
+#| out-width: "94%"
 #| fig-cap: "Native MEA normalized enrichment scores for the leading CorrectFirst kinase motif sets across contrasts."
 heatmap_plot(enrichment$CF$MEA)
 ```
@@ -964,6 +1455,9 @@ heatmap_plot(enrichment$CF$MEA)
 
 ```{r}
 #| label: fig-cf-mea-volcano
+#| fig-width: 12
+#| fig-height: 4.4
+#| out-width: "96%"
 #| fig-cap: "Native CorrectFirst MEA normalized enrichment score as a function of FDR."
 volcano_plot(enrichment$CF$MEA)
 ```
@@ -974,6 +1468,41 @@ volcano_plot(enrichment$CF$MEA)
 #| label: mea-cf-running-note
 #| results: asis
 print_running_scores(enrichment$CF$MEA)
+```
+
+### Rank distributions
+
+```{r}
+#| label: fig-cf-mea-ridge
+#| fig-width: 11
+#| fig-height: 5.4
+#| out-width: "94%"
+#| fig-cap: "CorrectFirst MEA ranked-site distributions for the leading terms. Each ridge shows the ranking statistics of sites belonging to one enriched set and colour encodes FDR."
+#| results: asis
+print_rank_distributions(enrichment$CF$MEA)
+```
+
+### Gene-set network
+
+```{r}
+#| label: fig-cf-mea-network
+#| fig-width: 11
+#| fig-height: 6.2
+#| out-width: "94%"
+#| fig-cap: "CorrectFirst MEA gene-set network. Term nodes connect to their member sites, exposing shared sites across leading enrichment terms and contrasts."
+gene_set_network_plot(enrichment$CF$MEA)
+```
+
+### Term similarity
+
+```{r}
+#| label: fig-cf-mea-similarity
+#| fig-width: 11
+#| fig-height: 6.2
+#| out-width: "94%"
+#| fig-cap: "CorrectFirst MEA enrichment map and similarity tree. Terms are related by overlap among their ranked-site members."
+#| results: asis
+print_term_similarity(enrichment$CF$MEA)
 ```
 
 ### Results

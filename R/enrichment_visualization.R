@@ -165,6 +165,13 @@ plot_enrichment_volcano <- function(
     )
   }
 
+  label_data <- volcano_data |>
+    dplyr::filter(.data[[fdr_col]] < label_fdr_threshold) |>
+    dplyr::group_by(.data$contrast) |>
+    dplyr::slice_min(.data[[fdr_col]], n = n_labels) |>
+    dplyr::ungroup() |>
+    dplyr::mutate(label_hjust = ifelse(.data$NES < 0, 1.1, -0.1))
+
   ggplot2::ggplot(volcano_data, ggplot2::aes(x = .data$NES, y = .data$neg_log_fdr)) +
     ggplot2::geom_point(
       ggplot2::aes(color = .data$direction, alpha = .data$significant),
@@ -173,19 +180,17 @@ plot_enrichment_volcano <- function(
     ggplot2::geom_hline(yintercept = -log10(fdr_threshold), linetype = "dashed", color = "grey30") +
     ggplot2::geom_vline(xintercept = 0, linetype = "dashed", color = "grey30") +
     ggplot2::geom_text(
-      data = volcano_data |>
-        dplyr::filter(.data[[fdr_col]] < label_fdr_threshold) |>
-        dplyr::group_by(.data$contrast) |>
-        dplyr::slice_min(.data[[fdr_col]], n = n_labels),
-      ggplot2::aes(label = .data[[item_col]]),
+      data = label_data,
+      ggplot2::aes(label = .data[[item_col]], hjust = .data$label_hjust),
       size = 2.5,
-      hjust = -0.1,
       check_overlap = TRUE
     ) +
+    ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0.16, 0.16))) +
     ggplot2::scale_color_manual(values = c("Up" = "red", "Down" = "blue", "NS" = "grey50")) +
     ggplot2::scale_alpha_manual(values = c("TRUE" = 1, "FALSE" = 0.3), guide = "none") +
     ggplot2::facet_wrap(~ .data$contrast, scales = "free") +
     ggplot2::theme_bw() +
+    ggplot2::theme(plot.margin = ggplot2::margin(5.5, 18, 5.5, 18)) +
     ggplot2::labs(
       title = title,
       subtitle = subtitle,

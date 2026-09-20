@@ -186,9 +186,10 @@ example_caps <- paste0(
   plot_result$protein_Id[example_idx], example_labels,
   ", one panel per contrast. The x-axis is the residue position from the N- to the ",
   "C-terminus of the protein and the y-axis is the site-level log2 fold change of that ",
-  "contrast; each vertical stick is one PTM site, coloured by modified residue (S blue, ",
-  "T green, Y brown, not localized pink) and dashed when the value was imputed. Asterisks ",
-  "give the site FDR (** < 0.05, * < 0.2), and the yellow rectangle spans the protein from ",
+  "contrast; each vertical stick with a head is one PTM site, coloured by modified residue ",
+  "(S blue, T green, Y vermilion, not localized purple), dashed with an open head when the ",
+  "value was imputed. Sites with FDR < 0.2 are labelled with residue and position, and the ",
+  "asterisks give the site FDR (** < 0.05, * < 0.2); the yellow rectangle spans the protein from ",
   "N to C at the protein-level log2 fold change, so sticks reaching beyond it change more ",
   "than the protein itself. Proteins are shown when at least one site has FDR < ",
   params$fdr, " and |log2FC| > ", params$fc, "."

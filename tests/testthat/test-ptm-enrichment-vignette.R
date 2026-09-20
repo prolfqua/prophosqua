@@ -86,6 +86,10 @@ test_that("enrichment vignette has the required three-level tab structure", {
   if (!file.exists(path)) {
     path <- system.file("doc", "ptm_enrichment.qmd", package = "prophosqua")
   }
+  skip_if(
+    !nzchar(path) || !file.exists(path),
+    "package installed without vignette sources"
+  )
   source <- readLines(path, warn = FALSE)
   fence <- grepl("^```", source)
   outside_code <- cumsum(fence) %% 2L == 0L & !fence
@@ -142,7 +146,17 @@ test_that("enrichment vignette has the required three-level tab structure", {
       )
       expect_identical(
         views,
-        c("Summary", "Dot plot", "Heatmap", "Volcano", "Running score", "Results")
+        c(
+          "Summary",
+          "Dot plot",
+          "Heatmap",
+          "Volcano",
+          "Running score",
+          "Rank distributions",
+          "Gene-set network",
+          "Term similarity",
+          "Results"
+        )
       )
     }
   }
@@ -150,5 +164,10 @@ test_that("enrichment vignette has the required three-level tab structure", {
   expect_true(any(grepl("get_enrichment_document", source, fixed = TRUE)))
   expect_true(any(grepl("decode_gsea_json", source, fixed = TRUE)))
   expect_true(any(grepl("gseaplot2", source, fixed = TRUE)))
+  expect_true(any(grepl("ridgeplot", source, fixed = TRUE)))
+  expect_true(any(grepl("cnetplot", source, fixed = TRUE)))
+  expect_true(any(grepl("pairwise_termsim", source, fixed = TRUE)))
+  expect_true(any(grepl("emapplot", source, fixed = TRUE)))
+  expect_true(any(grepl("treeplot", source, fixed = TRUE)))
   expect_false(any(grepl("read_excel|readRDS|read_xlsx", source)))
 })
