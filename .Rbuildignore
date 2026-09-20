@@ -55,6 +55,8 @@
 ^_pkgdown\.yml$
 ^air\.toml$
 ^docs$
+^altdoc$
+^_quarto$
 
 # Miscellaneous
 \.DS_Store$

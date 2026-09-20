@@ -12,6 +12,9 @@ CLAUDE.md
 /Meta/
 /inst/doc/
 /docs/
+/_quarto/
+/altdoc/freeze.rds
+/altdoc/pkgdown.yml
 temp_backup/
 vignettes/QCReport_cache/
 vignettes/ptm_example-main/

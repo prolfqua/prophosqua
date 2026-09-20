@@ -1,5 +1,5 @@
 [![DOI](https://zenodo.org/badge/784111954.svg)](https://doi.org/10.5281/zenodo.15845272)
-[![pkgdown](https://img.shields.io/badge/docs-pkgdown-blue)](https://prolfqua.github.io/prophosqua/)
+[![altdoc](https://img.shields.io/badge/docs-altdoc-blue)](https://prolfqua.github.io/prophosqua/)
 
 # prophosqua
 
@@ -116,20 +116,16 @@ If you use this package in your research, please cite:
 ## Building and Deploying Documentation
 - https://deepwiki.com/wolski/ptm-pipeline - AI attempt for documentation
 
-### Build pkgdown site locally
+### Build the altdoc site locally
 
 ```r
-pkgdown::build_site()
+altdoc::render_docs(freeze = FALSE)
 ```
 
 ### Deploy to GitHub Pages
 
-```bash
-# Using ghp-import (via uv)
-uvx ghp-import -n -p -f docs
-```
-
-Then enable GitHub Pages in repo settings (Settings -> Pages -> Source: `gh-pages` branch).
+The `altdoc` GitHub Actions workflow renders the site and deploys `docs/` to
+the `gh-pages` branch after every push to `main`.
 
 Site: https://prolfqua.github.io/prophosqua
 

@@ -19,7 +19,7 @@ COVERAGE_CMD ?= Rscript -e "covr::package_coverage() |> print()"
 INSTALL_CMD ?= R CMD INSTALL $(TARBALL)
 INSTALL_BUILD_TARGET ?= build
 LINT_CMD ?= Rscript -e "lints <- lintr::lint_package(); print(lints); if (length(lints) > 0L) quit(status = 1L)"
-SITE_CMD ?= Rscript -e "pkgdown::build_site(install = FALSE)"
+SITE_CMD ?= Rscript -e "altdoc::render_docs(freeze = FALSE)"
 NEW_VERSION_CMD ?= Rscript -e "d <- read.dcf('DESCRIPTION'); old <- d[1, 'Version']; parts <- as.integer(strsplit(old, '.', fixed = TRUE)[[1]]); if (length(parts) < 3) parts <- c(parts, rep(0L, 3L - length(parts))); parts[3] <- parts[3] + 1L; new <- paste(parts, collapse = '.'); x <- readLines('DESCRIPTION'); x <- sub('^Version: .*', paste0('Version: ', new), x); writeLines(x, 'DESCRIPTION'); cat(new)"
 
 .PHONY: all help help-common help-package hooks precommit-prepare document build build-vignettes install test check-fast check-bioc check coverage lint format site clean clean-package new-version vignette

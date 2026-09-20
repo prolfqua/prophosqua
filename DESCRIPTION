@@ -55,6 +55,7 @@ Imports:
     writexl,
     yaml
 Suggests:
+    altdoc,
     clusterProfiler,
     covr,
     devtools,
@@ -67,7 +68,6 @@ Suggests:
     knitr,
     limpa,
     lintr,
-    pkgdown,
     quarto,
     rcmdcheck,
     roxygen2,
