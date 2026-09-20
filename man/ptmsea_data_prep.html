@@ -803,7 +803,7 @@ Character. Trim flanking sequences to this width. Options: "11" (default), "13",
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Prepare DPA data using t-statistic for ranking</span></span>
-<span><span class="va">prep_dpa</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://prolfqua.github.io/prophosqua/reference/ptmsea_data_prep.html">ptmsea_data_prep</a></span><span class="op">(</span><span class="va">data</span>, stat_column <span class="op">=</span> <span class="st">"statistic.site"</span><span class="op">)</span></span>
+<span><span class="va">prep_dpa</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://prolfqua.github.io/prophosqua/man/ptmsea_data_prep.html">ptmsea_data_prep</a></span><span class="op">(</span><span class="va">data</span>, stat_column <span class="op">=</span> <span class="st">"statistic.site"</span><span class="op">)</span></span>
 <span><span class="va">prep_dpa</span><span class="op">$</span><span class="va">ranks</span> <span class="co"># ranked lists per contrast</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>$A
@@ -819,7 +819,7 @@ CCCCCSCCCCC-p AAAAASAAAAA-p
 <pre><code><a href="https://rdrr.io/r/base/list.html">list()</a></code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="co"># Trim to 13-mer to potentially increase PTMsigDB overlap</span></span>
-<span><span class="va">prep_dpa_13</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://prolfqua.github.io/prophosqua/reference/ptmsea_data_prep.html">ptmsea_data_prep</a></span><span class="op">(</span><span class="va">data</span>, stat_column <span class="op">=</span> <span class="st">"statistic.site"</span>, trim_to <span class="op">=</span> <span class="st">"13"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="va">prep_dpa_13</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://prolfqua.github.io/prophosqua/man/ptmsea_data_prep.html">ptmsea_data_prep</a></span><span class="op">(</span><span class="va">data</span>, stat_column <span class="op">=</span> <span class="st">"statistic.site"</span>, trim_to <span class="op">=</span> <span class="st">"13"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 
 

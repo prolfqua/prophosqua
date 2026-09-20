@@ -764,13 +764,13 @@ Vector of FDR thresholds to count (default: c(0.1, 0.05))
 <span>  NES <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">100</span><span class="op">)</span>,</span>
 <span>  FDR <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">100</span>, <span class="fl">0</span>, <span class="fl">0.3</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://prolfqua.github.io/prophosqua/reference/summarize_enrichment_results.html">summarize_enrichment_results</a></span><span class="op">(</span><span class="va">mea_results</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="fu"><a href="https://prolfqua.github.io/prophosqua/man/summarize_enrichment_results.html">summarize_enrichment_results</a></span><span class="op">(</span><span class="va">mea_results</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 2 × 4
   contrast             total `FDR &lt; 0.1` `FDR &lt; 0.05`
   &lt;chr&gt;                &lt;int&gt;       &lt;int&gt;        &lt;int&gt;
-1 Drug_vs_Vehicle         50          16            5
-2 Treatment_vs_Control    50          23           10</code></pre>
+1 Drug_vs_Vehicle         50          16            8
+2 Treatment_vs_Control    50          15            9</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="co"># Returns: contrast, total, FDR &lt; 0.1, FDR &lt; 0.05</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>

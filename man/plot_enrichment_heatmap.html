@@ -821,7 +821,7 @@ Plot subtitle
 <span>  p.adjust <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">0.001</span>, <span class="fl">0.02</span>, <span class="fl">0.05</span>, <span class="fl">0.005</span>, <span class="fl">0.12</span>, <span class="fl">0.18</span>, <span class="fl">0.08</span>, <span class="fl">0.09</span>, <span class="fl">0.03</span><span class="op">)</span>,</span>
 <span>  contrast <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"Early"</span>, <span class="st">"Mid"</span>, <span class="st">"Late"</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://prolfqua.github.io/prophosqua/reference/plot_enrichment_heatmap.html">plot_enrichment_heatmap</a></span><span class="op">(</span><span class="va">ptmsea_results</span>, n_top <span class="op">=</span> <span class="fl">3</span>,</span>
+<span><span class="fu"><a href="https://prolfqua.github.io/prophosqua/man/plot_enrichment_heatmap.html">plot_enrichment_heatmap</a></span><span class="op">(</span><span class="va">ptmsea_results</span>, n_top <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>                        title <span class="op">=</span> <span class="st">"PTMSEA Kinase Activity"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
@@ -831,7 +831,7 @@ Plot subtitle
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="co"># With custom item labels (shorter names)</span></span>
 <span><span class="va">ptmsea_results</span><span class="op">$</span><span class="va">short_name</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">gsub</a></span><span class="op">(</span><span class="st">"KINASE-PSP_"</span>, <span class="st">""</span>, <span class="va">ptmsea_results</span><span class="op">$</span><span class="va">ID</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://prolfqua.github.io/prophosqua/reference/plot_enrichment_heatmap.html">plot_enrichment_heatmap</a></span><span class="op">(</span><span class="va">ptmsea_results</span>, item_label_col <span class="op">=</span> <span class="st">"short_name"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="fu"><a href="https://prolfqua.github.io/prophosqua/man/plot_enrichment_heatmap.html">plot_enrichment_heatmap</a></span><span class="op">(</span><span class="va">ptmsea_results</span>, item_label_col <span class="op">=</span> <span class="st">"short_name"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure"><p><img src="plot_enrichment_heatmap_files/figure-html/unnamed-chunk-1-2.png" class="img-fluid figure-img" width="672"></p>

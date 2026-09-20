@@ -826,7 +826,7 @@ Character or NULL. Suffix to add to sequences (e.g., "-p" for PTMsigDB format). 
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Prepare ranks for Kinase Library GSEA (no suffix needed)</span></span>
-<span><span class="va">ranks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://prolfqua.github.io/prophosqua/reference/prepare_gsea_ranks.html">prepare_gsea_ranks</a></span><span class="op">(</span><span class="va">data</span>, stat_col <span class="op">=</span> <span class="st">"statistic.site"</span><span class="op">)</span></span>
+<span><span class="va">ranks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://prolfqua.github.io/prophosqua/man/prepare_gsea_ranks.html">prepare_gsea_ranks</a></span><span class="op">(</span><span class="va">data</span>, stat_col <span class="op">=</span> <span class="st">"statistic.site"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">ranks</span><span class="op">)</span>  <span class="co"># contrast names</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] "A_vs_B" "C_vs_D"</code></pre>
@@ -837,7 +837,7 @@ Character or NULL. Suffix to add to sequences (e.g., "-p" for PTMsigDB format). 
      2.5      1.8      0.3     -0.5     -1.2 </code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="co"># Prepare ranks for PTMsigDB (with "-p" suffix)</span></span>
-<span><span class="va">ranks_ptm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://prolfqua.github.io/prophosqua/reference/prepare_gsea_ranks.html">prepare_gsea_ranks</a></span><span class="op">(</span><span class="va">data</span>, stat_col <span class="op">=</span> <span class="st">"statistic.site"</span>, add_suffix <span class="op">=</span> <span class="st">"-p"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="va">ranks_ptm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://prolfqua.github.io/prophosqua/man/prepare_gsea_ranks.html">prepare_gsea_ranks</a></span><span class="op">(</span><span class="va">data</span>, stat_col <span class="op">=</span> <span class="st">"statistic.site"</span>, add_suffix <span class="op">=</span> <span class="st">"-p"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 
 

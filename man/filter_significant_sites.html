@@ -820,7 +820,7 @@ Logical. If TRUE, filter out rows with invalid SequenceWindow (NA or starting/en
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Filter with default thresholds (FDR &lt; 0.05, |FC| &gt; 0.6)</span></span>
-<span><span class="va">sig_sites</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://prolfqua.github.io/prophosqua/reference/filter_significant_sites.html">filter_significant_sites</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span></span>
+<span><span class="va">sig_sites</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://prolfqua.github.io/prophosqua/man/filter_significant_sites.html">filter_significant_sites</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span></span>
 <span><span class="va">sig_sites</span><span class="op">$</span><span class="va">regulation</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] "upregulated"   "downregulated" "downregulated" "upregulated"  </code></pre>
@@ -832,7 +832,7 @@ Logical. If TRUE, filter out rows with invalid SequenceWindow (NA or starting/en
 <span>  FDR_I <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">0.01</span>, <span class="fl">0.03</span><span class="op">)</span>,</span>
 <span>  diff_diff <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">1.2</span>, <span class="op">-</span><span class="fl">0.8</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="va">sig_dpu</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://prolfqua.github.io/prophosqua/reference/filter_significant_sites.html">filter_significant_sites</a></span><span class="op">(</span><span class="va">data_dpu</span>, fdr_col <span class="op">=</span> <span class="st">"FDR_I"</span>, diff_col <span class="op">=</span> <span class="st">"diff_diff"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="va">sig_dpu</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://prolfqua.github.io/prophosqua/man/filter_significant_sites.html">filter_significant_sites</a></span><span class="op">(</span><span class="va">data_dpu</span>, fdr_col <span class="op">=</span> <span class="st">"FDR_I"</span>, diff_col <span class="op">=</span> <span class="st">"diff_diff"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 
 
