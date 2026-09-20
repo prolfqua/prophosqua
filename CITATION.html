@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>prophosqua</title>
+<title>citation – prophosqua</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -25,41 +25,6 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
-}
-/* CSS for syntax highlighting */
-html { -webkit-text-size-adjust: 100%; }
-pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
-pre > code.sourceCode > span:empty { height: 1.2em; }
-.sourceCode { overflow: visible; }
-code.sourceCode > span { color: inherit; text-decoration: inherit; }
-div.sourceCode { margin: 1em 0; }
-pre.sourceCode { margin: 0; }
-@media screen {
-div.sourceCode { overflow: auto; }
-}
-@media print {
-pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
-}
-pre.numberSource code
-  { counter-reset: source-line 0; }
-pre.numberSource code > span
-  { position: relative; left: -4em; counter-increment: source-line; }
-pre.numberSource code > span > a:first-child::before
-  { content: counter(source-line);
-    position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; display: inline-block;
-    -webkit-touch-callout: none; -webkit-user-select: none;
-    -khtml-user-select: none; -moz-user-select: none;
-    -ms-user-select: none; user-select: none;
-    padding: 0 4px; width: 4em;
-  }
-pre.numberSource { margin-left: 3em;  padding-left: 4px; }
-div.sourceCode
-  {   }
-@media screen {
-pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -145,7 +110,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./index.html">Home</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -159,7 +124,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <ul class="list-unstyled mt-1">
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./index.html" class="sidebar-item-text sidebar-link active">
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Home</span></a>
   </div>
 </li>
@@ -749,132 +714,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 
-<p><a href="https://doi.org/10.5281/zenodo.15845272"><img src="https://zenodo.org/badge/784111954.svg" class="img-fluid" alt="DOI"></a> <a href="https://prolfqua.github.io/prophosqua/"><img src="https://img.shields.io/badge/docs-altdoc-blue.png" class="img-fluid" alt="altdoc"></a></p>
-<section id="prophosqua" class="level1">
-<h1>prophosqua</h1>
-<p><strong>Integration of phosphoproteome and total proteome data for comprehensive PTM analysis</strong></p>
-<p>The <code>prophosqua</code> package provides tools for integrating and analyzing post-translational modification (PTM) data with total proteome measurements. It enables researchers to distinguish between changes in protein abundance and changes in modification site usage, providing deeper insights into cellular signaling and regulation.</p>
-<section id="overview" class="level2">
-<h2 class="anchored" data-anchor-id="overview">Overview</h2>
-<p>The integrated PTM analysis is carried out using <code>prophosqua</code>, which implements three complementary statistical approaches:</p>
-<ul>
-<li><strong>DPA</strong> (Differential PTM Abundance): tests for changes in PTM-site intensity between conditions.</li>
-<li><strong>DPU</strong> (Differential PTM Usage): tests whether the ratio of PTM-site to total protein intensity changes, identifying regulation independent of protein abundance.</li>
-<li><strong>CorrectFirst</strong>: applies protein-level correction before testing PTM sites, an alternative approach to distinguish PTM-specific regulation from protein expression changes.</li>
-</ul>
-<p>Building on the <a href="https://github.com/prolfqua/prolfqua">prolfqua</a> and <a href="https://github.com/prolfqua/prolfquapp">prolfquapp</a> packages, <code>prophosqua</code> additionally provides:</p>
-<ul>
-<li><strong>N-to-C plots</strong> - Visualization of phosphorylation sites along protein backbones</li>
-<li><strong>Sequence logo analysis</strong> - Identification of kinase recognition motifs</li>
-<li><strong>PTM-SEA</strong> - Post-translational modification set enrichment analysis</li>
-<li><strong>Kinase activity inference</strong> - Kinase library-based analysis from phosphoproteomics data</li>
-<li><strong>Motif enrichment analysis</strong> - MEA visualization</li>
-<li><strong>Enrichment visualization</strong> - Dot plots, heatmaps, and volcano plots for enrichment results</li>
-</ul>
-</section>
-<section id="installation" class="level2">
-<h2 class="anchored" data-anchor-id="installation">Installation</h2>
-<section id="prerequisites" class="level3">
-<h3 class="anchored" data-anchor-id="prerequisites">Prerequisites</h3>
-<p>This package depends on several other packages that should be installed first:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Install prolfqua (core proteomics analysis package)</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(devtools)</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">'protviz/prozor'</span>, <span class="at">dependencies =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">'prolfqua/prolfqua'</span>, <span class="at">dependencies =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Install prolfquapp (proteomics analysis workflow package)</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">'prolfqua/prolfquapp'</span>, <span class="at">dependencies =</span> <span class="cn">TRUE</span>, <span class="at">build_vignettes=</span><span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>For detailed installation instructions and system requirements, see: - <a href="https://github.com/prolfqua/prolfqua">prolfqua GitHub repository</a> - <a href="https://github.com/prolfqua/prolfquapp">prolfquapp GitHub repository</a></p>
-</section>
-<section id="install-prophosqua" class="level3">
-<h3 class="anchored" data-anchor-id="install-prophosqua">Install prophosqua</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(devtools)</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">'prolfqua/prophosqua'</span>, <span class="at">dependencies =</span> <span class="cn">TRUE</span>, <span class="at">build_vignettes=</span><span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-</section>
-<section id="usage" class="level2">
-<h2 class="anchored" data-anchor-id="usage">Usage</h2>
-<section id="basic-workflow" class="level3">
-<h3 class="anchored" data-anchor-id="basic-workflow">Basic Workflow</h3>
-<ol type="1">
-<li>Run DEA with <code>prolfquapp</code> for enriched sites and total protein.</li>
-<li>Import both schema 2.0.0 <code>AnnData.h5ad</code> files into <code>PTM_inputs.h5mu</code>, including the stored design, contrasts, parameters, and reference data.</li>
-<li>Compute DPA/DPU and CorrectFirst from those paired inputs, then complete the enrichment branches. Every persisted handoff is MuData.</li>
-<li>Assemble <code>PTM_results.h5mu</code>, render reports from it, and export Excel/RDS delivery files last. The <code>ptm-pipeline</code> workflow coordinates these steps.</li>
-</ol>
-<p>Each completed stage has its own R6 type. A transition returns a new complete object; it does not add optional fields to an earlier object.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(prophosqua)</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>inputs <span class="ot">&lt;-</span> <span class="fu">import_ptm_h5mu</span>(<span class="st">"phospho/AnnData.h5ad"</span>, <span class="st">"total/AnnData.h5ad"</span>, <span class="st">"PTM_inputs.h5mu"</span>)</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>dpa_dpu <span class="ot">&lt;-</span> inputs<span class="sc">$</span><span class="fu">build</span>(DPA_DPU)</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>cf <span class="ot">&lt;-</span> inputs<span class="sc">$</span><span class="fu">build</span>(CF)</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>statistics <span class="ot">&lt;-</span> dpa_dpu<span class="sc">$</span><span class="fu">build</span>(PTM_statistics, <span class="at">cf =</span> cf)</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>statistics<span class="sc">$</span><span class="fu">write_h5mu</span>(<span class="st">"PTM_statistics.h5mu"</span>)</span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>restored <span class="ot">&lt;-</span> <span class="fu">read_ptm_h5mu</span>(<span class="st">"PTM_statistics.h5mu"</span>, PTM_statistics)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p><code>enriched</code> and <code>total</code> retain both DEA experiments; <code>cf</code> contains corrected abundances. DPA statistics belong to <code>enriched</code>; DPU and CorrectFirst belong to <code>cf</code>, each with its own presence mask. Protein-to-site joins and outer-join result rows retain the existing R behavior.</p>
-<p>The former single-site <code>compute_ptm_results_h5ad()</code> writer and <code>ptm.sh ptm_h5ad</code> command are replaced by <code>import_h5mu</code>, <code>ptm_h5mu</code>, <code>enrich_h5mu</code>, <code>assemble_h5mu</code>, and terminal <code>export_h5mu</code>. The existing in-memory computational APIs remain available.</p>
-</section>
-</section>
-<section id="vignettes" class="level2">
-<h2 class="anchored" data-anchor-id="vignettes">Vignettes</h2>
-<p>The package includes vignettes demonstrating the analysis workflow:</p>
-<ul>
-<li><strong><code>Analysis_n_to_c.Rmd</code></strong> - N-to-C plots for PTM site visualization</li>
-<li><strong><code>Analysis_seqlogo.Rmd</code></strong> - Sequence logo analysis</li>
-<li><strong><code>Analysis_PTMSEA.Rmd</code></strong> - PTM-SEA analysis</li>
-<li><strong><code>Analysis_KinaseLibrary.Rmd</code></strong> - Kinase activity inference from phosphoproteomics data</li>
-<li><strong><code>Analysis_MEA.Rmd</code></strong> - Motif enrichment analysis visualization</li>
-</ul>
-<p>The MiMB manuscript source is kept outside <code>vignettes/</code> and is rendered by <code>inst/MiMB_build/Snakefile</code>:</p>
-<ul>
-<li><strong><code>manuscript/_MiMBIntegratedPTM.Rmd</code></strong> - Integrated analysis of PTM and total proteome (DPA, DPU, CorrectFirst); the MiMB manuscript</li>
-</ul>
-<p>The separate quality-control source is a Quarto vignette:</p>
-<ul>
-<li><strong><code>vignettes/_QCReport.qmd</code></strong> - FragPipe TMT quality control report</li>
-</ul>
-</section>
-<section id="citation" class="level2">
-<h2 class="anchored" data-anchor-id="citation">Citation</h2>
-<p>If you use this package in your research, please cite:</p>
-<blockquote class="blockquote">
-<p>Wolski W, Dittmann A, Panse C, Kunz L, Grossmann J. “Integrated Analysis of Post-Translational Modifications and Total Proteome: Methods for Distinguishing Abundance from Usage Changes.” <em>Methods in Molecular Biology</em>, 2025 (submitted).</p>
-</blockquote>
-<blockquote class="blockquote">
-<p>Grossmann J, Wolski W. “prolfqua/prophosqua: 0.1.0.” Zenodo, 2025. DOI: <a href="https://doi.org/10.5281/zenodo.15845272">10.5281/zenodo.15845272</a></p>
-</blockquote>
-</section>
-<section id="related-packages" class="level2">
-<h2 class="anchored" data-anchor-id="related-packages">Related Packages</h2>
-<ul>
-<li><a href="https://github.com/prolfqua/prolfqua">prolfqua</a> - Core proteomics analysis package</li>
-<li><a href="https://github.com/prolfqua/prolfquapp">prolfquapp</a> - Proteomics analysis workflow package</li>
-</ul>
-</section>
-<section id="building-and-deploying-documentation" class="level2">
-<h2 class="anchored" data-anchor-id="building-and-deploying-documentation">Building and Deploying Documentation</h2>
-<ul>
-<li>https://deepwiki.com/wolski/ptm-pipeline - AI attempt for documentation</li>
-</ul>
-<section id="build-the-altdoc-site-locally" class="level3">
-<h3 class="anchored" data-anchor-id="build-the-altdoc-site-locally">Build the altdoc site locally</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>altdoc<span class="sc">::</span><span class="fu">render_docs</span>(<span class="at">freeze =</span> <span class="cn">FALSE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-<section id="deploy-to-github-pages" class="level3">
-<h3 class="anchored" data-anchor-id="deploy-to-github-pages">Deploy to GitHub Pages</h3>
-<p>The <code>altdoc</code> GitHub Actions workflow renders the site and deploys <code>docs/</code> to the <code>gh-pages</code> branch after every push to <code>main</code>.</p>
-<p>Site: https://prolfqua.github.io/prophosqua</p>
-</section>
-</section>
-<section id="contributing" class="level2">
-<h2 class="anchored" data-anchor-id="contributing">Contributing</h2>
-<p>Contributions are welcome! Please visit our <a href="https://github.com/prolfqua/prophosqua">GitHub repository</a> for: - Issue reporting - Feature requests - Code contributions</p>
-</section>
-<section id="license" class="level2">
-<h2 class="anchored" data-anchor-id="license">License</h2>
-<p>This package is released under the <a href="LICENSE">MIT License</a>.</p>
+<section id="citation" class="level1">
+<h1>Citation</h1>
+<p>To cite package ‘prophosqua’ in publications use:</p>
+<p>
+Grossmann J, Wolski W (????). <em>prophosqua: Integrate TMT-Labeled Phosphoproteomics and Total Proteomics Data</em>. R package version 0.3.0, <a href="https://prolfqua.github.io/prophosqua">https://prolfqua.github.io/prophosqua</a>.
+</p>
 
 
-</section>
 </section>
 
 </main> <!-- /main -->
@@ -1283,4 +1130,4 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions"><ul><li><a href="https://github.com/prolfqua/prophosqua/blob/main/index.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li></ul></div></div></div></footer></body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions"><ul><li><a href="https://github.com/prolfqua/prophosqua/blob/main/CITATION.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li></ul></div></div></div></footer></body></html>

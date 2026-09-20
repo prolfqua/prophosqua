@@ -1,4 +1,0 @@
-# License
-
-    YEAR: 2024
-    COPYRIGHT HOLDER: Jonas Grossmann, Witold Wolski

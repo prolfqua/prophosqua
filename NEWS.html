@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>prophosqua</title>
+<title>news – prophosqua</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -25,41 +25,6 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
-}
-/* CSS for syntax highlighting */
-html { -webkit-text-size-adjust: 100%; }
-pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
-pre > code.sourceCode > span:empty { height: 1.2em; }
-.sourceCode { overflow: visible; }
-code.sourceCode > span { color: inherit; text-decoration: inherit; }
-div.sourceCode { margin: 1em 0; }
-pre.sourceCode { margin: 0; }
-@media screen {
-div.sourceCode { overflow: auto; }
-}
-@media print {
-pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
-}
-pre.numberSource code
-  { counter-reset: source-line 0; }
-pre.numberSource code > span
-  { position: relative; left: -4em; counter-increment: source-line; }
-pre.numberSource code > span > a:first-child::before
-  { content: counter(source-line);
-    position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; display: inline-block;
-    -webkit-touch-callout: none; -webkit-user-select: none;
-    -khtml-user-select: none; -moz-user-select: none;
-    -ms-user-select: none; user-select: none;
-    padding: 0 4px; width: 4em;
-  }
-pre.numberSource { margin-left: 3em;  padding-left: 4px; }
-div.sourceCode
-  {   }
-@media screen {
-pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -145,7 +110,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./index.html">Home</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./NEWS.html">News</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -159,7 +124,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <ul class="list-unstyled mt-1">
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./index.html" class="sidebar-item-text sidebar-link active">
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Home</span></a>
   </div>
 </li>
@@ -727,7 +692,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./NEWS.html" class="sidebar-item-text sidebar-link">
+  <a href="./NEWS.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">News</span></a>
   </div>
 </li>
@@ -749,132 +714,50 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 
-<p><a href="https://doi.org/10.5281/zenodo.15845272"><img src="https://zenodo.org/badge/784111954.svg" class="img-fluid" alt="DOI"></a> <a href="https://prolfqua.github.io/prophosqua/"><img src="https://img.shields.io/badge/docs-altdoc-blue.png" class="img-fluid" alt="altdoc"></a></p>
-<section id="prophosqua" class="level1">
-<h1>prophosqua</h1>
-<p><strong>Integration of phosphoproteome and total proteome data for comprehensive PTM analysis</strong></p>
-<p>The <code>prophosqua</code> package provides tools for integrating and analyzing post-translational modification (PTM) data with total proteome measurements. It enables researchers to distinguish between changes in protein abundance and changes in modification site usage, providing deeper insights into cellular signaling and regulation.</p>
-<section id="overview" class="level2">
-<h2 class="anchored" data-anchor-id="overview">Overview</h2>
-<p>The integrated PTM analysis is carried out using <code>prophosqua</code>, which implements three complementary statistical approaches:</p>
+<section id="prophosqua-0.3.0" class="level1">
+<h1>prophosqua 0.3.0</h1>
 <ul>
-<li><strong>DPA</strong> (Differential PTM Abundance): tests for changes in PTM-site intensity between conditions.</li>
-<li><strong>DPU</strong> (Differential PTM Usage): tests whether the ratio of PTM-site to total protein intensity changes, identifying regulation independent of protein abundance.</li>
-<li><strong>CorrectFirst</strong>: applies protein-level correction before testing PTM sites, an alternative approach to distinguish PTM-specific regulation from protein expression changes.</li>
+<li><p>Load with current DOSE releases, where the registered <code>gseaResult</code> class is no longer exported directly from the namespace.</p></li>
+<li><p>Keep the MiMB manuscript and its source assets outside <code>vignettes/</code> so package vignette builds process only recognized vignette sources.</p></li>
+<li><p>Add the first FGCZ Quarto multitab report, <code>ptm_statistics.qmd</code>, covering DPA, DPU, and CorrectFirst DPU from one final MuData input. Each analysis now includes compact sequence and difference logos generated during rendering, with relative residue positions and site counts. Sequence-logo sections place the plot first and their counts table second in a third-level tabset. The FDR and absolute log2 fold-change thresholds are report parameters. Package vignette builds use a deterministic two-contrast, 72-site final H5MU with mixed sequence backgrounds and visible position-zero differences, plus synchronized <code>fgczQuartoTemplate</code> assets.</p></li>
+<li><p>Add the companion FGCZ Quarto multitab report, <code>ptm_enrichment.qmd</code>. DPA, DPU, and CorrectFirst each expose PTM-SEA, Kinase GSEA, and MEA summaries, plots, complete searchable result tables, and running-score plots decoded exclusively from the nine versioned JSON documents in final MuData. Native MEA JSON now preserves GSEApy’s source running scores and hit positions in the same schema used by the R GSEA methods.</p></li>
+<li><p>Store every PTMSEA, KinaseGSEA, and MEA result as validated JSON in MuData. The final typed result exposes complete document getters, verifies schema and checksums when reading, and reconstructs temporary clusterProfiler objects through protsea without persisting <code>gseaResult</code> objects.</p></li>
+<li><p>Declare the <code>limpa</code> dependency used by the existing CorrectFirst vignette so an isolated <code>R CMD check</code> can rebuild it.</p></li>
+<li><p>Preserve missing gene annotations as <code>NA</code> in terminal DPA/DPU RDS exports, matching the legacy workbook reader.</p></li>
+<li><p>Preserve the legacy model, estimate-type, contrast, and sample-design column positions in terminal delivery exports.</p></li>
+<li><p>Describe the MuData report inputs and terminal delivery files consistently in the DPA/DPU and CorrectFirst reports.</p></li>
+<li><p>Complete R6 stages now carry paired DEA, independent DPA/DPU and CorrectFirst, preparation, enrichment, and final results through MuData. Reports read final MuData; Excel/RDS delivery exports run last. Preserve existing joins, contrasts, and numerical computations. Replace the single-site PTM H5AD writer with the MuData commands.</p></li>
+<li><p>Read current prolfquapp DEA artifacts and compose complete paired-input, CorrectFirst, and DPA/DPU stages in MuData.</p></li>
+<li><p>A paired site and total-proteome AnnData analysis can now be written as one <code>PTM_results.h5ad</code> with <code>compute_ptm_results_h5ad()</code>. The new artifact keeps the site measurements and upstream DEA results intact, adds feature-aligned DPA, moderated and unmoderated DPU, and CorrectFirst matrices, and records a versioned result mapping plus hashes and schema versions for both inputs.</p></li>
+<li><p>DPA, DPU, and CorrectFirst can now consume an explicit pair of site-level and total-proteome <code>AnnData.h5ad</code> files written by prolfquapp. The reader validates schema, experiment roles, sample identity, and shared design before reconstructing the existing statistical inputs; the legacy DEA-directory entry points remain available during numerical comparison.</p></li>
+<li><p>Fixed the MEA ranked lists in the enrichment JSON: the <code>.rnk</code> files carry a header row, which was read as data, so every MEA gene pool began with a bogus <code>SEQUENCEWINDOW</code> entry, all ranking statistics were strings instead of numbers, and every rank was off by one. Regenerate <code>MEA_*_results.json</code> to pick up the fix.</p></li>
+<li><p>The three enrichment CMD scripts (PTM-SEA, kinase-library GSEA, MEA) now also write their results as <code>*.json</code> in the string_gsea <code>GSEAResult</code> structure (per contrast: the ranked sequence windows as a shared pool, per term the full mapped membership plus the leading edge), via the new exported <code>gsea_result_data()</code>, <code>mea_gsea_result_data()</code>, <code>read_mea_ranks()</code> and <code>write_gsea_result_json()</code>. Pool ids are the canonical upper-case sequence windows of the differential table; the form submitted to the enrichment (PTMsigDB <code>-p</code> suffix, kinase-library lower-case phospho residue) is kept in <code>input_label</code>. Downstream tools such as ptm3d consume these files.</p></li>
+<li><p><code>test_diff()</code> now explicitly selects a coherent moderated or unmoderated standard-error/degrees-of-freedom pair. <code>compute_dpa_dpu()</code> keeps moderated DPU as the published result and also returns an unmoderated comparison table, together with the count of rows that cannot be tested because their raw degrees of freedom are invalid. Older DEA outputs without the new raw contrast columns are rejected and must be regenerated with current <code>prolfqua</code>.</p></li>
+<li><p>The analysis reports are the package’s vignettes again. All seven – DPA/DPU, CorrectFirst, PTM-SEA, KinaseLibrary, MEA, N-to-C and seqlogo – live in <code>vignettes/</code>, the one place an analysis lives, and the vignette machinery installs them into <code>doc/</code>, from where a pipeline run renders them with its own parameters. There is no second copy under <code>inst/application</code> to drift from the documented one; only the index page and the overview include, which are not analyses, still ship there.</p></li>
+<li><p>Every report renders without a pipeline run. Each declares parameter defaults that fall back to the example data the package bundles, so <code>make build-vignettes</code> builds all seven, and the DPA/DPU and CorrectFirst reports – which previously defaulted to hardcoded paths inside a project directory – now compute their example from a synthetic pair of DEA output directories via the same functions the pipeline calls.</p></li>
+<li><p>The PTM pipeline’s analysis code now lives here. Every computation the workflow performs is a documented, tested package function, and every script and report template it runs is installed with the package under <code>inst/application</code>: <code>compute_dpa_dpu()</code>, <code>compute_cf_dea()</code>, <code>combine_ptm_results()</code>, <code>prepare_ptmsigdb()</code>, <code>prep_kinaselib_inputs()</code>, <code>compute_ptmsea()</code>, <code>compute_kinaselib_gsea()</code> and <code>compute_mea()</code>, reached from the workflow through <code>CMD_*.R</code> front ends and the one <code>inst/application/bin/ptm.sh</code> wrapper, which takes the step as its first argument: <code>ptm.sh dpa_dpu</code>, <code>ptm.sh render</code>, <code>ptm.sh help</code>. An analysis project no longer carries a copy of any of it, so there is nothing left to edit in a working directory that a rerun would silently discard. <code>copy_ptm_shell_script()</code> places the wrapper in a working directory for running the same steps by hand.</p></li>
+<li><p>Computing and reporting are separate steps. <code>Analysis_DPA_DPU.Rmd</code>, <code>Analysis_CorrectFirst_DEA.Rmd</code>, <code>Analysis_PTMSEA.Rmd</code>, <code>Analysis_KinaseLibrary.Rmd</code> and <code>Analysis_MEA.Rmd</code> render from a saved result object instead of producing it, so correcting a caption or a sentence costs a render rather than a full reanalysis: the CorrectFirst report went from about 85 seconds and a refit of every site model to about 15 seconds, and the enrichment reports no longer repeat their permutation tests.</p></li>
+<li><p>The three enrichment analyses always write their result workbook and RDS, with zero rows when nothing was enriched, instead of writing nothing at all. Their export used to sit inside a chunk that only ran when something was found, so an empty enrichment left a stale workbook from an earlier run looking current, and no workflow could declare the files as expected outputs.</p></li>
+<li><p><code>standardize_ptm_results()</code> replaces the <code>standardize_results()</code> script function, with the column selection of all three analyses and their order covered by tests. A column absent from an analysis is still dropped silently, which is why a column can be present in <code>Result_DPU.xlsx</code> and missing from every report; the selection is now documented and visible in one place.</p></li>
+<li><p><code>render_ptm_report()</code> renders any of the installed reports, and <code>render_dpu_overview()</code> the integration overview. Both render from the install path into a private intermediates directory, so no project directory collects knitr leftovers and two concurrent renders of one template cannot overwrite each other’s intermediates.</p></li>
+<li><p><code>prophosqua</code> now imports arrow, bookdown, optparse, prolfquapp, rmarkdown and writexl, which the moved code needs at run time.</p></li>
+<li><p>The nine helpers that locate and normalize prolfquapp DEA outputs are now package functions (<code>get_dea_xlsx()</code>, <code>get_dea_file()</code>, <code>get_dea_parquet()</code>, <code>get_dea_yaml()</code>, <code>get_sample_name_column()</code>, <code>get_dea_sample_name_column()</code>, <code>canonicalize_dea_sample_column()</code>, <code>canonicalize_uniprot_ids()</code> and <code>get_dea_ptm_site_info()</code>), documented with runnable examples and covered by tests. They previously lived in a script each analysis project carried its own copy of, where a stale copy could shadow a package function of the same name and change results silently.</p></li>
+<li><p>The N-to-C and sequence-logo reports no longer <code>source()</code> a script from the calling project’s <code>src/</code> directory. They use the package’s own functions, so a report cannot pick up a different implementation depending on which directory it runs in.</p></li>
+<li><p>Sites whose estimate rests on limit-of-detection imputation are marked as imputed again in the N-to-C figures. The imputation flag moved from <code>modelName</code> to <code>estimate_type</code>, and the plots still read the old column, so every site was drawn as observed; the plotting code now reads <code>estimate_type</code> and tolerates its absence rather than failing.</p></li>
+<li><p>The integrated-PTM manuscript vignette now cites the FragPipe computational-platform paper for FragPipe. All three FragPipe citations previously resolved to an unrelated paper about an insecticidal protein, which reached print in the Methods in Molecular Biology chapter proof.</p></li>
+<li><p>Manuscript bibliography corrections: accented author names are restored throughout (previously every non-ASCII character had been stripped, printing “Schfer”, “Villn”, “Ylmaz”); the two Zenodo software deposits no longer parse the surname “Wolski” as a given name; ggseqlogo and the Delom &amp; Chevet reference gained their missing author and title; missing article numbers were added; and both cited preprints were updated to their published versions.</p></li>
+<li><p>Every figure and table in the N-to-C, sequence logo, PTM-SEA, kinase-library GSEA and MEA reports now carries a caption naming the plotted quantity, what points or tiles represent, the axes and colour encoding, the grouping and the filtering that produced it, so a caption identifies its figure on its own. Per-contrast figures name their contrast.</p></li>
+<li><p>The MEA report now opens with a full method Overview: the software chain behind the numbers (kinase-library motif scoring, GSEApy pre-ranked GSEA, this R report), an explanation of how enrichment at the extremes of the ranked site list is computed and read, the interpretation limits of motif-predicted substrate sets, and literature and tool links. Every figure and table carries a caption naming the metric, axes, encoding and preprocessing.</p></li>
+<li><p>MEA result tables and the MEA Excel export replace the ambiguous <code>size</code> column with <code>set_size</code> (ranked sites matching the kinase motif) and <code>n_leading</code> (the leading-edge subset driving the score). <code>size</code> previously held the leading-edge count while being labelled as the number of substrates.</p></li>
+<li><p>Multi-contrast N-to-C figures now carry the protein description (identifier, length, number of sites and of not localized sites) once, as figure title and subtitle, instead of repeating a truncated title above every contrast panel, and the per-panel legends are collected into a single legend. Panels stay readable with six or more contrasts.</p></li>
+<li><p>Package documentation builds now cover the reproducible analysis vignettes; the data-intensive methods and quality-control reports remain in their dedicated Snakemake workflow.</p></li>
+<li><p>The quality-control report now honors supplied input paths without downloading example data, uses the current <code>LFQData</code> accessors, and normalizes channel totals to the first observed channel.</p></li>
+<li><p>The methods report now resolves its non-DEA render against the current precomputed April 2026 analysis results, uses the current <code>LFQData</code> mutation API, and no longer overwrites the packaged example dataset when rendered.</p></li>
+<li><p>Began tracking user-visible changes in <code>NEWS.md</code>. For changes before this version, see the git history.</p></li>
+<li><p>Keep enrichment round-trip tests compatible with the gseaResult move from DOSE to enrichit in Bioconductor 3.23.</p></li>
 </ul>
-<p>Building on the <a href="https://github.com/prolfqua/prolfqua">prolfqua</a> and <a href="https://github.com/prolfqua/prolfquapp">prolfquapp</a> packages, <code>prophosqua</code> additionally provides:</p>
-<ul>
-<li><strong>N-to-C plots</strong> - Visualization of phosphorylation sites along protein backbones</li>
-<li><strong>Sequence logo analysis</strong> - Identification of kinase recognition motifs</li>
-<li><strong>PTM-SEA</strong> - Post-translational modification set enrichment analysis</li>
-<li><strong>Kinase activity inference</strong> - Kinase library-based analysis from phosphoproteomics data</li>
-<li><strong>Motif enrichment analysis</strong> - MEA visualization</li>
-<li><strong>Enrichment visualization</strong> - Dot plots, heatmaps, and volcano plots for enrichment results</li>
-</ul>
-</section>
-<section id="installation" class="level2">
-<h2 class="anchored" data-anchor-id="installation">Installation</h2>
-<section id="prerequisites" class="level3">
-<h3 class="anchored" data-anchor-id="prerequisites">Prerequisites</h3>
-<p>This package depends on several other packages that should be installed first:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Install prolfqua (core proteomics analysis package)</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(devtools)</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">'protviz/prozor'</span>, <span class="at">dependencies =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">'prolfqua/prolfqua'</span>, <span class="at">dependencies =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Install prolfquapp (proteomics analysis workflow package)</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">'prolfqua/prolfquapp'</span>, <span class="at">dependencies =</span> <span class="cn">TRUE</span>, <span class="at">build_vignettes=</span><span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>For detailed installation instructions and system requirements, see: - <a href="https://github.com/prolfqua/prolfqua">prolfqua GitHub repository</a> - <a href="https://github.com/prolfqua/prolfquapp">prolfquapp GitHub repository</a></p>
-</section>
-<section id="install-prophosqua" class="level3">
-<h3 class="anchored" data-anchor-id="install-prophosqua">Install prophosqua</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(devtools)</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">'prolfqua/prophosqua'</span>, <span class="at">dependencies =</span> <span class="cn">TRUE</span>, <span class="at">build_vignettes=</span><span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-</section>
-<section id="usage" class="level2">
-<h2 class="anchored" data-anchor-id="usage">Usage</h2>
-<section id="basic-workflow" class="level3">
-<h3 class="anchored" data-anchor-id="basic-workflow">Basic Workflow</h3>
-<ol type="1">
-<li>Run DEA with <code>prolfquapp</code> for enriched sites and total protein.</li>
-<li>Import both schema 2.0.0 <code>AnnData.h5ad</code> files into <code>PTM_inputs.h5mu</code>, including the stored design, contrasts, parameters, and reference data.</li>
-<li>Compute DPA/DPU and CorrectFirst from those paired inputs, then complete the enrichment branches. Every persisted handoff is MuData.</li>
-<li>Assemble <code>PTM_results.h5mu</code>, render reports from it, and export Excel/RDS delivery files last. The <code>ptm-pipeline</code> workflow coordinates these steps.</li>
-</ol>
-<p>Each completed stage has its own R6 type. A transition returns a new complete object; it does not add optional fields to an earlier object.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(prophosqua)</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>inputs <span class="ot">&lt;-</span> <span class="fu">import_ptm_h5mu</span>(<span class="st">"phospho/AnnData.h5ad"</span>, <span class="st">"total/AnnData.h5ad"</span>, <span class="st">"PTM_inputs.h5mu"</span>)</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>dpa_dpu <span class="ot">&lt;-</span> inputs<span class="sc">$</span><span class="fu">build</span>(DPA_DPU)</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>cf <span class="ot">&lt;-</span> inputs<span class="sc">$</span><span class="fu">build</span>(CF)</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>statistics <span class="ot">&lt;-</span> dpa_dpu<span class="sc">$</span><span class="fu">build</span>(PTM_statistics, <span class="at">cf =</span> cf)</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>statistics<span class="sc">$</span><span class="fu">write_h5mu</span>(<span class="st">"PTM_statistics.h5mu"</span>)</span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>restored <span class="ot">&lt;-</span> <span class="fu">read_ptm_h5mu</span>(<span class="st">"PTM_statistics.h5mu"</span>, PTM_statistics)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p><code>enriched</code> and <code>total</code> retain both DEA experiments; <code>cf</code> contains corrected abundances. DPA statistics belong to <code>enriched</code>; DPU and CorrectFirst belong to <code>cf</code>, each with its own presence mask. Protein-to-site joins and outer-join result rows retain the existing R behavior.</p>
-<p>The former single-site <code>compute_ptm_results_h5ad()</code> writer and <code>ptm.sh ptm_h5ad</code> command are replaced by <code>import_h5mu</code>, <code>ptm_h5mu</code>, <code>enrich_h5mu</code>, <code>assemble_h5mu</code>, and terminal <code>export_h5mu</code>. The existing in-memory computational APIs remain available.</p>
-</section>
-</section>
-<section id="vignettes" class="level2">
-<h2 class="anchored" data-anchor-id="vignettes">Vignettes</h2>
-<p>The package includes vignettes demonstrating the analysis workflow:</p>
-<ul>
-<li><strong><code>Analysis_n_to_c.Rmd</code></strong> - N-to-C plots for PTM site visualization</li>
-<li><strong><code>Analysis_seqlogo.Rmd</code></strong> - Sequence logo analysis</li>
-<li><strong><code>Analysis_PTMSEA.Rmd</code></strong> - PTM-SEA analysis</li>
-<li><strong><code>Analysis_KinaseLibrary.Rmd</code></strong> - Kinase activity inference from phosphoproteomics data</li>
-<li><strong><code>Analysis_MEA.Rmd</code></strong> - Motif enrichment analysis visualization</li>
-</ul>
-<p>The MiMB manuscript source is kept outside <code>vignettes/</code> and is rendered by <code>inst/MiMB_build/Snakefile</code>:</p>
-<ul>
-<li><strong><code>manuscript/_MiMBIntegratedPTM.Rmd</code></strong> - Integrated analysis of PTM and total proteome (DPA, DPU, CorrectFirst); the MiMB manuscript</li>
-</ul>
-<p>The separate quality-control source is a Quarto vignette:</p>
-<ul>
-<li><strong><code>vignettes/_QCReport.qmd</code></strong> - FragPipe TMT quality control report</li>
-</ul>
-</section>
-<section id="citation" class="level2">
-<h2 class="anchored" data-anchor-id="citation">Citation</h2>
-<p>If you use this package in your research, please cite:</p>
-<blockquote class="blockquote">
-<p>Wolski W, Dittmann A, Panse C, Kunz L, Grossmann J. “Integrated Analysis of Post-Translational Modifications and Total Proteome: Methods for Distinguishing Abundance from Usage Changes.” <em>Methods in Molecular Biology</em>, 2025 (submitted).</p>
-</blockquote>
-<blockquote class="blockquote">
-<p>Grossmann J, Wolski W. “prolfqua/prophosqua: 0.1.0.” Zenodo, 2025. DOI: <a href="https://doi.org/10.5281/zenodo.15845272">10.5281/zenodo.15845272</a></p>
-</blockquote>
-</section>
-<section id="related-packages" class="level2">
-<h2 class="anchored" data-anchor-id="related-packages">Related Packages</h2>
-<ul>
-<li><a href="https://github.com/prolfqua/prolfqua">prolfqua</a> - Core proteomics analysis package</li>
-<li><a href="https://github.com/prolfqua/prolfquapp">prolfquapp</a> - Proteomics analysis workflow package</li>
-</ul>
-</section>
-<section id="building-and-deploying-documentation" class="level2">
-<h2 class="anchored" data-anchor-id="building-and-deploying-documentation">Building and Deploying Documentation</h2>
-<ul>
-<li>https://deepwiki.com/wolski/ptm-pipeline - AI attempt for documentation</li>
-</ul>
-<section id="build-the-altdoc-site-locally" class="level3">
-<h3 class="anchored" data-anchor-id="build-the-altdoc-site-locally">Build the altdoc site locally</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>altdoc<span class="sc">::</span><span class="fu">render_docs</span>(<span class="at">freeze =</span> <span class="cn">FALSE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-<section id="deploy-to-github-pages" class="level3">
-<h3 class="anchored" data-anchor-id="deploy-to-github-pages">Deploy to GitHub Pages</h3>
-<p>The <code>altdoc</code> GitHub Actions workflow renders the site and deploys <code>docs/</code> to the <code>gh-pages</code> branch after every push to <code>main</code>.</p>
-<p>Site: https://prolfqua.github.io/prophosqua</p>
-</section>
-</section>
-<section id="contributing" class="level2">
-<h2 class="anchored" data-anchor-id="contributing">Contributing</h2>
-<p>Contributions are welcome! Please visit our <a href="https://github.com/prolfqua/prophosqua">GitHub repository</a> for: - Issue reporting - Feature requests - Code contributions</p>
-</section>
-<section id="license" class="level2">
-<h2 class="anchored" data-anchor-id="license">License</h2>
-<p>This package is released under the <a href="LICENSE">MIT License</a>.</p>
 
 
-</section>
 </section>
 
 </main> <!-- /main -->
@@ -1283,4 +1166,4 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions"><ul><li><a href="https://github.com/prolfqua/prophosqua/blob/main/index.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li></ul></div></div></div></footer></body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions"><ul><li><a href="https://github.com/prolfqua/prophosqua/blob/main/NEWS.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li></ul></div></div></div></footer></body></html>

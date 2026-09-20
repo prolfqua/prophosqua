@@ -1,13 +1,8 @@
+altdoc: 0.7.3
 pandoc: 3.8.3
-pkgdown: 2.2.1
+pkgdown: 2.1.3
 pkgdown_sha: ~
-articles:
-  Analysis_KinaseLibrary: Analysis_KinaseLibrary.html
-  Analysis_MEA: Analysis_MEA.html
-  Analysis_n_to_c: Analysis_n_to_c.html
-  Analysis_PTMSEA: Analysis_PTMSEA.html
-  Analysis_seqlogo: Analysis_seqlogo.html
-last_built: 2026-08-24T10:13Z
+last_built: 2026-09-20T17:27:07+0000
 urls:
-  reference: https://prolfqua.github.io/prophosqua/reference
-  article: https://prolfqua.github.io/prophosqua/articles
+  reference: https://prolfqua.github.io/prophosqua/man
+  article: https://prolfqua.github.io/prophosqua/vignettes
