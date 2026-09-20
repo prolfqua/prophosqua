@@ -397,6 +397,10 @@ cat(sprintf(
 
 # Overview
 
+::: {.panel-tabset}
+
+## Summary
+
 <img src="`r knitr::image_uri(system.file("report-assets", "ptm-enrichment.svg", package = "prophosqua"))`" alt="Visual abstract showing DPA, DPU, and CorrectFirst rankings entering PTM-SEA, Kinase GSEA, and MEA, followed by comparable plots and tables decoded from JSON in MuData." style="width: 100%; max-height: 22rem; object-fit: contain;">
 
 This report compares three enrichment methods for each PTM analysis. **PTM-SEA** tests curated PTM signatures, **Kinase GSEA** tests predicted kinase substrate sets with clusterProfiler, and **MEA** reports the native motif enrichment produced by the kinase-library Python workflow. Every value is read from validated JSON stored in the final MuData; the report performs no enrichment computation.
@@ -406,6 +410,55 @@ This report compares three enrichment methods for each PTM analysis. **PTM-SEA**
 #| tbl-cap: "Stored enrichment documents and result counts by PTM analysis and method."
 knitr::kable(overview)
 ```
+
+## Report provenance
+
+```{r}
+#| label: tbl-enrichment-provenance
+#| tbl-cap: "Report provenance, JSON parameters, and final MuData input reference."
+qmd_source <- fgczQuartoTemplate::fgcz_qmd_source_link()
+provenance_table <- data.frame(
+  Field = c(
+    "Input MuData",
+    "Source DEA artifacts",
+    "Stored documents",
+    "JSON schema versions",
+    "FDR threshold",
+    "Top terms per summary plot",
+    "Running-score terms per contrast",
+    "Report package",
+    "Generated at",
+    "Qmd source"
+  ),
+  Value = c(
+    input_h5mu,
+    paste(source_paths, collapse = "; "),
+    length(ptm_results$get_enrichment_documents()),
+    paste(unique(vapply(
+      unlist(enrichment, recursive = FALSE),
+      function(x) x$version,
+      character(1)
+    )), collapse = "; "),
+    format(fdr_threshold),
+    top_terms,
+    running_terms,
+    paste0("prophosqua ", utils::packageVersion("prophosqua")),
+    generated_at,
+    qmd_source
+  ),
+  stringsAsFactors = FALSE
+)
+provenance_table <- provenance_table[nzchar(provenance_table$Value), , drop = FALSE]
+knitr::kable(provenance_table, escape = FALSE)
+```
+
+## R session info
+
+```{r session-info}
+sessionInfo()
+```
+
+:::
 
 # DPA
 
@@ -932,59 +985,6 @@ result_table(enrichment$CF$MEA)
 ```
 
 :::
-
-:::
-
-# Session Info
-
-::: {.panel-tabset}
-
-## Report provenance
-
-```{r}
-#| label: tbl-enrichment-provenance
-#| tbl-cap: "Report provenance, JSON parameters, and final MuData input reference."
-qmd_source <- fgczQuartoTemplate::fgcz_qmd_source_link()
-provenance_table <- data.frame(
-  Field = c(
-    "Input MuData",
-    "Source DEA artifacts",
-    "Stored documents",
-    "JSON schema versions",
-    "FDR threshold",
-    "Top terms per summary plot",
-    "Running-score terms per contrast",
-    "Report package",
-    "Generated at",
-    "Qmd source"
-  ),
-  Value = c(
-    input_h5mu,
-    paste(source_paths, collapse = "; "),
-    length(ptm_results$get_enrichment_documents()),
-    paste(unique(vapply(
-      unlist(enrichment, recursive = FALSE),
-      function(x) x$version,
-      character(1)
-    )), collapse = "; "),
-    format(fdr_threshold),
-    top_terms,
-    running_terms,
-    paste0("prophosqua ", utils::packageVersion("prophosqua")),
-    generated_at,
-    qmd_source
-  ),
-  stringsAsFactors = FALSE
-)
-provenance_table <- provenance_table[nzchar(provenance_table$Value), , drop = FALSE]
-knitr::kable(provenance_table, escape = FALSE)
-```
-
-## R session info
-
-```{r session-info}
-sessionInfo()
-```
 
 :::
 

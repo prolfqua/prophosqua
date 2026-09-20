@@ -94,7 +94,21 @@ test_that("enrichment vignette has the required three-level tab structure", {
 
   expect_identical(
     top_tabs,
-    c("Overview", "DPA", "DPU", "CorrectFirst DPU", "Session Info")
+    c("Overview", "DPA", "DPU", "CorrectFirst DPU")
+  )
+
+  overview_end <- top_starts[[2L]] - 1L
+  overview_source <- source[top_starts[[1L]]:overview_end]
+  overview_fence <- grepl("^```", overview_source)
+  overview_outside <- cumsum(overview_fence) %% 2L == 0L & !overview_fence
+  overview_tabs <- sub(
+    "^## ",
+    "",
+    grep("^## ", overview_source[overview_outside], value = TRUE)
+  )
+  expect_identical(
+    overview_tabs,
+    c("Summary", "Report provenance", "R session info")
   )
 
   for (analysis in c("DPA", "DPU", "CorrectFirst DPU")) {
@@ -132,17 +146,6 @@ test_that("enrichment vignette has the required three-level tab structure", {
       )
     }
   }
-
-  session_start <- top_starts[[match("Session Info", top_tabs)]]
-  session_source <- source[session_start:length(source)]
-  session_fence <- grepl("^```", session_source)
-  session_outside <- cumsum(session_fence) %% 2L == 0L & !session_fence
-  session_tabs <- sub(
-    "^## ",
-    "",
-    grep("^## ", session_source[session_outside], value = TRUE)
-  )
-  expect_identical(session_tabs, c("Report provenance", "R session info"))
 
   expect_true(any(grepl("get_enrichment_document", source, fixed = TRUE)))
   expect_true(any(grepl("decode_gsea_json", source, fixed = TRUE)))
