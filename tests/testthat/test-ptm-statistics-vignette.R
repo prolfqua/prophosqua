@@ -65,6 +65,18 @@ test_that("statistics vignette input is a complete final MuData artifact", {
         sites$regulation[sites$contrast == contrast],
         c("upregulated", "downregulated")
       )
+      contrast_sites <- sites[sites$contrast == contrast, , drop = FALSE]
+      up_pwm <- get_pwm(
+        contrast_sites$SequenceWindow[
+          contrast_sites$regulation == "upregulated"
+        ]
+      )
+      down_pwm <- get_pwm(
+        contrast_sites$SequenceWindow[
+          contrast_sites$regulation == "downregulated"
+        ]
+      )
+      expect_gt(sum(abs(up_pwm[, 8L] - down_pwm[, 8L])), 0)
     }
   }
 })

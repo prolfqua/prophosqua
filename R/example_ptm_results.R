@@ -144,10 +144,11 @@
   samples$Control <- ifelse(samples$G_ == "b", "C", "T")
 
   proteins <- sprintf("P%03d", seq_len(24L))
+  site_index <- seq_len(length(proteins) * 3L)
   site_map <- data.frame(
     protein_Id = rep(proteins, each = 3L),
     posInProtein = rep(c(10L, 20L, 30L), length(proteins)),
-    modAA = rep(c("S", "T", "Y"), length(proteins)),
+    modAA = c("S", "T", "Y", "S")[(site_index - 1L) %% 4L + 1L],
     stringsAsFactors = FALSE
   )
   site_map$site <- paste0(
@@ -165,13 +166,27 @@
   site_a <- protein_a[protein_index] + usage_a
   site_c <- protein_c[protein_index] + usage_c
 
-  amino_acids <- strsplit("ACDEFGHIKLMNPQRSTVWY", "", fixed = TRUE)[[1]]
+  background_residues <- strsplit(
+    "AAACDEFGGHIIKKLLMNPPQRRSSVVWY",
+    "",
+    fixed = TRUE
+  )[[1]]
   site_map$SequenceWindow <- vapply(
     seq_len(nrow(site_map)),
     function(index) {
-      sequence <- amino_acids[
-        ((seq_len(15L) + index * 3L - 2L) %% length(amino_acids)) + 1L
-      ]
+      background_group <- (index - 1L) %/% 4L + 1L
+      sequence <- vapply(
+        seq_len(15L),
+        function(position) {
+          hash <- digest::digest2int(
+            paste(background_group, position, sep = ":")
+          )
+          background_residues[
+            as.double(hash) %% length(background_residues) + 1L
+          ]
+        },
+        character(1)
+      )
       sequence[[8L]] <- site_map$modAA[[index]]
       if (usage_a[[index]] > 0.5) {
         sequence[[9L]] <- "P"
