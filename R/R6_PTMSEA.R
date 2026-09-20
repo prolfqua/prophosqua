@@ -1,7 +1,6 @@
 #' Complete PTMSEA stage
 #'
 #' Construct through `source$build(Type, analysis)` and persist with `write_h5mu(path)`.
-#' @importClassesFrom DOSE gseaResult
 #' @export
 PTMSEA <- R6::R6Class(
   "PTMSEA",

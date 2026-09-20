@@ -1,5 +1,7 @@
 # prophosqua 0.3.0
 
+- Load with current DOSE releases, where the registered `gseaResult` class is
+  no longer exported directly from the namespace.
 - Keep the MiMB manuscript and its source assets outside `vignettes/` so package vignette builds process only recognized vignette sources.
 
 - Add the first FGCZ Quarto multitab report, `ptm_statistics.qmd`, covering DPA, DPU, and CorrectFirst DPU from one final MuData input. Each analysis now includes compact sequence and difference logos generated during rendering, with relative residue positions and site counts. Sequence-logo sections place the plot first and their counts table second in a third-level tabset. The FDR and absolute log2 fold-change thresholds are report parameters. Package vignette builds use a deterministic two-contrast, 72-site final H5MU with mixed sequence backgrounds and visible position-zero differences, plus synchronized `fgczQuartoTemplate` assets.
