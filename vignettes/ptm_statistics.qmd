@@ -10,7 +10,7 @@ toc: true
 params:
   input_h5mu: null
   fdr_threshold: 0.05
-  diff_threshold: 0.5
+  fold_change_threshold: 0.5
 vignette: >
   %\VignetteIndexEntry{PTM Statistics: DPA, DPU, and CorrectFirst}
   %\VignetteEngine{quarto::format}
@@ -63,6 +63,22 @@ if (!nzchar(input_h5mu) || !file.exists(input_h5mu)) {
   stop("Final PTM_results.h5mu not found: ", input_h5mu, call. = FALSE)
 }
 input_h5mu <- normalizePath(input_h5mu, mustWork = TRUE)
+fdr_threshold <- as.numeric(params$fdr_threshold)
+fold_change_threshold <- as.numeric(params$fold_change_threshold)
+if (length(fdr_threshold) != 1L || !is.finite(fdr_threshold) ||
+    fdr_threshold <= 0 || fdr_threshold > 1) {
+  stop("fdr_threshold must be one number in (0, 1].", call. = FALSE)
+}
+if (length(fold_change_threshold) != 1L ||
+    !is.finite(fold_change_threshold) || fold_change_threshold < 0) {
+  stop("fold_change_threshold must be one non-negative number.", call. = FALSE)
+}
+logo_selection <- paste0(
+  "FDR < ",
+  format(fdr_threshold),
+  " and |log2 fold change| > ",
+  format(fold_change_threshold)
+)
 
 # The report has one data boundary: the complete typed final MuData object.
 ptm_results <- prophosqua::read_ptm_h5mu(
@@ -105,8 +121,8 @@ volcano_plot <- function(data, effect, fdr, title) {
     return(empty_plot("No finite estimates are available."))
   }
   plot_data$significant <-
-    plot_data[[fdr]] <= params$fdr_threshold &
-      abs(plot_data[[effect]]) >= params$diff_threshold
+    plot_data[[fdr]] <= fdr_threshold &
+      abs(plot_data[[effect]]) >= fold_change_threshold
   plot_data$negative_log10_fdr <- -log10(pmax(plot_data[[fdr]], .Machine$double.xmin))
   ggplot2::ggplot(
     plot_data,
@@ -118,12 +134,12 @@ volcano_plot <- function(data, effect, fdr, title) {
   ) +
     ggplot2::geom_point(alpha = 0.55, size = 1.2) +
     ggplot2::geom_vline(
-      xintercept = c(-params$diff_threshold, params$diff_threshold),
+      xintercept = c(-fold_change_threshold, fold_change_threshold),
       colour = "grey55",
       linetype = "dashed"
     ) +
     ggplot2::geom_hline(
-      yintercept = -log10(params$fdr_threshold),
+      yintercept = -log10(fdr_threshold),
       colour = "grey55",
       linetype = "dashed"
     ) +
@@ -220,8 +236,8 @@ prepare_logo_sites <- function(data, effect, fdr) {
     data,
     fdr_col = fdr,
     diff_col = effect,
-    fdr_threshold = params$fdr_threshold,
-    fc_threshold = params$diff_threshold,
+    fdr_threshold = fdr_threshold,
+    fc_threshold = fold_change_threshold,
     require_sequence = TRUE
   )
   if (!nrow(sites)) {
@@ -230,29 +246,55 @@ prepare_logo_sites <- function(data, effect, fdr) {
   prophosqua::validate_sequence_window(sites)
 }
 
-logo_counts <- function(data) {
-  if (!nrow(data)) {
-    return(data.frame(message = "No sites pass the displayed thresholds."))
-  }
-  dplyr::count(
-    data,
-    .data$contrast,
-    .data$regulation,
-    .data$modAA,
-    name = "sites"
-  ) |>
-    dplyr::arrange(.data$contrast, .data$regulation, .data$modAA)
+format_contrast <- function(contrast) {
+  gsub("_", " ", contrast, fixed = TRUE)
 }
 
-sequence_logo_plot <- function(data, title) {
+logo_theme <- function() {
+  ggplot2::theme(
+    plot.title = ggplot2::element_blank(),
+    strip.text = ggplot2::element_text(size = 10, face = "bold"),
+    axis.title = ggplot2::element_text(size = 10),
+    axis.text = ggplot2::element_text(size = 8),
+    legend.position = "bottom",
+    legend.title = ggplot2::element_text(size = 9),
+    legend.text = ggplot2::element_text(size = 8),
+    panel.spacing = grid::unit(0.8, "lines"),
+    plot.margin = ggplot2::margin(4, 8, 4, 8)
+  )
+}
+
+sequence_logo_plot <- function(data) {
   if (!nrow(data)) {
     return(empty_plot("No sites pass the displayed thresholds."))
   }
   sequence_groups <- data |>
-    dplyr::mutate(group = paste(.data$contrast, .data$regulation, sep = " · ")) |>
-    dplyr::group_by(.data$group) |>
+    dplyr::mutate(
+      direction = dplyr::if_else(
+        .data$regulation == "upregulated",
+        "Up",
+        "Down"
+      )
+    ) |>
+    dplyr::group_by(.data$contrast, .data$direction) |>
     dplyr::summarize(
       sequences = list(toupper(.data$SequenceWindow)),
+      sites = dplyr::n(),
+      .groups = "drop"
+    ) |>
+    dplyr::mutate(
+      group = paste0(
+        format_contrast(.data$contrast),
+        " · ",
+        .data$direction,
+        " (n=",
+        .data$sites,
+        ")"
+      )
+    ) |>
+    dplyr::group_by(.data$group) |>
+    dplyr::summarize(
+      sequences = .data$sequences,
       .groups = "drop"
     )
   sequence_groups <- stats::setNames(
@@ -265,15 +307,21 @@ sequence_logo_plot <- function(data, title) {
     seq_type = "aa",
     method = "probability"
   ) +
-    ggplot2::labs(
-      title = title,
-      x = "Position in sequence window",
-      y = "Amino-acid probability"
+    ggplot2::scale_x_continuous(
+      breaks = seq_len(15L),
+      labels = -7:7,
+      expand = ggplot2::expansion(mult = c(0.01, 0.01))
     ) +
-    ggplot2::theme(legend.position = "bottom")
+    ggplot2::labs(
+      title = NULL,
+      x = "Position relative to modified residue",
+      y = "Amino-acid probability",
+      fill = "Amino-acid chemistry"
+    ) +
+    logo_theme()
 }
 
-difference_logo_plot <- function(data, title) {
+difference_logo_plot <- function(data) {
   if (!nrow(data)) {
     return(empty_plot("No sites pass the displayed thresholds."))
   }
@@ -281,13 +329,34 @@ difference_logo_plot <- function(data, title) {
   if (is.null(plot)) {
     return(empty_plot("Both directions are required for a difference logo."))
   }
+  contrasts <- unique(data$contrast)
+  labels <- vapply(contrasts, function(contrast) {
+    contrast_data <- data[data$contrast == contrast, , drop = FALSE]
+    paste0(
+      format_contrast(contrast),
+      " · Up n=",
+      sum(contrast_data$regulation == "upregulated"),
+      " − Down n=",
+      sum(contrast_data$regulation == "downregulated")
+    )
+  }, character(1))
+  names(labels) <- paste0(contrasts, " (Up-Down)")
+  layer_data <- plot$layers[[1L]]$data
+  layer_data$seq_group <- unname(labels[layer_data$seq_group])
+  plot$layers[[1L]]$data <- layer_data
   plot +
-    ggplot2::labs(
-      title = title,
-      x = "Position in sequence window",
-      y = "Probability difference (up - down)"
+    ggplot2::scale_x_continuous(
+      breaks = seq_len(15L),
+      labels = -7:7,
+      expand = ggplot2::expansion(mult = c(0.01, 0.01))
     ) +
-    ggplot2::theme(legend.position = "bottom")
+    ggplot2::labs(
+      title = NULL,
+      x = "Position relative to modified residue",
+      y = "Δ probability (up − down)",
+      fill = "Amino-acid chemistry"
+    ) +
+    logo_theme()
 }
 
 dpa_logo_sites <- prepare_logo_sites(dpa, "diff.site", "FDR.site")
@@ -386,13 +455,7 @@ site_protein_plot(dpa)
 
 ## Sequence logos
 
-The logos use significant, sequence-validated PTM sites and separate each contrast and regulation direction. Letter height is the amino-acid probability at that position.
-
-```{r}
-#| label: tbl-dpa-logo-counts
-#| tbl-cap: "DPA sites entering the sequence logos by contrast, direction, and modified residue."
-knitr::kable(logo_counts(dpa_logo_sites))
-```
+The logos use significant, sequence-validated PTM sites and separate each contrast and regulation direction. Panel labels report the number of sites; letter height is the amino-acid probability at that position. **On-render selection:** `r logo_selection`.
 
 ```{r}
 #| label: fig-dpa-sequence-logos
@@ -400,12 +463,16 @@ knitr::kable(logo_counts(dpa_logo_sites))
 #|   Sequence motifs around differentially abundant PTM sites. Each panel
 #|   contains one contrast and regulation direction after applying the displayed
 #|   FDR and absolute fold-change thresholds.
-#| fig-width: 10
-#| fig-height: 10
-sequence_logo_plot(dpa_logo_sites, "DPA sequence motifs")
+#| fig-width: 12
+#| fig-height: 5.2
+#| fig-dpi: 130
+#| out-width: "82%"
+sequence_logo_plot(dpa_logo_sites)
 ```
 
 ## Difference logos
+
+These logos are recomputed from MuData during rendering using **`r logo_selection`**.
 
 ```{r}
 #| label: fig-dpa-difference-logos
@@ -413,9 +480,11 @@ sequence_logo_plot(dpa_logo_sites, "DPA sequence motifs")
 #|   Difference logos for DPA. Letters above zero are enriched around
 #|   upregulated sites; letters below zero are enriched around downregulated
 #|   sites in the same contrast.
-#| fig-width: 10
-#| fig-height: 8
-difference_logo_plot(dpa_logo_sites, "DPA motif difference: up - down")
+#| fig-width: 12
+#| fig-height: 4.2
+#| fig-dpi: 130
+#| out-width: "82%"
+difference_logo_plot(dpa_logo_sites)
 ```
 
 ## Results
@@ -493,34 +562,34 @@ site_protein_plot(dpu)
 
 ## Sequence logos
 
-The DPU logos group sites by the direction of their protein-adjusted change.
-
-```{r}
-#| label: tbl-dpu-logo-counts
-#| tbl-cap: "DPU sites entering the sequence logos by contrast, direction, and modified residue."
-knitr::kable(logo_counts(dpu_logo_sites))
-```
+The DPU logos group sites by the direction of their protein-adjusted change. Panel labels report the number of sites entering each motif. **On-render selection:** `r logo_selection`.
 
 ```{r}
 #| label: fig-dpu-sequence-logos
 #| fig-cap: >-
 #|   Sequence motifs around sites with significant differential PTM usage,
 #|   separated by contrast and direction.
-#| fig-width: 10
-#| fig-height: 10
-sequence_logo_plot(dpu_logo_sites, "DPU sequence motifs")
+#| fig-width: 12
+#| fig-height: 5.2
+#| fig-dpi: 130
+#| out-width: "82%"
+sequence_logo_plot(dpu_logo_sites)
 ```
 
 ## Difference logos
+
+These logos are recomputed from MuData during rendering using **`r logo_selection`**.
 
 ```{r}
 #| label: fig-dpu-difference-logos
 #| fig-cap: >-
 #|   Difference logos for DPU, showing the amino-acid probability around
 #|   upregulated sites minus that around downregulated sites in each contrast.
-#| fig-width: 10
-#| fig-height: 8
-difference_logo_plot(dpu_logo_sites, "DPU motif difference: up - down")
+#| fig-width: 12
+#| fig-height: 4.2
+#| fig-dpi: 130
+#| out-width: "82%"
+difference_logo_plot(dpu_logo_sites)
 ```
 
 ## Results
@@ -599,34 +668,34 @@ volcano_plot(cf_results, "diff.site", "FDR.site", "CorrectFirst differential PTM
 
 ## Sequence logos
 
-The CorrectFirst logos use the direction of the effect fitted after sample-level protein correction.
-
-```{r}
-#| label: tbl-cf-logo-counts
-#| tbl-cap: "CorrectFirst sites entering the sequence logos by contrast, direction, and modified residue."
-knitr::kable(logo_counts(cf_logo_sites))
-```
+The CorrectFirst logos use the direction of the effect fitted after sample-level protein correction. Panel labels report the number of sites entering each motif. **On-render selection:** `r logo_selection`.
 
 ```{r}
 #| label: fig-cf-sequence-logos
 #| fig-cap: >-
 #|   Sequence motifs around sites with significant CorrectFirst differential
 #|   PTM usage, separated by contrast and direction.
-#| fig-width: 10
-#| fig-height: 10
-sequence_logo_plot(cf_logo_sites, "CorrectFirst sequence motifs")
+#| fig-width: 12
+#| fig-height: 5.2
+#| fig-dpi: 130
+#| out-width: "82%"
+sequence_logo_plot(cf_logo_sites)
 ```
 
 ## Difference logos
+
+These logos are recomputed from MuData during rendering using **`r logo_selection`**.
 
 ```{r}
 #| label: fig-cf-difference-logos
 #| fig-cap: >-
 #|   Difference logos for CorrectFirst DPU, showing the amino-acid probability
 #|   around upregulated sites minus that around downregulated sites.
-#| fig-width: 10
-#| fig-height: 8
-difference_logo_plot(cf_logo_sites, "CorrectFirst motif difference: up - down")
+#| fig-width: 12
+#| fig-height: 4.2
+#| fig-dpi: 130
+#| out-width: "82%"
+difference_logo_plot(cf_logo_sites)
 ```
 
 ## Model summary
@@ -693,8 +762,8 @@ provenance_table <- data.frame(
     input_h5mu,
     paste(source_paths, collapse = "; "),
     paste(names(contrasts), collapse = "; "),
-    format(params$fdr_threshold),
-    format(params$diff_threshold),
+    format(fdr_threshold),
+    format(fold_change_threshold),
     paste0("prophosqua ", utils::packageVersion("prophosqua")),
     generated_at,
     qmd_source
