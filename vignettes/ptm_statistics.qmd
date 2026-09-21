@@ -60,7 +60,7 @@ if (is.null(input_h5mu) || !length(input_h5mu) || !nzchar(input_h5mu)) {
   )
 }
 if (!nzchar(input_h5mu) || !file.exists(input_h5mu)) {
-  stop("Final PTM_results.h5mu not found: ", input_h5mu, call. = FALSE)
+  stop("PTM statistics MuData file not found: ", input_h5mu, call. = FALSE)
 }
 input_h5mu <- normalizePath(input_h5mu, mustWork = TRUE)
 fdr_threshold <- as.numeric(params$fdr_threshold)
@@ -80,12 +80,16 @@ logo_selection <- paste0(
   format(fold_change_threshold)
 )
 
-# The report has one data boundary: the complete typed final MuData object.
-ptm_results <- prophosqua::read_ptm_h5mu(
-  input_h5mu,
-  prophosqua::PTM_results
-)
-statistics <- ptm_results$get_statistics()
+# Production renders use PTM_statistics.h5mu. The bundled vignette example is
+# a complete PTM_results.h5mu, which contains the same typed statistics stage.
+ptm_stage <- prophosqua::read_ptm_h5mu(input_h5mu)
+statistics <- if (inherits(ptm_stage, "PTM_statistics")) {
+  ptm_stage
+} else if (inherits(ptm_stage, "PTM_results")) {
+  ptm_stage$get_statistics()
+} else {
+  stop("Expected PTM_statistics or PTM_results MuData.", call. = FALSE)
+}
 inputs <- statistics$get_inputs()
 dpa_dpu <- statistics$get_dpa_dpu()
 cf <- statistics$get_cf()

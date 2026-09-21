@@ -1,9 +1,7 @@
 #' Render a Report Shipped with prophosqua
 #'
-#' Renders one of the R Markdown documents under `inst/application` from where
-#' it is installed. A project therefore never carries a copy of a report
-#' template, and cannot end up rendering an edited copy while the package holds
-#' a newer one.
+#' Renders an installed R Markdown or Quarto vignette. A project therefore
+#' never carries a copy of a report template.
 #'
 #' `knit_root_dir` is the working directory, not the template's directory, so
 #' relative paths in `params` mean what they mean to the caller.
@@ -18,7 +16,7 @@
 #' running at once would otherwise overwrite each other's `.knit.md` and both
 #' reports would end up with whichever content finished last.
 #'
-#' @param name File name of the report, e.g. `"Analysis_seqlogo.Rmd"`.
+#' @param name File name of the report, e.g. `"ptm_statistics.qmd"`.
 #' @param output_file File name to write, e.g. `"Analysis_seqlogo.html"`.
 #' @param output_dir Directory to write the report to.
 #' @param params Named list passed to the report's `params`.
@@ -35,7 +33,33 @@
 #' )
 #' }
 render_ptm_report <- function(name, output_file, output_dir, params = list(), intermediates_dir = NULL) {
-  rmd_path <- report_file(name)
+  source <- report_file(name)
+  if (endsWith(name, ".qmd")) {
+    if (!is.null(params$input_h5mu)) {
+      params$input_h5mu <- normalizePath(params$input_h5mu, mustWork = TRUE)
+    }
+    dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+    render_dir <- tempfile(".prophosqua_qmd_", tmpdir = normalizePath(output_dir, mustWork = TRUE))
+    dir.create(render_dir)
+    on.exit(unlink(render_dir, recursive = TRUE), add = TRUE)
+    staged <- file.path(render_dir, name)
+    if (!file.copy(source, staged)) {
+      stop("Could not stage Quarto report: ", source, call. = FALSE)
+    }
+    fgczQuartoTemplate::fgcz_render(
+      staged,
+      output_file = output_file,
+      execute_params = params,
+      fig_retina = 1,
+      quiet = FALSE
+    )
+    rendered <- file.path(render_dir, output_file)
+    destination <- file.path(output_dir, output_file)
+    if (!file.copy(rendered, destination, overwrite = TRUE)) {
+      stop("Could not copy Quarto report to: ", destination, call. = FALSE)
+    }
+    return(invisible(destination))
+  }
 
   if (is.null(intermediates_dir)) {
     intermediates_dir <- file.path(tempdir(), paste0("render_", basename(name)))
@@ -44,7 +68,7 @@ render_ptm_report <- function(name, output_file, output_dir, params = list(), in
   dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 
   rmarkdown::render(
-    rmd_path,
+    source,
     output_file = output_file,
     output_dir = output_dir,
     knit_root_dir = getwd(),

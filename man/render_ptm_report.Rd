@@ -13,7 +13,7 @@ render_ptm_report(
 )
 }
 \arguments{
-\item{name}{File name of the report, e.g. `"Analysis_seqlogo.Rmd"`.}
+\item{name}{File name of the report, e.g. `"ptm_statistics.qmd"`.}
 
 \item{output_file}{File name to write, e.g. `"Analysis_seqlogo.html"`.}
 
@@ -28,10 +28,8 @@ private directory of this R process, removed when it exits.}
 Invisibly, the path of the rendered file.
 }
 \description{
-Renders one of the R Markdown documents under `inst/application` from where
-it is installed. A project therefore never carries a copy of a report
-template, and cannot end up rendering an edited copy while the package holds
-a newer one.
+Renders an installed R Markdown or Quarto vignette. A project therefore
+never carries a copy of a report template.
 }
 \details{
 `knit_root_dir` is the working directory, not the template's directory, so

@@ -1,5 +1,6 @@
 # prophosqua 0.3.0
 
+- Render the two installed PTM Quarto reports directly from MuData, with the statistics report accepting `PTM_statistics.h5mu` before enrichment finishes.
 - Align the report-template dependency with protsea and prolfquapp so CI can resolve the full report stack.
 
 - Enrichment and kinase preparation steps now exchange compact CBOR artifacts instead of full MuData snapshots. Final assembly validates all nine JSON documents and adds them to one `PTM_results.h5mu`.
