@@ -70,7 +70,8 @@ test_that("gsea_result_data builds pool and terms with canonical window ids", {
     jsonlite::toJSON(out, auto_unbox = TRUE, digits = NA)
   )$A_vs_B[["PTM-SEA"]]
   expect_equal(restored@geneList, results$A_vs_B@geneList)
-  expect_equal(restored@result, results$A_vs_B@result)
+  expect_equal(as.list(restored@result), as.list(results$A_vs_B@result))
+  expect_identical(rownames(restored@result), restored@result$ID)
   expect_equal(restored@geneSets, results$A_vs_B@geneSets)
   expect_equal(restored@params$exponent, 1.5)
 })

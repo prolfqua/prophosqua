@@ -81,93 +81,29 @@ test_that("enrichment vignette fixture contains nine portable JSON documents", {
   }
 })
 
-test_that("enrichment vignette has the required three-level tab structure", {
+test_that("one analysis report shows three methods without running-score plots", {
   path <- test_path("../../vignettes/ptm_enrichment.qmd")
   if (!file.exists(path)) {
     path <- system.file("doc", "ptm_enrichment.qmd", package = "prophosqua")
   }
-  skip_if(
-    !nzchar(path) || !file.exists(path),
-    "package installed without vignette sources"
-  )
+  skip_if(!nzchar(path) || !file.exists(path), "vignette source is unavailable")
   source <- readLines(path, warn = FALSE)
   fence <- grepl("^```", source)
   outside_code <- cumsum(fence) %% 2L == 0L & !fence
-  top_starts <- which(outside_code & grepl("^# ", source))
-  top_tabs <- sub("^# ", "", source[top_starts])
-
+  top_tabs <- sub("^# ", "", source[outside_code & grepl("^# ", source)])
   expect_identical(
     top_tabs,
-    c("Overview", "DPA", "DPU", "CorrectFirst DPU")
+    c("Overview", "PTM-SEA", "Kinase GSEA", "MEA", "About methods", "Session Info")
   )
-
-  overview_end <- top_starts[[2L]] - 1L
-  overview_source <- source[top_starts[[1L]]:overview_end]
-  overview_fence <- grepl("^```", overview_source)
-  overview_outside <- cumsum(overview_fence) %% 2L == 0L & !overview_fence
-  overview_tabs <- sub(
-    "^## ",
-    "",
-    grep("^## ", overview_source[overview_outside], value = TRUE)
-  )
-  expect_identical(
-    overview_tabs,
-    c("Summary", "Report provenance", "R session info")
-  )
-
-  for (analysis in c("DPA", "DPU", "CorrectFirst DPU")) {
-    start <- top_starts[[match(analysis, top_tabs)]]
-    following <- top_starts[top_starts > start]
-    end <- if (length(following)) following[[1L]] - 1L else length(source)
-    analysis_source <- source[start:end]
-    analysis_fence <- grepl("^```", analysis_source)
-    analysis_outside <- cumsum(analysis_fence) %% 2L == 0L & !analysis_fence
-    method_starts <- which(
-      analysis_outside & grepl("^## ", analysis_source)
-    )
-    methods <- sub("^## ", "", analysis_source[method_starts])
-    expect_identical(methods, c("PTM-SEA", "Kinase GSEA", "MEA"))
-
-    for (i in seq_along(method_starts)) {
-      method_start <- method_starts[[i]]
-      method_end <- if (i < length(method_starts)) {
-        method_starts[[i + 1L]] - 1L
-      } else {
-        length(analysis_source)
-      }
-      views <- sub(
-        "^### ",
-        "",
-        grep(
-          "^### ",
-          analysis_source[method_start:method_end],
-          value = TRUE
-        )
-      )
-      expect_identical(
-        views,
-        c(
-          "Summary",
-          "Dot plot",
-          "Heatmap",
-          "Volcano",
-          "Running score",
-          "Rank distributions",
-          "Gene-set network",
-          "Term similarity",
-          "Results"
-        )
-      )
-    }
-  }
-
+  expect_true(any(grepl("analysis: DPA", source, fixed = TRUE)))
   expect_true(any(grepl("get_enrichment_document", source, fixed = TRUE)))
   expect_true(any(grepl("decode_gsea_json", source, fixed = TRUE)))
-  expect_true(any(grepl("gseaplot2", source, fixed = TRUE)))
+  expect_true(any(grepl("knit_child", source, fixed = TRUE)))
   expect_true(any(grepl("ridgeplot", source, fixed = TRUE)))
   expect_true(any(grepl("cnetplot", source, fixed = TRUE)))
   expect_true(any(grepl("pairwise_termsim", source, fixed = TRUE)))
   expect_true(any(grepl("emapplot", source, fixed = TRUE)))
   expect_true(any(grepl("treeplot", source, fixed = TRUE)))
+  expect_false(any(grepl("Running score|gseaplot2|running_terms", source)))
   expect_false(any(grepl("read_excel|readRDS|read_xlsx", source)))
 })

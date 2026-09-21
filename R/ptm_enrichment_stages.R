@@ -32,13 +32,18 @@
 
 .compute_kinasegsea_stage <- function(source, analysis) {
   statistics <- source$get_statistics()
-  parameters <- statistics$get_inputs()$get_parameters()$gsea
+  settings <- statistics$get_inputs()$get_parameters()
+  parameters <- settings$gsea
+  kinase_max_size <- settings$kinaselib$gsea_max_size
+  if (is.null(kinase_max_size)) {
+    kinase_max_size <- 5000L
+  }
   .compute_kinase_tables(
     statistics$get_tables()[[analysis]],
     source$get_results()$term2gene,
     analysis,
     parameters$min_size,
-    parameters$max_size,
+    kinase_max_size,
     parameters$n_perm
   )
 }
