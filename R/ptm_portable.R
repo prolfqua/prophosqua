@@ -54,25 +54,25 @@
       structure(
         result,
         class = "data.frame",
-        row.names = if (length(x$row_names)) as.character(x$row_names) else integer()
+        row.names = if (length(x$row_names)) as.character(unlist(x$row_names, use.names = FALSE)) else integer()
       )
     },
     factor = function(x) {
-      values <- as.character(x$values)
-      values[as.logical(x$missing)] <- NA_character_
-      factor(values, levels = as.character(x$levels), ordered = x$ordered)
+      values <- as.character(unlist(x$values, use.names = FALSE))
+      values[as.logical(unlist(x$missing, use.names = FALSE))] <- NA_character_
+      factor(values, levels = as.character(unlist(x$levels, use.names = FALSE)), ordered = x$ordered)
     },
     gseaResult = function(x) {
       do.call(methods::new, c(list(Class = "gseaResult"), .unpack_ptm_value(x$slots)))
     },
     list = function(x) {
       result <- lapply(x$items[sort(names(x$items))], .unpack_ptm_value)
-      names(result) <- x$names
+      names(result) <- unlist(x$names, use.names = FALSE)
       result
     },
     atomic = function(x) {
-      result <- as.vector(x$values, mode = x$storage)
-      result[as.logical(x$missing)] <- NA
+      result <- as.vector(unlist(x$values, use.names = FALSE), mode = x$storage)
+      result[as.logical(unlist(x$missing, use.names = FALSE))] <- NA
       dimensions <- unlist(x$dimensions, use.names = FALSE)
       if (length(dimensions)) {
         dim(result) <- as.integer(dimensions)

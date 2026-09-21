@@ -74,7 +74,7 @@ restored <- read_ptm_h5mu("PTM_statistics.h5mu", PTM_statistics)
 
 `enriched` and `total` retain both DEA experiments; `cf` contains corrected abundances. DPA statistics belong to `enriched`; DPU and CorrectFirst belong to `cf`, each with its own presence mask. Protein-to-site joins and outer-join result rows retain the existing R behavior.
 
-The former single-site `compute_ptm_results_h5ad()` writer and `ptm.sh ptm_h5ad` command are replaced by `import_h5mu`, `ptm_h5mu`, `enrich_h5mu`, `assemble_h5mu`, and terminal `export_h5mu`. The existing in-memory computational APIs remain available.
+The pipeline uses `import_h5mu` and `ptm_h5mu` to build the shared statistics file, `enrich_cbor` for compact enrichment handoffs, `assemble_h5mu` to add all nine JSON documents to final MuData, and terminal `export_h5mu`. The existing in-memory computational APIs remain available.
 
 ## Vignettes
 

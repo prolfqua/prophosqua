@@ -50,6 +50,7 @@ Imports:
     rlang,
     rmarkdown,
     rhdf5,
+    secretbase,
     seqinr,
     tidyr,
     tidyselect,

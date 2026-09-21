@@ -70,7 +70,7 @@ test_that("application_file resolves every command script and its wrapper", {
     "CMD_CF_DEA.R",
     "CMD_IMPORT_H5MU.R",
     "CMD_PTM_H5MU.R",
-    "CMD_ENRICH_H5MU.R",
+    "CMD_ENRICH_CBOR.R",
     "CMD_ASSEMBLE_H5MU.R",
     "CMD_EXPORT_H5MU.R",
     "CMD_COMBINE_RESULTS.R",

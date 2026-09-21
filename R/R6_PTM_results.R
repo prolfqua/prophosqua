@@ -406,17 +406,3 @@ PTM_results <- R6::R6Class(
   })
   PTM_results$new(statistics, branches, documents)
 }
-
-#' Assemble completed statistics and enrichment MuData artifacts
-#' @param statistics_h5mu Complete statistics artifact.
-#' @param enrichment_h5mu Paths to every enabled completed enrichment artifact.
-#' @param output_h5mu Final artifact.
-#' @return The complete final object, invisibly.
-#' @export
-assemble_ptm_h5mu <- function(statistics_h5mu, enrichment_h5mu, output_h5mu) {
-  statistics <- read_ptm_h5mu(statistics_h5mu, PTM_statistics)
-  branches <- lapply(enrichment_h5mu, read_ptm_h5mu)
-  result <- PTM_results$new(statistics, branches)
-  result$write_h5mu(output_h5mu)
-  invisible(result)
-}

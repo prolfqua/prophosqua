@@ -55,6 +55,7 @@ make_ptm_enrichment_fixture <- function(empty = FALSE) {
     anndataR::read_h5ad(paths$protein),
     parameters = list(
       run_kinase = TRUE,
+      kinaselib = list(kin_type = "ST", threshold = 90, permutations = 100),
       analyses = list(
         dpa = list(subdir = "DPA"),
         dpu = list(subdir = "DPU"),

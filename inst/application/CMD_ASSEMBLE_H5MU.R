@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-# Assemble complete statistics and enabled enrichment MuData artifacts.
+# Assemble complete statistics and enabled CBOR enrichment artifacts.
 suppressPackageStartupMessages(library(optparse))
 parsed <- parse_args(
   OptionParser(
@@ -12,4 +12,4 @@ parsed <- parse_args(
 )
 opt <- parsed$options
 stopifnot(!is.null(opt$statistics), !is.null(opt$output))
-prophosqua::assemble_ptm_h5mu(opt$statistics, parsed$args, opt$output)
+prophosqua::assemble_ptm_cbor(opt$statistics, parsed$args, opt$output)
