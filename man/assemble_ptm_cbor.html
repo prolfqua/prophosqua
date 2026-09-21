@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>assemble_ptm_h5mu – prophosqua</title>
+<title>assemble_ptm_cbor – prophosqua</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -110,7 +110,7 @@ ul.task-list li input[type="checkbox"] {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../man/assemble_ptm_h5mu.html">Reference</a></li><li class="breadcrumb-item"><a href="../man/assemble_ptm_h5mu.html">assemble_ptm_h5mu</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../man/assemble_ptm_cbor.html">Reference</a></li><li class="breadcrumb-item"><a href="../man/assemble_ptm_cbor.html">assemble_ptm_cbor</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -162,8 +162,8 @@ ul.task-list li input[type="checkbox"] {
       <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../man/assemble_ptm_h5mu.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text">assemble_ptm_h5mu</span></a>
+  <a href="../man/assemble_ptm_cbor.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">assemble_ptm_cbor</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -230,6 +230,12 @@ ul.task-list li input[type="checkbox"] {
   <div class="sidebar-item-container"> 
   <a href="../man/compute_mea.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">compute_mea</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../man/compute_ptm_enrichment_cbor.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">compute_ptm_enrichment_cbor</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -709,20 +715,20 @@ ul.task-list li input[type="checkbox"] {
 <!-- margin-sidebar -->
     
 <!-- main -->
-<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../man/assemble_ptm_h5mu.html">Reference</a></li><li class="breadcrumb-item"><a href="../man/assemble_ptm_h5mu.html">assemble_ptm_h5mu</a></li></ol></nav></header>
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../man/assemble_ptm_cbor.html">Reference</a></li><li class="breadcrumb-item"><a href="../man/assemble_ptm_cbor.html">assemble_ptm_cbor</a></li></ol></nav></header>
 
 
 
 
-<section id="assemble-completed-statistics-and-enrichment-mudata-artifacts" class="level2 unnumbered">
-<h2 class="unnumbered anchored" data-anchor-id="assemble-completed-statistics-and-enrichment-mudata-artifacts">Assemble completed statistics and enrichment MuData artifacts</h2>
+<section id="assemble-a-final-mudata-file-from-compact-cbor-stage-artifacts" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="assemble-a-final-mudata-file-from-compact-cbor-stage-artifacts">Assemble a final MuData file from compact CBOR stage artifacts</h2>
 <section id="description" class="level3">
 <h3 class="anchored" data-anchor-id="description">Description</h3>
-<p>Assemble completed statistics and enrichment MuData artifacts</p>
+<p>Assemble a final MuData file from compact CBOR stage artifacts</p>
 </section>
 <section id="usage" class="level3">
 <h3 class="anchored" data-anchor-id="usage">Usage</h3>
-<pre><code class="language-R">assemble_ptm_h5mu(statistics_h5mu, enrichment_h5mu, output_h5mu)
+<pre><code class="language-R">assemble_ptm_cbor(statistics_h5mu, enrichment_cbor, output_h5mu)
 </code></pre>
 </section>
 <section id="arguments" class="level3">
@@ -738,10 +744,10 @@ Complete statistics artifact.
 </tr>
 <tr>
 <td style="white-space: collapse; font-family: monospace; vertical-align: top">
-<code id="enrichment_h5mu">enrichment_h5mu</code>
+<code id="enrichment_cbor">enrichment_cbor</code>
 </td>
 <td>
-Paths to every enabled completed enrichment artifact.
+Every enabled CBOR artifact, including kinase preparations.
 </td>
 </tr>
 <tr>
@@ -1168,4 +1174,4 @@ Final artifact.
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions"><ul><li><a href="https://github.com/prolfqua/prophosqua/blob/main/man/assemble_ptm_h5mu.qmd" class="toc-action"><i class="bi bi-github"></i>View source</a></li></ul></div></div></div></footer></body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions"><ul><li><a href="https://github.com/prolfqua/prophosqua/blob/main/man/assemble_ptm_cbor.qmd" class="toc-action"><i class="bi bi-github"></i>View source</a></li></ul></div></div></div></footer></body></html>

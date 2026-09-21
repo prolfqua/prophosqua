@@ -162,8 +162,8 @@ ul.task-list li input[type="checkbox"] {
       <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./man/assemble_ptm_h5mu.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">assemble_ptm_h5mu</span></a>
+  <a href="./man/assemble_ptm_cbor.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">assemble_ptm_cbor</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -230,6 +230,12 @@ ul.task-list li input[type="checkbox"] {
   <div class="sidebar-item-container"> 
   <a href="./man/compute_mea.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">compute_mea</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./man/compute_ptm_enrichment_cbor.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">compute_ptm_enrichment_cbor</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -717,6 +723,8 @@ ul.task-list li input[type="checkbox"] {
 <section id="prophosqua-0.3.0" class="level1">
 <h1>prophosqua 0.3.0</h1>
 <ul>
+<li><p>Align the report-template dependency with protsea and prolfquapp so CI can resolve the full report stack.</p></li>
+<li><p>Enrichment and kinase preparation steps now exchange compact CBOR artifacts instead of full MuData snapshots. Final assembly validates all nine JSON documents and adds them to one <code>PTM_results.h5mu</code>.</p></li>
 <li><p>N-to-C sticks now carry a head at the site log2 fold change, an open head and dashed stick mark imputed estimates, significant sites are labelled with residue and position by <code>ggrepel</code>, and residues use the colour-blind safe Okabe-Ito palette. The legends are titled Residue, Estimate and Protein.</p></li>
 <li><p>Load with current DOSE releases, where the registered <code>gseaResult</code> class is no longer exported directly from the namespace.</p></li>
 <li><p>Keep the MiMB manuscript and its source assets outside <code>vignettes/</code> so package vignette builds process only recognized vignette sources.</p></li>
