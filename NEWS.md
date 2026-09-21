@@ -1,5 +1,7 @@
 # prophosqua 0.3.0
 
+- Keep leading-edge site lists in MuData JSON but omit them from the enrichment report tables, making the standalone HTML smaller and easier to scan.
+
 - Retain every tested PTM-SEA and Kinase GSEA term in the final MuData JSON, including terms above the report FDR threshold. The enrichment report now has a graphical overview and separate explanations of all three methods.
 
 - Render the enrichment QMD for one selected analysis at a time, with no running-score plots; the JSON retains those curves. Kinase GSEA now uses a separate maximum set size (default 5000) so large substrate sets are tested. When enrichplot cannot construct a similarity tree, the report still shows the enrichment map.

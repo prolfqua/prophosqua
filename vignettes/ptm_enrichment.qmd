@@ -113,7 +113,6 @@ empty_terms <- function() {
     direction = character(),
     mapped_sites = integer(),
     set_size = integer(),
-    leading_edge_sites = character(),
     stringsAsFactors = FALSE
   )
 }
@@ -143,10 +142,6 @@ term_table_from_payload <- function(payload, analysis, method) {
         direction = as.character(term$direction),
         mapped_sites = as.integer(scalar_number(term$genes_mapped)),
         set_size = as.integer(scalar_number(term$genes_in_set)),
-        leading_edge_sites = paste(
-          as.character(unlist(term$leading_edge_ids, use.names = FALSE)),
-          collapse = ";"
-        ),
         stringsAsFactors = FALSE
       )
     }))
@@ -420,8 +415,7 @@ result_table <- function(data) {
       FDR = signif(.data$FDR, 3),
       Direction = .data$direction,
       `Mapped sites` = .data$mapped_sites,
-      `Set size` = .data$set_size,
-      `Leading-edge sites` = .data$leading_edge_sites
+      `Set size` = .data$set_size
     ) |>
     dplyr::arrange(.data$Contrast, .data$FDR)
   DT::datatable(
@@ -520,7 +514,7 @@ render_method <- function(method) {
     "#| results: asis", "print_term_similarity(method_data)", "```", "",
     "## Results", "",
     "```{r}", sprintf("#| label: tbl-%s-results", id),
-    sprintf("#| tbl-cap: '%s'", caption("complete result table decoded from MuData JSON.")),
+    sprintf("#| tbl-cap: '%s'", caption("tested-term statistics decoded from MuData JSON; leading-edge site lists remain in JSON.")),
     "result_table(method_data)", "```", "", ":::"
   )
   knitr::knit_child(text = child, envir = environment(), quiet = TRUE)
