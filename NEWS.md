@@ -1,5 +1,7 @@
 # prophosqua 0.3.0
 
+- Show the selected DPA, DPU, or CorrectFirst ranking as the sole input in the enrichment report's visual overview, with a larger opening sentence naming the analysis.
+
 - Keep leading-edge site lists in MuData JSON but omit them from the enrichment report tables, making the standalone HTML smaller and easier to scan.
 
 - Retain every tested PTM-SEA and Kinase GSEA term in the final MuData JSON, including terms above the report FDR threshold. The enrichment report now has a graphical overview and separate explanations of all three methods.

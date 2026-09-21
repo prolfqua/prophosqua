@@ -1,68 +1,52 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 560" role="img" aria-labelledby="title desc">
-  <title id="title">PTM enrichment analysis path</title>
-  <desc id="desc">One selected DPA, DPU, or CorrectFirst ranking enters PTM-SEA, Kinase GSEA, and motif enrichment analysis. Their JSON results produce comparable plots and complete result tables.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 420" role="img" aria-labelledby="title desc" style="display:block;width:100%;height:auto;max-width:1600px;margin:0 auto;">
+  <title id="title">{{ANALYSIS}} enrichment report</title>
+  <desc id="desc">The {{ANALYSIS}} {{RANKING}} enters PTM-SEA, Kinase GSEA, and MEA. Their stored JSON produces plots and tested-term tables.</desc>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#1575b6"/>
     </marker>
     <style>
       .title { font: 700 32px Arial, sans-serif; fill: #17324d; }
+      .input-label { font: 700 30px Arial, sans-serif; fill: #17324d; }
       .label { font: 700 24px Arial, sans-serif; fill: #17324d; }
       .body { font: 20px Arial, sans-serif; fill: #29485f; }
       .small { font: 18px Arial, sans-serif; fill: #355b73; }
-      .analysis { fill: #e7f4fb; stroke: #1575b6; stroke-width: 3; }
+      .input { fill: #e7f4fb; stroke: #1575b6; stroke-width: 4; }
       .method { fill: #f2f8fc; stroke: #1575b6; stroke-width: 3; }
       .output { fill: #eef7ef; stroke: #2f855a; stroke-width: 3; }
       .arrow { stroke: #1575b6; stroke-width: 5; fill: none; marker-end: url(#arrow); }
     </style>
   </defs>
-  <text x="800" y="48" text-anchor="middle" class="title">Three enrichment methods for the selected PTM analysis</text>
+  <text x="800" y="42" text-anchor="middle" class="title">{{ANALYSIS}} ranking → three enrichment methods</text>
 
-  <rect x="45" y="90" width="280" height="105" rx="18" class="analysis"/>
-  <text x="185" y="135" text-anchor="middle" class="label">DPA</text>
-  <text x="185" y="169" text-anchor="middle" class="body">site ranking</text>
+  <rect x="70" y="155" width="360" height="120" rx="20" class="input"/>
+  <text x="250" y="203" text-anchor="middle" class="input-label">{{ANALYSIS}}</text>
+  <text x="250" y="242" text-anchor="middle" class="body">{{RANKING}}</text>
 
-  <rect x="45" y="228" width="280" height="105" rx="18" class="analysis"/>
-  <text x="185" y="273" text-anchor="middle" class="label">DPU</text>
-  <text x="185" y="307" text-anchor="middle" class="body">usage ranking</text>
+  <path d="M 430 215 C 515 215, 535 110, 625 110" class="arrow"/>
+  <path d="M 430 215 L 625 210" class="arrow"/>
+  <path d="M 430 215 C 515 215, 535 310, 625 310" class="arrow"/>
 
-  <rect x="45" y="366" width="280" height="105" rx="18" class="analysis"/>
-  <text x="185" y="411" text-anchor="middle" class="label">CorrectFirst DPU</text>
-  <text x="185" y="445" text-anchor="middle" class="body">corrected ranking</text>
+  <rect x="655" y="65" width="350" height="90" rx="18" class="method"/>
+  <text x="830" y="104" text-anchor="middle" class="label">PTM-SEA</text>
+  <text x="830" y="136" text-anchor="middle" class="body">curated PTM signatures</text>
 
-  <path d="M 325 143 C 370 143, 375 238, 420 255" class="arrow"/>
-  <path d="M 325 280 L 420 280" class="arrow"/>
-  <path d="M 325 418 C 370 418, 375 322, 420 305" class="arrow"/>
+  <rect x="655" y="165" width="350" height="90" rx="18" class="method"/>
+  <text x="830" y="204" text-anchor="middle" class="label">Kinase GSEA</text>
+  <text x="830" y="236" text-anchor="middle" class="body">predicted kinase sets</text>
 
-  <rect x="450" y="210" width="245" height="140" rx="20" class="method"/>
-  <text x="572" y="262" text-anchor="middle" class="label">Selected ranking</text>
-  <text x="572" y="298" text-anchor="middle" class="body">enters all three</text>
-  <text x="572" y="328" text-anchor="middle" class="body">enrichment methods</text>
+  <rect x="655" y="265" width="350" height="90" rx="18" class="method"/>
+  <text x="830" y="304" text-anchor="middle" class="label">MEA</text>
+  <text x="830" y="336" text-anchor="middle" class="body">native motif enrichment</text>
 
-  <path d="M 695 255 C 735 235, 730 143, 775 143" class="arrow"/>
-  <path d="M 695 280 L 775 280" class="arrow"/>
-  <path d="M 695 305 C 735 325, 730 418, 775 418" class="arrow"/>
+  <path d="M 1005 110 C 1090 110, 1105 185, 1190 190" class="arrow"/>
+  <path d="M 1005 210 L 1190 240" class="arrow"/>
+  <path d="M 1005 310 C 1090 310, 1105 295, 1190 290" class="arrow"/>
 
-  <rect x="805" y="90" width="330" height="105" rx="18" class="method"/>
-  <text x="970" y="135" text-anchor="middle" class="label">PTM-SEA</text>
-  <text x="970" y="169" text-anchor="middle" class="body">curated PTM signatures</text>
-
-  <rect x="805" y="228" width="330" height="105" rx="18" class="method"/>
-  <text x="970" y="273" text-anchor="middle" class="label">Kinase GSEA</text>
-  <text x="970" y="307" text-anchor="middle" class="body">predicted kinase sets</text>
-
-  <rect x="805" y="366" width="330" height="105" rx="18" class="method"/>
-  <text x="970" y="411" text-anchor="middle" class="label">MEA</text>
-  <text x="970" y="445" text-anchor="middle" class="body">native motif enrichment</text>
-
-  <path d="M 1135 143 C 1165 160, 1155 218, 1185 240" class="arrow"/>
-  <path d="M 1135 280 L 1185 280" class="arrow"/>
-  <path d="M 1135 418 C 1165 400, 1155 342, 1185 320" class="arrow"/>
-
-  <rect x="1215" y="175" width="340" height="220" rx="22" class="output"/>
-  <text x="1385" y="220" text-anchor="middle" class="label">Report views</text>
-  <text x="1250" y="268" class="small">• dot, heatmap, volcano</text>
-  <text x="1250" y="306" class="small">• rank and network views</text>
-  <text x="1250" y="344" class="small">• complete result tables</text>
-  <text x="1385" y="377" text-anchor="middle" class="small">versioned JSON in MuData</text>
+  <rect x="1220" y="135" width="330" height="210" rx="22" class="output"/>
+  <text x="1385" y="174" text-anchor="middle" class="label">Report views</text>
+  <text x="1245" y="214" class="small">• dot, heatmap, volcano</text>
+  <text x="1245" y="249" class="small">• rank and network views</text>
+  <text x="1245" y="284" class="small">• tested-term tables</text>
+  <text x="1385" y="321" text-anchor="middle" class="small">validated JSON in MuData</text>
 </svg>
