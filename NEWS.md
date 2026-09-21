@@ -1,5 +1,7 @@
 # prophosqua 0.3.0
 
+- Export one `PTM_results.xlsx` workbook from the final MuData, with the statistics, CorrectFirst intensity/annotation, and all nine enrichment result tables. Stop writing separate per-analysis Excel and RDS files.
+
 - Show the selected DPA, DPU, or CorrectFirst ranking as the sole input in the enrichment report's visual overview, with a larger opening sentence naming the analysis.
 
 - Keep leading-edge site lists in MuData JSON but omit them from the enrichment report tables, making the standalone HTML smaller and easier to scan.

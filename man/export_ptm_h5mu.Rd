@@ -2,7 +2,7 @@
 % Please edit documentation in R/export_ptm_h5mu.R
 \name{export_ptm_h5mu}
 \alias{export_ptm_h5mu}
-\title{Export completed MuData as terminal delivery files}
+\title{Export completed MuData as one terminal workbook}
 \usage{
 export_ptm_h5mu(input_h5mu, output_dir)
 }
@@ -12,9 +12,9 @@ export_ptm_h5mu(input_h5mu, output_dir)
 \item{output_dir}{Delivery directory.}
 }
 \value{
-Paths written, invisibly.
+Workbook path, invisibly.
 }
 \description{
 Run only after reports have finished. No computation or report consumes the
-workbooks or RDS files produced here.
+workbook produced here. The final H5MU retains the complete enrichment JSON.
 }
