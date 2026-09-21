@@ -1,5 +1,7 @@
 # prophosqua 0.3.0
 
+- Align the report-template dependency with protsea and prolfquapp so CI can resolve the full report stack.
+
 - Enrichment and kinase preparation steps now exchange compact CBOR artifacts instead of full MuData snapshots. Final assembly validates all nine JSON documents and adds them to one `PTM_results.h5mu`.
 
 - N-to-C sticks now carry a head at the site log2 fold change, an open head and dashed stick mark imputed estimates, significant sites are labelled with residue and position by `ggrepel`, and residues use the colour-blind safe Okabe-Ito palette. The legends are titled Residue, Estimate and Protein.
