@@ -18,6 +18,10 @@ test_that("single-workbook statistics use the MuData tables", {
 
 test_that("final H5MU exports one workbook with all nine enrichment tables", {
   input <- test_path("../../inst/extdata/ptm_results_example.h5mu")
+  if (!file.exists(input)) {
+    input <- system.file("extdata", "ptm_results_example.h5mu", package = "prophosqua")
+  }
+  expect_true(file.exists(input))
   result <- read_ptm_h5mu(input, PTM_results)
   output <- tempfile()
   workbook <- export_ptm_h5mu(input, output)
