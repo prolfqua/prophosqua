@@ -133,9 +133,8 @@ compute_ptmsea <- function(
     min_size = min_size,
     max_size = max_size,
     n_perm = n_perm,
-    # Relaxed so that the report can show near-misses; the significance
-    # thresholds it draws are applied when plotting, not here.
-    pvalueCutoff = 0.25
+    # Keep every tested term in JSON; the report applies its FDR threshold.
+    pvalueCutoff = 1
   )
 
   results_info <- dplyr::tibble(
@@ -346,7 +345,7 @@ compute_kinaselib_gsea <- function(
         TERM2GENE = term2gene_df,
         minGSSize = min_size,
         maxGSSize = max_size,
-        pvalueCutoff = 0.25,
+        pvalueCutoff = 1,
         nPermSimple = n_perm,
         verbose = FALSE
       )

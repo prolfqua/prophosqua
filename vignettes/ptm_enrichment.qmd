@@ -466,9 +466,7 @@ cat(sprintf(
 
 # Overview
 
-::: {.panel-tabset}
-
-## Summary
+<img src="`r knitr::image_uri(system.file("report-assets", "ptm-enrichment.svg", package = "prophosqua"))`" alt="Graphical overview: the selected DPA, DPU, or CorrectFirst ranking feeds PTM-SEA, Kinase GSEA, and MEA; their stored JSON yields comparable plots and result tables." style="width: 100%; max-height: 18rem; object-fit: contain;">
 
 This **`r analysis_labels[[analysis]]`** report compares three enrichment methods from validated JSON stored in the final MuData. **PTM-SEA** tests curated PTM signatures, **Kinase GSEA** tests predicted kinase substrate sets, and **MEA** shows native motif enrichment from the kinase-library workflow. Rendering does not rerun enrichment.
 
@@ -477,33 +475,6 @@ This **`r analysis_labels[[analysis]]`** report compares three enrichment method
 #| tbl-cap: "Stored enrichment documents and result counts for this PTM analysis."
 knitr::kable(overview)
 ```
-
-## Report provenance
-
-```{r}
-#| label: tbl-enrichment-provenance
-#| tbl-cap: "Report provenance and JSON parameters."
-provenance_table <- data.frame(
-  Field = c(
-    "Analysis", "Input MuData", "Source DEA artifacts",
-    "Method documents", "JSON schema versions", "FDR threshold",
-    "Top terms per summary plot", "Report package", "Generated at", "QMD source"
-  ),
-  Value = c(
-    analysis_labels[[analysis]], input_h5mu, paste(source_paths, collapse = "; "),
-    length(enrichment),
-    paste(unique(vapply(enrichment, function(x) x$version, character(1))), collapse = "; "),
-    format(fdr_threshold), top_terms,
-    paste0("prophosqua ", utils::packageVersion("prophosqua")),
-    generated_at, fgczQuartoTemplate::fgcz_qmd_source_link()
-  ),
-  stringsAsFactors = FALSE
-)
-provenance_table <- provenance_table[nzchar(provenance_table$Value), , drop = FALSE]
-knitr::kable(provenance_table, escape = FALSE)
-```
-
-:::
 
 ```{r method-helper}
 #| include: false
@@ -579,12 +550,53 @@ cat(render_method("MEA"), sep = "\n")
 
 # About methods
 
-**PTM-SEA** tests whether curated phosphosite signatures accumulate toward either end of the ranked site list. **Kinase GSEA** applies the same ranked-set test to substrates assigned to kinases by the kinase-library scan. **MEA** reports the kinase-library workflow's motif enrichment; its statistics come from GSEApy. All three use the same portable JSON structure, and clusterProfiler-compatible objects are reconstructed in memory only for visualization. The result tables and plots use the stored statistics; no enrichment is recomputed in this report.
+## PTM-SEA
+
+PTM-SEA tests curated PTMsigDB phosphosite signatures against the ranked site statistics. Its table retains every tested signature, including those above the report's FDR threshold.
+
+## Kinase GSEA
+
+Kinase GSEA tests substrate sets assigned by the kinase-library motif scan against the same ranked site statistics. It reports tested kinase sets and their adjusted p-values, including non-significant sets.
+
+## MEA
+
+MEA uses the kinase-library workflow's GSEApy motif-enrichment calculation. Its scores and adjusted p-values come from that Python computation; this report reads the stored JSON without recomputing them.
 
 # Session Info
+
+::: {.panel-tabset}
+
+## Report provenance
+
+```{r}
+#| label: tbl-enrichment-provenance
+#| tbl-cap: "Report provenance and JSON parameters."
+provenance_table <- data.frame(
+  Field = c(
+    "Analysis", "Input MuData", "Source DEA artifacts",
+    "Method documents", "JSON schema versions", "FDR threshold",
+    "Top terms per summary plot", "Report package", "Generated at", "QMD source"
+  ),
+  Value = c(
+    analysis_labels[[analysis]], input_h5mu, paste(source_paths, collapse = "; "),
+    length(enrichment),
+    paste(unique(vapply(enrichment, function(x) x$version, character(1))), collapse = "; "),
+    format(fdr_threshold), top_terms,
+    paste0("prophosqua ", utils::packageVersion("prophosqua")),
+    generated_at, fgczQuartoTemplate::fgcz_qmd_source_link()
+  ),
+  stringsAsFactors = FALSE
+)
+provenance_table <- provenance_table[nzchar(provenance_table$Value), , drop = FALSE]
+knitr::kable(provenance_table, escape = FALSE)
+```
+
+## R session info
 
 ```{r session-info}
 sessionInfo()
 ```
+
+:::
 
 :::

@@ -1,5 +1,7 @@
 # prophosqua 0.3.0
 
+- Retain every tested PTM-SEA and Kinase GSEA term in the final MuData JSON, including terms above the report FDR threshold. The enrichment report now has a graphical overview and separate explanations of all three methods.
+
 - Render the enrichment QMD for one selected analysis at a time, with no running-score plots; the JSON retains those curves. Kinase GSEA now uses a separate maximum set size (default 5000) so large substrate sets are tested. When enrichplot cannot construct a similarity tree, the report still shows the enrichment map.
 - Render the two installed PTM Quarto reports directly from MuData, with the statistics report accepting `PTM_statistics.h5mu` before enrichment finishes.
 - Align the report-template dependency with protsea and prolfquapp so CI can resolve the full report stack.

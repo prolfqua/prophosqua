@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 560" role="img" aria-labelledby="title desc">
   <title id="title">PTM enrichment analysis path</title>
-  <desc id="desc">DPA, DPU, and CorrectFirst rankings enter PTM-SEA, Kinase GSEA, and motif enrichment analysis. Their JSON results produce comparable summary plots, running-score plots where supported, and result tables.</desc>
+  <desc id="desc">One selected DPA, DPU, or CorrectFirst ranking enters PTM-SEA, Kinase GSEA, and motif enrichment analysis. Their JSON results produce comparable plots and complete result tables.</desc>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#1575b6"/>
@@ -16,7 +16,7 @@
       .arrow { stroke: #1575b6; stroke-width: 5; fill: none; marker-end: url(#arrow); }
     </style>
   </defs>
-  <text x="800" y="48" text-anchor="middle" class="title">Enrichment results from one final MuData artifact</text>
+  <text x="800" y="48" text-anchor="middle" class="title">Three enrichment methods for the selected PTM analysis</text>
 
   <rect x="45" y="90" width="280" height="105" rx="18" class="analysis"/>
   <text x="185" y="135" text-anchor="middle" class="label">DPA</text>
@@ -35,7 +35,7 @@
   <path d="M 325 418 C 370 418, 375 322, 420 305" class="arrow"/>
 
   <rect x="450" y="210" width="245" height="140" rx="20" class="method"/>
-  <text x="572" y="262" text-anchor="middle" class="label">Each ranking</text>
+  <text x="572" y="262" text-anchor="middle" class="label">Selected ranking</text>
   <text x="572" y="298" text-anchor="middle" class="body">enters all three</text>
   <text x="572" y="328" text-anchor="middle" class="body">enrichment methods</text>
 
@@ -62,7 +62,7 @@
   <rect x="1215" y="175" width="340" height="220" rx="22" class="output"/>
   <text x="1385" y="220" text-anchor="middle" class="label">Report views</text>
   <text x="1250" y="268" class="small">• dot, heatmap, volcano</text>
-  <text x="1250" y="306" class="small">• running scores where available</text>
+  <text x="1250" y="306" class="small">• rank and network views</text>
   <text x="1250" y="344" class="small">• complete result tables</text>
   <text x="1385" y="377" text-anchor="middle" class="small">versioned JSON in MuData</text>
 </svg>
