@@ -15,7 +15,8 @@ test_that("compact CBOR stages assemble the same nine final JSON documents", {
     inputs <- assignments$get_source()
     motif <- mea$get_source()
     for (stage in list(ptmsea, inputs, assignments, motif, kinase, mea)) {
-      path <- tempfile(fileext = ".cbor")
+      json <- class(stage)[1L] %in% c("PTMSEA", "KinaseGSEA", "MEA")
+      path <- tempfile(fileext = if (json) ".json.gz" else ".cbor.gz")
       .write_ptm_cbor(stage, path, hash)
       paths <- c(paths, path)
     }
@@ -23,18 +24,25 @@ test_that("compact CBOR stages assemble the same nine final JSON documents", {
   assembled <- assemble_ptm_cbor(statistics_path, paths, output_path)
   expect_s3_class(assembled, "PTM_results")
   expect_identical(names(assembled$get_enrichment_documents()), names(final$get_enrichment_documents()))
+  # A stored document names the statistics it came from; an in-memory one cannot.
   for (key in names(final$get_enrichment_documents())) {
     actual <- assembled$get_enrichment_documents()[[key]]
-    expected <- final$get_enrichment_documents()[[key]]
+    expected <- .ptm_enrichment_document(final$get_enrichments()[[key]], hash)
     expect_setequal(names(actual), names(expected))
     for (field in names(expected)) {
       expect_identical(actual[[field]], expected[[field]])
     }
+    payload <- jsonlite::fromJSON(actual$json, simplifyVector = FALSE)
+    expect_identical(payload$prophosqua$statistics_sha256, hash)
   }
   expect_error(assemble_ptm_cbor(statistics_path, paths[-1], output_path), "every enabled CBOR stage")
-  bad_path <- tempfile(fileext = ".cbor")
-  artifact <- secretbase::cbordec(readBin(paths[[1]], what = "raw", n = file.info(paths[[1]])$size))
+  # paths[[2]] is the KinaseInputs preparation, the first CBOR artifact written.
+  bad_path <- tempfile(fileext = ".cbor.gz")
+  stored <- readBin(paths[[2]], what = "raw", n = file.info(paths[[2]])$size)
+  artifact <- secretbase::cbordec(memDecompress(stored, type = "gzip"))
   artifact$statistics_sha256 <- paste0("0", substring(artifact$statistics_sha256, 2))
-  writeBin(secretbase::cborenc(artifact), bad_path)
-  expect_error(assemble_ptm_cbor(statistics_path, c(bad_path, paths[-1]), output_path), "different statistics")
+  connection <- gzfile(bad_path, "wb")
+  writeBin(secretbase::cborenc(artifact), connection)
+  close(connection)
+  expect_error(assemble_ptm_cbor(statistics_path, c(bad_path, paths[-2]), output_path), "different statistics")
 })

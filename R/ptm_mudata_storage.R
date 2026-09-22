@@ -77,7 +77,7 @@ read_ptm_h5mu <- function(path, expected = NULL) {
     KinaseGSEA = .load_kinase_gsea,
     MotifEnrichment = .load_motif_enrichment,
     MEA = .load_mea,
-    PTM_results = .load_ptm_results
+    PTM_results = function(container) .load_ptm_results(container, path)
   )
   reader <- readers[[metadata$stage]]
   if (is.null(reader)) {

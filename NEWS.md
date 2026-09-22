@@ -1,5 +1,8 @@
 # prophosqua 0.3.0
 
+- Keep the enrichment payload out of `PTM_results.h5mu`. The final MuData records where its stage artifacts are, in `uns/prophosqua/enrichment_cbor`, and reads them back from beside itself; it no longer copies the enrichment documents and kinase preparations into the file. On one three-analysis order that is 1834 MB of a 2345 MB file, every byte of which already existed as a stage artifact on disk. Moving the MuData without its analysis folders now fails naming the missing file.
+- Store a completed PTM-SEA, Kinase GSEA or MEA stage as gzipped JSON through protsea, which owns the string_gsea format, so `result_*.json.gz` opens with any gzip reader and parses with `protsea::read_gsea_json()`. The kinase preparations have no such format and stay gzipped CBOR. Both compress about 2.5x. A stored document names the statistics it was computed from, the binding the CBOR envelope already carried.
+
 - Follow the fgczQuartoTemplate figure conventions in both Quarto reports: figures inherit the template's compact size and 40% width and rely on the lightbox for the full-resolution view, multi-panel chunks (rank distributions, enrichment map and tree) are laid out in two columns, and the renderer no longer forces `fig_retina = 1`, so the zoomed image carries twice the on-page resolution. Network and enrichment-map term labels wrap at underscores and slashes and the graph legends move below the panel, so no label is cut at the figure edge.
 
 - Export one `PTM_results.xlsx` workbook from the final MuData, with the statistics, CorrectFirst intensity/annotation, and all nine enrichment result tables. Stop writing separate per-analysis Excel and RDS files.

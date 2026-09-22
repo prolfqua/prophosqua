@@ -2,13 +2,21 @@
 #' @export
 PTM_results <- R6::R6Class(
   "PTM_results",
-  private = list(statistics = NULL, enrichments = NULL, enrichment_documents = NULL),
+  private = list(
+    statistics = NULL,
+    enrichments = NULL,
+    enrichment_documents = NULL,
+    enrichment_store = NULL
+  ),
   public = list(
     #' @description Assemble all enabled analyses from their completed stages.
     #' @param statistics Complete PTM_statistics stage.
     #' @param enrichments List of complete PTMSEA, KinaseGSEA and MEA objects.
     #' @param enrichment_documents Stored JSON documents when restoring MuData.
-    initialize = function(statistics, enrichments, enrichment_documents = NULL) {
+    #' @param enrichment_cbor Where the enrichment payload is kept, as
+    #'   `list(paths, statistics_sha256)` with paths relative to the MuData file.
+    #'   `NULL` keeps the payload inside the MuData file itself.
+    initialize = function(statistics, enrichments, enrichment_documents = NULL, enrichment_cbor = NULL) {
       stopifnot(inherits(statistics, "PTM_statistics"))
       keys <- vapply(enrichments, function(value) .ptm_varm_key(class(value)[1L], value$get_analysis()), character(1))
       expected <- .enabled_ptm_enrichments(statistics$get_inputs()$get_parameters())
@@ -24,7 +32,10 @@ PTM_results <- R6::R6Class(
         enrichment_documents <- lapply(private$enrichments, .ptm_enrichment_document)
       }
       private$enrichment_documents <- .validate_ptm_enrichment_documents(enrichment_documents, expected)
+      private$enrichment_store <- .validate_ptm_cbor_store(enrichment_cbor)
     },
+    #' @description Return where the enrichment payload is kept, or NULL.
+    get_enrichment_store = function() private$enrichment_store,
     #' @description Return the complete statistics component.
     get_statistics = function() private$statistics,
     #' @description Return the collection of complete enabled enrichment objects.
@@ -72,12 +83,37 @@ PTM_results <- R6::R6Class(
   ))
 }
 
+.validate_ptm_cbor_store <- function(store) {
+  if (is.null(store)) {
+    return(NULL)
+  }
+  .require_ptm_fields(store, c("paths", "statistics_sha256"), "PTM CBOR store")
+  if (!length(store$paths) || is.null(names(store$paths)) || anyDuplicated(names(store$paths))) {
+    stop("A PTM CBOR store must name every artifact exactly once.", call. = FALSE)
+  }
+  list(
+    paths = lapply(store$paths, as.character),
+    statistics_sha256 = as.character(store$statistics_sha256)
+  )
+}
+
+# Two storage forms, because a final result either owns CBOR artifacts beside it
+# or holds its payload itself. An assembled result names its artifacts and keeps
+# nothing: its three MEA payloads alone are half a gigabyte, and every byte of
+# them is already in the CBOR files. A result built in memory, as the package
+# fixtures are, has nowhere else to put the payload and embeds it.
 .final_ptm_container <- function(results) {
   container <- results$get_statistics()$as_container()
   container$uns$prophosqua$stage <- "PTM_results"
   enrichments <- results$get_enrichments()
   documents <- results$get_enrichment_documents()
   container$uns$prophosqua$completed_enrichments <- names(enrichments)
+  store <- results$get_enrichment_store()
+  if (!is.null(store)) {
+    container$uns$prophosqua$enrichment_cbor <- store$paths
+    container$uns$prophosqua$statistics_sha256 <- store$statistics_sha256
+    return(container)
+  }
   for (key in names(enrichments)) {
     branch <- enrichments[[key]]
     modality <- .ptm_analysis_modality(branch$get_analysis())
@@ -103,7 +139,10 @@ PTM_results <- R6::R6Class(
   preceding
 }
 
-.ptm_enrichment_document <- function(branch) {
+# statistics_sha256 binds a stored document to the statistics it was computed
+# from, the check the CBOR envelope performs for the preparations. A document
+# built in memory has no file to be paired with and carries no hash.
+.ptm_enrichment_document <- function(branch, statistics_hash = NULL) {
   method <- class(branch)[1L]
   analysis <- branch$get_analysis()
   result <- branch$get_results()
@@ -122,6 +161,9 @@ PTM_results <- R6::R6Class(
     result_names = names(result),
     result = .pack_ptm_value(portable_result)
   )
+  if (!is.null(statistics_hash)) {
+    extension$statistics_sha256 <- statistics_hash
+  }
   if (identical(method, "MEA")) {
     document <- .append_ptm_json_extension(
       branch$get_source()$get_results()$gsea_json,
@@ -386,12 +428,15 @@ PTM_results <- R6::R6Class(
   documents
 }
 
-.load_ptm_results <- function(container) {
+.load_ptm_results <- function(container, h5mu_path = NULL) {
   statistics <- .load_ptm_statistics(container)
   keys <- as.character(container$uns$prophosqua$completed_enrichments)
   expected <- .enabled_ptm_enrichments(statistics$get_inputs()$get_parameters())
   if (anyDuplicated(keys) || !identical(keys, expected)) {
     stop("Final PTM results list does not match enabled enrichments.")
+  }
+  if (length(container$uns$prophosqua$enrichment_cbor)) {
+    return(.load_ptm_results_from_cbor(container, statistics, h5mu_path))
   }
   documents <- .collect_ptm_enrichment_documents(container, expected)
   readers <- list(PTMSEA = .load_ptmsea, KinaseGSEA = .load_kinase_gsea, MEA = .load_mea)
@@ -405,4 +450,30 @@ PTM_results <- R6::R6Class(
     reader(container)
   })
   PTM_results$new(statistics, branches, documents)
+}
+
+.load_ptm_results_from_cbor <- function(container, statistics, h5mu_path) {
+  if (is.null(h5mu_path)) {
+    stop("Final PTM results keep their enrichment beside the file; read them with read_ptm_h5mu().", call. = FALSE)
+  }
+  hash <- as.character(container$uns$prophosqua$statistics_sha256)
+  paths <- .ptm_resolve_cbor(container, h5mu_path)
+  artifacts <- lapply(paths, .read_ptm_cbor, statistics_hash = hash)
+  keys <- vapply(
+    artifacts,
+    function(artifact) .ptm_varm_key(artifact$stage, artifact$analysis),
+    character(1)
+  )
+  if (!identical(unname(keys), names(paths))) {
+    stop("CBOR manifest does not match the artifacts it names.", call. = FALSE)
+  }
+  PTM_results$new(
+    statistics,
+    .ptm_branches_from_artifacts(statistics, artifacts),
+    .ptm_documents_from_artifacts(artifacts),
+    enrichment_cbor = list(
+      paths = container$uns$prophosqua$enrichment_cbor,
+      statistics_sha256 = hash
+    )
+  )
 }
