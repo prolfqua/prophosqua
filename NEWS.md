@@ -1,5 +1,7 @@
 # prophosqua 0.3.0
 
+- Follow the fgczQuartoTemplate figure conventions in both Quarto reports: figures inherit the template's compact size and 40% width and rely on the lightbox for the full-resolution view, multi-panel chunks (rank distributions, enrichment map and tree) are laid out in two columns, and the renderer no longer forces `fig_retina = 1`, so the zoomed image carries twice the on-page resolution. Network and enrichment-map term labels wrap at underscores and slashes and the graph legends move below the panel, so no label is cut at the figure edge.
+
 - Export one `PTM_results.xlsx` workbook from the final MuData, with the statistics, CorrectFirst intensity/annotation, and all nine enrichment result tables. Stop writing separate per-analysis Excel and RDS files.
 
 - Show the selected DPA, DPU, or CorrectFirst ranking as the sole input in the enrichment report's visual overview, with a larger opening sentence naming the analysis.

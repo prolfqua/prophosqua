@@ -47,12 +47,7 @@ if (length(missing_packages)) {
 knitr::opts_chunk$set(
   echo = FALSE,
   message = FALSE,
-  warning = FALSE,
-  fig.width = 9,
-  fig.height = 5.5,
-  fig.dpi = 110,
-  out.width = "88%",
-  fig.align = "center"
+  warning = FALSE
 )
 
 input_h5mu <- params$input_h5mu
@@ -194,6 +189,56 @@ summary_table <- function(data) {
   }))
 }
 
+LABEL_WRAP_WIDTH <- 22L
+
+wrap_term_label <- function(labels, width = LABEL_WRAP_WIDTH) {
+  vapply(labels, function(label) {
+    pieces <- regmatches(label, gregexpr("[^_/ ]+[_/ ]?", label))[[1]]
+    lines <- character()
+    current <- ""
+    for (piece in pieces) {
+      if (nzchar(current) && nchar(current) + nchar(piece) > width) {
+        lines <- c(lines, current)
+        current <- piece
+      } else {
+        current <- paste0(current, piece)
+      }
+    }
+    paste(c(lines, current), collapse = "\n")
+  }, character(1), USE.NAMES = FALSE)
+}
+
+wrap_term_labels <- function(object) {
+  if (methods::is(object, "compareClusterResult")) {
+    object@compareClusterResult$Description <- wrap_term_label(object@compareClusterResult$Description)
+  } else {
+    object@result$Description <- wrap_term_label(object@result$Description)
+  }
+  object
+}
+
+# enrichplot draws an in-panel pie-size legend for multi-contrast results with no
+# switch to turn it off; its layers are the only ones carrying arc data of their own.
+drop_pie_legend <- function(plot) {
+  is_legend <- vapply(plot$layers, function(layer) {
+    is.data.frame(layer$data) && all(c("r", "start", "end", "maxr") %in% names(layer$data))
+  }, logical(1))
+  plot$layers <- plot$layers[!is_legend]
+  plot
+}
+
+graph_label_room <- function() {
+  list(
+    ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = 0.3)),
+    ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = 0.15)),
+    ggplot2::theme(
+      legend.position = "bottom",
+      plot.title.position = "plot",
+      plot.margin = ggplot2::margin(8, 12, 8, 12)
+    )
+  )
+}
+
 empty_plot <- function(label) {
   ggplot2::ggplot() +
     ggplot2::annotate("text", x = 0, y = 0, label = label) +
@@ -328,8 +373,7 @@ rank_distribution_plots <- function(data) {
 print_rank_distributions <- function(data) {
   plots <- rank_distribution_plots(data)
   if (!length(plots)) {
-    cat("::: {.callout-note}\nNo enrichment term is available for a rank-distribution plot.\n:::\n")
-    return(invisible(NULL))
+    plots <- list(empty_plot("No enrichment term is available for a rank-distribution plot."))
   }
   for (plot in plots) {
     print(plot)
@@ -342,15 +386,17 @@ gene_set_network_plot <- function(data) {
   if (is.null(object)) {
     return(empty_plot("No enrichment term is available for a gene-set network."))
   }
-  enrichplot::cnetplot(
-    object,
+  network <- enrichplot::cnetplot(
+    wrap_term_labels(object),
     showCategory = min(4L, top_terms),
     node_label = "category"
-  ) +
+  )
+  drop_pie_legend(network) +
     ggplot2::labs(
       title = paste0(analysis_labels[[data$analysis]], " · ", data$label),
       subtitle = "Leading terms and their shared ranked sites"
-    )
+    ) +
+    graph_label_room()
 }
 
 term_similarity_plots <- function(data) {
@@ -369,15 +415,16 @@ term_similarity_plots <- function(data) {
   n_show <- min(12L, top_terms, length(unique(result$ID)))
   similarity <- enrichplot::pairwise_termsim(object)
   map <- tryCatch(
-    enrichplot::emapplot(similarity, showCategory = n_show) +
+    drop_pie_legend(enrichplot::emapplot(similarity, showCategory = n_show, label_format = wrap_term_label)) +
       ggplot2::labs(
         title = "Enrichment map",
         subtitle = "Terms are connected by ranked-site overlap"
-      ),
+      ) +
+      graph_label_room(),
     error = function(e) NULL
   )
   tree <- tryCatch(
-    enrichplot::treeplot(similarity, showCategory = n_show) +
+    enrichplot::treeplot(similarity, showCategory = n_show, label_format = wrap_term_label) +
       ggplot2::labs(
         title = "Term-similarity tree",
         subtitle = "Terms are grouped by ranked-site overlap"
@@ -392,14 +439,12 @@ term_similarity_plots <- function(data) {
 print_term_similarity <- function(data) {
   plots <- term_similarity_plots(data)
   if (!length(plots)) {
-    cat("::: {.callout-note}\nNo term-similarity plot can be drawn for these results.\n:::\n")
-    return(invisible(NULL))
+    plots <- list(empty_plot("No term-similarity plot can be drawn for these results."))
+  } else if (isTRUE(attr(plots, "tree_unavailable"))) {
+    plots <- c(plots, list(empty_plot("A similarity tree could not be constructed for these sets.")))
   }
   for (plot in plots) {
     print(plot)
-  }
-  if (isTRUE(attr(plots, "tree_unavailable"))) {
-    cat("::: {.callout-note}\nThe enrichment map is shown; a similarity tree could not be constructed for these sets.\n:::\n")
   }
   invisible(NULL)
 }
@@ -496,34 +541,30 @@ render_method <- function(method) {
     "knitr::kable(summary_table(method_data))", "```", "",
     "## Dot plot", "",
     "```{r}", sprintf("#| label: fig-%s-dotplot", id),
-    "#| fig-width: 10", "#| fig-height: 5", "#| out-width: '88%'",
     sprintf("#| fig-cap: '%s'", caption("leading enrichment terms reconstructed from JSON.")),
     "dot_plot(method_data)", "```", "",
     "## Heatmap", "",
     "```{r}", sprintf("#| label: fig-%s-heatmap", id),
-    "#| fig-width: 10", "#| fig-height: 5", "#| out-width: '88%'",
     sprintf("#| fig-cap: '%s'", caption("normalized enrichment scores across contrasts.")),
     "heatmap_plot(method_data)", "```", "",
     "## Volcano", "",
     "```{r}", sprintf("#| label: fig-%s-volcano", id),
-    "#| fig-width: 10", "#| fig-height: 4.5", "#| out-width: '88%'",
     sprintf("#| fig-cap: '%s'", caption("normalized enrichment score versus FDR.")),
     "volcano_plot(method_data)", "```", "",
     "## Rank distributions", "",
     "```{r}", sprintf("#| label: fig-%s-ridge", id),
-    "#| fig-width: 10", "#| fig-height: 5", "#| out-width: '88%'",
-    sprintf("#| fig-cap: '%s'", caption("ranked-site distributions of leading terms.")),
-    "#| results: asis", "print_rank_distributions(method_data)", "```", "",
+    "#| layout-ncol: 2", "#| out-width: '100%'",
+    sprintf("#| fig-cap: '%s'", caption("ranked-site distributions of leading terms, one panel per contrast.")),
+    "print_rank_distributions(method_data)", "```", "",
     "## Gene-set network", "",
     "```{r}", sprintf("#| label: fig-%s-network", id),
-    "#| fig-width: 10", "#| fig-height: 5.5", "#| out-width: '88%'",
     sprintf("#| fig-cap: '%s'", caption("leading terms and shared sites.")),
     "gene_set_network_plot(method_data)", "```", "",
     "## Term similarity", "",
     "```{r}", sprintf("#| label: fig-%s-similarity", id),
-    "#| fig-width: 10", "#| fig-height: 5.5", "#| out-width: '88%'",
+    "#| layout-ncol: 2", "#| out-width: '100%'",
     sprintf("#| fig-cap: '%s'", caption("term overlap map and similarity tree.")),
-    "#| results: asis", "print_term_similarity(method_data)", "```", "",
+    "print_term_similarity(method_data)", "```", "",
     "## Results", "",
     "```{r}", sprintf("#| label: tbl-%s-results", id),
     sprintf("#| tbl-cap: '%s'", caption("tested-term statistics decoded from MuData JSON; leading-edge site lists remain in JSON.")),

@@ -43,12 +43,7 @@ if (length(missing_packages)) {
 knitr::opts_chunk$set(
   echo = FALSE,
   message = FALSE,
-  warning = FALSE,
-  fig.width = 7,
-  fig.height = 5,
-  fig.dpi = 110,
-  out.width = "100%",
-  fig.align = "center"
+  warning = FALSE
 )
 
 input_h5mu <- params$input_h5mu
@@ -463,8 +458,6 @@ knitr::kable(modification_counts(dpa))
 #|   Differential PTM abundance by contrast. Each point is one PTM site; the
 #|   x-axis is its site-level log2 fold change and the y-axis is -log10(FDR).
 #|   Red points pass the displayed absolute fold-change and FDR thresholds.
-#| fig-width: 8
-#| fig-height: 5
 volcano_plot(dpa, "diff.site", "FDR.site", "Differential PTM abundance")
 ```
 
@@ -476,8 +469,6 @@ volcano_plot(dpa, "diff.site", "FDR.site", "Differential PTM abundance")
 #|   PTM-site log2 fold change as a function of the matched protein log2 fold
 #|   change. Each point is one matched site; the diagonal denotes equal site and
 #|   protein change, and colour is their difference, the DPU effect.
-#| fig-width: 8
-#| fig-height: 5
 site_protein_plot(dpa)
 ```
 
@@ -497,8 +488,7 @@ The logos use significant, sequence-validated PTM sites and separate each contra
 #|   FDR and absolute fold-change thresholds.
 #| fig-width: 12
 #| fig-height: 5.2
-#| fig-dpi: 130
-#| out-width: "82%"
+#| out-width: "60%"
 sequence_logo_plot(dpa_logo_sites)
 ```
 
@@ -524,8 +514,7 @@ These logos are recomputed from MuData during rendering using **`r logo_selectio
 #|   sites in the same contrast.
 #| fig-width: 12
 #| fig-height: 4.2
-#| fig-dpi: 130
-#| out-width: "82%"
+#| out-width: "60%"
 difference_logo_plot(dpa_logo_sites)
 ```
 
@@ -584,8 +573,6 @@ knitr::kable(modification_counts(dpu))
 #|   is the site-minus-protein log2 fold change and the y-axis is -log10(FDR)
 #|   after propagated site and protein uncertainty. Red points pass both
 #|   displayed thresholds.
-#| fig-width: 8
-#| fig-height: 5
 volcano_plot(dpu, "diff_diff", "FDR_I", "Differential PTM usage")
 ```
 
@@ -597,8 +584,6 @@ volcano_plot(dpu, "diff_diff", "FDR_I", "Differential PTM usage")
 #|   Site and protein log2 fold changes used to calculate DPU. Points above the
 #|   diagonal have positive PTM usage changes and points below it have negative
 #|   usage changes; colour shows the signed site-minus-protein difference.
-#| fig-width: 8
-#| fig-height: 5
 site_protein_plot(dpu)
 ```
 
@@ -617,8 +602,7 @@ The DPU logos group sites by the direction of their protein-adjusted change. Pan
 #|   separated by contrast and direction.
 #| fig-width: 12
 #| fig-height: 5.2
-#| fig-dpi: 130
-#| out-width: "82%"
+#| out-width: "60%"
 sequence_logo_plot(dpu_logo_sites)
 ```
 
@@ -643,8 +627,7 @@ These logos are recomputed from MuData during rendering using **`r logo_selectio
 #|   upregulated sites minus that around downregulated sites in each contrast.
 #| fig-width: 12
 #| fig-height: 4.2
-#| fig-dpi: 130
-#| out-width: "82%"
+#| out-width: "60%"
 difference_logo_plot(dpu_logo_sites)
 ```
 
@@ -717,8 +700,6 @@ safe_plot(
 #|   site modelled after sample-level protein correction; the x-axis is its log2
 #|   fold change and the y-axis is -log10(FDR). Red points pass both displayed
 #|   thresholds.
-#| fig-width: 8
-#| fig-height: 5
 volcano_plot(cf_results, "diff.site", "FDR.site", "CorrectFirst differential PTM usage")
 ```
 
@@ -737,8 +718,7 @@ The CorrectFirst logos use the direction of the effect fitted after sample-level
 #|   PTM usage, separated by contrast and direction.
 #| fig-width: 12
 #| fig-height: 5.2
-#| fig-dpi: 130
-#| out-width: "82%"
+#| out-width: "60%"
 sequence_logo_plot(cf_logo_sites)
 ```
 
@@ -763,8 +743,7 @@ These logos are recomputed from MuData during rendering using **`r logo_selectio
 #|   around upregulated sites minus that around downregulated sites.
 #| fig-width: 12
 #| fig-height: 4.2
-#| fig-dpi: 130
-#| out-width: "82%"
+#| out-width: "60%"
 difference_logo_plot(cf_logo_sites)
 ```
 

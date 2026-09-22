@@ -50,7 +50,6 @@ render_ptm_report <- function(name, output_file, output_dir, params = list(), in
       staged,
       output_file = output_file,
       execute_params = params,
-      fig_retina = 1,
       quiet = FALSE
     )
     rendered <- file.path(render_dir, output_file)
