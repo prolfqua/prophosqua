@@ -12,6 +12,7 @@ Final PTM results with every enabled enrichment completed
 \subsection{Public methods}{
 \itemize{
 \item \href{#method-PTM_results-new}{\code{PTM_results$new()}}
+\item \href{#method-PTM_results-get_enrichment_store}{\code{PTM_results$get_enrichment_store()}}
 \item \href{#method-PTM_results-get_statistics}{\code{PTM_results$get_statistics()}}
 \item \href{#method-PTM_results-get_enrichments}{\code{PTM_results$get_enrichments()}}
 \item \href{#method-PTM_results-get_enrichment_documents}{\code{PTM_results$get_enrichment_documents()}}
@@ -28,7 +29,12 @@ Final PTM results with every enabled enrichment completed
 \subsection{Method \code{new()}}{
 Assemble all enabled analyses from their completed stages.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{PTM_results$new(statistics, enrichments, enrichment_documents = NULL)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{PTM_results$new(
+  statistics,
+  enrichments,
+  enrichment_documents = NULL,
+  enrichment_cbor = NULL
+)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -39,9 +45,23 @@ Assemble all enabled analyses from their completed stages.
 \item{\code{enrichments}}{List of complete PTMSEA, KinaseGSEA and MEA objects.}
 
 \item{\code{enrichment_documents}}{Stored JSON documents when restoring MuData.}
+
+\item{\code{enrichment_cbor}}{Where the enrichment payload is kept, as
+`list(paths, statistics_sha256)` with paths relative to the MuData file.
+`NULL` keeps the payload inside the MuData file itself.}
 }
 \if{html}{\out{</div>}}
 }
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-PTM_results-get_enrichment_store"></a>}}
+\if{latex}{\out{\hypertarget{method-PTM_results-get_enrichment_store}{}}}
+\subsection{Method \code{get_enrichment_store()}}{
+Return where the enrichment payload is kept, or NULL.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{PTM_results$get_enrichment_store()}\if{html}{\out{</div>}}
+}
+
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-PTM_results-get_statistics"></a>}}
