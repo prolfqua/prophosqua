@@ -76,7 +76,7 @@ Suggests:
     roxygen2,
     testthat (>= 3.0.0)
 Remotes:
-    github::fgcz/fgczQuartoTemplate@5f7cd7f41203a949c78aa78cddb10637ce395fe1,
+    github::fgcz/fgczQuartoTemplate,
     github::fgcz/prolfqua,
     github::prolfqua/prolfquapp,
     github::prolfqua/protsea
