@@ -138,6 +138,16 @@ MEA <- R6::R6Class(
   if (!analysis %in% c("DPA", "DPU", "CF")) stop("Unknown PTM analysis: ", analysis)
 }
 
+# A parameter the stage cannot run without. clusterProfiler::GSEA reads a
+# NULL set size as no limit, so a missing key would change the result silently.
+.ptm_parameter <- function(parameters, ...) {
+  value <- purrr::pluck(parameters, ...)
+  if (is.null(value)) {
+    stop("The PTM parameter '", paste(c(...), collapse = "$"), "' is not set.", call. = FALSE)
+  }
+  value
+}
+
 .compute_ptmsea_stage <- function(source, analysis) {
   inputs <- source$get_inputs()
   parameters <- inputs$get_parameters()
@@ -146,9 +156,9 @@ MEA <- R6::R6Class(
     inputs$get_resources()$ptmsigdb,
     parameters$analyses[[tolower(analysis)]]$stat_column,
     parameters$ptmsigdb$trim_to,
-    parameters$gsea$min_size,
-    parameters$gsea$max_size,
-    parameters$gsea$n_perm
+    .ptm_parameter(parameters, "gsea", "min_size"),
+    .ptm_parameter(parameters, "gsea", "max_size"),
+    .ptm_parameter(parameters, "gsea", "n_perm")
   )
 }
 
@@ -172,8 +182,8 @@ MEA <- R6::R6Class(
     statistics$get_tables()[[analysis]],
     source$get_results()$term2gene,
     parameters$analyses[[tolower(analysis)]]$stat_column,
-    parameters$gsea$min_size,
-    parameters$kinaselib$gsea_max_size,
-    parameters$gsea$n_perm
+    .ptm_parameter(parameters, "gsea", "min_size"),
+    .ptm_parameter(parameters, "kinaselib", "gsea_max_size"),
+    .ptm_parameter(parameters, "gsea", "n_perm")
   )
 }

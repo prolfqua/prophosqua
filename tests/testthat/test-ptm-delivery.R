@@ -28,7 +28,8 @@ test_that("final H5MU exports one workbook with all nine enrichment tables", {
   expect_identical(workbook, file.path(output, "PTM_results.xlsx"))
   expect_identical(list.files(output, recursive = TRUE), "PTM_results.xlsx")
 
-  sheets <- readxl::excel_sheets(workbook)
+  tables <- .ptm_workbook_tables(result)
+  sheets <- names(tables)
   expected <- c(names(result$get_tables()), "CF_intensities", "CF_sample_annotation")
   for (branch in result$get_enrichments()) {
     method <- class(branch)[1L]
@@ -44,7 +45,7 @@ test_that("final H5MU exports one workbook with all nine enrichment tables", {
     method <- class(branch)[1L]
     name <- paste(branch$get_analysis(), method, sep = "_")
     field <- c(PTMSEA = "all_clean", KinaseGSEA = "all_results", MEA = "mea_clean")[[method]]
-    table <- readxl::read_xlsx(workbook, sheet = name)
+    table <- tables[[name]]
     expect_equal(nrow(table), nrow(branch$get_results()[[field]]))
     expect_false(any(c("core_enrichment", "Leading.substrates") %in% names(table)))
   }

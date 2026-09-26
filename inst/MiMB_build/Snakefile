@@ -20,20 +20,12 @@
 #   install_package            - Reinstall prophosqua package
 #   archive                    - Create dated submission zip (MiMB_submission_YYYYMMDD.zip)
 #
-# Developer-only (kinase-library pipeline):
-#   extract_seqs               - Extract sequences for KL scanning
-#   extract_rnk                - Extract ranked sequences per contrast
-#   scan_motifs                - Run kinase-library motif scan
-#   run_mea                    - Run kinase-library MEA
-#
 # Notes:
 #   - Package is automatically reinstalled when R/*.R or DESCRIPTION changes
 #   - Use 'rm .package_installed' to force package reinstall
 #   - The manuscript source and its assets are in ../../manuscript/
 #   - Package vignette sources are in ../../vignettes/
 #   - Outputs are written to this directory (inst/MiMB_build/)
-#   - Analysis vignettes (PTMSEA, KinaseLibrary, MEA, seqlogo, n_to_c)
-#     are now standard package vignettes built via devtools::build_vignettes()
 
 import glob
 import datetime
@@ -46,10 +38,6 @@ METHODS_RMD = f"{MANUSCRIPT}/_MiMBIntegratedPTM.Rmd"
 QC_REPORT_QMD = f"{VIGNETTES}/_QCReport.qmd"
 R_FILES = glob.glob(f"{PKG_ROOT}/R/*.R")
 DESCRIPTION = f"{PKG_ROOT}/DESCRIPTION"
-RDA_FILE = f"{PKG_ROOT}/data/combined_test_diff_example.rda"
-
-CONTRASTS = ["KO_vs_WT", "KO_vs_WT_at_Early", "KO_vs_WT_at_Late", "KO_vs_WT_at_Uninfect"]
-KL_REPO = "git+https://github.com/wolski/kinase-library"
 
 rule help:
     """Show available targets and usage"""
@@ -75,17 +63,9 @@ Targets:
   install_package            Reinstall prophosqua package
   archive                    Create dated submission zip (MiMB_submission_YYYYMMDD.zip)
 
-Developer-only (kinase-library pipeline):
-  extract_seqs               Extract sequences for KL scanning
-  extract_rnk                Extract ranked sequences per contrast
-  scan_motifs                Run kinase-library motif scan
-  run_mea                    Run kinase-library MEA
-
 Notes:
   - Package is automatically reinstalled when R/*.R or DESCRIPTION changes
   - Use 'rm .package_installed' to force package reinstall
-  - Analysis vignettes (PTMSEA, KinaseLibrary, etc.) are now standard
-    package vignettes — build them with devtools::build_vignettes()
         """)
 
 rule all:
@@ -100,7 +80,6 @@ rule clean:
         rm -f MiMBIntegratedPTM.docx MiMBIntegratedPTM_renumbered.docx MiMBIntegratedPTM_full.docx
         rm -f MiMBIntegratedPTM.html MiMBIntegratedPTM.pdf
         rm -f *.knit.md *.utf8.md
-        rm -f seqwindows.tsv *.rnk term2gene.csv mea_*.csv
         rm -rf MiMBIntegratedPTM_files
         rm -rf ../../inst/PTM_example_analysis_v2
         """
@@ -200,89 +179,6 @@ rule archive:
         cp -r MiMBIntegratedPTM_files/figure-latex {params.dirname}/ 2>/dev/null || true
         zip -r {output} {params.dirname}
         rm -rf {params.dirname}
-        """
-
-# ===========================================================================
-# Developer-only: Kinase-library pipeline
-#
-# These rules extract data from the package's example RDA, run kinase-library
-# motif scanning and MEA analysis. The resulting CSVs are committed to the
-# repo and consumed by package vignettes built via devtools::build_vignettes().
-# ===========================================================================
-
-rule extract_seqs:
-    """Extract unique sequences from RDA for motif scanning"""
-    input:
-        RDA_FILE
-    output:
-        "seqwindows.tsv"
-    shell:
-        """
-        Rscript -e "
-        load('{input}')
-        data <- combined_test_diff_example
-        seqs <- unique(data[, 'SequenceWindow', drop=FALSE])
-        write.table(seqs, '{output}', sep='\t', row.names=FALSE, quote=FALSE)
-        "
-        """
-
-rule extract_rnk:
-    """Extract ranked sequences per contrast for MEA"""
-    input:
-        RDA_FILE
-    output:
-        expand("{contrast}.rnk", contrast=CONTRASTS)
-    shell:
-        """
-        Rscript -e "
-        load('{input}')
-        data <- combined_test_diff_example
-        for (ct in unique(data\\$contrast)) {{
-            sub <- data[data\\$contrast == ct, c('SequenceWindow', 'statistic.site')]
-            sub <- sub[!is.na(sub\\$statistic.site), ]
-            fname <- paste0(ct, '.rnk')
-            write.table(sub, fname, sep='\t', row.names=FALSE, quote=FALSE)
-        }}
-        "
-        """
-
-rule scan_motifs:
-    """Run kinase-library scan-motifs to generate term2gene.csv"""
-    input:
-        "seqwindows.tsv"
-    output:
-        "term2gene.csv"
-    params:
-        repo=KL_REPO
-    shell:
-        """
-        uv tool run --from {params.repo} scan-motifs {input} \
-            --seq-col SequenceWindow \
-            --output {output} \
-            --kin-type ser_thr \
-            --threshold 95 \
-            --term2gene
-        """
-
-rule run_mea:
-    """Run kinase-library MEA for a single contrast"""
-    input:
-        "{contrast}.rnk"
-    output:
-        "mea_{contrast}.csv"
-    threads: 4
-    params:
-        repo=KL_REPO
-    shell:
-        """
-        uv tool run --from {params.repo} run-mea {input} \
-            --seq-col SequenceWindow \
-            --rank-col statistic.site \
-            --output {output} \
-            --kin-type ser_thr \
-            --threshold 95 \
-            --permutations 1000 \
-            --threads {threads}
         """
 
 # QC Report rule

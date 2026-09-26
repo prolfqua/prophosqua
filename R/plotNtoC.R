@@ -100,44 +100,6 @@ n_to_c_site_layers <- function(y, prot_length) {
   )
 }
 
-#' Prepare data for N-to-C plotting
-#' @param poi_matrix_min data.frame with phosphorylation data
-#' @export
-#' @return data.frame with prepared data for plotting
-#' @keywords internal
-#' @examples
-#' # example code
-#' data(exampleN_C_dat)
-#' poi_matrix_min <- prepare_n_to_c_data(exampleN_C_dat)
-#'
-prepare_n_to_c_data <- function(poi_matrix_min, model_site = "model_site") {
-  # Add imputation status based on model name
-  poi_matrix_min$imputation_status <- ifelse(
-    grepl("imputed", poi_matrix_min[[model_site]]),
-    "imputed",
-    "observed"
-  )
-
-  # Ensure numeric types for position columns
-  class(poi_matrix_min[["startModSite"]]) <- "numeric"
-  class(poi_matrix_min[["endModSite"]]) <- "numeric"
-
-  # Calculate positions and handle non-localized sites
-  poi_matrix_min <- poi_matrix_min |>
-    dplyr::mutate(
-      posInProtein = ifelse(
-        .data$AllLocalized,
-        .data$posInProtein,
-        as.integer(.data$startModSite + .data$endModSite) / 2
-      )
-    ) |>
-    dplyr::mutate(
-      modAA = ifelse(.data$AllLocalized, .data$modAA, "NotLoc")
-    )
-
-  return(poi_matrix_min)
-}
-
 #' N to C plot using ggplot2
 #' @param poi_matrix_min data.frame with phosphorylation data
 #' @param protein_name name of protein
@@ -150,8 +112,8 @@ prepare_n_to_c_data <- function(poi_matrix_min, model_site = "model_site") {
 #' @export
 #' @examples
 #' data(exampleN_C_dat)
-#' # Prepare data for plotting
-#' poi_matrix_min <- prepare_n_to_c_data(exampleN_C_dat)
+#' poi_matrix_min <- exampleN_C_dat
+#' poi_matrix_min$imputation_status <- "observed"
 #'
 #' n_to_c_plot(subset(poi_matrix_min, protein_Id == "A0A1I9LPZ1"), "A0A1I9LPZ1", 2160, "H1FC")
 #' n_to_c_plot(subset(poi_matrix_min, protein_Id == "A0A178US29"), "A0A178US29", 806, "H1FC")

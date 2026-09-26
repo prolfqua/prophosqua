@@ -247,6 +247,16 @@ test_that("CF needs the imputedData layer of both DEAs", {
   }
 })
 
+test_that("CF asks for lm_impute when a DEA carries no imputation at all", {
+  fixture <- cf_pair()
+  for (side in c("site", "protein")) {
+    pair <- fixture$pair
+    pair[[side]]$imputed_abundances <- NULL
+    pair[[side]]$imputation <- NULL
+    expect_error(cf_from_pair(pair), "lm_impute model")
+  }
+})
+
 test_that("the CF variants survive the MuData round trip", {
   fixture <- ptm_result_fixture()
   statistics <- read_ptm_h5mu(fixture$output, PTM_statistics)

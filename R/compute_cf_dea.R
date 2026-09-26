@@ -140,8 +140,9 @@ compute_cf_dea <- function(phospho_dea_dir, protein_dea_dir, remove_contaminants
 # refit then handles.
 .lm_filled_sites <- function(site) {
   keys <- c(site$sample_key, site$feature_keys)
+  imputed <- .require_imputed_abundances(site, "site")
   fitted <- dplyr::filter(site$imputation, .data$route == "fitted")
-  filled <- .require_imputed_abundances(site, "site") |>
+  filled <- imputed |>
     dplyr::semi_join(fitted, by = site$feature_keys) |>
     dplyr::select(tidyselect::all_of(keys), fitted_abundance = "normalized_abundance")
   site$normalized_abundances |>
