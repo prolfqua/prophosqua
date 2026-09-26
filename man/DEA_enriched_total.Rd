@@ -9,9 +9,9 @@ Complete paired enriched and total DEA experiments
 Complete paired enriched and total DEA experiments
 }
 \details{
-Each stage exposes only results that exist at construction. `build(Type, ...)`
-constructs a new complete stage without modifying its source. MuData is the
-persistence boundary for every stage.
+The first PTM stage: both DEA experiments as prolfquapp wrote them, with the
+reference resources and analysis parameters imported beside them. MuData is
+the persistence boundary of every stage.
 }
 \section{Methods}{
 \subsection{Public methods}{
@@ -25,7 +25,6 @@ persistence boundary for every stage.
 \item \href{#method-DEA_enriched_total-get_resources}{\code{DEA_enriched_total$get_resources()}}
 \item \href{#method-DEA_enriched_total-get_parameters}{\code{DEA_enriched_total$get_parameters()}}
 \item \href{#method-DEA_enriched_total-get_provenance}{\code{DEA_enriched_total$get_provenance()}}
-\item \href{#method-DEA_enriched_total-build}{\code{DEA_enriched_total$build()}}
 \item \href{#method-DEA_enriched_total-write_h5mu}{\code{DEA_enriched_total$write_h5mu()}}
 \item \href{#method-DEA_enriched_total-as_container}{\code{DEA_enriched_total$as_container()}}
 \item \href{#method-DEA_enriched_total-clone}{\code{DEA_enriched_total$clone()}}
@@ -53,7 +52,9 @@ Validate and retain both complete DEA experiments.
 
 \item{\code{resources}}{Imported reference data.}
 
-\item{\code{parameters}}{Analysis parameters.}
+\item{\code{parameters}}{Analysis parameters. `remove_contaminants = TRUE`
+drops the features either DEA flags as contaminants (`CON`); they are
+kept otherwise.}
 
 \item{\code{provenance}}{Source identities recorded during import.}
 }
@@ -104,7 +105,7 @@ Return stored named contrast expressions.
 \if{html}{\out{<a id="method-DEA_enriched_total-get_pair"></a>}}
 \if{latex}{\out{\hypertarget{method-DEA_enriched_total-get_pair}{}}}
 \subsection{Method \code{get_pair()}}{
-Return decoded experiments for the existing computations.
+Return the experiments as prolfquapp's reader decoded them.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{DEA_enriched_total$get_pair()}\if{html}{\out{</div>}}
 }
@@ -139,25 +140,6 @@ Return original source identities.
 \if{html}{\out{<div class="r">}}\preformatted{DEA_enriched_total$get_provenance()}\if{html}{\out{</div>}}
 }
 
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-DEA_enriched_total-build"></a>}}
-\if{latex}{\out{\hypertarget{method-DEA_enriched_total-build}{}}}
-\subsection{Method \code{build()}}{
-Build a complete next stage.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{DEA_enriched_total$build(Type, ...)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{Type}}{Target R6 class.}
-
-\item{\code{...}}{Arguments required by the target stage.}
-}
-\if{html}{\out{</div>}}
-}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-DEA_enriched_total-write_h5mu"></a>}}

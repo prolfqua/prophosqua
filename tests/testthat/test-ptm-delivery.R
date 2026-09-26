@@ -8,7 +8,7 @@ test_that("single-workbook statistics use the MuData tables", {
       analyses = list(dpa = list(subdir = "DPA"), dpu = list(subdir = "DPU"), cf = list(subdir = "CF"))
     )
   )
-  statistics <- inputs$build(DPA_DPU)$build(PTM_statistics, cf = suppressWarnings(inputs$build(CF)))
+  statistics <- suppressWarnings(PTM_statistics$new(inputs))
   before <- statistics$get_dpa_dpu()
   tables <- .ptm_workbook_tables(PTM_results$new(statistics, list()))
   expect_setequal(names(tables), c(names(statistics$get_tables()), "CF_intensities", "CF_sample_annotation"))

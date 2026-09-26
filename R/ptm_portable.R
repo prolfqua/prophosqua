@@ -103,5 +103,3 @@
   }
   invisible(value)
 }
-
-.copy_ptm_value <- function(value) .unpack_ptm_value(.pack_ptm_value(value))

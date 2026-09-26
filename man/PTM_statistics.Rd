@@ -2,11 +2,14 @@
 % Please edit documentation in R/R6_PTM_statistics.R
 \name{PTM_statistics}
 \alias{PTM_statistics}
-\title{Complete PTM statistics composed from independent analyses}
+\title{Complete PTM statistics: DPA, DPU and CorrectFirst}
 \description{
-Complete PTM statistics composed from independent analyses
+Complete PTM statistics: DPA, DPU and CorrectFirst
 
-Complete PTM statistics composed from independent analyses
+Complete PTM statistics: DPA, DPU and CorrectFirst
+}
+\details{
+Computed from the paired DEA experiments, or restored from stored results.
 }
 \section{Methods}{
 \subsection{Public methods}{
@@ -17,7 +20,6 @@ Complete PTM statistics composed from independent analyses
 \item \href{#method-PTM_statistics-get_cf}{\code{PTM_statistics$get_cf()}}
 \item \href{#method-PTM_statistics-get_tables}{\code{PTM_statistics$get_tables()}}
 \item \href{#method-PTM_statistics-get_statistics}{\code{PTM_statistics$get_statistics()}}
-\item \href{#method-PTM_statistics-build}{\code{PTM_statistics$build()}}
 \item \href{#method-PTM_statistics-as_container}{\code{PTM_statistics$as_container()}}
 \item \href{#method-PTM_statistics-write_h5mu}{\code{PTM_statistics$write_h5mu()}}
 \item \href{#method-PTM_statistics-clone}{\code{PTM_statistics$clone()}}
@@ -27,17 +29,24 @@ Complete PTM statistics composed from independent analyses
 \if{html}{\out{<a id="method-PTM_statistics-new"></a>}}
 \if{latex}{\out{\hypertarget{method-PTM_statistics-new}{}}}
 \subsection{Method \code{new()}}{
-Combine completed DPA/DPU and CF analyses from the same inputs.
+Compute DPA, moderated and unmoderated DPU, and CorrectFirst
+  with its imputed variants, or restore them.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{PTM_statistics$new(dpa_dpu, cf)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{PTM_statistics$new(
+  inputs,
+  dpa_dpu = .compute_dpa_dpu_from_pair(inputs$get_pair()),
+  cf = .compute_cf_dea_from_pair(inputs$get_pair())
+)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{dpa_dpu}}{Complete DPA_DPU stage.}
+\item{\code{inputs}}{Complete DEA_enriched_total stage.}
 
-\item{\code{cf}}{Complete CF stage.}
+\item{\code{dpa_dpu}}{Stored DPA/DPU result, when restoring.}
+
+\item{\code{cf}}{Stored CorrectFirst result, when restoring.}
 }
 \if{html}{\out{</div>}}
 }
@@ -56,7 +65,7 @@ Return the paired inputs.
 \if{html}{\out{<a id="method-PTM_statistics-get_dpa_dpu"></a>}}
 \if{latex}{\out{\hypertarget{method-PTM_statistics-get_dpa_dpu}{}}}
 \subsection{Method \code{get_dpa_dpu()}}{
-Return completed DPA/DPU report inputs.
+Return the DPA/DPU results.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{PTM_statistics$get_dpa_dpu()}\if{html}{\out{</div>}}
 }
@@ -66,7 +75,8 @@ Return completed DPA/DPU report inputs.
 \if{html}{\out{<a id="method-PTM_statistics-get_cf"></a>}}
 \if{latex}{\out{\hypertarget{method-PTM_statistics-get_cf}{}}}
 \subsection{Method \code{get_cf()}}{
-Return completed CF report inputs.
+Return the CorrectFirst results; the imputed variants are
+  under `variants`.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{PTM_statistics$get_cf()}\if{html}{\out{</div>}}
 }
@@ -91,25 +101,6 @@ Return this complete statistics component.
 \if{html}{\out{<div class="r">}}\preformatted{PTM_statistics$get_statistics()}\if{html}{\out{</div>}}
 }
 
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-PTM_statistics-build"></a>}}
-\if{latex}{\out{\hypertarget{method-PTM_statistics-build}{}}}
-\subsection{Method \code{build()}}{
-Build a complete next stage.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{PTM_statistics$build(Type, ...)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{Type}}{Target R6 class.}
-
-\item{\code{...}}{Target arguments.}
-}
-\if{html}{\out{</div>}}
-}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-PTM_statistics-as_container"></a>}}

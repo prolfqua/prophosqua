@@ -1,8 +1,8 @@
 make_stage_gsea <- function(category, empty = FALSE) {
   genes <- c(
-    "AAAAAAASAAAAAAA-p" = 2.5,
-    "BBBBBBBSBBBBBBB-p" = 1.5,
-    "CCCCCCCSCCCCCCC-p" = -2
+    "AAAAAAASAAAAAAA" = 2.5,
+    "BBBBBBBSBBBBBBB" = 1.5,
+    "CCCCCCCSCCCCCCC" = -2
   )
   result <- data.frame(
     ID = "CDK2",
@@ -15,7 +15,7 @@ make_stage_gsea <- function(category, empty = FALSE) {
     rank = 3L,
     leading_edge = "tags=50%, list=33%, signal=75%",
     p.adjust = 0.003,
-    core_enrichment = "CCCCCCCSCCCCCCC-p",
+    core_enrichment = "CCCCCCCSCCCCCCC",
     stringsAsFactors = FALSE
   )
   if (empty) {
@@ -30,7 +30,7 @@ make_stage_gsea <- function(category, empty = FALSE) {
     readable = FALSE,
     geneList = genes,
     result = result,
-    geneSets = list(CDK2 = c("AAAAAAASAAAAAAA-p", "CCCCCCCSCCCCCCC-p"))
+    geneSets = list(CDK2 = c("AAAAAAASAAAAAAA", "CCCCCCCSCCCCCCC"))
   )
 }
 
@@ -63,7 +63,7 @@ make_ptm_enrichment_fixture <- function(empty = FALSE) {
       )
     )
   )
-  statistics <- inputs$build(DPA_DPU)$build(PTM_statistics, cf = suppressWarnings(inputs$build(CF)))
+  statistics <- suppressWarnings(PTM_statistics$new(inputs))
   branches <- unlist(
     lapply(c("DPA", "DPU", "CF"), make_ptm_enrichment_branches, statistics = statistics, empty = empty),
     recursive = FALSE
@@ -76,21 +76,7 @@ make_ptm_enrichment_fixture <- function(empty = FALSE) {
 
 make_ptm_enrichment_branches <- function(analysis, statistics, empty) {
   ptm_gsea <- make_stage_gsea("PTM-SEA", empty)
-  ptmsea_result <- list(
-    results = list(a_vs_b = ptm_gsea),
-    ranks = list(a_vs_b = ptm_gsea@geneList),
-    all_clean = data.frame(),
-    pathways = ptm_gsea@geneSets,
-    data_info = data.frame(value = 1),
-    ptmsigdb_summary = data.frame(value = 1),
-    overlap_stats = data.frame(value = 1),
-    n_overlap = 1L,
-    n_our_sites = 3L,
-    prep_info = data.frame(value = 1),
-    results_info = data.frame(value = 1),
-    has_results = !empty,
-    analysis_inputs = list(source = "fixture")
-  )
+  ptmsea_result <- list(results = list(a_vs_b = ptm_gsea), all_clean = data.frame())
   ptmsea <- PTMSEA$new(statistics, analysis, ptmsea_result)
 
   rank_table <- data.frame(
@@ -111,34 +97,14 @@ make_ptm_enrichment_branches <- function(analysis, statistics, empty) {
   kinase_gsea <- make_stage_gsea("KinaseLib", empty)
   kinase_result <- list(
     gsea_results = list(a_vs_b = kinase_gsea),
-    ranks = list(a_vs_b = kinase_gsea@geneList),
     all_results = data.frame(),
-    term2gene = assignments$get_results()$term2gene,
-    term2gene_df = assignments$get_results()$term2gene,
-    n_our_sequences = 3L,
-    n_overlap_seqs = 2L,
-    data_info = data.frame(value = 1),
-    kl_info = data.frame(value = 1),
-    assignment_stats = data.frame(value = 1),
-    kinase_stats = data.frame(value = 1),
-    ranks_info = data.frame(value = 1),
-    gsea_info = data.frame(value = 1),
-    has_results = !empty,
-    analysis_inputs = list(source = "fixture")
+    gsea_info = data.frame(value = 1)
   )
   kinase <- KinaseGSEA$new(assignments, analysis, kinase_result)
 
-  mea_document <- gsea_result_data(
-    list(a_vs_b = kinase_gsea),
-    category = "MEA",
-    method = "gseapy"
+  mea_json <- protsea::gsea_result_json_text(
+    protsea::gsea_result_data(list(a_vs_b = kinase_gsea), category = "MEA", method = "gseapy")
   )
-  mea_json <- as.character(jsonlite::toJSON(
-    mea_document,
-    auto_unbox = TRUE,
-    digits = NA,
-    na = "null"
-  ))
   mea_clean <- data.frame(
     contrast = "a_vs_b",
     kinase = "CDK2",
@@ -160,13 +126,7 @@ make_ptm_enrichment_branches <- function(analysis, statistics, empty) {
   mea <- MEA$new(
     motif,
     analysis,
-    list(
-      mea_clean = mea_clean,
-      summary_df = data.frame(contrast = "a_vs_b", total_kinases = nrow(mea_clean)),
-      n_files = 1L,
-      has_results = !empty,
-      analysis_inputs = list(source = "fixture")
-    )
+    list(mea_clean = mea_clean, summary_df = data.frame(contrast = "a_vs_b", total_kinases = nrow(mea_clean)))
   )
   list(ptmsea, kinase, mea)
 }

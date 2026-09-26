@@ -15,8 +15,7 @@ test_that("compact CBOR stages assemble the same nine final JSON documents", {
     inputs <- assignments$get_source()
     motif <- mea$get_source()
     for (stage in list(ptmsea, inputs, assignments, motif, kinase, mea)) {
-      json <- class(stage)[1L] %in% c("PTMSEA", "KinaseGSEA", "MEA")
-      path <- tempfile(fileext = if (json) ".json.gz" else ".cbor.gz")
+      path <- tempfile(fileext = ".cbor.gz")
       .write_ptm_cbor(stage, path, hash)
       paths <- c(paths, path)
     }
@@ -24,6 +23,9 @@ test_that("compact CBOR stages assemble the same nine final JSON documents", {
   assembled <- assemble_ptm_cbor(statistics_path, paths, output_path)
   expect_s3_class(assembled, "PTM_results")
   expect_identical(names(assembled$get_enrichment_documents()), names(final$get_enrichment_documents()))
+  restored <- read_ptm_h5mu(output_path, PTM_results)
+  expect_identical(restored$get_enrichment_documents(), assembled$get_enrichment_documents())
+  expect_identical(names(restored$get_enrichments()), names(final$get_enrichments()))
   # A stored document names the statistics it came from; an in-memory one cannot.
   for (key in names(final$get_enrichment_documents())) {
     actual <- assembled$get_enrichment_documents()[[key]]
@@ -40,7 +42,7 @@ test_that("compact CBOR stages assemble the same nine final JSON documents", {
   bad_path <- tempfile(fileext = ".cbor.gz")
   stored <- readBin(paths[[2]], what = "raw", n = file.info(paths[[2]])$size)
   artifact <- secretbase::cbordec(memDecompress(stored, type = "gzip"))
-  artifact$statistics_sha256 <- paste0("0", substring(artifact$statistics_sha256, 2))
+  artifact$statistics_sha256 <- strrep("0", nchar(artifact$statistics_sha256))
   connection <- gzfile(bad_path, "wb")
   writeBin(secretbase::cborenc(artifact), connection)
   close(connection)

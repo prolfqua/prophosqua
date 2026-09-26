@@ -14,23 +14,18 @@ validate_sequence_window(
 \arguments{
 \item{data}{Data frame with PTM results containing SequenceWindow and modAA columns}
 
-\item{seq_col}{Character. Name of sequence window column. Default "SequenceWindow"}
+\item{seq_col}{Name of the sequence window column.}
 
-\item{mod_col}{Character. Name of modified amino acid column. Default "modAA"}
+\item{mod_col}{Name of the modified amino acid column.}
 
-\item{center_pos}{Integer. Position of the central residue (1-indexed). Default 8}
+\item{center_pos}{Position of the central residue (1-indexed).}
 }
 \value{
 Filtered data frame with only valid sequence windows
 }
 \description{
-Filters phosphosite data to keep only rows where the central residue of
-the SequenceWindow matches the reported modified amino acid (modAA).
-}
-\details{
-Sequence windows should be centered on the modified residue. This function
-validates that the character at the center position matches the reported
-modification site. Both are converted to uppercase for comparison.
+Keeps only rows where the central residue of the sequence window matches the
+reported modified amino acid, compared case-insensitively.
 }
 \examples{
 data <- data.frame(
@@ -38,5 +33,4 @@ data <- data.frame(
   modAA = c("S", "S", "S")
 )
 validate_sequence_window(data)
-# Only first two rows kept (center matches S)
 }

@@ -11,7 +11,7 @@ run_ptm_sh <- function(...) {
   lib <- dirname(system.file(package = "prophosqua"))
   suppressWarnings(system2(
     "bash",
-    c(shQuote(application_file("bin/ptm.sh")), ...),
+    c(shQuote(system.file("application", "bin", "ptm.sh", package = "prophosqua")), ...),
     stdout = TRUE,
     stderr = TRUE,
     env = c(paste0("R_LIBS=", paste(c(lib, .libPaths()), collapse = ":")), "R_TESTS=")
@@ -23,31 +23,15 @@ test_that("report_file resolves every analysis report from the installed doc/", 
   # when the vignettes were built; an install that skipped them has no doc/ and
   # nothing to resolve. R CMD check --no-build-vignettes is exactly that case.
   skip_if(
-    !nzchar(system.file("doc", "Analysis_DPA_DPU.Rmd", package = "prophosqua")),
+    !nzchar(system.file("doc", "ptm_statistics.qmd", package = "prophosqua")),
     "package installed without vignettes built"
   )
 
-  reports <- c(
-    "Analysis_DPA_DPU.Rmd",
-    "Analysis_CorrectFirst_DEA.Rmd",
-    "Analysis_n_to_c.Rmd",
-    "Analysis_seqlogo.Rmd",
-    "Analysis_PTMSEA.Rmd",
-    "Analysis_KinaseLibrary.Rmd",
-    "Analysis_MEA.Rmd"
-  )
+  reports <- c("ptm_statistics.qmd", "ptm_enrichment.qmd")
   for (report in reports) {
     path <- report_file(report)
     expect_true(file.exists(path), info = report)
     expect_equal(basename(dirname(path)), "doc", info = report)
-  }
-})
-
-test_that("report_file resolves the templates that are not analyses from inst/application", {
-  for (template in c("create_top_index.Rmd", "_Overview_PhosphoAndIntegration_site.Rmd")) {
-    path <- report_file(template)
-    expect_true(file.exists(path), info = template)
-    expect_equal(basename(dirname(path)), "application", info = template)
   }
 })
 
@@ -56,37 +40,6 @@ test_that("report_file says what an install without vignettes is missing", {
     report_file("Analysis_NoSuchReport.Rmd"),
     "installed with its vignettes built"
   )
-})
-
-test_that("application_file resolves the overview include and its bibliography", {
-  for (file in c("_Overview_PhosphoAndIntegration_site.Rmd", "bibliography2025.bib")) {
-    expect_true(file.exists(application_file(file)), info = file)
-  }
-})
-
-test_that("application_file resolves every command script and its wrapper", {
-  scripts <- c(
-    "CMD_DPA_DPU.R",
-    "CMD_CF_DEA.R",
-    "CMD_IMPORT_H5MU.R",
-    "CMD_PTM_H5MU.R",
-    "CMD_ENRICH_CBOR.R",
-    "CMD_ASSEMBLE_H5MU.R",
-    "CMD_EXPORT_H5MU.R",
-    "CMD_COMBINE_RESULTS.R",
-    "CMD_PREP_PTMSIGDB.R",
-    "CMD_PREP_KINASELIB.R",
-    "CMD_DPU_OVERVIEW.R",
-    "CMD_PTMSEA.R",
-    "CMD_KINASELIB_GSEA.R",
-    "CMD_MEA.R",
-    "CMD_RENDER.R"
-  )
-  for (script in scripts) {
-    expect_true(file.exists(application_file(script)), info = script)
-  }
-
-  expect_true(file.exists(application_file("bin/ptm.sh")))
 })
 
 test_that("copy_ptm_shell_script places one executable wrapper", {
@@ -106,7 +59,7 @@ test_that("ptm.sh help names every command script the package installs", {
   installed <- tolower(sub(
     "^CMD_(.*)\\.R$",
     "\\1",
-    basename(list.files(dirname(application_file("CMD_RENDER.R")), pattern = "^CMD_.*\\.R$"))
+    basename(list.files(system.file("application", package = "prophosqua"), pattern = "^CMD_.*\\.R$"))
   ))
   listed <- sub("^ +([a-z0-9_]+) +.*$", "\\1", grep("^ +[a-z0-9_]+ +\\S", help, value = TRUE))
   expect_true(length(listed) > 0)
@@ -121,11 +74,4 @@ test_that("ptm.sh refuses a command it does not have", {
   status <- run_ptm_sh("no_such_step")
   expect_equal(attr(status, "status"), 2L)
   expect_true(any(grepl("no such command", status)))
-})
-
-test_that("application_file tells the caller to reinstall when a file is missing", {
-  expect_error(
-    application_file("Analysis_does_not_exist.Rmd"),
-    "Reinstall the package"
-  )
 })

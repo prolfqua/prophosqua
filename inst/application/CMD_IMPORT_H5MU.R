@@ -17,6 +17,5 @@ opt <- parse_args(OptionParser(
 ))
 stopifnot(!is.null(opt$enriched), !is.null(opt$total), !is.null(opt$config_json), !is.null(opt$output))
 parameters <- jsonlite::fromJSON(opt$config_json, simplifyVector = FALSE)
-resources <- prophosqua:::.import_ptm_resources(parameters, opt$ptmsigdb)
 dir.create(dirname(opt$output), recursive = TRUE, showWarnings = FALSE)
-prophosqua::import_ptm_h5mu(opt$enriched, opt$total, opt$output, resources, parameters)
+prophosqua::import_ptm_h5mu(opt$enriched, opt$total, opt$output, parameters, opt$ptmsigdb)

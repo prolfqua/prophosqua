@@ -42,7 +42,8 @@ Assemble all enabled analyses from their completed stages.
 \describe{
 \item{\code{statistics}}{Complete PTM_statistics stage.}
 
-\item{\code{enrichments}}{List of complete PTMSEA, KinaseGSEA and MEA objects.}
+\item{\code{enrichments}}{List of complete PTMSEA, KinaseGSEA and MEA objects,
+computed from `statistics`.}
 
 \item{\code{enrichment_documents}}{Stored JSON documents when restoring MuData.}
 

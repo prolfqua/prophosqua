@@ -13,7 +13,7 @@ test_that("kinase GSEA retains substrate sets larger than the PTM-SEA limit", {
   result <- suppressWarnings(.compute_kinase_tables(
     data,
     term2gene,
-    "DPA",
+    "statistic.site",
     min_size = 10L,
     max_size = 5000L,
     n_perm = 1000L

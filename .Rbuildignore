@@ -52,6 +52,7 @@
 ^Makefile$
 ^Rplots\.pdf$
 ^TODO\.md$
+^TODO$
 ^_pkgdown\.yml$
 ^air\.toml$
 ^docs$

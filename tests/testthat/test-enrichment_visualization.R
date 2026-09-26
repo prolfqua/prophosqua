@@ -23,16 +23,6 @@ test_that("prepare_enrichment_data respects custom fdr_threshold", {
   expect_equal(result$significant, c(TRUE, FALSE))
 })
 
-test_that("plot_enrichment_dotplot returns ggplot", {
-  df <- data.frame(
-    kinase = c("A", "B", "C"),
-    NES = c(1.5, -1.2, 0.8),
-    FDR = c(0.01, 0.05, 0.2)
-  )
-  p <- plot_enrichment_dotplot(df, n_top = 3)
-  expect_s3_class(p, "ggplot")
-})
-
 test_that("plot_enrichment_volcano returns ggplot", {
   df <- data.frame(
     kinase = c("A", "B", "C"),
@@ -53,19 +43,6 @@ test_that("plot_enrichment_heatmap returns ggplot", {
   )
   p <- plot_enrichment_heatmap(df, n_top = 2)
   expect_s3_class(p, "ggplot")
-})
-
-test_that("summarize_enrichment_results handles data frame input", {
-  df <- data.frame(
-    contrast = c("A", "A", "A", "B", "B"),
-    FDR = c(0.01, 0.08, 0.15, 0.03, 0.12)
-  )
-  result <- summarize_enrichment_results(df)
-
-  expect_equal(nrow(result), 2)
-  expect_true("total" %in% names(result))
-  expect_true("FDR < 0.1" %in% names(result))
-  expect_true("FDR < 0.05" %in% names(result))
 })
 
 test_that("extract_gsea_results handles empty results gracefully", {

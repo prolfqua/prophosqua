@@ -39,7 +39,6 @@ ggplot object
 Create volcano plot for enrichment results
 }
 \examples{
-# Multi-contrast kinase enrichment results
 kinase_results <- data.frame(
   kinase = rep(c("PKACA", "AKT1", "MAPK1", "CDK1"), 2),
   NES = c(2.1, 1.5, -1.8, 0.5, 1.2, -0.8, 1.9, -1.1),
@@ -47,8 +46,4 @@ kinase_results <- data.frame(
   contrast = rep(c("Treatment_vs_Control", "Timepoint_vs_Baseline"), each = 4)
 )
 plot_enrichment_volcano(kinase_results, title = "Kinase Enrichment Volcano")
-
-# Customize labeling thresholds
-plot_enrichment_volcano(kinase_results, fdr_threshold = 0.05,
-                        label_fdr_threshold = 0.02, n_labels = 3)
 }

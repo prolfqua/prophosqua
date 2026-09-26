@@ -20,3 +20,32 @@
     ptmsigdb_source = list(files = basename(sources), md5 = unname(tools::md5sum(sources)))
   )
 }
+
+read_ptmsigdb <- function(ptmsigdb_file) {
+  if (grepl("\\.rds$", ptmsigdb_file)) readRDS(ptmsigdb_file) else fgsea::gmtPathways(ptmsigdb_file)
+}
+
+# Human and mouse are merged rather than chosen between: the signatures are
+# keyed on flanking sequence, not on organism, so a conserved site contributes
+# the same sequence from either, and a signature curated in only one of them
+# would otherwise be lost for the other.
+.prepare_ptmsigdb_pathways <- function(pathways_human, pathways_mouse, keep_sources, trim_to) {
+  all_names <- union(names(pathways_human), names(pathways_mouse))
+  merged <- stats::setNames(
+    lapply(all_names, function(name) unique(c(pathways_human[[name]], pathways_mouse[[name]]))),
+    all_names
+  )
+  kept <- merged[grepl(paste0("^(", paste(keep_sources, collapse = "|"), ")_"), names(merged))]
+  message(
+    "PTMsigDB: kept ",
+    length(kept),
+    " of ",
+    length(merged),
+    " signatures (",
+    paste(keep_sources, collapse = ", "),
+    "), trimmed to ",
+    trim_to,
+    " residues"
+  )
+  trim_ptmsigdb_pathways(kept, trim_to)
+}

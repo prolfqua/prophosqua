@@ -1,21 +1,3 @@
-test_that("canonicalize_sequence_window accepts the flanking column under either name", {
-  already <- data.frame(SequenceWindow = "AAASAAA")
-  expect_identical(canonicalize_sequence_window(already), already)
-
-  other <- data.frame(PTM_FlankingRegion = "AAASAAA")
-  expect_equal(
-    suppressMessages(canonicalize_sequence_window(other))$SequenceWindow,
-    "AAASAAA"
-  )
-})
-
-test_that("canonicalize_sequence_window errors when neither name is present", {
-  expect_error(
-    canonicalize_sequence_window(data.frame(site = "P1~S1")),
-    "No SequenceWindow or PTM_FlankingRegion"
-  )
-})
-
 test_that("filter_sequence_windows drops windows a motif scan cannot use", {
   data <- data.frame(
     SequenceWindow = c(
@@ -82,50 +64,4 @@ test_that("rank_sites_for_mea ranks on the requested column", {
   out <- rank_sites_for_mea(data, "other_stat", "a_vs_b")
   expect_equal(out$SequenceWindow, c("W1", "W2"))
   expect_equal(out$statistic.site, c(9, 1))
-})
-
-test_that("prep_kinaselib_inputs writes one seqwindow list and one rnk per contrast", {
-  data <- data.frame(
-    SequenceWindow = c("AAAAAAASAAAAAAA", "BBBBBBBSBBBBBBB", "AAAAAAASAAAAAAA"),
-    contrast = c("a_vs_b", "a_vs_b", "c/b"),
-    statistic.site = c(2, -3, 1)
-  )
-  xlsx <- tempfile(fileext = ".xlsx")
-  writexl::write_xlsx(list(DPA = data), xlsx)
-  out_dir <- tempfile("KinaseLib")
-
-  written <- suppressMessages(prep_kinaselib_inputs(
-    xlsx,
-    out_dir,
-    analysis_type = "DPA",
-    sheet = "DPA",
-    stat_column = "statistic.site"
-  ))
-
-  expect_true(file.exists(file.path(out_dir, "DPA_seqwindows.tsv")))
-  # The contrast name carries a slash, which cannot go into a file name.
-  expect_true(file.exists(file.path(out_dir, "DPA_MEA_c_b.rnk")))
-  expect_true(file.exists(file.path(out_dir, "DPA_MEA_a_vs_b.rnk")))
-  expect_length(written, 3)
-
-  seqwindows <- utils::read.delim(file.path(out_dir, "DPA_seqwindows.tsv"))
-  expect_equal(seqwindows$SequenceWindow, c("AAAAAAASAAAAAAA", "BBBBBBBSBBBBBBB"))
-})
-
-test_that("prep_kinaselib_inputs names the available columns when the statistic is absent", {
-  xlsx <- tempfile(fileext = ".xlsx")
-  writexl::write_xlsx(
-    list(DPA = data.frame(SequenceWindow = "AAAAAAASAAAAAAA", contrast = "a_vs_b")),
-    xlsx
-  )
-  expect_error(
-    suppressMessages(prep_kinaselib_inputs(
-      xlsx,
-      tempfile(),
-      "DPA",
-      "DPA",
-      "statistic.site"
-    )),
-    "Statistic column 'statistic.site' not found"
-  )
 })

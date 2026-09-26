@@ -4,21 +4,23 @@
 \alias{compute_cf_dea}
 \title{Compute PTM Usage the CorrectFirst Way}
 \usage{
-compute_cf_dea(phospho_dea_dir, protein_dea_dir, annot_file)
+compute_cf_dea(phospho_dea_dir, protein_dea_dir, remove_contaminants = FALSE)
 }
 \arguments{
-\item{phospho_dea_dir}{Path to the phospho DEA output directory.}
+\item{phospho_dea_dir}{Path to the phospho DEA output directory; its
+`Results_WU_*/AnnData.h5ad` is read.}
 
-\item{protein_dea_dir}{Path to the total-proteome DEA output directory.}
+\item{protein_dea_dir}{Path to the total-proteome DEA output directory; its
+`Results_WU_*/AnnData.h5ad` is read.}
 
-\item{annot_file}{Sample annotation defining the groups and the contrasts.
-Two layouts are accepted, see the contrast derivation below.}
+\item{remove_contaminants}{Drop the sites and proteins the DEAs flag as
+contaminants (`CON`). Like the DEAs, the default keeps them.}
 }
 \value{
 A list carrying the result table and everything a report needs to
-  describe it without refitting: `results`, `ptm_data`, `ctr`, `annot`,
-  `contrasts`, `wide_data`, `wide_annotation`, `model_counts`, and the
-  measurement and model counts the prose quotes.
+  describe it without refitting: `results`, `ptm_data`,
+  `contrasts`, `wide_data`, `wide_annotation`, `model_counts`, the
+  measurement and model counts the prose quotes, and `variants`.
 }
 \description{
 Corrects phosphosite abundances by their protein abundance **before**
@@ -30,23 +32,36 @@ fold changes afterwards.
 \details{
 The correction is a subtraction on the log2 scale, so it is a ratio on the
 linear scale: a site keeps only the signal its protein does not explain.
-Sites whose protein was not quantified in the same sample drop out at the
-join and are absent from the result.
+The sample's median protein abundance is added back, so the corrected value
+stays on the log2 intensity scale. Sites whose protein was not quantified in
+the same sample drop out at the join, and a site left without a corrected
+value in any sample is absent from the result.
 
-Site-contrast pairs whose estimate would rest on an imputed value in one of
-the two groups are dropped from `results`, because a fold change measured
-against an imputed level is not interpretable. `model_counts` and `n_before`
-record that split so a report can state what was dropped.
+Two variants are returned under `variants`. `correct_first_protein_imputed`
+corrects the observed site values with the protein DEA's `imputedData`
+layer and is fitted like CF: it has a `results` table and its corrected
+`abundances` (samples x sites). `correct_first_site_protein_imputed` also
+fills the site values from the site's own lm fit (sites the site DEA
+refitted at the LOD keep their gaps) and has `abundances` only: its filled
+values are the site model's predictions, and a fit on them would count them
+as observations and reuse the site's data. The per-sample median added back
+is always that of the observed protein values. Every results row counts the
+imputed protein values its fit used (`n_protein_imputed`).
+
+The model formula and the contrasts are the ones the DEAs recorded; the site
+and protein DEAs must agree on the formula.
+
+The model is prolfqua's `lm_impute` facade, as in the prolfquapp DEA behind
+DPA: a site whose fit fails or has fewer than two residual degrees of
+freedom, typically one observed in a single group, is refitted with its
+missing values at the limit of detection, the lower quartile of corrected
+values seen once in a group, and a variance borrowed from the fully fitted
+sites. Those rows carry `estimate_type == "lod_imputed"`, and
+`model_counts` records the split by `estimate_type`.
 }
 \examples{
-# Needs two prolfquapp DEA output directories and an annotation; see
-# tests/testthat/helper-dea_fixture.R for the synthetic set the tests use.
 \dontrun{
-res <- compute_cf_dea(
-  phospho_dea_dir = "DEA_20260814_WUphospho_vsn",
-  protein_dea_dir = "DEA_20260814_WUtotal_vsn",
-  annot_file = "phospho_dataset.tsv"
-)
+res <- compute_cf_dea("DEA_20260814_WUphospho_vsn", "DEA_20260814_WUtotal_vsn")
 res$model_counts
 }
 }

@@ -654,7 +654,7 @@ dt_table(
 
 ## Quality control
 
-CorrectFirst subtracts protein abundance from site abundance on the log2 scale before modelling. The two plots assess the corrected sample-level values entering that model.
+CorrectFirst subtracts the protein abundance from the site abundance on the log2 scale and adds back the sample's median protein abundance before modelling. The two plots assess the corrected sample-level values entering that model.
 
 ::: {layout-ncol="2"}
 

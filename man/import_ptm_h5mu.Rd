@@ -8,8 +8,8 @@ import_ptm_h5mu(
   enriched_h5ad,
   total_h5ad,
   output_h5mu,
-  resources = list(),
-  parameters = list()
+  parameters = list(),
+  ptmsigdb = NULL
 )
 }
 \arguments{
@@ -17,11 +17,16 @@ import_ptm_h5mu(
 
 \item{output_h5mu}{Destination.}
 
-\item{resources, parameters}{Imported reference data and analysis parameters.}
+\item{parameters}{Analysis parameters, the merged pipeline configuration.}
+
+\item{ptmsigdb}{Filtered PTMsigDB as `.rds` or `.gmt`. When `NULL` and the
+kinase analyses are enabled, PTMsigDB is downloaded and filtered as
+`parameters$ptmsigdb` asks.}
 }
 \value{
 Complete paired-input stage, invisibly.
 }
 \description{
-Import paired DEA files into the first complete MuData stage
+Reads the two DEA files and the reference resources the enabled analyses
+need, once; every later stage reads MuData only.
 }

@@ -12,29 +12,24 @@ download_ptmsigdb(
 )
 }
 \arguments{
-\item{species}{Character. Species for signatures ("mouse" or "human"). Default "mouse".}
+\item{species}{"mouse" or "human".}
 
-\item{version}{Character. PTMsigDB version. Default "v2.0.0".}
+\item{version}{PTMsigDB version.}
 
-\item{output_dir}{Character. Directory for cached files. Default current directory.}
+\item{output_dir}{Directory for the cached file.}
 
-\item{force_download}{Logical. Force re-download even if cached. Default FALSE.}
+\item{force_download}{Re-download even when cached.}
 }
 \value{
-Character path to the cached GMT file.
+Path to the cached GMT file.
 }
 \description{
-Downloads and caches PTMsigDB GMT files from the Broad Institute ssGSEA2.0 repository.
-PTMsigDB v2.0.0 uses flanking sequences (15 amino acids centered on the phosphosite),
-making the analysis species-invariant within vertebrates.
-}
-\examples{
-\dontrun{
-gmt_path <- download_ptmsigdb(species = "mouse", output_dir = "ptmsea_cache")
-pathways <- fgsea::gmtPathways(gmt_path)
-}
+Downloads and caches a PTMsigDB GMT file from the Broad Institute ssGSEA2.0
+repository. PTMsigDB v2.0.0 keys its sites on flanking sequences (15 residues
+centred on the site), so the signatures hold across vertebrates.
 }
 \references{
 Krug et al. (2019) A Curated Resource for Phosphosite-specific Signature Analysis.
 Mol Cell Proteomics. doi:10.1074/mcp.TIR118.000943
 }
+\keyword{internal}

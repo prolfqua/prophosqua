@@ -13,7 +13,6 @@ test_that("PTM-SEA and Kinase GSEA retain tested terms above the FDR cutoff", {
   ptmsea <- suppressWarnings(.compute_ptmsea_tables(
     data,
     lapply(sets, paste0, "-p"),
-    "DPA",
     "statistic.site",
     trim_to = 15L,
     min_size = 10L,
@@ -30,7 +29,7 @@ test_that("PTM-SEA and Kinase GSEA retain tested terms above the FDR cutoff", {
   kinase <- suppressWarnings(.compute_kinase_tables(
     data,
     term2gene,
-    "DPA",
+    "statistic.site",
     min_size = 10L,
     max_size = 5000L,
     n_perm = 1000L

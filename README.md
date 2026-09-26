@@ -55,36 +55,31 @@ devtools::install_github('prolfqua/prophosqua', dependencies = TRUE, build_vigne
 ### Basic Workflow
 
 1. Run DEA with `prolfquapp` for enriched sites and total protein.
-2. Import both schema 2.0.0 `AnnData.h5ad` files into `PTM_inputs.h5mu`, including the stored design, contrasts, parameters, and reference data.
-3. Compute DPA/DPU and CorrectFirst from those paired inputs, then complete the enrichment branches. Every persisted handoff is MuData.
-4. Assemble `PTM_results.h5mu`, render reports from it, and export Excel/RDS delivery files last. The `ptm-pipeline` workflow coordinates these steps.
+2. Import both `AnnData.h5ad` files, the analysis parameters and the reference data into `PTM_inputs.h5mu`.
+3. Compute DPA, DPU and CorrectFirst into `PTM_statistics.h5mu`, then each enrichment stage into a gzipped CBOR artifact.
+4. Assemble `PTM_results.h5mu`, which names its CBOR artifacts, render the reports from it, and export the delivery workbook last. The `ptm-pipeline` workflow coordinates these steps.
 
-Each completed stage has its own R6 type. A transition returns a new complete object; it does not add optional fields to an earlier object.
+Each persisted stage has its own R6 type, and MuData is the persistence boundary:
 
 ```r
 library(prophosqua)
 
 inputs <- import_ptm_h5mu("phospho/AnnData.h5ad", "total/AnnData.h5ad", "PTM_inputs.h5mu")
-dpa_dpu <- inputs$build(DPA_DPU)
-cf <- inputs$build(CF)
-statistics <- dpa_dpu$build(PTM_statistics, cf = cf)
+statistics <- PTM_statistics$new(inputs)
 statistics$write_h5mu("PTM_statistics.h5mu")
 restored <- read_ptm_h5mu("PTM_statistics.h5mu", PTM_statistics)
 ```
 
-`enriched` and `total` retain both DEA experiments; `cf` contains corrected abundances. DPA statistics belong to `enriched`; DPU and CorrectFirst belong to `cf`, each with its own presence mask. Protein-to-site joins and outer-join result rows retain the existing R behavior.
+`PTM_statistics.h5mu` keeps both DEA experiments as the `enriched` and `total` modalities, with the DPA and DPU results as `varm` frames of `enriched`; CorrectFirst and its imputed variants form the `enriched_CF` modality. The pipeline runs these steps as `ptm.sh import_h5mu`, `ptm_h5mu`, `enrich_cbor`, `assemble_h5mu`, `render` and `export_h5mu`.
 
-The pipeline uses `import_h5mu` and `ptm_h5mu` to build the shared statistics file, `enrich_cbor` for compact enrichment handoffs, `assemble_h5mu` to add all nine JSON documents to final MuData, and terminal `export_h5mu`. The existing in-memory computational APIs remain available.
+For a pair of DEA folders outside the pipeline, `compute_dpa_dpu()` and `compute_cf_dea()` return the DPA/DPU and CorrectFirst results in memory.
 
 ## Vignettes
 
-The package includes vignettes demonstrating the analysis workflow:
+The vignettes are the two Quarto reports the PTM pipeline renders from MuData:
 
-- **`Analysis_n_to_c.Rmd`** - N-to-C plots for PTM site visualization
-- **`Analysis_seqlogo.Rmd`** - Sequence logo analysis
-- **`Analysis_PTMSEA.Rmd`** - PTM-SEA analysis
-- **`Analysis_KinaseLibrary.Rmd`** - Kinase activity inference from phosphoproteomics data
-- **`Analysis_MEA.Rmd`** - Motif enrichment analysis visualization
+- **`ptm_statistics.qmd`** - DPA, DPU and CorrectFirst results from `PTM_statistics.h5mu`
+- **`ptm_enrichment.qmd`** - PTM-SEA, Kinase GSEA and MEA for one analysis from `PTM_results.h5mu`
 
 The MiMB manuscript source is kept outside `vignettes/` and is rendered by
 `inst/MiMB_build/Snakefile`:

@@ -1,9 +1,5 @@
-# Synthetic prolfquapp DEA output directories.
-#
-# The compute functions read a DEA run the way prolfquapp writes it: a
-# Results_WU_* subdirectory holding a DE_*.xlsx with a diff_exp_analysis sheet
-# and, for a phospho run, a normalized_abundances sheet carrying the site
-# annotation. These builders produce the smallest output with that shape.
+# Hand-made DEA result tables for the DPA/DPU table logic: the smallest site and
+# protein results with the columns the pairing reads.
 
 # One row per protein x contrast, with the columns test_diff() needs: the effect
 # size, its standard error and its degrees of freedom.
@@ -47,42 +43,10 @@ site_dea_table <- function(protein_ids = c("P1", "P2"), contrasts = c("a_vs_b", 
   tab
 }
 
-site_annotation_table <- function(protein_ids = c("P1", "P2")) {
-  data.frame(
-    site = paste0(protein_ids, "~S10"),
-    posInProtein = rep(10L, length(protein_ids)),
-    modAA = rep("S", length(protein_ids)),
-    SequenceWindow = rep("AAAAAAASAAAAAAA", length(protein_ids)),
-    protein_Id = protein_ids,
-    gene_name = paste0("GENE", sub("^P", "", protein_ids)),
-    protein_length = rep(300L, length(protein_ids)),
-    stringsAsFactors = FALSE
-  )
-}
-
-make_dea_output <- function(diff_exp, normalized = NULL, name = "DEA_fixture") {
-  dea_dir <- tempfile(pattern = name)
-  results <- file.path(dea_dir, "Results_WU_fixture")
-  dir.create(results, recursive = TRUE)
-
-  sheets <- list(diff_exp_analysis = diff_exp)
-  if (!is.null(normalized)) {
-    sheets$normalized_abundances <- normalized
-  }
-  writexl::write_xlsx(sheets, file.path(results, "DE_fixture.xlsx"))
-
-  dea_dir
-}
-
-# A matched pair: two of the three proteins carry a tested site, so exactly one
-# protein has no site and one site has a protein.
-make_dea_pair <- function() {
+# A pair in the shape the pair computation reads.
+dea_result_pair <- function(site = site_dea_table(), protein = protein_dea_table()) {
   list(
-    phospho = make_dea_output(
-      site_dea_table(),
-      site_annotation_table(),
-      name = "DEA_phospho"
-    ),
-    protein = make_dea_output(protein_dea_table(), name = "DEA_protein")
+    site = list(differential_results = site),
+    protein = list(differential_results = protein)
   )
 }

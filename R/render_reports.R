@@ -1,196 +1,68 @@
 #' Render a Report Shipped with prophosqua
 #'
-#' Renders an installed R Markdown or Quarto vignette. A project therefore
-#' never carries a copy of a report template.
+#' Renders one of the installed Quarto reports, `ptm_statistics.qmd` or
+#' `ptm_enrichment.qmd`, so a project never carries a copy of a template.
 #'
-#' `knit_root_dir` is the working directory, not the template's directory, so
-#' relative paths in `params` mean what they mean to the caller.
-#'
-#' The output format is the one the report's own YAML declares. Forcing one here
-#' would be wrong for the reports that ask for something specific: the index page
-#' declares its own theme, and only some reports want bookdown's numbered
-#' sections and cross-references.
-#'
-#' Each render is given its own `intermediates_dir` because knitr names its
-#' intermediate files after the input document: two renders of the same template
-#' running at once would otherwise overwrite each other's `.knit.md` and both
-#' reports would end up with whichever content finished last.
+#' The template is staged into a private directory under `output_dir`: Quarto
+#' names its intermediates after the input document, and two renders of the
+#' same template running at once would otherwise overwrite each other's.
 #'
 #' @param name File name of the report, e.g. `"ptm_statistics.qmd"`.
-#' @param output_file File name to write, e.g. `"Analysis_seqlogo.html"`.
+#' @param output_file File name to write, e.g. `"ptm_statistics.html"`.
 #' @param output_dir Directory to write the report to.
 #' @param params Named list passed to the report's `params`.
-#' @param intermediates_dir Directory for knitr's intermediates. Defaults to a
-#'   private directory of this R process, removed when it exits.
 #' @return Invisibly, the path of the rendered file.
 #' @export
 #' @examples
 #' # Renders one of the installed templates; needs the data it asks for.
 #' \dontrun{
 #' render_ptm_report(
-#'   "Analysis_seqlogo.Rmd", "Analysis_seqlogo.html", "PTM_DPA",
-#'   params = list(input_h5mu = "PTM_results.h5mu", sheet = "DPA")
+#'   "ptm_statistics.qmd", "ptm_statistics.html", "PTM_results",
+#'   params = list(input_h5mu = "PTM_statistics.h5mu", fdr_threshold = 0.25)
 #' )
 #' }
-render_ptm_report <- function(name, output_file, output_dir, params = list(), intermediates_dir = NULL) {
+render_ptm_report <- function(name, output_file, output_dir, params = list()) {
   source <- report_file(name)
-  if (endsWith(name, ".qmd")) {
-    if (!is.null(params$input_h5mu)) {
-      params$input_h5mu <- normalizePath(params$input_h5mu, mustWork = TRUE)
-    }
-    dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-    render_dir <- tempfile(".prophosqua_qmd_", tmpdir = normalizePath(output_dir, mustWork = TRUE))
-    dir.create(render_dir)
-    on.exit(unlink(render_dir, recursive = TRUE), add = TRUE)
-    staged <- file.path(render_dir, name)
-    if (!file.copy(source, staged)) {
-      stop("Could not stage Quarto report: ", source, call. = FALSE)
-    }
-    fgczQuartoTemplate::fgcz_render(
-      staged,
-      output_file = output_file,
-      execute_params = params,
-      quiet = FALSE
-    )
-    rendered <- file.path(render_dir, output_file)
-    destination <- file.path(output_dir, output_file)
-    if (!file.copy(rendered, destination, overwrite = TRUE)) {
-      stop("Could not copy Quarto report to: ", destination, call. = FALSE)
-    }
-    return(invisible(destination))
+  if (!is.null(params$input_h5mu)) {
+    params$input_h5mu <- normalizePath(params$input_h5mu, mustWork = TRUE)
   }
-
-  if (is.null(intermediates_dir)) {
-    intermediates_dir <- file.path(tempdir(), paste0("render_", basename(name)))
-  }
-  dir.create(intermediates_dir, recursive = TRUE, showWarnings = FALSE)
   dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-
-  rmarkdown::render(
-    source,
-    output_file = output_file,
-    output_dir = output_dir,
-    knit_root_dir = getwd(),
-    intermediates_dir = intermediates_dir,
-    params = params,
-    envir = new.env(parent = globalenv())
-  )
-
-  invisible(file.path(output_dir, output_file))
+  render_dir <- tempfile(".prophosqua_qmd_", tmpdir = normalizePath(output_dir, mustWork = TRUE))
+  dir.create(render_dir)
+  on.exit(unlink(render_dir, recursive = TRUE), add = TRUE)
+  staged <- file.path(render_dir, name)
+  if (!file.copy(source, staged)) {
+    stop("Could not stage Quarto report: ", source, call. = FALSE)
+  }
+  fgczQuartoTemplate::fgcz_render(staged, output_file = output_file, execute_params = params, quiet = FALSE)
+  destination <- file.path(output_dir, output_file)
+  if (!file.copy(file.path(render_dir, output_file), destination, overwrite = TRUE)) {
+    stop("Could not copy Quarto report to: ", destination, call. = FALSE)
+  }
+  invisible(destination)
 }
 
-#' Render the Phospho and Protein Integration Overview
+#' Path of an Installed Report Template
 #'
-#' Renders the integration overview from the DPU result object. This report
-#' takes R objects rather than file paths as parameters, so it cannot go through
-#' [render_ptm_report()]: the objects are built here from the saved result and
-#' handed over directly.
+#' The reports are the package's vignettes, and the vignette machinery installs
+#' their sources into `doc/`; a package installed without its vignettes built
+#' cannot render them.
 #'
-#' The template and its bibliography are copied into a private render directory
-#' first. Rendering in place would write knitr's intermediates and both copied
-#' files into the project root, and would let two concurrent renders overwrite
-#' each other's intermediates.
-#'
-#' @param input_h5mu Complete `PTM_results.h5mu` artifact.
-#' @param output_dir Directory to write `Result_DPU.html` to.
-#' @param project_id Project identifier shown in the report header.
-#' @param work_unit_id Work unit identifier shown in the report header.
-#' @return Invisibly, the path of the rendered file.
+#' @param name File name, e.g. `"ptm_statistics.qmd"`.
+#' @return Full path to the installed template.
 #' @export
 #' @examples
-#' # Needs the DPU result of a pipeline run.
 #' \dontrun{
-#' render_dpu_overview("PTM_results.h5mu", "PTM_DPU")
+#' report_file("ptm_statistics.qmd")
 #' }
-render_dpu_overview <- function(input_h5mu, output_dir, project_id = "PTM_analysis", work_unit_id = "DPU_Integration") {
-  if (!file.exists(input_h5mu)) {
-    stop("Input MuData file not found: ", input_h5mu, call. = FALSE)
-  }
-  dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-
-  message("Loading data from: ", input_h5mu)
-  combined_test_diff <- read_ptm_h5mu(input_h5mu, PTM_results)$get_statistics()$get_dpa_dpu()$combined_test_diff
-
-  grp <- prolfquapp::make_DEA_config_R6(
-    PROJECTID = project_id,
-    ORDERID = "fgcz_project",
-    WORKUNITID = work_unit_id
-  )
-
-  render_dir <- file.path(tempdir(), "dpu_overview")
-  dir.create(render_dir, recursive = TRUE, showWarnings = FALSE)
-
-  template <- "_Overview_PhosphoAndIntegration_site.Rmd"
-  for (file in c(template, "bibliography2025.bib")) {
-    file.copy(application_file(file), file.path(render_dir, file), overwrite = TRUE)
-  }
-
-  message("Rendering DPU overview report...")
-  rmarkdown::render(
-    file.path(render_dir, template),
-    knit_root_dir = getwd(),
-    params = list(data = combined_test_diff, grp = grp),
-    output_format = bookdown::html_document2(toc = TRUE, toc_float = TRUE),
-    envir = new.env(parent = globalenv())
-  )
-
-  output_file <- file.path(output_dir, "Result_DPU.html")
-  file.copy(
-    from = file.path(render_dir, sub("\\.Rmd$", ".html", template)),
-    to = output_file,
-    overwrite = TRUE
-  )
-  message("DPU overview report saved to: ", output_file)
-
-  invisible(output_file)
-}
-
-#' Resolve an Installed Report Template
-#'
-#' The analysis reports are the package's vignettes: they are authored in
-#' `vignettes/`, which is the one place an analysis lives, and the vignette
-#' machinery installs their sources into the package's `doc/` directory, from
-#' where a run renders them with its own parameters. The templates that are not
-#' analyses -- the index page -- ship under `inst/application` instead, so both
-#' places are consulted.
-#'
-#' A package installed without its vignettes built has no `doc/`, and then the
-#' reports cannot be rendered at all; the error says so rather than reporting a
-#' missing file.
-#'
-#' @param name File name, e.g. `"Analysis_seqlogo.Rmd"`.
-#' @return Full path to the installed template.
-#' @keywords internal
 report_file <- function(name) {
   path <- system.file("doc", name, package = "prophosqua")
-  if (nzchar(path) && file.exists(path)) {
-    return(path)
-  }
-  path <- system.file("application", name, package = "prophosqua")
-  if (nzchar(path) && file.exists(path)) {
-    return(path)
-  }
-  stop(
-    "prophosqua report template not found: ",
-    name,
-    ". The analysis reports are installed from vignettes/ into doc/, so the ",
-    "package has to be installed with its vignettes built (make install).",
-    call. = FALSE
-  )
-}
-
-#' Resolve a File Shipped under inst/application
-#'
-#' @param name File name.
-#' @return Full path to the installed file.
-#' @keywords internal
-application_file <- function(name) {
-  path <- system.file("application", name, package = "prophosqua")
-  if (!nzchar(path) || !file.exists(path)) {
+  if (!nzchar(path)) {
     stop(
-      "prophosqua application file not found: ",
+      "prophosqua report template not found: ",
       name,
-      ". Reinstall the package.",
+      ". The reports are installed from vignettes/ into doc/, ",
+      "so the package has to be installed with its vignettes built (make install).",
       call. = FALSE
     )
   }

@@ -13,8 +13,8 @@ example_ptm_results_h5mu(path = tempfile(fileext = ".h5mu"))
 Normalized `path`, invisibly.
 }
 \description{
-The artifact follows the same H5AD import, typed R6 build, and H5MU storage
-path as a pipeline run. Kinase enrichment is disabled because the statistics
-report needs only the DPA, DPU, and CorrectFirst components.
+The artifact follows the same H5AD import and H5MU storage path as a
+pipeline run; its enrichments are deterministic GSEA runs on motif sets of
+the example sequence windows, so no kinase library or PTMsigDB is needed.
 }
 \keyword{internal}

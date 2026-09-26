@@ -4,12 +4,17 @@
 \alias{compute_dpa_dpu}
 \title{Compute Differential PTM Abundance and Differential PTM Usage}
 \usage{
-compute_dpa_dpu(phospho_dea_dir, protein_dea_dir)
+compute_dpa_dpu(phospho_dea_dir, protein_dea_dir, remove_contaminants = FALSE)
 }
 \arguments{
-\item{phospho_dea_dir}{Path to the phospho DEA output directory.}
+\item{phospho_dea_dir}{Path to the phospho DEA output directory; its
+`Results_WU_*/AnnData.h5ad` is read.}
 
-\item{protein_dea_dir}{Path to the total-proteome DEA output directory.}
+\item{protein_dea_dir}{Path to the total-proteome DEA output directory; its
+`Results_WU_*/AnnData.h5ad` is read.}
+
+\item{remove_contaminants}{Drop the sites and proteins the DEAs flag as
+contaminants (`CON`). Like the DEAs, the default keeps them.}
 }
 \value{
 A list with
@@ -35,19 +40,11 @@ pipeline reports on:
 
 Sites whose protein was not quantified keep a DPA row with empty `.protein`
 columns; they cannot carry a DPU value. `match_rates` reports that split per
-contrast so a report can state it without recomputing the join.
-
-Nothing is re-quantified here. Both DEA runs must already have happened; this
-function only reads their output.
+contrast.
 }
 \examples{
-# Needs two prolfquapp DEA output directories; see
-# tests/testthat/helper-dea_fixture.R for the synthetic pair the tests use.
 \dontrun{
-res <- compute_dpa_dpu(
-  phospho_dea_dir = "DEA_20260814_WUphospho_vsn",
-  protein_dea_dir = "DEA_20260814_WUtotal_vsn"
-)
+res <- compute_dpa_dpu("DEA_20260814_WUphospho_vsn", "DEA_20260814_WUtotal_vsn")
 res$match_rates
 }
 }

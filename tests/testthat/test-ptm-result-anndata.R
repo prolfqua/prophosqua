@@ -1,14 +1,6 @@
-ptm_varm_frame <- function(adata, key) {
-  namespace <- adata$uns[["prophosqua"]]
-  values <- as.matrix(adata$varm[[key]])
-  colnames(values) <- as.character(namespace$varm_columns[[key]])
-  as.data.frame(values)
-}
-
 ptm_result_row <- function(adata, key, site) {
-  feature <- match(site, as.character(as.data.frame(adata$var)$site))
-  expect_false(is.na(feature))
-  ptm_varm_frame(adata, key)[feature, , drop = FALSE]
+  frame <- adata$varm[[key]]
+  frame[frame$site %in% site, , drop = FALSE]
 }
 
 test_that("PTM result MuData preserves both complete inputs", {
@@ -29,8 +21,7 @@ test_that("PTM result MuData preserves both complete inputs", {
     expect_equal(as.matrix(result$layers[[key]]), as.matrix(site$layers[[key]]), info = key)
   }
   for (key in site$varm_keys()) {
-    expect_true(key %in% result$varm_keys(), info = key)
-    expect_equal(as.matrix(result$varm[[key]]), as.matrix(site$varm[[key]]), info = key)
+    expect_equal(result$varm[[key]], site$varm[[key]], info = key)
   }
   expect_null(site$uns[["prophosqua"]])
   total <- anndataR::read_h5ad(fixture$protein)
@@ -40,90 +31,53 @@ test_that("PTM result MuData preserves both complete inputs", {
   expect_equal(container$uns$prophosqua$stage, "PTM_statistics")
 })
 
-test_that("PTM result matrices retain statistics, annotations, and alignment", {
+test_that("PTM result tables retain statistics, annotations, and alignment", {
   fixture <- ptm_result_fixture()
-  pair <- read_ptm_anndata_pair(fixture$site, fixture$protein)
+  pair <- .read_dea_pair(fixture$dirs$phospho, fixture$dirs$protein)
   dpa_dpu <- suppressMessages(.compute_dpa_dpu_from_pair(pair))
-  correct_first <- suppressWarnings(.compute_cf_dea_from_pair(
-    pair,
-    readr::read_tsv(fixture$annot_file, show_col_types = FALSE),
-    basename(fixture$annot_file)
-  ))
+  correct_first <- suppressWarnings(.compute_cf_dea_from_pair(pair))
   container <- prolfquapp::read_h5mu(fixture$output)
-  result <- container$modalities$enriched
+  enriched <- container$modalities$enriched
   site <- "P1~S10"
+  expected <- function(table) table[table$site == site, , drop = FALSE]
 
-  expected_dpa <- dpa_dpu$combined_site_prot[
-    dpa_dpu$combined_site_prot$site == site,
-    ,
-    drop = FALSE
-  ]
-  actual_dpa <- ptm_result_row(result, "dpa__a_vs_b", site)
-  expect_equal(actual_dpa$diff.site, expected_dpa$diff.site)
-  expect_equal(actual_dpa$diff.protein, expected_dpa$diff.protein)
+  actual_dpa <- ptm_result_row(enriched, "dpa__a_vs_b", site)
+  expect_equal(nrow(actual_dpa), 1L)
+  expect_equal(actual_dpa$diff.site, expected(dpa_dpu$combined_site_prot)$diff.site)
+  expect_equal(actual_dpa$diff.protein, expected(dpa_dpu$combined_site_prot)$diff.protein)
 
-  expected_dpu <- dpa_dpu$combined_test_diff[
-    dpa_dpu$combined_test_diff$site == site,
-    ,
-    drop = FALSE
-  ]
-  actual_dpu <- ptm_result_row(container$modalities$cf, "dpu__a_vs_b", site)
-  expect_equal(actual_dpu$diff_diff, expected_dpu$diff_diff)
-  expect_equal(actual_dpu$FDR_I, expected_dpu$FDR_I)
-  expect_equal(
-    as.character(container$modalities$cf$uns$prophosqua$varm_annotations$dpu__a_vs_b$measured_In)[
-      match(site, as.data.frame(container$modalities$cf$var)$site)
-    ],
-    expected_dpu$measured_In
-  )
+  actual_dpu <- ptm_result_row(enriched, "dpu__a_vs_b", site)
+  expect_equal(actual_dpu$diff_diff, expected(dpa_dpu$combined_test_diff)$diff_diff)
+  expect_equal(actual_dpu$FDR_I, expected(dpa_dpu$combined_test_diff)$FDR_I)
+  expect_equal(as.character(actual_dpu$measured_In), expected(dpa_dpu$combined_test_diff)$measured_In)
 
-  expected_unmoderated <- dpa_dpu$combined_test_diff_unmoderated[
-    dpa_dpu$combined_test_diff_unmoderated$site == site,
-    ,
-    drop = FALSE
-  ]
-  actual_unmoderated <- ptm_result_row(container$modalities$cf, "dpu_unmoderated__a_vs_b", site)
-  expect_equal(actual_unmoderated$diff_diff, expected_unmoderated$diff_diff)
-  expect_equal(actual_unmoderated$FDR_I, expected_unmoderated$FDR_I)
+  actual_unmoderated <- ptm_result_row(enriched, "dpu_unmoderated__a_vs_b", site)
+  expect_equal(actual_unmoderated$diff_diff, expected(dpa_dpu$combined_test_diff_unmoderated)$diff_diff)
+  expect_equal(actual_unmoderated$FDR_I, expected(dpa_dpu$combined_test_diff_unmoderated)$FDR_I)
 
-  expected_cf <- correct_first$results[
-    correct_first$results$site == site,
-    ,
-    drop = FALSE
-  ]
-  actual_cf <- ptm_result_row(container$modalities$cf, "correct_first__a_vs_b", site)
-  expect_equal(actual_cf$diff.site, expected_cf$diff.site)
-  expect_equal(actual_cf$FDR.site, expected_cf$FDR.site)
-  expect_true(as.vector(result$varm$dpa__a_vs_b__present)[
-    match(site, as.data.frame(result$var)$site)
-  ])
+  actual_cf <- ptm_result_row(container$modalities$enriched_CF, "correct_first__a_vs_b", site)
+  expect_equal(actual_cf$diff.site, expected(correct_first$results)$diff.site)
+  expect_equal(actual_cf$FDR.site, expected(correct_first$results)$FDR.site)
 })
 
-test_that("PTM result alignment distinguishes absent rows from missing statistics", {
+test_that("a PTM result frame has a row for every site, keyed only where a result exists", {
   fixture <- anndata_pair_fixture()
-  pair <- read_ptm_anndata_pair(fixture$site, fixture$protein)
+  pair <- .read_dea_pair(fixture$dirs$phospho, fixture$dirs$protein)
   dpa_dpu <- suppressMessages(.compute_dpa_dpu_from_pair(pair))
   omitted_site <- dpa_dpu$combined_site_prot$site[[1]]
   incomplete <- dpa_dpu$combined_site_prot[-1, , drop = FALSE]
 
-  payload <- .ptm_analysis_payload(incomplete, pair$site$var, "dpa", "a_vs_b")
-  feature <- match(omitted_site, pair$site$var$site)
+  frame <- .ptm_analysis_payload(incomplete, pair$site$var, "dpa", "a_vs_b")$values$dpa__a_vs_b
 
-  expect_false(payload$present$dpa__a_vs_b[[feature]])
-  expect_true(all(is.na(payload$values$dpa__a_vs_b[feature, ])))
+  expect_equal(nrow(frame), nrow(pair$site$var))
+  expect_false(omitted_site %in% frame$site)
+  expect_setequal(frame$site[!is.na(frame$site)], incomplete$site)
 })
 
-test_that("PTM result alignment rejects unknown and duplicate site identities", {
+test_that("PTM result alignment rejects duplicate site identities", {
   fixture <- anndata_pair_fixture()
-  pair <- read_ptm_anndata_pair(fixture$site, fixture$protein)
+  pair <- .read_dea_pair(fixture$dirs$phospho, fixture$dirs$protein)
   dpa_dpu <- suppressMessages(.compute_dpa_dpu_from_pair(pair))
-
-  unknown <- dpa_dpu$combined_site_prot
-  unknown$site[[1]] <- "UNKNOWN~S1"
-  expect_error(
-    .ptm_analysis_payload(unknown, pair$site$var, "dpa", "a_vs_b"),
-    "absent from the site AnnData axis"
-  )
 
   duplicate <- rbind(
     dpa_dpu$combined_site_prot,
@@ -135,9 +89,9 @@ test_that("PTM result alignment rejects unknown and duplicate site identities", 
   )
 })
 
-test_that("contrast encoding and presence distinguish missing statistics from absent rows", {
+test_that("contrast encoding keeps a present row whose statistics are missing", {
   fixture <- anndata_pair_fixture()
-  pair <- read_ptm_anndata_pair(fixture$site, fixture$protein)
+  pair <- .read_dea_pair(fixture$dirs$phospho, fixture$dirs$protein)
   data <- .compute_dpa_dpu_from_pair(pair)$combined_site_prot
   first <- data[1, , drop = FALSE]
   first$contrast <- "a/b"
@@ -145,10 +99,12 @@ test_that("contrast encoding and presence distinguish missing statistics from ab
   first[, numeric] <- NA_real_
   second <- data[2, , drop = FALSE]
   second$contrast <- "a%2Fb"
-  payload <- .ptm_analysis_payload(rbind(first, second), pair$site$var, "dpa", c("a/b", "a%2Fb"))
-  expect_equal(unname(payload$keys), c("dpa__a%2Fb", "dpa__a%252Fb"))
-  feature <- match(first$site, pair$site$var$site)
-  expect_true(payload$present[[1]][feature])
-  expect_false(payload$present[[2]][feature])
-  expect_true(all(is.na(payload$values[[1]][feature, ])))
+
+  frames <- .ptm_analysis_payload(rbind(first, second), pair$site$var, "dpa", c("a/b", "a%2Fb"))$values
+
+  expect_equal(names(frames), c("dpa__a%2Fb", "dpa__a%252Fb"))
+  row <- frames[[1]][frames[[1]]$site %in% first$site, , drop = FALSE]
+  expect_equal(nrow(row), 1L)
+  expect_true(is.na(row$diff.site))
+  expect_false(first$site %in% frames[[2]]$site)
 })

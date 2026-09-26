@@ -15,7 +15,7 @@ The path copied, from [prolfqua::script_copy_helper_vec()].
 }
 \description{
 Places `ptm.sh` from `inst/application/bin` in `workdir`. It is one script
-taking the step to run as its first argument -- `ptm.sh dpa_dpu`,
+taking the step to run as its first argument -- `ptm.sh ptm_h5mu`,
 `ptm.sh render`, `ptm.sh help` -- so a work directory holds a single wrapper
 however many steps the package grows.
 }

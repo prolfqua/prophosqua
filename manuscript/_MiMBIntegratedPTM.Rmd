@@ -381,7 +381,7 @@ Before performing DEA, we generate a YAML configuration file using the `prolfqua
 
 Once the sample annotation and configuration files are prepared, DEA is executed via the `prolfqua_dea.sh` script. This script reads the experimental design (sample IDs, group labels, and contrasts) alongside the configuration file. Single-site or protein intensities are $\log_2$-transformed and variance-stabilized before modeling, improving homoscedasticity across conditions.
 
-Linear models are fitted and contrasts are tested using the `prolfqua` *R*-package’s contrast API. Rather than imputing missing values, the model adjusts the degrees of freedom based on the number of actual observations per feature, which naturally down-weights features with high missingness and improves the reliability of the fold-change and p-value estimates. Empirical Bayes variance moderation is applied to stabilize variance estimates, particularly when sample size is limited. 
+Linear models are fitted and contrasts are tested using the `prolfqua` *R*-package’s contrast API. Each feature's model is fitted to its observed values, so the degrees of freedom reflect the number of actual observations per feature, which naturally down-weights features with high missingness and improves the reliability of the fold-change and p-value estimates. A feature whose model cannot be fitted, typically one observed in only one group, is refitted with its missing values set to the limit of detection and a variance borrowed from the fitted features; its estimates are marked as imputed. Empirical Bayes variance moderation is applied to stabilize variance estimates, particularly when sample size is limited.
 
 First, we run the DEA analysis of the total proteome quantification results. The script uses _FragPipe_ `psm.tsv` file as input, aggregates reporter ions abundances to the peptide level, and then estimates the protein abundances. The code below demonstrates how the `prolfqua_dea.sh` shell script can be executed on the Linux command line.
 
@@ -426,6 +426,7 @@ For each data type, `prolfquapp` generates a comprehensive suite of outputs:
 - XLSX tables (DE_<datatype>.xlsx) summarizing $\log_2$ fold changes, moderated t-statistics, raw p-values, and Benjamini–Hochberg–adjusted p-values
 - GSEA rank files (GSEA_<datatype>.rnk) for downstream gene-set enrichment analysis
 - SummarizedExperiment objects (<datatype>.rds) for seamless import into Shiny-based visualization tools
+- AnnData files (`AnnData.h5ad`) holding the abundances, the differential expression results, and the feature annotation, which `prophosqua` reads
 
 These results can be integrated using the `prophosqua` package for combined analysis of total proteome and PTM data. However, it is essential to note that there are scenarios where performing differential PTM-feature abundance analysis is the only practical option (see Note \@ref(useofDPADPU)).
 
@@ -434,7 +435,7 @@ These results can be integrated using the `prophosqua` package for combined anal
 
 The `prophosqua` package [@10.5281/zenodo.15845272] provides tools for integrating and analyzing PTM data with total proteome measurements. It enables researchers to distinguish between changes in protein abundance and changes in the usage of modification sites. This section explains how to load the results of the differential abundance analysis, integrate the PTM and total proteome data, and determine differential PTM-feature usage.
 
-Differential expression results from `prolfquapp`, provided in Excel format, for the total proteome and the multi- or single-site PTM analyses are imported into *R*. These datasets are then integrated by performing a left join on protein identifiers, merging PTM-level statistics with the corresponding protein-level values for each condition.
+Differential expression results from `prolfquapp`, stored in the `AnnData.h5ad` file of each DEA output folder, for the total proteome and the multi- or single-site PTM analyses are imported into *R*. These datasets are then integrated by performing a left join on protein identifiers, merging PTM-level statistics with the corresponding protein-level values for each condition.
 
 We start by defining the project name and analysis type.
 
@@ -460,68 +461,42 @@ if (!dir.exists(res_dir)) {
 }
 ```
 
-In the code below, we define the paths to the DEA results in the XLSX files stored by `prolfquapp`. 
+In the code below, we define the paths to the DEA output folders written by `prolfquapp`, using the `prolfquapp::zipdir_name()` function introduced above.
 We need to specify the workunit names and the date when the DEA analysis was run.
 
 ```{r definePaths}
 # Use today's date if running DEA, otherwise use existing results
-datedea <- if(do_dea) datetoday else "20260401"
+datedea <- if(do_dea) datetoday else "20260926"
 
-tot_file <- prophosqua::dea_xlsx_path(project_dir, "total_proteome", datedea)
-ptm_file <- prophosqua::dea_xlsx_path(project_dir, "phospho_STY", datedea)
+tot_dea_dir <- file.path(project_dir, prolfquapp::zipdir_name(
+  "DEA", workunit_id = "total_proteome", date = as.Date(datedea, "%Y%m%d")))
+ptm_dea_dir <- file.path(project_dir, prolfquapp::zipdir_name(
+  "DEA", workunit_id = "phospho_STY", date = as.Date(datedea, "%Y%m%d")))
 
-# Directory paths
-stopifnot(file.exists(tot_file))
-stopifnot(file.exists(ptm_file))
+stopifnot(dir.exists(tot_dea_dir))
+stopifnot(dir.exists(ptm_dea_dir))
 ```
 
-Finally, we load the differential expression results into the *R* session.
+Finally, we load the differential expression results into the *R* session and integrate them with the `prophosqua` function `compute_dpa_dpu`. With `remove_contaminants = TRUE`, it drops the sites and proteins that `prolfquapp` flagged as contaminants.
 
 ```{r b4loaddata}
-required_cols <- c("protein_Id", "protein_length", "contrast")
-tot_res <- prophosqua::load_and_preprocess_data(tot_file, required_cols)
-tot_res <- prophosqua::filter_contaminants(tot_res)
-phospho_res <- prophosqua::load_and_preprocess_data(ptm_file, required_cols)
-phospho_res <- prophosqua::filter_contaminants(phospho_res)
+dpa_dpu <- prophosqua::compute_dpa_dpu(
+  ptm_dea_dir, tot_dea_dir, remove_contaminants = TRUE)
 ```
 
 The data integration step is critical for enabling DPU analysis and represents one of the most important technical aspects of the workflow. This step joins phosphorylation site data with total protein data to create a unified dataset where each PTM-feature is linked to its corresponding protein-level measurements.
 
-The `left_join` operation used here ensures that all PTM-features are retained in the analysis, even if their parent proteins were not detected in the total proteome experiment. This approach maximizes the information content by allowing protein normalization where possible, while also reporting PTM-features that cannot be mapped to total proteome measurements.
+The `left_join` operation used by `compute_dpa_dpu` ensures that all PTM-features are retained in the analysis, even if their parent proteins were not detected in the total proteome experiment. This approach maximizes the information content by allowing protein normalization where possible, while also reporting PTM-features that cannot be mapped to total proteome measurements. The join is on the protein identifier, the contrast, and the protein description and length; the PTM-feature and protein statistics are suffixed with `.site` and `.protein`.
 
 ```{r b5combinedata}
-join_column <- c(
-  "protein_Id" = "protein_Id",
-  "contrast" = "contrast",
-  "description" = "description",
-  "protein_length" = "protein_length"
-)
-suffix_a <- ".site"
-suffix_b <- ".protein"
-
-combined_site_prot <- dplyr::left_join(
-  phospho_res,
-  tot_res,
-  by = join_column,
-  suffix = c(suffix_a, suffix_b)
-)
-
+combined_site_prot <- dpa_dpu$combined_site_prot
 ```
 
 
-We also need to check the match rate between PTM sites and proteins, that is, the number of PTM sites that have a protein match divided by the total number of PTM sites. Currently, `prolfquapp` matches PTM and protein features using exact protein IDs, which introduces a limitation: discrepancies in representative protein identifiers between the PTM-enriched and total proteome datasets may result in the loss of mapping information (see Note \@ref(matchrates)).
+We also need to check the match rate between PTM sites and proteins, that is, the number of PTM sites that have a protein match divided by the total number of PTM sites, which `compute_dpa_dpu` reports for each contrast. Currently, `compute_dpa_dpu` matches PTM and protein features using exact protein IDs, which introduces a limitation: discrepancies in representative protein identifiers between the PTM-enriched and total proteome datasets may result in the loss of mapping information (see Note \@ref(matchrates)).
 
 ```{r b5matchrateComp}
-
-# Calculate match rate by contrast
-match_rates <- combined_site_prot |>
-  group_by(contrast) |>
-  summarize(
-    total_sites = n(),
-    matched_sites = sum(!is.na(diff.protein)),
-    match_rate = round(matched_sites / total_sites * 100, 1)
-  )
-
+match_rates <- dpa_dpu$match_rates
 ```
 
 
@@ -600,10 +575,10 @@ $$t = \frac{\Delta_I}{SE_I}$$
 The p-value is determined using the t-distribution with $df_I$ degrees of freedom. Multiple testing correction (e.g., Benjamini-Hochberg FDR) is applied across all tested sites.
 
 
-The `test_diff` function calculates the difference of differences between PTM and total proteome data, revealing site-specific usage changes. 
+`compute_dpa_dpu` calculated the difference of differences between PTM and total proteome data with the `test_diff` function, revealing site-specific usage changes.
 
 ```{r b8computeptmusage}
-combined_test_diff <- prophosqua::test_diff(phospho_res, tot_res, join_column = join_column)
+combined_test_diff <- dpa_dpu$combined_test_diff
 ```
 
 The PTM-feature usage $\log_2$ fold changes, p-values, and FDR estimates are added to the dataframe `combined_test_diff`.
@@ -725,112 +700,37 @@ The produced XLSX file can be downloaded from [@10.5281/zenodo.15830988].  This 
 
 ## Estimating PTM-feature usage by the correct first approach
 
-Here we show how to estimate the DPU using the correct first approach. We first correct the PTM site abundances, using the total proteome, and then model the differential usage changes. This analysis starts by loading the `prolfquapp` outputs. This time, we read the transformed and normalized total proteome protein abundances.
-
-
-```{r loadNormalizedAbundances}
-tot_res_dir <- prophosqua::dea_res_dir(project_dir, "total_proteome", datedea)
-ldata <- arrow::read_parquet(file.path(tot_res_dir,"lfqdata_normalized.parquet"))
-ldata <- ldata |> filter(!grepl("^rev_",protein_Id) )
-tot_d <- ldata |>
-  dplyr::select(channel, protein_Id, normalized_abundance)
-
-```
-
-We are also loading normalized single-site abundances. In addition to loading the data, we create a `prolfqua::LFQData` object using the `LFQData$new` constructor. The `LFQData` object provides numerous methods for analyzing and visualizing quantitative proteomics data [@10.1021/acs.jproteome.2c00441].
-
-
-```{r loadNormalizedSiteAbundances}
-ptm_res_dir <- prophosqua::dea_res_dir(project_dir, "phospho_STY", datedea)
-ldata <- arrow::read_parquet(file.path(ptm_res_dir,"lfqdata_normalized.parquet"))
-list <- yaml::read_yaml(file.path(ptm_res_dir,"lfqdata.yaml"))
-config <- prolfqua::list_to_AnalysisConfiguration(list)
-ptm_data <- prolfqua::LFQData$new(ldata,config)
-
-```
-
-We merge the data for the single-site and total proteome protein abundances by protein identifier and sample. Then we subtract the total proteome protein abundances from the single-site abundances. The Density plot (see Figure \@ref(fig:fig3densityCorrected)) shows the distribution of the corrected single-site abundances.
+Here we show how to estimate the DPU using the correct first approach. We first correct the PTM site abundances, using the total proteome, and then model the differential usage changes. The `prophosqua` function `compute_cf_dea` reads the transformed and normalized single-site and total proteome protein abundances from the same `AnnData.h5ad` files. It merges them by protein identifier and sample and subtracts the total proteome protein abundance from the single-site abundance. The median protein abundance of each sample is added back, so that the corrected values stay on the $\log_2$ intensity scale.
 
 ```{r correctData}
-corrected_data <- dplyr::inner_join(
-  ptm_data$data_long(),
-  tot_d,
-  by = c("channel", "protein_Id"),
-  suffix = c(".site", ".total")
-)
-corrected_data <- corrected_data |>
-  dplyr::mutate(ptm_usage = normalized_abundance.site - normalized_abundance.total)
-ptm_data$set_data(corrected_data)
+cf <- prophosqua::compute_cf_dea(
+  ptm_dea_dir, tot_dea_dir, remove_contaminants = TRUE)
 ```
 
+The corrected single-site abundances are returned as a `prolfqua::LFQData` object, which provides numerous methods for analyzing and visualizing quantitative proteomics data [@10.1021/acs.jproteome.2c00441]. The density plot (see Figure \@ref(fig:fig3densityCorrected)) shows the distribution of the corrected single-site abundances.
+
 ```{r fig3densityCorrectedCompute}
-ptm_data$get_config()$set_response("ptm_usage")
+ptm_data <- cf$ptm_data
 pl <- ptm_data$get_Plotter()
 fig3_plot <- pl$intensity_distribution_density()
 ```
 
+`compute_cf_dea` fits a linear model for each PTM, which explains the corrected PTM site abundances using the grouping of the samples, and computes the same contrasts as the DEA, which we built in Section \@ref(contrasts). As in the DEA, a PTM whose model cannot be fitted because of missing values is refitted with its missing values set to the inferred limit of detection (for more details, see [@10.1021/acs.jproteome.2c00441]), and the column `estimate_type` marks these estimates as `lod_imputed`. The variance estimates are moderated as in the DEA.
 
-
-Next, we fit a linear model for each PTM, which explains the corrected PTM site abundances using the grouping of the samples. The model is fitted for each site using the `prolfqua::build_model` function.
-
-
-```{r fitModelToCorrected}
-strategy_lm <- prolfqua::strategy_lm("ptm_usage ~ G_")
-models <- prolfqua::build_model(data = ptm_data, model_strategy = strategy_lm)
-```
-
-To compute the contrasts, we construct an array of contrasts from the annotation table, which we built in Section \@ref(contrasts).
-
-```{r ModelFoldChangesCorrect}
-contrasts <- annot2$Contrast 
-names(contrasts) <- annot2$ContrastName
-contrasts <- contrasts[!is.na(contrasts)]
-```
-
-The following code fragment computes contrasts from the linear models. In the presence of missing values, some PTMs cannot be fitted by the model. Therefore, we also estimate contrast using the `ContrastsMissing` method, which estimates missing values based on the inferred limit of detection (for more details, see [@10.1021/acs.jproteome.2c00441]).
-
-```{r computeTheContrasts}  
-ctr <- prolfqua::Contrasts$new(models, contrasts)
-x <- ctr$get_contrasts()
-ctr_m <- prolfqua::ContrastsMissing$new(ptm_data, contrasts)
-ctr_all <- prolfqua::merge_contrasts_results(ctr, ctr_m)$merged
-ctr_mod <- prolfqua::ContrastsModerated$new(ctr_all)
-ctr_df <- ctr_mod$get_contrasts()
-
-```
-
-Finally, we can create a volcano plot of the DPU results using the `ctr_plotter` variable, which is an instance of the `prolfqua::ContrastsPlotter` class (see Figure \@ref(fig:fig4FDRcorrfirst)).
+Finally, we can create a volcano plot of the DPU results using the `prolfqua::ContrastsPlotter` class (see Figure \@ref(fig:fig4FDRcorrfirst)).
 
 ```{r fig4FDRcorrfirstCompute}
-ctr_plotter <- ctr_all$get_Plotter()
-fig4_plot <- ctr_plotter$volcano()$FDR
+ctr_plotter <- prolfqua::ContrastsPlotter$new(
+  cf$results, subject_id = "site", diff = "diff.site",
+  volcano = list(list(score = "FDR.site", thresh = 0.1)))
+fig4_plot <- ctr_plotter$volcano()$FDR.site
 ```
 
-To enable downstream analyses such as sequence motif analysis and PTM-SEA, we need to enrich the contrast results with sequence window information. The `phospho_res` dataframe loaded earlier contains all the annotation data we need.
+The results of `compute_cf_dea` already carry the sequence window information needed by downstream analyses such as sequence motif analysis and PTM-SEA. We rename the columns to match the model-first output format and save the table.
 
 ```{r joinSequenceWindows}
-# Select relevant columns from phospho_res for joining
-site_annotations <- phospho_res |>
-  dplyr::select(
-    site_Id = protein_Id,
-    SequenceWindow,
-    posInProtein,
-    modAA,
-    description,
-    protein_length
-  ) |>
-  dplyr::distinct()
-
-# Join to contrast results
-ctr_df_annotated <- ctr_df |>
-  dplyr::left_join(site_annotations, by = c("modelName" = "site_Id"))
-
-# Rename columns to match the model-first output format
-ctr_df_annotated <- ctr_df_annotated |>
-  dplyr::rename(
-    diff_diff = diff,
-    FDR_I = FDR
-  )
+ctr_df_annotated <- cf$results |>
+  dplyr::rename(diff_diff = diff.site, FDR_I = FDR.site)
 
 # Save correct-first results alongside model-first output
 saveRDS(ctr_df_annotated,

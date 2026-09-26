@@ -8,7 +8,7 @@ test_that("enabled enrichment collection determines final completeness", {
       analyses = list(dpa = list(subdir = "PTM_DPA"), dpu = list(subdir = "PTM_DPU"), cf = list(subdir = "PTM_CF_DPU"))
     )
   )
-  statistics <- inputs$build(DPA_DPU)$build(PTM_statistics, cf = suppressWarnings(inputs$build(CF)))
+  statistics <- suppressWarnings(PTM_statistics$new(inputs))
   final <- PTM_results$new(statistics, list())
   path <- tempfile(fileext = ".h5mu")
   final$write_h5mu(path)

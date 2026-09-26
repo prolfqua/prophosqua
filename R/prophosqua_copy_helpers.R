@@ -13,7 +13,7 @@ copy_phospho_integration <- function(workdir = getwd()) {
 #' Copy the PTM Command Wrapper into a Working Directory
 #'
 #' Places `ptm.sh` from `inst/application/bin` in `workdir`. It is one script
-#' taking the step to run as its first argument -- `ptm.sh dpa_dpu`,
+#' taking the step to run as its first argument -- `ptm.sh ptm_h5mu`,
 #' `ptm.sh render`, `ptm.sh help` -- so a work directory holds a single wrapper
 #' however many steps the package grows.
 #'

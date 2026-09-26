@@ -2,129 +2,67 @@
 # The final MuData records where these artifacts are and reads them back; it does
 # not copy them, because one MEA payload alone is a quarter of a gigabyte.
 #
-# Two artifact kinds, because two kinds of thing are being stored. A completed
-# PTM-SEA, Kinase GSEA or MEA stage is a string_gsea document, whose format,
-# writer and reader belong to protsea; it is written as gzipped JSON through
-# protsea and stays readable by anything that knows the format. The kinase
-# preparations are packed R structures with no such format, and stay gzipped
-# CBOR. Both are gzipped: the payload is text and compresses about 2.5x.
+# One artifact format: a gzipped CBOR envelope naming the stage, the analysis and
+# the statistics it was computed from. The kinase preparations carry their packed
+# R result; a completed PTM-SEA, Kinase GSEA or MEA stage carries its string_gsea
+# document, the JSON text protsea reads, byte for byte.
 .ptm_cbor_version <- "1.0.0"
-.ptm_cbor_stages <- c(
-  "PTMSEA",
-  "KinaseInputs",
-  "KinaseAssignments",
-  "MotifEnrichment",
-  "KinaseGSEA",
-  "MEA"
-)
 
 .ptm_statistics_hash <- function(path) digest::digest(path, algo = "sha256", file = TRUE)
 
-.is_ptm_json_artifact <- function(path) grepl("\\.json(\\.gz)?$", path)
-
 .write_ptm_cbor <- function(stage, path, statistics_hash) {
   name <- class(stage)[1L]
-  if (!name %in% .ptm_cbor_stages) {
-    stop("Unsupported stage artifact: ", name)
-  }
-  if (.is_ptm_json_artifact(path) != (name %in% .ptm_json_enrichment_methods)) {
-    stop("Stage ", name, " does not belong in ", basename(path))
-  }
   dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
-  temporary <- tempfile(
-    pattern = ".ptm-stage-",
-    tmpdir = dirname(path),
-    fileext = if (grepl("\\.gz$", path)) ".gz" else ""
-  )
+  temporary <- tempfile(pattern = ".ptm-stage-", tmpdir = dirname(path), fileext = ".cbor.gz")
   on.exit(unlink(temporary), add = TRUE)
+  artifact <- list(
+    format = "prophosqua_stage",
+    version = .ptm_cbor_version,
+    stage = name,
+    analysis = stage$get_analysis(),
+    statistics_sha256 = statistics_hash
+  )
   if (name %in% .ptm_json_enrichment_methods) {
-    protsea::write_gsea_json_text(.ptm_enrichment_document(stage, statistics_hash)$json, temporary)
+    artifact$document <- .ptm_enrichment_document(stage, statistics_hash)
   } else {
-    artifact <- list(
-      format = "prophosqua_stage",
-      version = .ptm_cbor_version,
-      stage = name,
-      analysis = stage$get_analysis(),
-      statistics_sha256 = statistics_hash,
-      result = .pack_ptm_value(stage$get_results())
-    )
-    if (identical(name, "KinaseInputs")) {
-      artifact$settings <- stage$get_statistics()$get_inputs()$get_parameters()$kinaselib
-    }
-    # gzfile writes a real gzip container; memCompress("gzip") would emit a bare
-    # zlib stream that no gzip reader accepts, and the .gz name would be a lie.
-    connection <- gzfile(temporary, "wb")
-    writeBin(secretbase::cborenc(artifact), connection)
-    close(connection)
+    artifact$result <- .pack_ptm_value(stage$get_results())
   }
+  if (identical(name, "KinaseInputs")) {
+    artifact$settings <- stage$get_statistics()$get_inputs()$get_parameters()$kinaselib
+  }
+  # gzfile writes a real gzip container; memCompress("gzip") would emit a bare
+  # zlib stream that no gzip reader accepts, and the .gz name would be a lie.
+  connection <- gzfile(temporary, "wb")
+  writeBin(secretbase::cborenc(artifact), connection)
+  close(connection)
   if (!file.rename(temporary, path)) {
     stop("Could not write stage artifact: ", path)
   }
   invisible(path)
 }
 
-# A stored document describes itself: prophosqua's extension names the method,
-# the analysis and the statistics it was computed from, so the envelope the
-# CBOR artifacts carry is not needed beside it.
-.read_ptm_json_artifact <- function(path, statistics_hash) {
-  json <- protsea::read_gsea_json_text(path)
-  document <- list(
-    format = "string_gsea",
-    version = "1.2.0",
-    json = json,
-    sha256 = digest::digest(json, algo = "sha256", serialize = FALSE)
-  )
-  payload <- tryCatch(
-    jsonlite::fromJSON(json, simplifyVector = FALSE),
-    error = function(error) stop("Invalid enrichment JSON: ", path, call. = FALSE)
-  )
-  extension <- payload$prophosqua
-  .require_ptm_fields(extension, c("method", "analysis", "statistics_sha256"), paste0("PTM JSON ", path))
-  if (!identical(as.character(extension$statistics_sha256), statistics_hash)) {
-    stop("PTM stage artifact was produced from different statistics: ", path)
-  }
-  .validate_enrichment_analysis(extension$analysis)
-  .validate_ptm_enrichment_document(document, .ptm_varm_key(extension$method, extension$analysis))
-  list(
-    format = "prophosqua_stage",
-    version = .ptm_cbor_version,
-    stage = as.character(extension$method),
-    analysis = as.character(extension$analysis),
-    statistics_sha256 = statistics_hash,
-    document = document
-  )
-}
-
 .read_ptm_cbor <- function(path, statistics_hash) {
-  if (.is_ptm_json_artifact(path)) {
-    return(.read_ptm_json_artifact(path, statistics_hash))
-  }
   compressed <- readBin(path, what = "raw", n = file.info(path)$size)
   artifact <- secretbase::cbordec(memDecompress(compressed, type = "gzip"))
-  .require_ptm_fields(
-    artifact,
-    c("format", "version", "stage", "analysis", "statistics_sha256"),
-    "PTM CBOR artifact"
-  )
+  .require_ptm_fields(artifact, c("format", "version", "stage", "analysis", "statistics_sha256"), "PTM CBOR artifact")
   if (!identical(artifact$format, "prophosqua_stage") || !identical(artifact$version, .ptm_cbor_version)) {
     stop("Unsupported PTM CBOR artifact: ", path)
   }
-  if (!artifact$stage %in% .ptm_cbor_stages) {
+  if (!artifact$stage %in% names(.ENRICHMENT_STAGES)) {
     stop("Unknown PTM CBOR stage: ", artifact$stage)
   }
   .validate_enrichment_analysis(artifact$analysis)
   if (!identical(artifact$statistics_sha256, statistics_hash)) {
     stop("PTM CBOR artifact was produced from different statistics: ", path)
   }
-  key <- .ptm_varm_key(artifact$stage, artifact$analysis)
+  key <- .ptm_key(artifact$stage, artifact$analysis)
   field <- if (artifact$stage %in% .ptm_json_enrichment_methods) "document" else "result"
-  .require_ptm_fields(artifact, field, key)
   allowed <- c("format", "version", "stage", "analysis", "statistics_sha256", field)
   if (identical(artifact$stage, "KinaseInputs")) {
-    .require_ptm_fields(artifact, "settings", key)
     allowed <- c(allowed, "settings")
   }
-  if (length(artifact) != length(allowed) || !setequal(names(artifact), allowed)) {
+  .require_ptm_fields(artifact, allowed, key)
+  if (length(artifact) != length(allowed)) {
     stop("Unexpected PTM CBOR fields: ", key)
   }
   if (identical(field, "document")) {
@@ -154,41 +92,27 @@
 #' @param preparation_cbor Named paths to required preparation CBOR artifacts.
 #' @return Output path, invisibly.
 #' @export
-compute_ptm_enrichment_cbor <- function(
-  statistics_h5mu,
-  output_cbor,
-  stage,
-  analysis,
-  preparation_cbor = list()
-) {
-  statistics <- read_ptm_h5mu(statistics_h5mu, PTM_statistics)
-  .validate_enrichment_analysis(analysis)
-  statistics_hash <- .ptm_statistics_hash(statistics_h5mu)
+compute_ptm_enrichment_cbor <- function(statistics_h5mu, output_cbor, stage, analysis, preparation_cbor = list()) {
   Type <- list(PTMSEA = PTMSEA, KinaseInputs = KinaseInputs, KinaseGSEA = KinaseGSEA, MEA = MEA)[[stage]]
   if (is.null(Type)) {
     stop("Unsupported computed CBOR stage: ", stage)
   }
+  .validate_enrichment_analysis(analysis)
+  statistics <- read_ptm_h5mu(statistics_h5mu, PTM_statistics)
+  statistics_hash <- .ptm_statistics_hash(statistics_h5mu)
+  preparation <- function(stage) .read_ptm_preparation(preparation_cbor, stage, analysis, statistics_hash)
   source <- statistics
   if (stage %in% c("KinaseGSEA", "MEA")) {
-    kinase_inputs <- KinaseInputs$new(
-      statistics,
-      analysis,
-      .read_ptm_preparation(preparation_cbor, "KinaseInputs", analysis, statistics_hash)
-    )
     source <- KinaseAssignments$new(
-      kinase_inputs,
+      KinaseInputs$new(statistics, analysis, preparation("KinaseInputs")),
       analysis,
-      .read_ptm_preparation(preparation_cbor, "KinaseAssignments", analysis, statistics_hash)
+      preparation("KinaseAssignments")
     )
   }
   if (identical(stage, "MEA")) {
-    source <- MotifEnrichment$new(
-      source,
-      analysis,
-      .read_ptm_preparation(preparation_cbor, "MotifEnrichment", analysis, statistics_hash)
-    )
+    source <- MotifEnrichment$new(source, analysis, preparation("MotifEnrichment"))
   }
-  .write_ptm_cbor(source$build(Type, analysis = analysis), output_cbor, statistics_hash)
+  .write_ptm_cbor(Type$new(source, analysis), output_cbor, statistics_hash)
 }
 
 #' Assemble a final MuData file from compact CBOR stage artifacts
@@ -201,21 +125,10 @@ assemble_ptm_cbor <- function(statistics_h5mu, enrichment_cbor, output_h5mu) {
   statistics <- read_ptm_h5mu(statistics_h5mu, PTM_statistics)
   statistics_hash <- .ptm_statistics_hash(statistics_h5mu)
   artifacts <- lapply(enrichment_cbor, .read_ptm_cbor, statistics_hash = statistics_hash)
-  names(artifacts) <- vapply(
-    artifacts,
-    function(x) .ptm_varm_key(x$stage, x$analysis),
-    character(1)
-  )
-  enabled <- .enabled_ptm_enrichments(statistics$get_inputs()$get_parameters())
-  analyses <- toupper(names(statistics$get_inputs()$get_parameters()$analyses))
-  expected <- if (length(enabled)) {
-    as.character(unlist(
-      lapply(
-        .ptm_cbor_stages,
-        function(stage) vapply(analyses, function(analysis) .ptm_varm_key(stage, analysis), character(1))
-      ),
-      use.names = FALSE
-    ))
+  names(artifacts) <- vapply(artifacts, function(x) .ptm_key(x$stage, x$analysis), character(1))
+  parameters <- statistics$get_inputs()$get_parameters()
+  expected <- if (isTRUE(parameters$run_kinase)) {
+    .ptm_stage_keys(names(.ENRICHMENT_STAGES), toupper(names(parameters$analyses)))
   } else {
     character()
   }
@@ -227,10 +140,7 @@ assemble_ptm_cbor <- function(statistics_h5mu, enrichment_cbor, output_h5mu) {
     .ptm_branches_from_artifacts(statistics, artifacts),
     .ptm_documents_from_artifacts(artifacts),
     enrichment_cbor = list(
-      paths = stats::setNames(
-        as.list(.ptm_relative_cbor(enrichment_cbor, output_h5mu)),
-        names(artifacts)
-      ),
+      paths = stats::setNames(as.list(.ptm_relative_cbor(enrichment_cbor, output_h5mu)), names(artifacts)),
       statistics_sha256 = statistics_hash
     )
   )
@@ -240,8 +150,7 @@ assemble_ptm_cbor <- function(statistics_h5mu, enrichment_cbor, output_h5mu) {
 
 .ptm_relative_cbor <- function(paths, output_h5mu) {
   dir.create(dirname(output_h5mu), recursive = TRUE, showWarnings = FALSE)
-  root <- normalizePath(dirname(output_h5mu), mustWork = TRUE)
-  prefix <- paste0(root, .Platform$file.sep)
+  prefix <- paste0(normalizePath(dirname(output_h5mu), mustWork = TRUE), .Platform$file.sep)
   vapply(
     paths,
     function(path) {
@@ -258,9 +167,6 @@ assemble_ptm_cbor <- function(statistics_h5mu, enrichment_cbor, output_h5mu) {
 
 .ptm_resolve_cbor <- function(container, h5mu_path) {
   manifest <- container$uns$prophosqua$enrichment_cbor
-  if (!length(manifest)) {
-    return(character())
-  }
   resolved <- stats::setNames(
     file.path(dirname(h5mu_path), as.character(unlist(manifest, use.names = FALSE))),
     names(manifest)
@@ -279,41 +185,33 @@ assemble_ptm_cbor <- function(statistics_h5mu, enrichment_cbor, output_h5mu) {
 # The stored document is the payload, not a rendering of it: restoring a result
 # and writing it again does not reproduce the same JSON byte for byte.
 .ptm_documents_from_artifacts <- function(artifacts) {
-  json <- Filter(function(artifact) artifact$stage %in% .ptm_json_enrichment_methods, artifacts)
-  lapply(json, function(artifact) artifact$document)
+  lapply(Filter(function(artifact) !is.null(artifact$document), artifacts), function(artifact) artifact$document)
 }
 
+# Every enrichment branch of every analysis, restored from artifacts keyed by
+# stage and analysis, on the one statistics object they were computed from.
 .ptm_branches_from_artifacts <- function(statistics, artifacts) {
-  analyses <- unique(vapply(artifacts, function(artifact) artifact$analysis, character(1)))
-  unlist(
-    lapply(analyses, function(analysis) {
-      artifact <- function(stage) {
-        key <- .ptm_varm_key(stage, analysis)
-        if (is.null(artifacts[[key]])) {
-          stop("Missing CBOR stage: ", key, call. = FALSE)
-        }
-        artifacts[[key]]
+  analyses <- unique(utils::URLdecode(sub("^.*?__", "", names(artifacts))))
+  branches <- lapply(analyses, function(analysis) {
+    artifact <- function(stage) {
+      key <- .ptm_key(stage, analysis)
+      if (is.null(artifacts[[key]])) {
+        stop("Missing enrichment stage: ", key, call. = FALSE)
       }
-      restore <- function(stage) {
-        .restore_ptm_enrichment_result(artifact(stage)$document, .ptm_varm_key(stage, analysis))
-      }
-      inputs <- KinaseInputs$new(statistics, analysis, .unpack_ptm_value(artifact("KinaseInputs")$result))
-      assignments <- KinaseAssignments$new(
-        inputs,
-        analysis,
-        .unpack_ptm_value(artifact("KinaseAssignments")$result)
-      )
-      motif <- MotifEnrichment$new(
-        assignments,
-        analysis,
-        .unpack_ptm_value(artifact("MotifEnrichment")$result)
-      )
-      list(
-        PTMSEA$new(statistics, analysis, restore("PTMSEA")),
-        KinaseGSEA$new(assignments, analysis, restore("KinaseGSEA")),
-        MEA$new(motif, analysis, restore("MEA"))
-      )
-    }),
-    recursive = FALSE
-  )
+      artifacts[[key]]
+    }
+    preparation <- function(stage) .unpack_ptm_value(artifact(stage)$result)
+    completed <- function(stage) .restore_ptm_enrichment_result(artifact(stage)$document, .ptm_key(stage, analysis))
+    assignments <- KinaseAssignments$new(
+      KinaseInputs$new(statistics, analysis, preparation("KinaseInputs")),
+      analysis,
+      preparation("KinaseAssignments")
+    )
+    list(
+      PTMSEA$new(statistics, analysis, completed("PTMSEA")),
+      KinaseGSEA$new(assignments, analysis, completed("KinaseGSEA")),
+      MEA$new(MotifEnrichment$new(assignments, analysis, preparation("MotifEnrichment")), analysis, completed("MEA"))
+    )
+  })
+  Reduce(c, branches, list())
 }

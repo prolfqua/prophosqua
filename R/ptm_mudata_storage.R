@@ -1,57 +1,106 @@
-.cf_container <- function(inputs, result) {
-  container <- inputs$as_container()
-  container$uns$prophosqua$stage <- "CF"
-  wide <- result$wide_data
-  ids <- as.character(wide[[site_column(wide)]])
-  var <- inputs$get_enriched()$var
-  var <- as.data.frame(var)[match(ids, var$site), , drop = FALSE]
-  samples <- rownames(container$obs)
-  values <- t(as.matrix(wide[, samples, drop = FALSE]))
-  dimnames(values) <- list(samples, rownames(var))
-  cf <- anndataR::AnnData(X = values, obs = container$obs, var = var)
-  cf$uns$prophosqua <- list(schema_version = "2.0.0", report_data = .pack_cf_result(result))
-  cf <- .add_ptm_method(cf, result$results, "correct_first", names(result$contrasts))
-  container$modalities$cf <- cf
-  container
-}
-
-.add_ptm_method <- function(adata, table, method, contrasts) {
-  site_col <- site_column(table)
-  # Outer-join context is retained in the complete report tables. Only rows
-  # belonging to this modality are feature-aligned in varm.
-  rows <- !is.na(table[[site_col]]) & table[[site_col]] %in% adata$var$site
-  payload <- .ptm_analysis_payload(table[rows, , drop = FALSE], adata$var, method, contrasts)
-  namespace <- adata$uns$prophosqua
-  namespace$schema_version <- "2.0.0"
-  namespace$result_keys[[method]] <- payload$keys
-  for (key in names(payload$values)) {
-    adata$varm[[key]] <- payload$values[[key]]
-    adata$varm[[paste0(key, "__present")]] <- matrix(payload$present[[key]], ncol = 1L)
-    namespace$varm_columns[[key]] <- payload$columns[[key]]
-    namespace$varm_annotations[[key]] <- payload$annotations[[key]]
-  }
-  adata$uns$prophosqua <- namespace
-  adata
-}
+.CF_VARIANTS <- c("correct_first_protein_imputed", "correct_first_site_protein_imputed")
 
 .statistics_container <- function(statistics) {
   inputs <- statistics$get_inputs()
-  result <- statistics$get_dpa_dpu()
-  container <- .cf_container(inputs, statistics$get_cf())
+  container <- inputs$as_container()
   container$uns$prophosqua$stage <- "PTM_statistics"
+  container$modalities$enriched_CF <- .enriched_cf_modality(container, statistics$get_cf())
+  contrasts <- names(inputs$get_contrasts())
+  dpa_dpu <- statistics$get_dpa_dpu()
   enriched <- container$modalities$enriched
-  enriched$uns$prophosqua <- list(dpa_dpu = .pack_ptm_value(result))
-  container$modalities$enriched <- .add_ptm_method(
-    enriched,
-    result$combined_site_prot,
-    "dpa",
-    names(inputs$get_contrasts())
-  )
-  cf <- container$modalities$cf
-  cf <- .add_ptm_method(cf, result$combined_test_diff, "dpu", names(inputs$get_contrasts()))
-  cf <- .add_ptm_method(cf, result$combined_test_diff_unmoderated, "dpu_unmoderated", names(inputs$get_contrasts()))
-  container$modalities$cf <- cf
+  enriched$uns$prophosqua <- list(dpa_dpu = .pack_ptm_value(dpa_dpu[.DPA_DPU_SUMMARIES]))
+  for (method in names(.DPA_DPU_METHODS)) {
+    enriched <- .add_ptm_method(enriched, dpa_dpu[[.DPA_DPU_METHODS[[method]]]], method, contrasts)
+  }
+  container$modalities$enriched <- enriched
   container
+}
+
+# All of CorrectFirst over the sites it corrects, in the enriched order: X holds
+# CF, each imputed variant is a layer named by its result key, and varm holds
+# the results of every fitted one. The variants' matrices, samples x site ids,
+# already span those sites (.cf_sites()), so the modality takes their axis; a
+# site a variant does not correct is NA in its matrix and in its results. uns
+# keeps the CF metadata only: everything else is rebuilt from X, obs and var.
+.enriched_cf_modality <- function(container, result) {
+  obs <- container$obs
+  enriched_var <- as.data.frame(container$modalities$enriched$var)
+  sites <- unique(unlist(lapply(result$variants, function(variant) colnames(variant$abundances))))
+  var <- enriched_var[enriched_var$site %in% sites, , drop = FALSE]
+  contrasts <- names(result$contrasts)
+  on_axes <- function(abundances) {
+    abundances <- abundances[rownames(obs), var$site, drop = FALSE]
+    dimnames(abundances) <- list(rownames(obs), rownames(var))
+    abundances
+  }
+  cf <- anndataR::AnnData(
+    X = on_axes(.cf_abundances(result$wide_data, rownames(obs), var$site)),
+    obs = obs,
+    var = var
+  )
+  metadata <- c(
+    result[.CF_METADATA],
+    list(ptm_config = prolfqua::R6_extract_values(result$ptm_data$get_config()))
+  )
+  cf$uns$prophosqua <- list(cf = .pack_ptm_value(metadata))
+  cf <- .add_ptm_method(cf, result$results, "correct_first", contrasts)
+  for (method in names(result$variants)) {
+    variant <- result$variants[[method]]
+    if (!is.null(variant$results)) {
+      cf <- .add_ptm_method(cf, variant$results, method, contrasts)
+    }
+    cf$layers[[method]] <- on_axes(variant$abundances)
+  }
+  cf
+}
+
+# The corrected values as the LFQData CF fitted: X on the modality's axes,
+# joined to the site keys and the design.
+.cf_ptm_data <- function(cf, config) {
+  config <- prolfqua::list_to_AnalysisConfiguration(config)
+  values <- as.matrix(cf$X)
+  dimnames(values) <- list(cf$obs_names, cf$var_names)
+  keys <- dplyr::as_tibble(as.data.frame(cf$var)[config$hierarchy_keys()], rownames = ".feature")
+  long <- tidyr::pivot_longer(
+    dplyr::as_tibble(t(values), rownames = ".feature"),
+    cols = -".feature",
+    names_to = config$sample_name,
+    values_to = config$get_response()
+  ) |>
+    dplyr::inner_join(keys, by = ".feature") |>
+    dplyr::filter(any(!is.na(.data[[config$get_response()]])), .by = ".feature") |>
+    dplyr::select(-".feature") |>
+    dplyr::left_join(dplyr::as_tibble(as.data.frame(cf$obs)), by = config$sample_name)
+  prolfqua::LFQData$new(long, config)
+}
+
+.load_cf_variants <- function(cf, contrasts) {
+  methods <- intersect(.CF_VARIANTS, cf$layers_keys())
+  stats::setNames(
+    lapply(methods, function(method) {
+      abundances <- as.matrix(cf$layers[[method]])
+      dimnames(abundances) <- list(cf$obs_names, as.data.frame(cf$var)$site)
+      if (.ptm_key(method, contrasts[[1]]) %in% cf$varm_keys()) {
+        return(list(results = .ptm_method_table(cf, method, contrasts), abundances = abundances))
+      }
+      list(abundances = abundances)
+    }),
+    methods
+  )
+}
+
+.add_ptm_method <- function(adata, table, method, contrasts) {
+  # Protein-only rows of the outer join carry no site and have no feature to
+  # align to; every row that names a site is kept.
+  rows <- !is.na(table$site) & table$site %in% adata$var$site
+  payload <- .ptm_analysis_payload(table[rows, , drop = FALSE], adata$var, method, contrasts)
+  for (key in names(payload$values)) {
+    adata$varm[[key]] <- payload$values[[key]]
+  }
+  namespace <- adata$uns$prophosqua
+  namespace$varm_order <- c(namespace$varm_order, payload$order)
+  adata$uns$prophosqua <- namespace
+  adata
 }
 
 #' Read a complete typed PTM stage from MuData
@@ -66,24 +115,13 @@ read_ptm_h5mu <- function(path, expected = NULL) {
   if (!identical(metadata$schema_version, "2.0.0")) {
     stop("Unsupported PTM MuData schema.")
   }
-  readers <- list(
-    DEA_enriched_total = .load_ptm_inputs,
-    CF = .load_ptm_cf,
-    DPA_DPU = .load_ptm_dpa_dpu,
-    PTM_statistics = .load_ptm_statistics,
-    PTMSEA = .load_ptmsea,
-    KinaseInputs = .load_kinase_inputs,
-    KinaseAssignments = .load_kinase_assignments,
-    KinaseGSEA = .load_kinase_gsea,
-    MotifEnrichment = .load_motif_enrichment,
-    MEA = .load_mea,
-    PTM_results = function(container) .load_ptm_results(container, path)
-  )
-  reader <- readers[[metadata$stage]]
-  if (is.null(reader)) {
+  result <- switch(
+    metadata$stage,
+    DEA_enriched_total = .load_ptm_inputs(container),
+    PTM_statistics = .load_ptm_statistics(container),
+    PTM_results = .load_ptm_results(container, path),
     stop("Unknown PTM stage: ", metadata$stage)
-  }
-  result <- reader(container)
+  )
   if (!is.null(expected) && !inherits(result, expected$classname)) {
     stop("Expected stage ", expected$classname)
   }
@@ -96,7 +134,8 @@ read_ptm_h5mu <- function(path, expected = NULL) {
   enriched <- container$modalities$enriched$clone(deep = TRUE)
   # Derived results do not belong to the paired-input component.
   enriched$uns$prophosqua <- NULL
-  for (key in grep("^(dpa|dpu|correct_first)__", enriched$varm_keys(), value = TRUE)) {
+  derived <- paste0("^(", paste(c(names(.DPA_DPU_METHODS), "correct_first"), collapse = "|"), ")__")
+  for (key in grep(derived, enriched$varm_keys(), value = TRUE)) {
     enriched$varm[[key]] <- NULL
   }
   DEA_enriched_total$new(
@@ -109,64 +148,55 @@ read_ptm_h5mu <- function(path, expected = NULL) {
 }
 
 .load_ptm_cf <- function(container) {
-  .require_ptm_fields(container$modalities, "cf", "CF modalities")
-  namespace <- container$modalities$cf$uns$prophosqua
-  .require_ptm_fields(namespace, c("report_data", "result_keys"), "CF metadata")
-  .validate_ptm_method(container$modalities$cf, "correct_first")
-  CF$new(.load_ptm_inputs(container), .unpack_cf_result(namespace$report_data))
+  .require_ptm_fields(container$modalities, "enriched_CF", "CF modalities")
+  cf <- container$modalities$enriched_CF
+  .require_ptm_fields(cf$uns$prophosqua, "cf", "CF metadata")
+  metadata <- .unpack_ptm_value(cf$uns$prophosqua$cf)
+  contrasts <- names(metadata$contrasts)
+  ptm_data <- .cf_ptm_data(cf, metadata$ptm_config)
+  c(
+    metadata[.CF_METADATA],
+    list(results = .ptm_method_table(cf, "correct_first", contrasts), ptm_data = ptm_data),
+    .cf_wide(ptm_data),
+    list(variants = .load_cf_variants(cf, contrasts))
+  )
 }
 
-.load_ptm_dpa_dpu <- function(container) {
-  namespace <- container$modalities$enriched$uns$prophosqua
-  .require_ptm_fields(namespace, "dpa_dpu", "DPA/DPU metadata")
-  DPA_DPU$new(.load_ptm_inputs(container), .unpack_ptm_value(namespace$dpa_dpu))
+.load_ptm_dpa_dpu <- function(container, contrasts) {
+  enriched <- container$modalities$enriched
+  .require_ptm_fields(enriched$uns$prophosqua, "dpa_dpu", "DPA/DPU metadata")
+  tables <- lapply(names(.DPA_DPU_METHODS), function(method) .ptm_method_table(enriched, method, contrasts))
+  c(stats::setNames(tables, unname(.DPA_DPU_METHODS)), .unpack_ptm_value(enriched$uns$prophosqua$dpa_dpu))
 }
 
 .load_ptm_statistics <- function(container) {
-  .validate_ptm_method(container$modalities$enriched, "dpa")
-  .validate_ptm_method(container$modalities$cf, "dpu")
-  .validate_ptm_method(container$modalities$cf, "dpu_unmoderated")
-  PTM_statistics$new(.load_ptm_dpa_dpu(container), .load_ptm_cf(container))
-}
-
-.validate_ptm_method <- function(adata, method) {
-  namespace <- adata$uns$prophosqua
-  .require_ptm_fields(namespace$result_keys, method, "PTM result keys")
-  keys <- namespace$result_keys[[method]]
-  if (!length(keys)) {
-    stop("PTM result keys are empty: ", method)
-  }
-  for (key in keys) {
-    mask_key <- paste0(key, "__present")
-    .require_ptm_fields(adata$varm, c(key, mask_key), "PTM result matrices")
-    .require_ptm_fields(namespace$varm_columns, key, "PTM result columns")
-    values <- adata$varm[[key]]
-    present <- adata$varm[[mask_key]]
-    valid <- c(
-      identical(dim(values), c(nrow(adata$var), length(namespace$varm_columns[[key]]))),
-      identical(dim(present), c(nrow(adata$var), 1L)),
-      is.logical(present),
-      !anyNA(present)
-    )
-    if (!all(valid)) {
-      stop("Invalid PTM result matrix or presence mask: ", key)
-    }
-  }
+  inputs <- .load_ptm_inputs(container)
+  PTM_statistics$new(
+    inputs,
+    dpa_dpu = .load_ptm_dpa_dpu(container, names(inputs$get_contrasts())),
+    cf = .load_ptm_cf(container)
+  )
 }
 
 #' Import paired DEA files into the first complete MuData stage
+#'
+#' Reads the two DEA files and the reference resources the enabled analyses
+#' need, once; every later stage reads MuData only.
 #' @param enriched_h5ad,total_h5ad Producer-owned DEA files.
 #' @param output_h5mu Destination.
-#' @param resources,parameters Imported reference data and analysis parameters.
+#' @param parameters Analysis parameters, the merged pipeline configuration.
+#' @param ptmsigdb Filtered PTMsigDB as `.rds` or `.gmt`. When `NULL` and the
+#'   kinase analyses are enabled, PTMsigDB is downloaded and filtered as
+#'   `parameters$ptmsigdb` asks.
 #' @return Complete paired-input stage, invisibly.
 #' @export
-import_ptm_h5mu <- function(enriched_h5ad, total_h5ad, output_h5mu, resources = list(), parameters = list()) {
+import_ptm_h5mu <- function(enriched_h5ad, total_h5ad, output_h5mu, parameters = list(), ptmsigdb = NULL) {
   paths <- c(enriched = enriched_h5ad, total = total_h5ad)
   inputs <- DEA_enriched_total$new(
     anndataR::read_h5ad(enriched_h5ad),
     anndataR::read_h5ad(total_h5ad),
-    resources,
-    parameters,
+    resources = .import_ptm_resources(parameters, ptmsigdb),
+    parameters = parameters,
     provenance = list(paths = normalizePath(paths), md5 = unname(tools::md5sum(paths)))
   )
   inputs$write_h5mu(output_h5mu)
@@ -179,10 +209,7 @@ import_ptm_h5mu <- function(enriched_h5ad, total_h5ad, output_h5mu, resources = 
 #' @return Complete statistics stage, invisibly.
 #' @export
 compute_ptm_results_h5mu <- function(input_h5mu, output_h5mu) {
-  inputs <- read_ptm_h5mu(input_h5mu, DEA_enriched_total)
-  dpa_dpu <- inputs$build(DPA_DPU)
-  cf <- inputs$build(CF)
-  result <- dpa_dpu$build(PTM_statistics, cf = cf)
+  result <- PTM_statistics$new(read_ptm_h5mu(input_h5mu, DEA_enriched_total))
   result$write_h5mu(output_h5mu)
   invisible(result)
 }

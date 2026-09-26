@@ -4,53 +4,35 @@
 \alias{render_ptm_report}
 \title{Render a Report Shipped with prophosqua}
 \usage{
-render_ptm_report(
-  name,
-  output_file,
-  output_dir,
-  params = list(),
-  intermediates_dir = NULL
-)
+render_ptm_report(name, output_file, output_dir, params = list())
 }
 \arguments{
 \item{name}{File name of the report, e.g. `"ptm_statistics.qmd"`.}
 
-\item{output_file}{File name to write, e.g. `"Analysis_seqlogo.html"`.}
+\item{output_file}{File name to write, e.g. `"ptm_statistics.html"`.}
 
 \item{output_dir}{Directory to write the report to.}
 
 \item{params}{Named list passed to the report's `params`.}
-
-\item{intermediates_dir}{Directory for knitr's intermediates. Defaults to a
-private directory of this R process, removed when it exits.}
 }
 \value{
 Invisibly, the path of the rendered file.
 }
 \description{
-Renders an installed R Markdown or Quarto vignette. A project therefore
-never carries a copy of a report template.
+Renders one of the installed Quarto reports, `ptm_statistics.qmd` or
+`ptm_enrichment.qmd`, so a project never carries a copy of a template.
 }
 \details{
-`knit_root_dir` is the working directory, not the template's directory, so
-relative paths in `params` mean what they mean to the caller.
-
-The output format is the one the report's own YAML declares. Forcing one here
-would be wrong for the reports that ask for something specific: the index page
-declares its own theme, and only some reports want bookdown's numbered
-sections and cross-references.
-
-Each render is given its own `intermediates_dir` because knitr names its
-intermediate files after the input document: two renders of the same template
-running at once would otherwise overwrite each other's `.knit.md` and both
-reports would end up with whichever content finished last.
+The template is staged into a private directory under `output_dir`: Quarto
+names its intermediates after the input document, and two renders of the
+same template running at once would otherwise overwrite each other's.
 }
 \examples{
 # Renders one of the installed templates; needs the data it asks for.
 \dontrun{
 render_ptm_report(
-  "Analysis_seqlogo.Rmd", "Analysis_seqlogo.html", "PTM_DPA",
-  params = list(input_h5mu = "PTM_results.h5mu", sheet = "DPA")
+  "ptm_statistics.qmd", "ptm_statistics.html", "PTM_results",
+  params = list(input_h5mu = "PTM_statistics.h5mu", fdr_threshold = 0.25)
 )
 }
 }

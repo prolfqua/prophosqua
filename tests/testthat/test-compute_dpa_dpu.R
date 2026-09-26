@@ -1,25 +1,5 @@
-test_that("site_column finds either spelling of the site identifier", {
-  expect_equal(site_column(data.frame(site = "a")), "site")
-  expect_equal(site_column(data.frame(protein_Id_site = "a")), "protein_Id_site")
-})
-
-test_that("site_column prefers `site` when a table carries both", {
-  both <- data.frame(protein_Id_site = "a", site = "a")
-  expect_equal(site_column(both), "site")
-})
-
-test_that("site_column names what it looked for when neither is present", {
-  expect_error(
-    site_column(data.frame(protein_Id = "P1")),
-    "no site identifier column found"
-  )
-})
-
-test_that("compute_dpa_dpu pairs every tested site with its protein", {
-  dirs <- make_dea_pair()
-  res <- suppressMessages(
-    compute_dpa_dpu(dirs$phospho, dirs$protein)
-  )
+test_that("DPA pairs every tested site with its protein", {
+  res <- suppressMessages(.compute_dpa_dpu_from_pair(dea_result_pair()))
 
   # Two proteins carry a site, two contrasts each.
   expect_equal(nrow(res$combined_site_prot), 4)
@@ -32,9 +12,8 @@ test_that("compute_dpa_dpu pairs every tested site with its protein", {
   ))
 })
 
-test_that("compute_dpa_dpu reports the match rate per contrast", {
-  dirs <- make_dea_pair()
-  res <- suppressMessages(compute_dpa_dpu(dirs$phospho, dirs$protein))
+test_that("DPA reports the match rate per contrast", {
+  res <- suppressMessages(.compute_dpa_dpu_from_pair(dea_result_pair()))
 
   expect_equal(res$match_rates$contrast, c("a_vs_b", "c_vs_b"))
   expect_equal(res$match_rates$total_sites, c(2, 2))
@@ -42,19 +21,14 @@ test_that("compute_dpa_dpu reports the match rate per contrast", {
   expect_equal(res$match_rates$match_rate, c(100, 100))
 })
 
-test_that("compute_dpa_dpu leaves an unmatched site without a protein estimate", {
+test_that("DPA leaves an unmatched site without a protein estimate", {
   # A site on a protein the total-proteome run did not quantify.
-  phospho <- make_dea_output(
+  pair <- dea_result_pair(
     site_dea_table(protein_ids = c("P1", "P9")),
-    site_annotation_table(c("P1", "P9")),
-    name = "DEA_phospho_extra"
-  )
-  protein <- make_dea_output(
-    protein_dea_table(protein_ids = "P1"),
-    name = "DEA_protein_one"
+    protein_dea_table(protein_ids = "P1")
   )
 
-  res <- suppressMessages(compute_dpa_dpu(phospho, protein))
+  res <- suppressMessages(.compute_dpa_dpu_from_pair(pair))
 
   unmatched <- res$combined_site_prot[
     res$combined_site_prot$protein_Id == "P9",
@@ -64,9 +38,8 @@ test_that("compute_dpa_dpu leaves an unmatched site without a protein estimate",
   expect_equal(res$match_rates$matched_sites, c(1, 1))
 })
 
-test_that("compute_dpa_dpu computes the usage difference of a matched pair", {
-  dirs <- make_dea_pair()
-  res <- suppressMessages(compute_dpa_dpu(dirs$phospho, dirs$protein))
+test_that("DPU is the usage difference of a matched pair", {
+  res <- suppressMessages(.compute_dpa_dpu_from_pair(dea_result_pair()))
 
   paired <- res$combined_test_diff[res$combined_test_diff$measured_In == "both", ]
   expect_true(nrow(paired) > 0)
@@ -81,14 +54,12 @@ test_that("compute_dpa_dpu computes the usage difference of a matched pair", {
   expect_equal(res$n_unmoderated_untestable, 0)
 })
 
-test_that("compute_dpa_dpu counts paired rows with invalid raw degrees of freedom", {
+test_that("DPU counts paired rows with invalid raw degrees of freedom", {
   site <- site_dea_table(protein_ids = "P1", contrasts = c("a_vs_b", "c_vs_b"))
   protein <- protein_dea_table(protein_ids = "P1", contrasts = c("a_vs_b", "c_vs_b"))
   protein$df.unmoderated[protein$contrast == "a_vs_b"] <- 0
-  phospho_dir <- make_dea_output(site, site_annotation_table("P1"), name = "DEA_phospho_df")
-  protein_dir <- make_dea_output(protein, name = "DEA_protein_df")
 
-  res <- suppressMessages(compute_dpa_dpu(phospho_dir, protein_dir))
+  res <- suppressMessages(.compute_dpa_dpu_from_pair(dea_result_pair(site, protein)))
   raw <- res$combined_test_diff_unmoderated
 
   expect_equal(res$n_unmoderated_untestable, 1)

@@ -1,147 +1,10 @@
 # A deterministic final PTM MuData artifact for package vignettes.
 
-.example_ptm_results_matrix <- function(long, sample_key, feature_key, value_column) {
-  wide <- long |>
-    dplyr::select(tidyselect::all_of(c(sample_key, feature_key, value_column))) |>
-    tidyr::pivot_wider(
-      names_from = tidyselect::all_of(feature_key),
-      values_from = tidyselect::all_of(value_column)
-    ) |>
-    as.data.frame()
-  rownames(wide) <- wide[[sample_key]]
-  as.matrix(wide[, setdiff(names(wide), sample_key), drop = FALSE])
-}
-
-.example_ptm_results_varm <- function(results, var, feature_key) {
-  numeric_columns <- c(
-    "diff",
-    "std.error",
-    "df",
-    "std.error.unmoderated",
-    "df.unmoderated",
-    "statistic",
-    "FDR"
-  )
-  annotation_columns <- intersect(
-    c("contrast", "estimate_type", "modelName"),
-    names(results)
-  )
-  values <- list()
-  columns <- list()
-  annotations <- list()
-
-  for (contrast in unique(results$contrast)) {
-    key <- paste0(
-      "constrast_",
-      utils::URLencode(contrast, reserved = TRUE, repeated = TRUE)
-    )
-    table <- results[results$contrast == contrast, , drop = FALSE]
-    table <- table[match(var[[feature_key]], table[[feature_key]]), , drop = FALSE]
-    values[[key]] <- as.matrix(table[, numeric_columns, drop = FALSE])
-    columns[[key]] <- numeric_columns
-    annotations[[key]] <- lapply(table[, annotation_columns, drop = FALSE], unname)
-  }
-  list(values = values, columns = columns, annotations = annotations)
-}
-
-.write_example_ptm_dea_h5ad <- function(dea_dir, path, site, annot_file) {
-  long <- arrow::read_parquet(get_dea_parquet(dea_dir))
-  config <- yaml::read_yaml(get_dea_yaml(dea_dir))
-  results <- suppressMessages(load_and_preprocess_data(
-    get_dea_xlsx(dea_dir),
-    c("protein_Id", "contrast")
-  ))
-  sample_key <- config$sample_name
-  feature_key <- if (site) "site" else "protein_Id"
-  feature_keys <- if (site) c("protein_Id", "site") else "protein_Id"
-
-  obs_columns <- unique(c(
-    sample_key,
-    config$file_name,
-    names(config$factors),
-    config$isotope_label
-  ))
-  obs <- as.data.frame(unique(long[, obs_columns, drop = FALSE]))
-  obs <- obs[match(unique(long[[sample_key]]), obs[[sample_key]]), , drop = FALSE]
-  rownames(obs) <- obs[[sample_key]]
-
-  annotation_columns <- c(
-    "protein_Id",
-    "site",
-    "description",
-    "gene_name",
-    "protein_length",
-    "posInProtein",
-    "modAA",
-    "SequenceWindow"
-  )
-  annotation_columns <- intersect(annotation_columns, names(results))
-  var <- as.data.frame(unique(results[, annotation_columns, drop = FALSE]))
-  var <- var[!duplicated(var[[feature_key]]), , drop = FALSE]
-  feature_ids <- unique(long[[feature_key]])
-  var <- var[match(feature_ids, var[[feature_key]]), , drop = FALSE]
-  rownames(var) <- feature_ids
-
-  transformed <- .example_ptm_results_matrix(
-    long,
-    sample_key,
-    feature_key,
-    "normalized_abundance"
-  )
-  transformed <- transformed[rownames(obs), rownames(var), drop = FALSE]
-  nr_children <- .example_ptm_results_matrix(
-    long,
-    sample_key,
-    feature_key,
-    config$nr_children
-  )
-  nr_children <- nr_children[rownames(obs), rownames(var), drop = FALSE]
-  varm <- .example_ptm_results_varm(results, var, feature_key)
-
-  namespace <- list(
-    artifact_type = "dea_results",
-    schema_version = "2.0.0",
-    source_software = "prophosqua-example",
-    analysis_configuration = config,
-    layer_names = c("rawData", "transformedData", "nr_children"),
-    feature_keys = feature_keys,
-    sample_key = sample_key,
-    varm_columns = varm$columns,
-    varm_annotations = varm$annotations,
-    contrasts = list(
-      contrast_name = unique(results$contrast),
-      contrast = unname(derive_contrasts(
-        readr::read_tsv(annot_file, show_col_types = FALSE)
-      ))
-    )
-  )
-  adata <- anndataR::AnnData(
-    X = transformed,
-    obs = obs,
-    var = var,
-    layers = list(
-      rawData = transformed,
-      transformedData = transformed,
-      nr_children = nr_children
-    ),
-    varm = varm$values,
-    uns = list(prolfquapp = namespace)
-  )
-  invisible(rhdf5::H5get_libversion())
-  adata$write_h5ad(path, compression = "gzip", mode = "w")
-  path
-}
-
-# Build the richer paired DEA input used only by the statistics vignette.
+# The richer paired DEA input the statistics vignette reads: three groups, `b`
+# the control.
 .example_ptm_results_dea_pair <- function(root) {
-  samples <- expand.grid(
-    replicate = seq_len(3L),
-    G_ = c("a", "b", "c"),
-    stringsAsFactors = FALSE
-  )
+  samples <- expand.grid(replicate = seq_len(3L), G_ = c("a", "b", "c"), stringsAsFactors = FALSE)
   samples$Name <- paste0(samples$G_, samples$replicate)
-  samples$raw_file <- paste0(samples$Name, ".raw")
-  samples$Control <- ifelse(samples$G_ == "b", "C", "T")
 
   proteins <- sprintf("P%03d", seq_len(24L))
   site_index <- seq_len(length(proteins) * 3L)
@@ -218,7 +81,6 @@
   )
   protein_sample <- match(long_protein$Name, samples$Name)
   protein_feature <- match(long_protein$protein_Id, proteins)
-  long_protein$raw_file <- samples$raw_file[protein_sample]
   long_protein$G_ <- samples$G_[protein_sample]
   long_protein$normalized_abundance <-
     .example_base_abundance(long_protein$protein_Id, proteins) +
@@ -238,7 +100,6 @@
   site_sample <- match(long_site$Name, samples$Name)
   site_feature <- match(long_site$site, site_map$site)
   long_site$protein_Id <- site_map$protein_Id[site_feature]
-  long_site$raw_file <- samples$raw_file[site_sample]
   long_site$G_ <- samples$G_[site_sample]
   long_site$normalized_abundance <-
     .example_base_abundance(long_site$site, site_map$site) +
@@ -252,89 +113,17 @@
   faint <- site_feature <= 12L & samples$replicate[site_sample] == 3L
   long_site$normalized_abundance[faint] <- NA_real_
 
-  contrasts <- c("a_vs_b", "c_vs_b")
-  protein_grid <- expand.grid(
+  protein_annotation <- data.frame(
     protein_Id = proteins,
-    contrast = contrasts,
+    description = paste("protein", proteins),
+    gene_name = sub("^P", "GENE", proteins),
+    protein_length = 300L + seq_along(proteins) * 7L,
     stringsAsFactors = FALSE
   )
-  protein_feature <- match(protein_grid$protein_Id, proteins)
-  protein_grid$diff <- ifelse(
-    protein_grid$contrast == "a_vs_b",
-    protein_a[protein_feature],
-    protein_c[protein_feature]
-  )
-  protein_grid$std.error <- 0.18
-  protein_grid$df <- 6
-  protein_grid$std.error.unmoderated <- 0.22
-  protein_grid$df.unmoderated <- 6
-  protein_grid$statistic <- protein_grid$diff / protein_grid$std.error
-  protein_grid$p_value <- 2 * stats::pt(-abs(protein_grid$statistic), protein_grid$df)
-  protein_grid$FDR <- stats::ave(
-    protein_grid$p_value,
-    protein_grid$contrast,
-    FUN = stats::p.adjust,
-    method = "BH"
-  )
-  protein_grid$p_value <- NULL
-  protein_grid$description <- paste("protein", protein_grid$protein_Id)
-  protein_grid$gene_name <- sub("^P", "GENE", protein_grid$protein_Id)
-  protein_grid$protein_length <- 300L + protein_feature * 7L
-  protein_grid$estimate_type <- "observed"
-
-  site_grid <- expand.grid(
-    site = site_map$site,
-    contrast = contrasts,
-    stringsAsFactors = FALSE
-  )
-  site_feature <- match(site_grid$site, site_map$site)
-  site_grid <- cbind(
-    site_grid,
-    site_map[site_feature, setdiff(names(site_map), "site"), drop = FALSE]
-  )
-  site_grid$diff <- ifelse(
-    site_grid$contrast == "a_vs_b",
-    site_a[site_feature],
-    site_c[site_feature]
-  )
-  site_grid$std.error <- 0.2
-  site_grid$df <- 6
-  site_grid$std.error.unmoderated <- 0.24
-  site_grid$df.unmoderated <- 6
-  site_grid$statistic <- site_grid$diff / site_grid$std.error
-  site_grid$p_value <- 2 * stats::pt(-abs(site_grid$statistic), site_grid$df)
-  site_grid$FDR <- stats::ave(
-    site_grid$p_value,
-    site_grid$contrast,
-    FUN = stats::p.adjust,
-    method = "BH"
-  )
-  site_grid$p_value <- NULL
-  site_grid$estimate_type <- "observed"
-
-  paths <- list(
-    phospho = file.path(root, "DEA_phospho"),
-    protein = file.path(root, "DEA_protein"),
-    annot_file = file.path(root, "annotation.tsv")
-  )
-  .example_dea_dir(
-    paths$phospho,
-    long_site,
-    .example_dea_config(list(protein_Id = "protein_Id", site = "site")),
-    site_grid,
-    site_map
-  )
-  .example_dea_dir(
-    paths$protein,
-    long_protein,
-    .example_dea_config(list(protein_Id = "protein_Id")),
-    protein_grid
-  )
-  readr::write_tsv(
-    samples[, c("Name", "G_", "Control")] |>
-      dplyr::rename(Group = "G_"),
-    paths$annot_file
-  )
+  contrasts <- c(a_vs_b = "G_a - G_b", c_vs_b = "G_c - G_b")
+  paths <- list(phospho = file.path(root, "DEA_phospho"), protein = file.path(root, "DEA_protein"))
+  .example_dea_dir(paths$phospho, long_site, list(protein_Id = "protein_Id", site = "site"), site_map, contrasts)
+  .example_dea_dir(paths$protein, long_protein, list(protein_Id = "protein_Id"), protein_annotation, contrasts)
   paths
 }
 
@@ -452,91 +241,41 @@
 
 .example_ptm_enrichment_branches <- function(statistics, analysis, table, seed) {
   rank_tables <- .example_enrichment_rank_tables(table)
-  ranked_sites <- vapply(rank_tables, nrow, integer(1))
   sequences <- unique(table$SequenceWindow)
 
-  ptm_sets <- .example_enrichment_sets(sequences, "PTMSEA")
-  ptm_term2gene <- .example_term2gene(ptm_sets)
-  ptm_results <- .example_gsea_results(rank_tables, ptm_term2gene, seed)
-  ptm_table <- .example_gsea_table(ptm_results)
-  ptmsea <- PTMSEA$new(
-    statistics,
-    analysis,
-    list(
-      results = ptm_results,
-      ranks = lapply(ptm_results, methods::slot, "geneList"),
-      all_clean = ptm_table,
-      pathways = ptm_sets,
-      data_info = data.frame(contrast = names(rank_tables), ranked_sites = ranked_sites),
-      ptmsigdb_summary = data.frame(signatures = length(ptm_sets)),
-      overlap_stats = data.frame(overlap = length(sequences)),
-      n_overlap = length(sequences),
-      n_our_sites = length(sequences),
-      prep_info = data.frame(contrast = names(rank_tables), ranked_sites = ranked_sites),
-      results_info = dplyr::count(ptm_table, .data$contrast, name = "terms"),
-      has_results = nrow(ptm_table) > 0L,
-      analysis_inputs = list(source = "deterministic package example")
-    )
+  ptm_results <- .example_gsea_results(
+    rank_tables,
+    .example_term2gene(.example_enrichment_sets(sequences, "PTMSEA")),
+    seed
   )
+  ptmsea <- PTMSEA$new(statistics, analysis, list(results = ptm_results, all_clean = .example_gsea_table(ptm_results)))
 
-  kinase_sets <- .example_enrichment_sets(sequences, "KinaseGSEA")
-  kinase_term2gene <- .example_term2gene(kinase_sets)
+  kinase_term2gene <- .example_term2gene(.example_enrichment_sets(sequences, "KinaseGSEA"))
   kinase_inputs <- KinaseInputs$new(
     statistics,
     analysis,
-    list(
-      seqwindows = data.frame(SequenceWindow = sequences),
-      ranks = rank_tables
-    )
+    list(seqwindows = data.frame(SequenceWindow = sequences), ranks = rank_tables)
   )
-  assignments <- KinaseAssignments$new(
-    kinase_inputs,
-    analysis,
-    list(term2gene = kinase_term2gene)
-  )
-  kinase_results <- .example_gsea_results(
-    rank_tables,
-    kinase_term2gene,
-    seed + 100L
-  )
+  assignments <- KinaseAssignments$new(kinase_inputs, analysis, list(term2gene = kinase_term2gene))
+  kinase_results <- .example_gsea_results(rank_tables, kinase_term2gene, seed + 100L)
   kinase_table <- .example_gsea_table(kinase_results)
   kinase <- KinaseGSEA$new(
     assignments,
     analysis,
     list(
       gsea_results = kinase_results,
-      ranks = lapply(kinase_results, methods::slot, "geneList"),
       all_results = kinase_table,
-      term2gene = kinase_term2gene,
-      term2gene_df = kinase_term2gene,
-      data_info = data.frame(contrast = names(rank_tables), ranked_sites = ranked_sites),
-      kl_info = data.frame(kinases = length(kinase_sets)),
-      assignment_stats = data.frame(assignments = nrow(kinase_term2gene)),
-      kinase_stats = data.frame(kinase = names(kinase_sets), sites = lengths(kinase_sets)),
-      ranks_info = data.frame(contrast = names(rank_tables), ranked_sites = ranked_sites),
-      gsea_info = dplyr::count(kinase_table, .data$contrast, name = "terms"),
-      has_results = nrow(kinase_table) > 0L,
-      analysis_inputs = list(source = "deterministic package example")
+      gsea_info = dplyr::count(kinase_table, .data$contrast, name = "terms")
     )
   )
 
   mea_clean <- .example_mea_table(kinase_results)
-  mea_document <- gsea_result_data(
+  mea_json <- protsea::gsea_result_json_text(protsea::gsea_result_data(
     kinase_results,
     category = "MEA",
     method = "gseapy"
-  )
-  mea_json <- as.character(jsonlite::toJSON(
-    mea_document,
-    auto_unbox = TRUE,
-    digits = NA,
-    na = "null"
   ))
-  motif <- MotifEnrichment$new(
-    assignments,
-    analysis,
-    list(mea_results = mea_clean, gsea_json = mea_json)
-  )
+  motif <- MotifEnrichment$new(assignments, analysis, list(mea_results = mea_clean, gsea_json = mea_json))
   mea_summary <- mea_clean |>
     dplyr::group_by(.data$contrast) |>
     dplyr::summarize(
@@ -545,17 +284,7 @@
       sig_down = sum(.data$FDR < 0.1 & .data$NES < 0),
       .groups = "drop"
     )
-  mea <- MEA$new(
-    motif,
-    analysis,
-    list(
-      mea_clean = mea_clean,
-      summary_df = mea_summary,
-      n_files = length(rank_tables),
-      has_results = nrow(mea_clean) > 0L,
-      analysis_inputs = list(source = "deterministic package example")
-    )
-  )
+  mea <- MEA$new(motif, analysis, list(mea_clean = mea_clean, summary_df = mea_summary))
   list(ptmsea, kinase, mea)
 }
 
@@ -564,13 +293,7 @@
   analyses <- c("DPA", "DPU", "CF")
   unlist(
     lapply(seq_along(analyses), function(i) {
-      analysis <- analyses[[i]]
-      .example_ptm_enrichment_branches(
-        statistics,
-        analysis,
-        tables[[analysis]],
-        seed = 4100L + i * 1000L
-      )
+      .example_ptm_enrichment_branches(statistics, analyses[[i]], tables[[analyses[[i]]]], seed = 4100L + i * 1000L)
     }),
     recursive = FALSE
   )
@@ -578,9 +301,9 @@
 
 #' Build the Final MuData Used by Package Vignettes
 #'
-#' The artifact follows the same H5AD import, typed R6 build, and H5MU storage
-#' path as a pipeline run. Kinase enrichment is disabled because the statistics
-#' report needs only the DPA, DPU, and CorrectFirst components.
+#' The artifact follows the same H5AD import and H5MU storage path as a
+#' pipeline run; its enrichments are deterministic GSEA runs on motif sets of
+#' the example sequence windows, so no kinase library or PTMsigDB is needed.
 #'
 #' @param path Destination H5MU path.
 #' @return Normalized `path`, invisibly.
@@ -590,23 +313,8 @@ example_ptm_results_h5mu <- function(path = tempfile(fileext = ".h5mu")) {
   dir.create(output_dir, recursive = TRUE)
   on.exit(unlink(output_dir, recursive = TRUE), add = TRUE)
   dirs <- .example_ptm_results_dea_pair(file.path(output_dir, "dea"))
-  enriched_h5ad <- file.path(output_dir, "enriched.h5ad")
-  total_h5ad <- file.path(output_dir, "total.h5ad")
   input_h5mu <- file.path(output_dir, "inputs.h5mu")
-  statistics_h5mu <- file.path(output_dir, "statistics.h5mu")
-
-  .write_example_ptm_dea_h5ad(
-    dirs$phospho,
-    enriched_h5ad,
-    site = TRUE,
-    annot_file = dirs$annot_file
-  )
-  .write_example_ptm_dea_h5ad(
-    dirs$protein,
-    total_h5ad,
-    site = FALSE,
-    annot_file = dirs$annot_file
-  )
+  # The enrichments are built here, not computed, so no reference data is imported.
   parameters <- list(
     run_kinase = TRUE,
     analyses = list(
@@ -615,20 +323,14 @@ example_ptm_results_h5mu <- function(path = tempfile(fileext = ".h5mu")) {
       cf = list(stat_column = "statistic.site")
     )
   )
-  import_ptm_h5mu(
-    enriched_h5ad,
-    total_h5ad,
-    input_h5mu,
+  inputs <- DEA_enriched_total$new(
+    anndataR::read_h5ad(get_dea_file(dirs$phospho, "AnnData.h5ad")),
+    anndataR::read_h5ad(get_dea_file(dirs$protein, "AnnData.h5ad")),
     parameters = parameters
   )
-  statistics <- suppressWarnings(compute_ptm_results_h5mu(
-    input_h5mu,
-    statistics_h5mu
-  ))
-  result <- PTM_results$new(
-    statistics,
-    enrichments = .example_ptm_enrichments(statistics)
-  )
+  inputs$write_h5mu(input_h5mu)
+  statistics <- suppressWarnings(compute_ptm_results_h5mu(input_h5mu, file.path(output_dir, "statistics.h5mu")))
+  result <- PTM_results$new(statistics, enrichments = .example_ptm_enrichments(statistics))
   dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
   result$write_h5mu(path)
   invisible(normalizePath(path, mustWork = TRUE))

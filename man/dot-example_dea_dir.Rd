@@ -4,23 +4,26 @@
 \alias{.example_dea_dir}
 \title{Write One Example DEA Output Directory}
 \usage{
-.example_dea_dir(dea_dir, long, config, diff_exp, normalized = NULL)
+.example_dea_dir(dea_dir, long, hierarchy, row_annot, contrasts)
 }
 \arguments{
 \item{dea_dir}{Directory to create.}
 
-\item{long}{Long-format abundances.}
+\item{long}{Long-format log2 abundances in `normalized_abundance`.}
 
-\item{config}{Its [prolfqua::AnalysisConfiguration].}
+\item{hierarchy}{Named list of hierarchy keys.}
 
-\item{diff_exp}{The `diff_exp_analysis` sheet.}
+\item{row_annot}{Feature annotation keyed by the hierarchy keys, with a
+`description` column.}
 
-\item{normalized}{The `normalized_abundances` sheet, or NULL.}
+\item{contrasts}{Named contrast expressions.}
 }
 \value{
 `dea_dir`.
 }
 \description{
-Write One Example DEA Output Directory
+Runs prolfquapp's DEA, the `lm_impute` model, on example abundances and
+writes its artifact, `Results_WU_example/AnnData.h5ad`. The abundances are
+log2 values; prolfquapp's log2 transform of their exponent gives them back.
 }
 \keyword{internal}

@@ -2,27 +2,23 @@
 % Please edit documentation in R/render_reports.R
 \name{report_file}
 \alias{report_file}
-\title{Resolve an Installed Report Template}
+\title{Path of an Installed Report Template}
 \usage{
 report_file(name)
 }
 \arguments{
-\item{name}{File name, e.g. `"Analysis_seqlogo.Rmd"`.}
+\item{name}{File name, e.g. `"ptm_statistics.qmd"`.}
 }
 \value{
 Full path to the installed template.
 }
 \description{
-The analysis reports are the package's vignettes: they are authored in
-`vignettes/`, which is the one place an analysis lives, and the vignette
-machinery installs their sources into the package's `doc/` directory, from
-where a run renders them with its own parameters. The templates that are not
-analyses -- the index page -- ship under `inst/application` instead, so both
-places are consulted.
+The reports are the package's vignettes, and the vignette machinery installs
+their sources into `doc/`; a package installed without its vignettes built
+cannot render them.
 }
-\details{
-A package installed without its vignettes built has no `doc/`, and then the
-reports cannot be rendered at all; the error says so rather than reporting a
-missing file.
+\examples{
+\dontrun{
+report_file("ptm_statistics.qmd")
 }
-\keyword{internal}
+}

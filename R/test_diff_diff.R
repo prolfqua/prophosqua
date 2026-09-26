@@ -2,117 +2,51 @@
 #' @importFrom rlang .data
 NULL
 
-#' Test if differences of differences are significant (internal)
-#'
-#' @param dataframe_a First data frame (e.g., site-level results)
-#' @param dataframe_b Second data frame (e.g., protein-level results)
-#' @param by Columns to join by
-#' @param diff Column name for difference values
-#' @param std_err Column name for standard error values
-#' @param df Column name for degrees of freedom
-#' @param suffix_a Suffix for columns from dataframe_a
-#' @param suffix_b Suffix for columns from dataframe_b
-#' @param require_positive_df Whether non-finite or non-positive degrees of
-#'   freedom make a row untestable.
-#' @return Data frame with diff_diff test results
-#' @keywords internal
+# The difference of two differences, its standard error, and Welch-Satterthwaite
+# degrees of freedom. With require_positive_df, a row whose degrees of freedom
+# are not finite and positive has no test.
 .test_diff_diff <- function(
   dataframe_a,
   dataframe_b,
   by,
-  diff = c("diff"),
-  std_err = c("std.error"),
-  df = c("df"),
+  diff = "diff",
+  std_err = "std.error",
+  df = "df",
   suffix_a = ".site",
   suffix_b = ".protein",
   require_positive_df = FALSE
 ) {
   dataf <- dplyr::inner_join(dataframe_a, dataframe_b, by = by, suffix = c(suffix_a, suffix_b))
-
-  f_se <- function(stde_a, stde_b) {
-    sqrt(stde_a^2 + stde_b^2)
-  }
-  f_df <- function(stde_a, stde_b, df_a, df_b) {
-    (stde_a^2 + stde_b^2)^2 / ((stde_a^4 / df_a + stde_b^4 / df_b))
-  }
-
-  diff_a <- rlang::sym(paste0(diff, suffix_a))
-  diff_b <- rlang::sym(paste0(diff, suffix_b))
-  std_error_a <- rlang::sym(paste0(std_err, suffix_a))
-  std_error_b <- rlang::sym(paste0(std_err, suffix_b))
-  df_a <- rlang::sym(paste0(df, suffix_a))
-  df_b <- rlang::sym(paste0(df, suffix_b))
-
-  valid_df <- rep(TRUE, nrow(dataf))
+  se_a <- dataf[[paste0(std_err, suffix_a)]]
+  se_b <- dataf[[paste0(std_err, suffix_b)]]
+  df_a <- dataf[[paste0(df, suffix_a)]]
+  df_b <- dataf[[paste0(df, suffix_b)]]
+  dataf$diff_diff <- dataf[[paste0(diff, suffix_a)]] - dataf[[paste0(diff, suffix_b)]]
+  dataf$SE_I <- sqrt(se_a^2 + se_b^2)
+  dataf$df_I <- (se_a^2 + se_b^2)^2 / (se_a^4 / df_a + se_b^4 / df_b)
+  dataf$tstatistic_I <- dataf$diff_diff / dataf$SE_I
   if (require_positive_df) {
-    df_a_values <- dataf[[paste0(df, suffix_a)]]
-    df_b_values <- dataf[[paste0(df, suffix_b)]]
-    valid_df <- is.finite(df_a_values) & df_a_values > 0 & is.finite(df_b_values) & df_b_values > 0
+    untestable <- !(is.finite(df_a) & df_a > 0 & is.finite(df_b) & df_b > 0)
+    dataf$df_I[untestable] <- NA_real_
+    dataf$tstatistic_I[untestable] <- NA_real_
   }
-
-  dataf <- dataf |>
-    dplyr::mutate(
-      diff_diff = !!diff_a - !!diff_b,
-      SE_I = f_se(!!std_error_a, !!std_error_b),
-      df_I = f_df(!!std_error_a, !!std_error_b, !!df_a, !!df_b)
-    )
-  if (require_positive_df) {
-    dataf$df_I[!valid_df] <- NA_real_
-  }
-
-  dataf <- dataf |> dplyr::mutate(tstatistic_I = .data$diff_diff / .data$SE_I)
-  dataf <- dataf |>
-    dplyr::mutate(
-      pValue_I = 2 * pt(q = abs(.data$tstatistic_I), df = .data$df_I, lower.tail = FALSE)
-    )
-
-  if (require_positive_df) {
-    invalid_df <- !valid_df
-    dataf$df_I[invalid_df] <- NA_real_
-    dataf$tstatistic_I[invalid_df] <- NA_real_
-    dataf$pValue_I[invalid_df] <- NA_real_
-    dataf <- dataf |>
-      dplyr::group_by(.data$contrast) |>
-      dplyr::mutate(
-        FDR_I = {
-          adjusted <- rep(NA_real_, dplyr::n())
-          testable <- which(!is.na(.data$pValue_I))
-          adjusted[testable] <- p.adjust(.data$pValue_I[testable], method = "BH")
-          adjusted
-        }
-      ) |>
-      dplyr::ungroup()
-  } else {
-    dataf <- dataf |>
-      dplyr::group_by(.data$contrast) |>
-      dplyr::mutate(FDR_I = p.adjust(.data$pValue_I, method = "BH")) |>
-      dplyr::ungroup()
-  }
-  return(dataf)
+  dataf$pValue_I <- 2 * pt(q = abs(dataf$tstatistic_I), df = dataf$df_I, lower.tail = FALSE)
+  # p.adjust leaves NA p-values out of the number of tests.
+  dataf |>
+    dplyr::group_by(.data$contrast) |>
+    dplyr::mutate(FDR_I = p.adjust(.data$pValue_I, method = "BH")) |>
+    dplyr::ungroup()
 }
 
-
+# The same join seen from the other table: `c(a = "b")` becomes `c(b = "a")`.
 .reverse_join_column <- function(join_column) {
-  reverse_join_column <- vector(mode = "character", length(join_column))
-  join_names <- names(join_column)
-  if (is.null(join_names)) {
-    join_names <- rep("", length(join_column))
+  from <- names(join_column)
+  if (is.null(from)) {
+    return(join_column)
   }
-  for (i in seq_along(join_column)) {
-    reverse_join_column[i] <- if (join_names[i] != "") {
-      join_names[i]
-    } else {
-      join_column[i]
-    }
-    names(reverse_join_column)[i] <- if (join_names[i] != "") {
-      join_column[i]
-    } else {
-      ""
-    }
-  }
-  return(reverse_join_column)
+  named <- nzchar(from)
+  stats::setNames(ifelse(named, from, join_column), ifelse(named, join_column, ""))
 }
-
 
 #' Compute MSstats-like test statistics for differential PTM usage
 #'
@@ -130,38 +64,14 @@ NULL
 test_diff <- function(
   phos_res,
   tot_res,
-  join_column = c(
-    "protein_Id",
-    "contrast",
-    "description",
-    "protein_length",
-    "nr_tryptic_peptides"
-  ),
+  join_column = c("protein_Id", "contrast", "description", "protein_length", "nr_tryptic_peptides"),
   variant = c("moderated", "unmoderated")
 ) {
   variant <- match.arg(variant)
-  required_schema <- c("std.error", "df", "std.error.unmoderated", "df.unmoderated")
-  missing_site <- setdiff(required_schema, colnames(phos_res))
-  missing_protein <- setdiff(required_schema, colnames(tot_res))
-  if (length(missing_site) > 0 || length(missing_protein) > 0) {
-    missing_description <- c(
-      if (length(missing_site) > 0) {
-        paste0("site result: ", paste(missing_site, collapse = ", "))
-      },
-      if (length(missing_protein) > 0) {
-        paste0("protein result: ", paste(missing_protein, collapse = ", "))
-      }
-    )
-    stop(
-      "DPU requires current t/Wald contrast columns; missing ",
-      paste(missing_description, collapse = "; "),
-      ". Rerun both DEAs with the current prolfqua.",
-      call. = FALSE
-    )
-  }
-
   std_err <- if (variant == "moderated") "std.error" else "std.error.unmoderated"
   df <- if (variant == "moderated") "df" else "df.unmoderated"
+  .require_columns(phos_res, c(std_err, df), "DPU site result")
+  .require_columns(tot_res, c(std_err, df), "DPU protein result")
   test_diff <- .test_diff_diff(
     phos_res,
     tot_res,
@@ -171,29 +81,17 @@ test_diff <- function(
     require_positive_df = variant == "unmoderated"
   )
   test_diff$measured_In <- "both"
-
   removed_from_site <- dplyr::anti_join(phos_res, tot_res, by = join_column)
   removed_from_site$measured_In <- rep("site", nrow(removed_from_site))
-
   removed_from_prot <- dplyr::anti_join(tot_res, phos_res, by = .reverse_join_column(join_column))
   removed_from_prot$measured_In <- rep("prot", nrow(removed_from_prot))
-
   common_columns <- setdiff(
-    intersect(
-      colnames(removed_from_site),
-      colnames(removed_from_prot)
-    ),
+    intersect(colnames(removed_from_site), colnames(removed_from_prot)),
     c(join_column, "measured_In")
   )
-  removed_from_site_renamed <- removed_from_site |>
-    dplyr::rename_with(~ paste0(., ".site"), tidyselect::all_of(common_columns))
-  removed_from_prot_renamed <- removed_from_prot |>
-    dplyr::rename_with(~ paste0(., ".protein"), dplyr::all_of(common_columns))
-
-  combined_test_diff <- dplyr::bind_rows(
+  dplyr::bind_rows(
     test_diff,
-    removed_from_site_renamed,
-    removed_from_prot_renamed
+    dplyr::rename_with(removed_from_site, ~ paste0(., ".site"), tidyselect::all_of(common_columns)),
+    dplyr::rename_with(removed_from_prot, ~ paste0(., ".protein"), tidyselect::all_of(common_columns))
   )
-  return(combined_test_diff)
 }

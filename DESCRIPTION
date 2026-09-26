@@ -22,17 +22,14 @@ Encoding: UTF-8
 LazyData: true
 LazyDataCompression: xz
 RoxygenNote: 7.3.3
-VignetteBuilder: knitr, quarto
+VignetteBuilder: quarto
 Depends:
     R (>= 4.1.0)
 Imports:
-    anndataR,
-    arrow,
-    bookdown,
+    anndataR (>= 1.3.2),
     dplyr,
     digest,
     DOSE,
-    forcats,
     ggplot2,
     ggrepel,
     ggseqlogo,
@@ -40,24 +37,20 @@ Imports:
     methods,
     optparse,
     patchwork,
-    prolfqua,
-    prolfquapp,
+    prolfqua (>= 1.8.0),
+    prolfquapp (>= 2.10.5),
     protsea,
     purrr,
     R6,
-    readr,
-    readxl,
     rlang,
-    rmarkdown,
-    rhdf5,
     secretbase,
     seqinr,
     tidyr,
     tidyselect,
-    writexl,
-    yaml
+    writexl
 Suggests:
     altdoc,
+    bookdown,
     clusterProfiler,
     covr,
     devtools,
@@ -67,16 +60,18 @@ Suggests:
     fgczQuartoTemplate,
     ggridges,
     here,
-    htmltools,
     knitr,
-    limpa,
     lintr,
     quarto,
     rcmdcheck,
+    readr,
+    readxl,
+    rmarkdown,
     roxygen2,
     testthat (>= 3.0.0)
 Remotes:
     github::fgcz/fgczQuartoTemplate,
     github::fgcz/prolfqua,
     github::prolfqua/prolfquapp,
-    github::prolfqua/protsea
+    github::prolfqua/protsea,
+    github::wolski/anndataR

@@ -4,6 +4,6 @@
 \alias{enrichment_visualization}
 \title{Enrichment Visualization Functions}
 \description{
-Visualization functions for PTMSEA, KinaseLibrary GSEA, and MEA analyses.
-These functions provide consistent plotting styles across enrichment analyses.
+Plots shared by the PTM-SEA, Kinase GSEA and MEA sections of the enrichment
+report.
 }

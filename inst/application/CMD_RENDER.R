@@ -1,11 +1,11 @@
 #!/usr/bin/env Rscript
-# Render one of the reports shipped under inst/application.
+# Render one of the Quarto reports prophosqua ships.
 #
 # The report parameters are given as trailing key=value arguments:
 #
-#   CMD_RENDER.R --report Analysis_seqlogo.Rmd \
-#       --output_file Analysis_seqlogo.html --output_dir PTM_DPA \
-#       xlsx_file=PTM_results.xlsx sheet=DPA fdr=0.25
+#   CMD_RENDER.R --report ptm_statistics.qmd \
+#       --output_file ptm_statistics.html --output_dir PTM_results \
+#       input_h5mu=PTM_statistics.h5mu fdr_threshold=0.25
 #
 # A value that reads as a number becomes numeric and TRUE/FALSE becomes
 # logical, because a report declaring `max_fig: 10` must not be handed the
@@ -17,10 +17,9 @@ suppressPackageStartupMessages({
 })
 
 option_list <- list(
-  make_option("--report", type = "character", help = "report file name, e.g. Analysis_seqlogo.Rmd"),
-  make_option("--output_file", type = "character", help = "file name to write, e.g. Analysis_seqlogo.html"),
-  make_option("--output_dir", type = "character", help = "directory to write the report to"),
-  make_option("--intermediates_dir", type = "character", default = NULL, help = "directory for knitr intermediates")
+  make_option("--report", type = "character", help = "report file name, e.g. ptm_statistics.qmd"),
+  make_option("--output_file", type = "character", help = "file name to write, e.g. ptm_statistics.html"),
+  make_option("--output_dir", type = "character", help = "directory to write the report to")
 )
 parsed <- parse_args(
   OptionParser(option_list = option_list, usage = "%prog [options] key=value ..."),
@@ -60,6 +59,5 @@ prophosqua::render_ptm_report(
   name = opt$report,
   output_file = opt$output_file,
   output_dir = opt$output_dir,
-  params = report_params,
-  intermediates_dir = opt$intermediates_dir
+  params = report_params
 )

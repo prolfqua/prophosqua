@@ -84,24 +84,12 @@ test_that("unmoderated invalid df rows are untestable and excluded from BH", {
   expect_equal(result$FDR_I[testable], result$pValue_I[testable])
 })
 
-test_that("test_diff rejects old DEA output for both variants", {
-  site <- data.frame(
-    protein_Id = "P1",
-    contrast = "a_vs_b",
-    diff = 1,
-    std.error = 0.2,
-    df = 10
+test_that("test_diff needs only the statistics of the variant it tests", {
+  site <- data.frame(protein_Id = "P1", contrast = "a_vs_b", diff = 1, std.error = 0.2, df = 10)
+  moderated <- test_diff(site, site, join_column = c("protein_Id", "contrast"), variant = "moderated")
+  expect_equal(moderated$diff_diff, 0)
+  expect_error(
+    test_diff(site, site, join_column = c("protein_Id", "contrast"), variant = "unmoderated"),
+    "std.error.unmoderated, df.unmoderated"
   )
-
-  for (variant in c("moderated", "unmoderated")) {
-    expect_error(
-      test_diff(
-        site,
-        site,
-        join_column = c("protein_Id", "contrast"),
-        variant = variant
-      ),
-      "std.error.unmoderated.*df.unmoderated"
-    )
-  }
 })
