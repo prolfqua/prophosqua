@@ -12,9 +12,8 @@ A Completed PTM Enrichment Stage
 One step of the enrichment of one analysis, DPA, DPU or CF, computed from the
 stage before it or restored from its stored result. The steps chain as
 PTM_statistics -> [PTMSEA], and PTM_statistics -> [KinaseInputs] ->
-[KinaseAssignments] -> [KinaseGSEA], with KinaseAssignments ->
-[MotifEnrichment] -> [MEA]. KinaseAssignments and MotifEnrichment come from
-the kinase-library tool and are only restored.
+[KinaseAssignments] -> [KinaseGSEA] and [MEA]. KinaseAssignments and MEA
+come from the kinase-library tool and are only restored.
 }
 \section{Methods}{
 \subsection{Public methods}{

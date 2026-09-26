@@ -1,122 +1,93 @@
-test_that("final PTM results store all nine enrichments as JSON documents", {
+enrichment_keys <- c(
+  "PTMSEA__DPA",
+  "PTMSEA__DPU",
+  "PTMSEA__CF",
+  "KinaseGSEA__DPA",
+  "KinaseGSEA__DPU",
+  "KinaseGSEA__CF",
+  "MEA__DPA",
+  "MEA__DPU",
+  "MEA__CF"
+)
+
+test_that("the nine enrichments are protsea files beside the MuData, which only names them", {
   fixture <- ptm_enrichment_fixture()
   result <- fixture$final
-  expected <- c(
-    "PTMSEA__DPA",
-    "PTMSEA__DPU",
-    "PTMSEA__CF",
-    "KinaseGSEA__DPA",
-    "KinaseGSEA__DPU",
-    "KinaseGSEA__CF",
-    "MEA__DPA",
-    "MEA__DPU",
-    "MEA__CF"
+  expect_identical(names(result$get_enrichments()), enrichment_keys)
+  expect_identical(
+    result$get_enrichment_document("PTMSEA", "dpa"),
+    protsea::read_gsea_json_text(fixture$files[["PTMSEA__DPA"]])
   )
-  expect_identical(names(result$get_enrichment_documents()), expected)
-  expect_identical(result$get_enrichment_document("PTMSEA", "dpa"), result$get_enrichment_documents()$PTMSEA__DPA)
   expect_error(result$get_enrichment_document("STRING", "DPA"), "not enabled")
   expect_error(result$get_enrichment_document("PTMSEA", "unknown"), "not enabled")
+  expect_error(result$get_enrichment_document("KinaseInputs", "DPA"), "not enabled")
 
-  container <- result$as_container()
-  expect_setequal(
-    names(container$modalities$enriched$uns$prophosqua$enrichment_documents),
-    expected[!grepl("CF$", expected)]
-  )
-  expect_setequal(
-    names(container$modalities$enriched_CF$uns$prophosqua$enrichment_documents),
-    expected[grepl("CF$", expected)]
-  )
-  expect_null(container$modalities$total$uns$prophosqua$enrichment_documents)
-  for (document in result$get_enrichment_documents()) {
-    expect_named(document, c("format", "version", "json", "sha256"))
-    expect_identical(document$version, "1.2.0")
+  container <- prolfquapp::read_h5mu(fixture$path)
+  namespace <- container$uns$prophosqua
+  expect_setequal(names(namespace$enrichment_files), names(fixture$files))
+  expect_setequal(names(namespace$enrichment_sha256), names(fixture$files))
+  for (modality in container$modalities) {
+    expect_false(any(c("enrichment_documents", "completed_stages") %in% names(modality$uns$prophosqua)))
   }
 })
 
-test_that("final MuData reconstructs GSEA and MEA results from JSON", {
+test_that("enrichments read back from their protsea files equal the computed ones", {
   skip_if_not_installed("enrichplot")
   fixture <- ptm_enrichment_fixture()
-  original <- fixture$final
-  restored <- read_ptm_h5mu(fixture$path, PTM_results)
-  for (key in names(original$get_enrichment_documents())) {
-    before_document <- original$get_enrichment_documents()[[key]]
-    after_document <- restored$get_enrichment_documents()[[key]]
-    for (field in names(before_document)) {
-      expect_identical(after_document[[field]], before_document[[field]], info = paste(key, field))
-    }
-  }
-  expect_identical(names(restored$get_enrichments()), names(original$get_enrichments()))
-
+  restored <- fixture$final$get_enrichments()
   gs_info <- utils::getFromNamespace("gsInfo", "enrichplot")
-  for (method in c("PTMSEA", "KinaseGSEA", "MEA")) {
-    key <- paste0(method, "__DPA")
-    category <- c(PTMSEA = "PTM-SEA", KinaseGSEA = "KinaseLib", MEA = "MEA")[[method]]
-    before_document <- original$get_enrichment_documents()[[key]]
-    after_document <- restored$get_enrichment_documents()[[key]]
-    before <- protsea::decode_gsea_json(before_document$json)$a_vs_b[[category]]
-    after <- protsea::decode_gsea_json(after_document$json)$a_vs_b[[category]]
-    expect_equal(after@result, before@result)
-    expect_equal(after@geneList, before@geneList)
-    expect_equal(after@geneSets, before@geneSets)
-    expect_equal(after@params, before@params)
-    expect_equal(gs_info(after, geneSetID = 1), gs_info(before, geneSetID = 1))
-    before_payload <- jsonlite::fromJSON(before_document$json, simplifyVector = FALSE)
-    after_payload <- jsonlite::fromJSON(after_document$json, simplifyVector = FALSE)
-    before_native <- before_payload$data$a_vs_b$categories[[category]]$gsea_result
-    after_native <- after_payload$data$a_vs_b$categories[[category]]$gsea_result
-    expect_equal(after_native$running_scores, before_native$running_scores)
-    expect_equal(after_native$hit_indices, before_native$hit_indices)
-    expect_silent(enrichplot::gseaplot2(after, geneSetID = 1))
+  for (key in enrichment_keys) {
+    before <- fixture$stages[[key]]$get_results()
+    after <- restored[[key]]$get_results()
+    expect_named(after, names(before))
+    objects <- .PTM_RESULTS[[class(restored[[key]])[1L]]]$objects
+    for (field in setdiff(names(before), objects)) {
+      expect_equal(after[[field]], before[[field]], ignore_attr = TRUE, info = paste(key, field))
+    }
+    original <- before[[objects]]$a_vs_b
+    decoded <- after[[objects]]$a_vs_b
+    expect_equal(decoded@result, original@result, info = key)
+    expect_equal(decoded@geneList, original@geneList, info = key)
+    expect_equal(decoded@geneSets, original@geneSets, info = key)
+    expect_equal(gs_info(decoded, geneSetID = 1), gs_info(original, geneSetID = 1), info = key)
+    expect_silent(enrichplot::gseaplot2(decoded, geneSetID = 1))
   }
-
-  before_mea <- original$get_enrichments()$MEA__DPA$get_results()
-  after_mea <- restored$get_enrichments()$MEA__DPA$get_results()
-  expect_equal(after_mea$mea_clean, before_mea$mea_clean, ignore_attr = TRUE)
-  expect_equal(after_mea$summary_df, before_mea$summary_df, ignore_attr = TRUE)
 })
 
-test_that("invalid or incomplete enrichment documents fail validation", {
+test_that("the final MuData refuses missing or changed enrichment files", {
   fixture <- ptm_enrichment_fixture()
-  result <- fixture$final
-  documents <- result$get_enrichment_documents()
-  branches <- result$get_enrichments()
-  statistics <- result$get_statistics()
+  copy <- tempfile("ptm_results_copy_")
+  dir.create(copy)
+  file.copy(fixture$root, copy, recursive = TRUE)
+  root <- file.path(copy, basename(fixture$root))
+  path <- file.path(root, "PTM_results.h5mu")
+  expect_s3_class(read_ptm_h5mu(path, PTM_results), "PTM_results")
 
-  expect_error(
-    PTM_results$new(statistics, branches, documents[-1]),
-    "every enabled enrichment document"
-  )
-  unexpected <- documents
-  unexpected$PTMSEA__OTHER <- unexpected$PTMSEA__DPA
-  expect_error(
-    PTM_results$new(statistics, branches, unexpected),
-    "every enabled enrichment document"
-  )
-  corrupt <- documents
-  corrupt$PTMSEA__DPA$sha256 <- strrep("0", nchar(corrupt$PTMSEA__DPA$sha256))
-  expect_error(PTM_results$new(statistics, branches, corrupt), "checksum mismatch")
-  wrong_version <- documents
-  wrong_version$PTMSEA__DPA$version <- "1.0.0"
-  expect_error(PTM_results$new(statistics, branches, wrong_version), "Unsupported enrichment document")
-  extra_wrapper_field <- documents
-  extra_wrapper_field$PTMSEA__DPA$extra <- "not allowed"
-  expect_error(PTM_results$new(statistics, branches, extra_wrapper_field), "unexpected fields")
-
-  malformed <- documents$PTMSEA__DPA
-  malformed$json <- "{"
-  expect_error(.restore_ptm_enrichment_result(malformed, "PTMSEA__DPA"), "Invalid enrichment JSON")
-  expect_error(.restore_ptm_enrichment_result(documents$PTMSEA__DPA, "PTMSEA__DPU"), "identity differs")
-
-  missing_container <- result$as_container()
-  missing_container$modalities$enriched$uns$prophosqua$enrichment_documents$PTMSEA__DPA <- NULL
-  expect_error(.load_ptm_results(missing_container), "Missing enrichment stage: PTMSEA__DPA")
+  mea <- file.path(root, "DPA", "result_mea.json.gz")
+  connection <- gzfile(mea, "w")
+  writeLines("{}", connection)
+  close(connection)
+  expect_error(read_ptm_h5mu(path, PTM_results), "changed since the final MuData was written: MEA__DPA")
+  unlink(mea)
+  expect_error(read_ptm_h5mu(path, PTM_results), "missing: .*result_mea.json.gz")
 })
 
-test_that("enabled empty enrichments remain complete JSON documents", {
+test_that("kinase preparations must come from the statistics they are restored on", {
+  fixture <- ptm_enrichment_fixture()
+  inputs <- fixture$files[["KinaseInputs__DPA"]]
+  statistics_hash <- .ptm_file_sha256(fixture$statistics_path)
+  expect_s3_class(.read_ptm_preparation(inputs, "KinaseInputs", "DPA", statistics_hash)$seqwindows, "data.frame")
+  expect_error(.read_ptm_preparation(inputs, "KinaseInputs", "DPA", strrep("0", 64)), "different statistics")
+  expect_error(.read_ptm_preparation(inputs, "KinaseAssignments", "DPA", statistics_hash), "Wrong PTM CBOR stage")
+  results <- PTM_results$new(fixture$final$get_statistics(), fixture$files, strrep("0", 64))
+  expect_error(results$get_enrichments(), "different statistics")
+})
+
+test_that("enabled empty enrichments remain complete protsea documents", {
   fixture <- ptm_enrichment_fixture(empty = TRUE)
-  restored <- read_ptm_h5mu(fixture$path, PTM_results)
-  expect_length(restored$get_enrichment_documents(), 9L)
-  expect_equal(nrow(restored$get_enrichments()$PTMSEA__DPA$get_results()$results$a_vs_b@result), 0L)
-  expect_equal(nrow(restored$get_enrichments()$KinaseGSEA__DPA$get_results()$gsea_results$a_vs_b@result), 0L)
-  expect_equal(nrow(restored$get_enrichments()$MEA__DPA$get_results()$mea_clean), 0L)
+  enrichments <- fixture$final$get_enrichments()
+  expect_length(enrichments, 9L)
+  expect_equal(nrow(enrichments$PTMSEA__DPA$get_results()$results$a_vs_b@result), 0L)
+  expect_equal(nrow(enrichments$KinaseGSEA__DPA$get_results()$gsea_results$a_vs_b@result), 0L)
+  expect_equal(nrow(enrichments$MEA__DPA$get_results()$mea_clean), 0L)
 })

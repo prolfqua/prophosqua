@@ -3,9 +3,8 @@
 #' One step of the enrichment of one analysis, DPA, DPU or CF, computed from the
 #' stage before it or restored from its stored result. The steps chain as
 #' PTM_statistics -> [PTMSEA], and PTM_statistics -> [KinaseInputs] ->
-#' [KinaseAssignments] -> [KinaseGSEA], with KinaseAssignments ->
-#' [MotifEnrichment] -> [MEA]. KinaseAssignments and MotifEnrichment come from
-#' the kinase-library tool and are only restored.
+#' [KinaseAssignments] -> [KinaseGSEA] and [MEA]. KinaseAssignments and MEA
+#' come from the kinase-library tool and are only restored.
 #' @export
 PTM_enrichment <- R6::R6Class(
   "PTM_enrichment",
@@ -28,8 +27,7 @@ PTM_enrichment <- R6::R6Class(
       .require_ptm_fields(result, spec$fields, stage)
       private$source <- source
       private$analysis <- analysis
-      # Kept packed, so a computed stage returns exactly what a restored one does.
-      private$result <- .pack_ptm_value(result)
+      private$result <- result
     },
     #' @description Return the stage this one was computed from.
     get_source = function() private$source,
@@ -38,7 +36,7 @@ PTM_enrichment <- R6::R6Class(
     #' @description Return the analysis name.
     get_analysis = function() private$analysis,
     #' @description Return the complete result.
-    get_results = function() .unpack_ptm_value(private$result)
+    get_results = function() private$result
   )
 )
 
@@ -97,42 +95,21 @@ KinaseGSEA <- R6::R6Class(
   )
 )
 
-#' Kinase-Library Motif Enrichment of One Analysis
+#' Kinase-Library Motif Enrichment Analysis of One Analysis
 #' @export
-MotifEnrichment <- R6::R6Class("MotifEnrichment", inherit = PTM_enrichment)
-
-#' Motif Enrichment Analysis Tables of One Analysis
-#' @export
-MEA <- R6::R6Class(
-  "MEA",
-  inherit = PTM_enrichment,
-  public = list(
-    #' @description Tabulate the motif enrichment of one analysis, or restore it.
-    #' @param source Complete MotifEnrichment stage.
-    #' @param analysis DPA, DPU or CF.
-    #' @param result Stored result, when restoring.
-    initialize = function(source, analysis, result = .compute_mea_tables(source$get_results()$mea_results)) {
-      super$initialize(source, analysis, result)
-    }
-  )
-)
+MEA <- R6::R6Class("MEA", inherit = PTM_enrichment)
 
 # Each stage: the stage it is computed from and the result fields it keeps.
 .ENRICHMENT_STAGES <- list(
   PTMSEA = list(source = "PTM_statistics", fields = c("results", "all_clean")),
   KinaseInputs = list(source = "PTM_statistics", fields = c("seqwindows", "ranks")),
   KinaseAssignments = list(source = "KinaseInputs", fields = "term2gene"),
-  MotifEnrichment = list(source = "KinaseAssignments", fields = c("mea_results", "gsea_json")),
   KinaseGSEA = list(source = "KinaseAssignments", fields = c("gsea_results", "all_results", "gsea_info")),
-  MEA = list(source = "MotifEnrichment", fields = c("mea_clean", "summary_df"))
+  MEA = list(source = "KinaseAssignments", fields = c("results", "mea_clean", "summary_df"))
 )
 
-# The completed enrichments, stored as string_gsea documents.
+# The completed enrichments, stored as protsea documents.
 .ptm_json_enrichment_methods <- c("PTMSEA", "KinaseGSEA", "MEA")
-
-.ptm_analysis_modality <- function(analysis) {
-  c(DPA = "enriched", DPU = "enriched", CF = "enriched_CF")[[analysis]]
-}
 
 .validate_enrichment_analysis <- function(analysis) {
   if (!analysis %in% c("DPA", "DPU", "CF")) stop("Unknown PTM analysis: ", analysis)

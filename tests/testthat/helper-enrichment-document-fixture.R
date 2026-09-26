@@ -16,6 +16,8 @@ make_stage_gsea <- function(category, empty = FALSE) {
     leading_edge = "tags=50%, list=33%, signal=75%",
     p.adjust = 0.003,
     core_enrichment = "CCCCCCCSCCCCCCC",
+    # As clusterProfiler::GSEA names its rows.
+    row.names = "CDK2",
     stringsAsFactors = FALSE
   )
   if (empty) {
@@ -48,36 +50,52 @@ expected_gsea_trace <- function(ranks, members, exponent) {
   )
 }
 
+# Final PTM results as a pipeline run leaves them: the statistics, the
+# enrichment files of each analysis and the final MuData beside them.
 make_ptm_enrichment_fixture <- function(empty = FALSE) {
   paths <- anndata_pair_fixture()
+  parameters <- list(
+    run_kinase = TRUE,
+    kinaselib = list(kin_type = "ST", threshold = 90, permutations = 100),
+    analyses = list(
+      dpa = list(subdir = "DPA"),
+      dpu = list(subdir = "DPU"),
+      cf = list(subdir = "CF")
+    )
+  )
   inputs <- DEA_enriched_total$new(
     anndataR::read_h5ad(paths$site),
     anndataR::read_h5ad(paths$protein),
-    parameters = list(
-      run_kinase = TRUE,
-      kinaselib = list(kin_type = "ST", threshold = 90, permutations = 100),
-      analyses = list(
-        dpa = list(subdir = "DPA"),
-        dpu = list(subdir = "DPU"),
-        cf = list(subdir = "CF")
-      )
-    )
+    parameters = parameters
   )
   statistics <- suppressWarnings(PTM_statistics$new(inputs))
-  branches <- unlist(
-    lapply(c("DPA", "DPU", "CF"), make_ptm_enrichment_branches, statistics = statistics, empty = empty),
-    recursive = FALSE
+  root <- tempfile("ptm_results_")
+  dir.create(root)
+  statistics_path <- file.path(root, "PTM_statistics.h5mu")
+  statistics$write_h5mu(statistics_path)
+  files <- .ptm_enrichment_files(parameters, root)
+  stages <- list()
+  for (analysis in c("DPA", "DPU", "CF")) {
+    for (stage in make_ptm_enrichment_stages(analysis, statistics, empty)) {
+      key <- .ptm_key(class(stage)[1L], analysis)
+      .write_ptm_stage_file(stage, files[[key]], .ptm_file_sha256(statistics_path))
+      stages[[key]] <- stage
+    }
+  }
+  path <- file.path(root, "PTM_results.h5mu")
+  assemble_ptm_results(statistics_path, path)
+  list(
+    final = read_ptm_h5mu(path, PTM_results),
+    path = path,
+    root = root,
+    statistics_path = statistics_path,
+    files = files,
+    stages = stages
   )
-  final <- PTM_results$new(statistics, branches)
-  path <- tempfile(fileext = ".h5mu")
-  final$write_h5mu(path)
-  list(final = final, path = path)
 }
 
-make_ptm_enrichment_branches <- function(analysis, statistics, empty) {
-  ptm_gsea <- make_stage_gsea("PTM-SEA", empty)
-  ptmsea_result <- list(results = list(a_vs_b = ptm_gsea), all_clean = data.frame())
-  ptmsea <- PTMSEA$new(statistics, analysis, ptmsea_result)
+make_ptm_enrichment_stages <- function(analysis, statistics, empty) {
+  ptmsea <- PTMSEA$new(statistics, analysis, .ptmsea_result(list(a_vs_b = make_stage_gsea("PTM-SEA", empty))))
 
   rank_table <- data.frame(
     SequenceWindow = c("AAAAAAASAAAAAAA", "BBBBBBBSBBBBBBB", "CCCCCCCSCCCCCCC"),
@@ -93,42 +111,13 @@ make_ptm_enrichment_branches <- function(analysis, statistics, empty) {
     analysis,
     list(term2gene = data.frame(term = "CDK2", gene = rank_table$SequenceWindow))
   )
-
-  kinase_gsea <- make_stage_gsea("KinaseLib", empty)
-  kinase_result <- list(
-    gsea_results = list(a_vs_b = kinase_gsea),
-    all_results = data.frame(),
-    gsea_info = data.frame(value = 1)
-  )
-  kinase <- KinaseGSEA$new(assignments, analysis, kinase_result)
-
-  mea_json <- protsea::gsea_result_json_text(
-    protsea::gsea_result_data(list(a_vs_b = kinase_gsea), category = "MEA", method = "gseapy")
-  )
-  mea_clean <- data.frame(
-    contrast = "a_vs_b",
-    kinase = "CDK2",
-    NES = 2.1,
-    pvalue = 0.001,
-    FDR = 0.01,
-    n_leading = 2,
-    set_size = 3,
-    Leading.substrates = "AAAAAAAsAAAAAAA;BBBBBBBsBBBBBBB"
-  )
-  if (empty) {
-    mea_clean <- mea_clean[FALSE, , drop = FALSE]
-  }
-  motif <- MotifEnrichment$new(
+  kinase <- KinaseGSEA$new(
     assignments,
     analysis,
-    list(mea_results = mea_clean, gsea_json = mea_json)
+    .kinasegsea_result(list(a_vs_b = make_stage_gsea("KinaseLib", empty)))
   )
-  mea <- MEA$new(
-    motif,
-    analysis,
-    list(mea_clean = mea_clean, summary_df = data.frame(contrast = "a_vs_b", total_kinases = nrow(mea_clean)))
-  )
-  list(ptmsea, kinase, mea)
+  mea <- MEA$new(assignments, analysis, .mea_result(list(a_vs_b = make_stage_gsea("MEA", empty))))
+  list(ptmsea, kinase_inputs, assignments, kinase, mea)
 }
 
 ptm_enrichment_fixture <- local({

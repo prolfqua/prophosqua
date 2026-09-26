@@ -10,16 +10,16 @@ test_that("single-workbook statistics use the MuData tables", {
   )
   statistics <- suppressWarnings(PTM_statistics$new(inputs))
   before <- statistics$get_dpa_dpu()
-  tables <- .ptm_workbook_tables(PTM_results$new(statistics, list()))
+  tables <- .ptm_workbook_tables(PTM_results$new(statistics))
   expect_setequal(names(tables), c(names(statistics$get_tables()), "CF_intensities", "CF_sample_annotation"))
   expect_equal(tables[names(statistics$get_tables())], statistics$get_tables())
   expect_equal(statistics$get_dpa_dpu(), before)
 })
 
 test_that("final H5MU exports one workbook with all nine enrichment tables", {
-  input <- test_path("../../inst/extdata/ptm_results_example.h5mu")
+  input <- test_path("../../inst/extdata/ptm_results_example/PTM_results.h5mu")
   if (!file.exists(input)) {
-    input <- system.file("extdata", "ptm_results_example.h5mu", package = "prophosqua")
+    input <- system.file("extdata", "ptm_results_example", "PTM_results.h5mu", package = "prophosqua")
   }
   expect_true(file.exists(input))
   result <- read_ptm_h5mu(input, PTM_results)

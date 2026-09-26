@@ -2,11 +2,11 @@
 % Please edit documentation in R/R6_PTM_enrichment.R
 \name{MEA}
 \alias{MEA}
-\title{Motif Enrichment Analysis Tables of One Analysis}
+\title{Kinase-Library Motif Enrichment Analysis of One Analysis}
 \description{
-Motif Enrichment Analysis Tables of One Analysis
+Kinase-Library Motif Enrichment Analysis of One Analysis
 
-Motif Enrichment Analysis Tables of One Analysis
+Kinase-Library Motif Enrichment Analysis of One Analysis
 }
 \section{Super class}{
 \code{\link[prophosqua:PTM_enrichment]{prophosqua::PTM_enrichment}} -> \code{MEA}
@@ -14,7 +14,6 @@ Motif Enrichment Analysis Tables of One Analysis
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
-\item \href{#method-MEA-new}{\code{MEA$new()}}
 \item \href{#method-MEA-clone}{\code{MEA$clone()}}
 }
 }
@@ -25,34 +24,10 @@ Motif Enrichment Analysis Tables of One Analysis
 <li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_results"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_results'><code>prophosqua::PTM_enrichment$get_results()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_source"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_source'><code>prophosqua::PTM_enrichment$get_source()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_statistics"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_statistics'><code>prophosqua::PTM_enrichment$get_statistics()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="initialize"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-initialize'><code>prophosqua::PTM_enrichment$initialize()</code></a></span></li>
 </ul>
 </details>
 }}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-MEA-new"></a>}}
-\if{latex}{\out{\hypertarget{method-MEA-new}{}}}
-\subsection{Method \code{new()}}{
-Tabulate the motif enrichment of one analysis, or restore it.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{MEA$new(
-  source,
-  analysis,
-  result = .compute_mea_tables(source$get_results()$mea_results)
-)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{source}}{Complete MotifEnrichment stage.}
-
-\item{\code{analysis}}{DPA, DPU or CF.}
-
-\item{\code{result}}{Stored result, when restoring.}
-}
-\if{html}{\out{</div>}}
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-MEA-clone"></a>}}
 \if{latex}{\out{\hypertarget{method-MEA-clone}{}}}

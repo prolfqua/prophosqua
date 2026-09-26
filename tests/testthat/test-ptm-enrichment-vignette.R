@@ -1,15 +1,15 @@
-test_that("enrichment vignette fixture contains nine portable JSON documents", {
-  path <- test_path("../../inst/extdata/ptm_results_example.h5mu")
+test_that("enrichment vignette fixture keeps nine protsea documents beside its MuData", {
+  path <- test_path("../../inst/extdata/ptm_results_example/PTM_results.h5mu")
   if (!file.exists(path)) {
     path <- system.file(
       "extdata",
-      "ptm_results_example.h5mu",
+      "ptm_results_example",
+      "PTM_results.h5mu",
       package = "prophosqua"
     )
   }
   expect_true(file.exists(path))
   result <- read_ptm_h5mu(path, PTM_results)
-  documents <- result$get_enrichment_documents()
   expected <- c(
     "PTMSEA__DPA",
     "PTMSEA__DPU",
@@ -22,20 +22,15 @@ test_that("enrichment vignette fixture contains nine portable JSON documents", {
     "MEA__CF"
   )
 
-  expect_named(documents, expected)
-  expect_true(all(vapply(
-    documents,
-    function(document) identical(document$version, "1.2.0"),
-    logical(1)
-  )))
+  expect_named(result$get_enrichments(), expected)
 
   category_names <- c(PTMSEA = "PTM-SEA", KinaseGSEA = "KinaseLib", MEA = "MEA")
   for (method in names(category_names)) {
     category <- category_names[[method]]
     for (analysis in c("DPA", "DPU", "CF")) {
       document <- result$get_enrichment_document(method, analysis)
-      payload <- jsonlite::fromJSON(document$json, simplifyVector = FALSE)
-      decoded <- protsea::decode_gsea_json(document$json)
+      payload <- jsonlite::fromJSON(document, simplifyVector = FALSE)
+      decoded <- protsea::decode_gsea_json(document)
 
       expect_named(decoded, names(payload$data))
       expect_length(decoded, 2L)

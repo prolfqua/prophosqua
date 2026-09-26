@@ -56,8 +56,8 @@ devtools::install_github('prolfqua/prophosqua', dependencies = TRUE, build_vigne
 
 1. Run DEA with `prolfquapp` for enriched sites and total protein.
 2. Import both `AnnData.h5ad` files, the analysis parameters and the reference data into `PTM_inputs.h5mu`.
-3. Compute DPA, DPU and CorrectFirst into `PTM_statistics.h5mu`, then each enrichment stage into a gzipped CBOR artifact.
-4. Assemble `PTM_results.h5mu`, which names its CBOR artifacts, render the reports from it, and export the delivery workbook last. The `ptm-pipeline` workflow coordinates these steps.
+3. Compute DPA, DPU and CorrectFirst into `PTM_statistics.h5mu`, then the enrichment of each analysis into files beside it: PTM-SEA, Kinase GSEA and MEA as protsea documents (`.json.gz`), the kinase-library preparations as gzipped CBOR.
+4. Assemble `PTM_results.h5mu`, which names these files but holds no enrichment, render the reports from it, and export the delivery workbook last. The `ptm-pipeline` workflow coordinates these steps.
 
 Each persisted stage has its own R6 type, and MuData is the persistence boundary:
 
@@ -70,7 +70,7 @@ statistics$write_h5mu("PTM_statistics.h5mu")
 restored <- read_ptm_h5mu("PTM_statistics.h5mu", PTM_statistics)
 ```
 
-`PTM_statistics.h5mu` keeps both DEA experiments as the `enriched` and `total` modalities, with the DPA and DPU results as `varm` frames of `enriched`; CorrectFirst and its imputed variants form the `enriched_CF` modality. The pipeline runs these steps as `ptm.sh import_h5mu`, `ptm_h5mu`, `enrich_cbor`, `assemble_h5mu`, `render` and `export_h5mu`.
+`PTM_statistics.h5mu` keeps both DEA experiments as the `enriched` and `total` modalities, with the DPA and DPU results as `varm` frames of `enriched`; CorrectFirst and its imputed variants form the `enriched_CF` modality. The pipeline runs these steps as `ptm.sh import_h5mu`, `ptm_h5mu`, `enrich`, `assemble_h5mu`, `render` and `export_h5mu`.
 
 For a pair of DEA folders outside the pipeline, `compute_dpa_dpu()` and `compute_cf_dea()` return the DPA/DPU and CorrectFirst results in memory.
 

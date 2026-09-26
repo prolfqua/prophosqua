@@ -50,7 +50,8 @@ input_h5mu <- params$input_h5mu
 if (is.null(input_h5mu) || !length(input_h5mu) || !nzchar(input_h5mu)) {
   input_h5mu <- system.file(
     "extdata",
-    "ptm_results_example.h5mu",
+    "ptm_results_example",
+    "PTM_results.h5mu",
     package = "prophosqua"
   )
 }

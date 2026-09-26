@@ -1,9 +1,12 @@
-## Rebuild the final two-contrast MuData artifact used by the statistics vignette.
+## Rebuild the example PTM results the vignettes read: the final MuData and,
+## beside it, the enrichment files of each analysis.
 ##
 ##   Rscript data-raw/make_ptm_results_example.R
 
 devtools::load_all(quiet = TRUE)
 
-output <- file.path("inst", "extdata", "ptm_results_example.h5mu")
-prophosqua:::example_ptm_results_h5mu(output)
-message("OK: wrote ", output, " (", file.info(output)$size, " bytes)")
+root <- file.path("inst", "extdata", "ptm_results_example")
+unlink(root, recursive = TRUE)
+path <- prophosqua:::example_ptm_results(root)
+files <- list.files(root, recursive = TRUE, full.names = TRUE)
+message("OK: wrote ", root, ", ", length(files), " files, ", sum(file.info(files)$size), " bytes")

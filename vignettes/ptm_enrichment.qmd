@@ -54,7 +54,8 @@ input_h5mu <- params$input_h5mu
 if (is.null(input_h5mu) || !length(input_h5mu) || !nzchar(input_h5mu)) {
   input_h5mu <- system.file(
     "extdata",
-    "ptm_results_example.h5mu",
+    "ptm_results_example",
+    "PTM_results.h5mu",
     package = "prophosqua"
   )
 }
@@ -147,17 +148,15 @@ term_table_from_payload <- function(payload, analysis, method) {
 
 read_method_data <- function(analysis, method) {
   document <- ptm_results$get_enrichment_document(method, analysis)
-  payload <- jsonlite::fromJSON(document$json, simplifyVector = FALSE)
+  payload <- jsonlite::fromJSON(document, simplifyVector = FALSE)
   category <- category_names[[method]]
-  decoded <- protsea::decode_gsea_json(document$json)
+  decoded <- protsea::decode_gsea_json(document)
   native <- lapply(decoded, function(contrast) contrast[[category]])
   list(
     analysis = analysis,
     method = method,
     label = method_labels[[method]],
     category = category,
-    version = document$version,
-    checksum = document$sha256,
     contrasts = names(payload$data),
     table = term_table_from_payload(payload, analysis, method),
     native = native
@@ -621,13 +620,12 @@ MEA uses the kinase-library workflow's GSEApy motif-enrichment calculation. Its 
 provenance_table <- data.frame(
   Field = c(
     "Analysis", "Input MuData", "Source DEA artifacts",
-    "Method documents", "JSON schema versions", "FDR threshold",
+    "Method documents", "FDR threshold",
     "Top terms per summary plot", "Report package", "Generated at", "QMD source"
   ),
   Value = c(
     analysis_labels[[analysis]], input_h5mu, paste(source_paths, collapse = "; "),
     length(enrichment),
-    paste(unique(vapply(enrichment, function(x) x$version, character(1))), collapse = "; "),
     format(fdr_threshold), top_terms,
     paste0("prophosqua ", utils::packageVersion("prophosqua")),
     generated_at, fgczQuartoTemplate::fgcz_qmd_source_link()

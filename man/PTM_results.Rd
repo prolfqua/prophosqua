@@ -2,23 +2,27 @@
 % Please edit documentation in R/R6_PTM_results.R
 \name{PTM_results}
 \alias{PTM_results}
-\title{Final PTM results with every enabled enrichment completed}
+\title{Final PTM results: the statistics and the enrichment of every enabled analysis}
 \description{
-Final PTM results with every enabled enrichment completed
+Final PTM results: the statistics and the enrichment of every enabled analysis
 
-Final PTM results with every enabled enrichment completed
+Final PTM results: the statistics and the enrichment of every enabled analysis
+}
+\details{
+The enrichment is kept in files beside the final MuData, laid out as the
+pipeline lays out each analysis directory: protsea documents for the
+completed PTM-SEA, Kinase GSEA and MEA, CBOR for the kinase-library
+preparations. The MuData holds only their names and checksums; the results
+are read from the files when first asked for.
 }
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
 \item \href{#method-PTM_results-new}{\code{PTM_results$new()}}
-\item \href{#method-PTM_results-get_enrichment_store}{\code{PTM_results$get_enrichment_store()}}
 \item \href{#method-PTM_results-get_statistics}{\code{PTM_results$get_statistics()}}
 \item \href{#method-PTM_results-get_enrichments}{\code{PTM_results$get_enrichments()}}
-\item \href{#method-PTM_results-get_enrichment_documents}{\code{PTM_results$get_enrichment_documents()}}
 \item \href{#method-PTM_results-get_enrichment_document}{\code{PTM_results$get_enrichment_document()}}
 \item \href{#method-PTM_results-get_tables}{\code{PTM_results$get_tables()}}
-\item \href{#method-PTM_results-as_container}{\code{PTM_results$as_container()}}
 \item \href{#method-PTM_results-write_h5mu}{\code{PTM_results$write_h5mu()}}
 \item \href{#method-PTM_results-clone}{\code{PTM_results$clone()}}
 }
@@ -27,14 +31,9 @@ Final PTM results with every enabled enrichment completed
 \if{html}{\out{<a id="method-PTM_results-new"></a>}}
 \if{latex}{\out{\hypertarget{method-PTM_results-new}{}}}
 \subsection{Method \code{new()}}{
-Assemble all enabled analyses from their completed stages.
+Pair the statistics with the enrichment files of every enabled analysis.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{PTM_results$new(
-  statistics,
-  enrichments,
-  enrichment_documents = NULL,
-  enrichment_cbor = NULL
-)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{PTM_results$new(statistics, files = character(), statistics_sha256 = NULL)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -42,27 +41,14 @@ Assemble all enabled analyses from their completed stages.
 \describe{
 \item{\code{statistics}}{Complete PTM_statistics stage.}
 
-\item{\code{enrichments}}{List of complete PTMSEA, KinaseGSEA and MEA objects,
-computed from `statistics`.}
+\item{\code{files}}{Every stage file of every enabled analysis, keyed by stage
+and analysis, as the pipeline lays them out.}
 
-\item{\code{enrichment_documents}}{Stored JSON documents when restoring MuData.}
-
-\item{\code{enrichment_cbor}}{Where the enrichment payload is kept, as
-`list(paths, statistics_sha256)` with paths relative to the MuData file.
-`NULL` keeps the payload inside the MuData file itself.}
+\item{\code{statistics_sha256}}{Checksum of the statistics file the kinase
+preparations were computed from.}
 }
 \if{html}{\out{</div>}}
 }
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-PTM_results-get_enrichment_store"></a>}}
-\if{latex}{\out{\hypertarget{method-PTM_results-get_enrichment_store}{}}}
-\subsection{Method \code{get_enrichment_store()}}{
-Return where the enrichment payload is kept, or NULL.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{PTM_results$get_enrichment_store()}\if{html}{\out{</div>}}
-}
-
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-PTM_results-get_statistics"></a>}}
@@ -78,19 +64,9 @@ Return the complete statistics component.
 \if{html}{\out{<a id="method-PTM_results-get_enrichments"></a>}}
 \if{latex}{\out{\hypertarget{method-PTM_results-get_enrichments}{}}}
 \subsection{Method \code{get_enrichments()}}{
-Return the collection of complete enabled enrichment objects.
+Return the completed PTMSEA, KinaseGSEA and MEA of every enabled analysis.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{PTM_results$get_enrichments()}\if{html}{\out{</div>}}
-}
-
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-PTM_results-get_enrichment_documents"></a>}}
-\if{latex}{\out{\hypertarget{method-PTM_results-get_enrichment_documents}{}}}
-\subsection{Method \code{get_enrichment_documents()}}{
-Return every complete JSON enrichment document.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{PTM_results$get_enrichment_documents()}\if{html}{\out{</div>}}
 }
 
 }
@@ -98,7 +74,7 @@ Return every complete JSON enrichment document.
 \if{html}{\out{<a id="method-PTM_results-get_enrichment_document"></a>}}
 \if{latex}{\out{\hypertarget{method-PTM_results-get_enrichment_document}{}}}
 \subsection{Method \code{get_enrichment_document()}}{
-Return one complete JSON enrichment document.
+Return the protsea document of one completed enrichment, as JSON text.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{PTM_results$get_enrichment_document(method, analysis)}\if{html}{\out{</div>}}
 }
@@ -124,20 +100,11 @@ Return standard statistics and abundance tables.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-PTM_results-as_container"></a>}}
-\if{latex}{\out{\hypertarget{method-PTM_results-as_container}{}}}
-\subsection{Method \code{as_container()}}{
-Return a detached storage representation.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{PTM_results$as_container()}\if{html}{\out{</div>}}
-}
-
-}
-\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-PTM_results-write_h5mu"></a>}}
 \if{latex}{\out{\hypertarget{method-PTM_results-write_h5mu}{}}}
 \subsection{Method \code{write_h5mu()}}{
-Write the final artifact atomically.
+Write the final artifact atomically. The enrichment files
+  must lie beside it.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{PTM_results$write_h5mu(path)}\if{html}{\out{</div>}}
 }

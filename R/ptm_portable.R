@@ -1,6 +1,7 @@
-# Portable report values stored inside MuData, never serialized R objects.
-# The explicit type and ordered names preserve empty tables, named ranks,
-# factors, and matrix dimensions across R/Python HDF5 implementations.
+# Portable values for the MuData metadata and the kinase-library handoffs,
+# never serialized R objects. The explicit type and ordered names preserve
+# empty tables, named ranks, factors, and matrix dimensions across R and Python.
+# Enrichment results are not among them: protsea serializes those.
 .pack_ptm_value <- function(value) {
   if (is.null(value)) {
     return(list(type = "null"))
@@ -16,16 +17,6 @@
       levels = levels(value),
       ordered = is.ordered(value)
     ))
-  }
-  if (isS4(value)) {
-    if (!inherits(value, "gseaResult")) {
-      stop("Unsupported report object: ", class(value)[1L])
-    }
-    slots <- stats::setNames(
-      lapply(methods::slotNames(value), function(key) methods::slot(value, key)),
-      methods::slotNames(value)
-    )
-    return(list(type = "gseaResult", slots = .pack_ptm_value(slots)))
   }
   if (is.list(value)) {
     items <- lapply(value, .pack_ptm_value)
@@ -61,9 +52,6 @@
       values <- as.character(unlist(x$values, use.names = FALSE))
       values[as.logical(unlist(x$missing, use.names = FALSE))] <- NA_character_
       factor(values, levels = as.character(unlist(x$levels, use.names = FALSE)), ordered = x$ordered)
-    },
-    gseaResult = function(x) {
-      do.call(methods::new, c(list(Class = "gseaResult"), .unpack_ptm_value(x$slots)))
     },
     list = function(x) {
       result <- lapply(x$items[sort(names(x$items))], .unpack_ptm_value)

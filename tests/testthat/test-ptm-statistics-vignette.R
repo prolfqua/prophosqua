@@ -1,19 +1,18 @@
 test_that("statistics vignette input is a complete final MuData artifact", {
-  path <- test_path("../../inst/extdata/ptm_results_example.h5mu")
+  path <- test_path("../../inst/extdata/ptm_results_example/PTM_results.h5mu")
   if (!file.exists(path)) {
     path <- system.file(
       "extdata",
-      "ptm_results_example.h5mu",
+      "ptm_results_example",
+      "PTM_results.h5mu",
       package = "prophosqua"
     )
   }
   expect_true(file.exists(path))
   result <- read_ptm_h5mu(path, PTM_results)
   expect_s3_class(result, "PTM_results")
-  documents <- result$get_enrichment_documents()
-  expect_length(documents, 9L)
   expect_named(
-    documents,
+    result$get_enrichments(),
     c(
       "PTMSEA__DPA",
       "PTMSEA__DPU",
@@ -26,11 +25,6 @@ test_that("statistics vignette input is a complete final MuData artifact", {
       "MEA__CF"
     )
   )
-  expect_true(all(vapply(
-    documents,
-    function(document) identical(document$version, "1.2.0"),
-    logical(1)
-  )))
   expect_named(
     result$get_tables(),
     c(
