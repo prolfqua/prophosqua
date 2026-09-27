@@ -423,13 +423,29 @@ overview <- data.frame(
   Measure = c("Samples", "PTM sites", "Proteins", "Contrasts"),
   Count = c(
     nrow(design),
-    dplyr::n_distinct(dpa$site),
-    dplyr::n_distinct(dpa$protein_Id),
+    dplyr::n_distinct(dpa_dpu$combined_site_prot$site),
+    dplyr::n_distinct(dpa_dpu$combined_site_prot$protein_Id),
     length(contrasts)
   )
 )
 knitr::kable(overview)
 ```
+
+::: {layout-ncol="2"}
+
+```{r}
+#| label: tbl-overview-contrasts
+#| tbl-cap: "Contrasts evaluated by DPA, DPU and CorrectFirst DPU."
+knitr::kable(data.frame(Contrast = names(cf$contrasts), Definition = unname(cf$contrasts)))
+```
+
+```{r}
+#| label: tbl-overview-match-rate
+#| tbl-cap: "PTM sites paired with a protein-level estimate in each contrast; only these enter DPU and CorrectFirst DPU."
+knitr::kable(dpa_dpu$match_rates, digits = 1)
+```
+
+:::
 
 The detailed input references and software versions are recorded in **Session Info**.
 
@@ -444,24 +460,18 @@ Differential PTM abundance reports the site-level effect before protein correcti
 ::: {layout-ncol="2"}
 
 ```{r}
-#| label: tbl-dpa-match-rate
-#| tbl-cap: "PTM sites paired with a protein-level estimate in each contrast."
-knitr::kable(dpa_dpu$match_rates, digits = 1)
-```
-
-```{r}
-#| label: tbl-dpa-modification-counts
-#| tbl-cap: "DPA result rows by contrast and modified amino acid."
-knitr::kable(modification_counts(dpa))
-```
-
-:::
-
-```{r}
 #| label: tbl-dpa-estimate-counts
 #| tbl-cap: "DPA site-contrast rows by site estimate type. All are computed; this report shows only the observed ones."
 estimate_count_table("DPA")
 ```
+
+```{r}
+#| label: tbl-dpa-modification-counts
+#| tbl-cap: "Observed DPA rows by contrast and modified amino acid."
+knitr::kable(modification_counts(dpa))
+```
+
+:::
 
 ## Volcano
 
@@ -559,15 +569,15 @@ Differential PTM usage compares the modelled site change with the modelled prote
 ::: {layout-ncol="2"}
 
 ```{r}
-#| label: tbl-dpu-modification-counts
-#| tbl-cap: "DPU result rows by contrast and modified amino acid."
-knitr::kable(modification_counts(dpu))
-```
-
-```{r}
 #| label: tbl-dpu-estimate-counts
 #| tbl-cap: "DPU site-contrast rows by site estimate type. All are computed; this report shows only the observed ones; their protein estimate may be imputed."
 estimate_count_table("DPU")
+```
+
+```{r}
+#| label: tbl-dpu-modification-counts
+#| tbl-cap: "Observed DPU rows by contrast and modified amino acid."
+knitr::kable(modification_counts(dpu))
 ```
 
 :::
@@ -667,28 +677,18 @@ CorrectFirst subtracts the protein abundance from the site abundance on the log2
 ::: {layout-ncol="2"}
 
 ```{r}
-#| label: tbl-cf-modification-counts
-#| tbl-cap: "CorrectFirst result rows by contrast and modified amino acid."
-knitr::kable(modification_counts(cf_results))
-```
-
-```{r}
 #| label: tbl-cf-estimate-counts
 #| tbl-cap: "CorrectFirst site-contrast rows by estimate type. All are computed; this report shows only the observed ones."
 estimate_count_table("CF")
 ```
 
-:::
-
 ```{r}
-#| label: tbl-cf-contrasts
-#| tbl-cap: "Contrasts evaluated by the CorrectFirst model."
-contrast_table <- data.frame(
-  Contrast = names(cf$contrasts),
-  Definition = unname(cf$contrasts)
-)
-knitr::kable(contrast_table)
+#| label: tbl-cf-modification-counts
+#| tbl-cap: "Observed CorrectFirst rows by contrast and modified amino acid."
+knitr::kable(modification_counts(cf_results))
 ```
+
+:::
 
 ## Quality control
 
