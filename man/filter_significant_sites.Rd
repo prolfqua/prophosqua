@@ -25,7 +25,7 @@ filter_significant_sites(
 \item{fc_threshold}{Sites with absolute log2 fold change above it are kept.}
 
 \item{require_sequence}{If TRUE, drop rows whose SequenceWindow is NA or
-starts or ends with an underscore.}
+padded at a protein terminus.}
 }
 \value{
 Filtered data frame with a `regulation` column.

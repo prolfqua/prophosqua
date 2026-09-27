@@ -5,8 +5,8 @@
 }
 
 .ptm_pair <- function(site_reader, protein_reader, remove_contaminants = FALSE) {
-  site <- .dea_record(site_reader)
-  protein <- .dea_record(protein_reader)
+  site <- .without_decoys(.dea_record(site_reader))
+  protein <- .without_decoys(.dea_record(protein_reader))
   if (remove_contaminants) {
     site <- .without_contaminants(site)
     protein <- .without_contaminants(protein)
@@ -29,11 +29,8 @@
   list(
     sample_key = metadata$sample_key,
     feature_keys = reader$subject_id,
-    formula = .dea_formula(metadata),
-    contrasts = stats::setNames(
-      as.character(metadata$contrasts$contrast),
-      as.character(metadata$contrasts$contrast_name)
-    ),
+    formula = reader$formula,
+    contrasts = reader$contrast_definitions,
     configuration = configuration,
     obs = reader$samples,
     var = reader$annotation,
@@ -47,11 +44,22 @@
 # The DEA keeps contaminants and flags them in its annotation's CON column.
 .without_contaminants <- function(record) {
   .require_columns(record$var, "CON", "DEA annotation")
-  contaminants <- dplyr::filter(record$var, .data$CON)[record$feature_keys]
-  record$var <- dplyr::filter(record$var, !.data$CON)
+  .without_features(record, record$var$CON)
+}
+
+# The DEA fits no decoy but exports their abundances; they are recognized by
+# the decoy pattern the DEA recorded, as prolfqua recognizes them.
+.without_decoys <- function(record) {
+  .without_features(record, prolfqua::is_decoy(record$var$protein_Id, record$configuration$pattern_decoys))
+}
+
+# Drop the features of the annotation marked in `drop` from every table.
+.without_features <- function(record, drop) {
+  dropped <- record$var[drop, record$feature_keys, drop = FALSE]
+  record$var <- record$var[!drop, , drop = FALSE]
   for (table in c("normalized_abundances", "imputed_abundances", "imputation", "differential_results")) {
     if (!is.null(record[[table]])) {
-      record[[table]] <- dplyr::anti_join(record[[table]], contaminants, by = record$feature_keys)
+      record[[table]] <- dplyr::anti_join(record[[table]], dropped, by = record$feature_keys)
     }
   }
   record
@@ -59,13 +67,6 @@
 
 .dea_abundances <- function(lfq) {
   dplyr::rename(lfq$data_long(), normalized_abundance = tidyselect::all_of(lfq$response()))
-}
-
-# prolfquapp stores the model formula as a one-column table; its right-hand
-# side is the design the CF model has to use.
-.dea_formula <- function(metadata) {
-  formula <- unlist(metadata$formula, use.names = FALSE)
-  if (length(formula) == 0L) NULL else as.character(formula[[1]])
 }
 
 .validate_site_experiment <- function(experiment) {

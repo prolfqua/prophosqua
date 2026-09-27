@@ -24,9 +24,11 @@ uses the reported moderated pair; `unmoderated` uses the pre-moderation
 pair retained in the DEA output.}
 }
 \value{
-Data frame with combined results including diff_diff test statistics
+Data frame with one row per matched site and protein, including the
+  diff_diff test statistics
 }
 \description{
 Joins site-level and protein-level results, computes difference-of-differences,
-and performs t-tests for differential PTM usage.
+and performs t-tests for differential PTM usage. Only a site whose protein
+has a result has a usage difference, so the table holds the matched pairs.
 }

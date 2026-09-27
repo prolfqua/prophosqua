@@ -30,8 +30,17 @@ PTM_statistics <- R6::R6Class(
     #' @description Return the CorrectFirst results; the imputed variants are
     #'   under `variants`.
     get_cf = function() private$cf,
+    #' @description Return the CorrectFirst that reports, the workbook and the
+    #'   enrichments show: the variant corrected with the protein DEA's imputed
+    #'   values, as `results`, `ptm_data`, `wide_data` and `wide_annotation`.
+    get_cf_reported = function() .cf_reported(self),
     #' @description Return the six standard delivery tables in memory.
-    get_tables = function() .ptm_delivery_tables(self),
+    #' @param estimates `"observed"` keeps the DPA, DPU and CF rows whose site
+    #'   estimate is observed; `"all"` keeps every row.
+    get_tables = function(estimates = c("observed", "all")) .ptm_delivery_tables(self, estimates),
+    #' @description Count the DPA, DPU and CF rows of each contrast by site
+    #'   estimate type, before the imputed ones are dropped.
+    get_estimate_counts = function() .ptm_estimate_counts(self),
     #' @description Return this complete statistics component.
     get_statistics = function() self,
     #' @description Return a detached storage representation.

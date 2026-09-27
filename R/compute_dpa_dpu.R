@@ -63,8 +63,7 @@ compute_dpa_dpu <- function(phospho_dea_dir, protein_dea_dir, remove_contaminant
     combined_test_diff = test_diff(site, protein, join_column = join_column, variant = "moderated"),
     combined_test_diff_unmoderated = unmoderated,
     n_unmoderated_untestable = sum(
-      unmoderated$measured_In == "both" &
-        !(testable(unmoderated$df.unmoderated.site) & testable(unmoderated$df.unmoderated.protein))
+      !(testable(unmoderated$df.unmoderated.site) & testable(unmoderated$df.unmoderated.protein))
     ),
     match_rates = match_rates
   )

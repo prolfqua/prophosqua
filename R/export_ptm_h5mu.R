@@ -16,8 +16,9 @@ export_ptm_h5mu <- function(input_h5mu, output_dir) {
 
 .ptm_workbook_tables <- function(result) {
   tables <- result$get_tables()
+  tables$estimate_counts <- result$get_estimate_counts()
   statistics <- result$get_statistics()
-  cf <- statistics$get_cf()
+  cf <- statistics$get_cf_reported()
   tables$CF_intensities <- cf$wide_data
   tables$CF_sample_annotation <- cf$wide_annotation |>
     dplyr::relocate(tidyselect::any_of("CONTROL"), .after = "G_")

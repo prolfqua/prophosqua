@@ -131,13 +131,11 @@ plot_diff_logo <- function(sig_sites) {
   for (cont in contrasts_list) {
     up_seqs <- sig_sites |>
       dplyr::filter(.data$contrast == cont, .data$regulation == "upregulated") |>
-      dplyr::pull(.data$SequenceWindow) |>
-      toupper()
+      dplyr::pull(.data$SequenceWindow)
 
     down_seqs <- sig_sites |>
       dplyr::filter(.data$contrast == cont, .data$regulation == "downregulated") |>
-      dplyr::pull(.data$SequenceWindow) |>
-      toupper()
+      dplyr::pull(.data$SequenceWindow)
 
     # Only compute if we have sequences
     if (length(up_seqs) > 0 && length(down_seqs) > 0) {
@@ -229,13 +227,11 @@ plot_seqlogo_with_diff <- function(sig_sites) {
   for (cont in contrasts_list) {
     up_seqs <- sig_sites |>
       dplyr::filter(.data$contrast == cont, .data$regulation == "upregulated") |>
-      dplyr::pull(.data$SequenceWindow) |>
-      toupper()
+      dplyr::pull(.data$SequenceWindow)
 
     down_seqs <- sig_sites |>
       dplyr::filter(.data$contrast == cont, .data$regulation == "downregulated") |>
-      dplyr::pull(.data$SequenceWindow) |>
-      toupper()
+      dplyr::pull(.data$SequenceWindow)
 
     if (length(up_seqs) > 0 && length(down_seqs) > 0) {
       # Store sequences directly for up/down (ggseqlogo handles scaling correctly)

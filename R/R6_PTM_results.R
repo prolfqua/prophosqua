@@ -67,7 +67,12 @@ PTM_results <- R6::R6Class(
       protsea::read_gsea_json_text(private$files[[key]])
     },
     #' @description Return standard statistics and abundance tables.
-    get_tables = function() private$statistics$get_tables(),
+    #' @param estimates `"observed"` keeps the DPA, DPU and CF rows whose site
+    #'   estimate is observed; `"all"` keeps every row.
+    get_tables = function(estimates = c("observed", "all")) private$statistics$get_tables(estimates),
+    #' @description Count the DPA, DPU and CF rows of each contrast by site
+    #'   estimate type, before the imputed ones are dropped.
+    get_estimate_counts = function() private$statistics$get_estimate_counts(),
     #' @description Write the final artifact atomically. The enrichment files
     #'   must lie beside it.
     #' @param path Destination H5MU file.

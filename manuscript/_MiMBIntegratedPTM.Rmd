@@ -758,7 +758,7 @@ To identify potential kinases responsible for the observed phosphorylation chang
 
 The analysis focuses on sites with strong statistical evidence to ensure that motif patterns reflect genuine biological changes rather than technical artifacts. For this dataset, this stringent filtering yields many sites (see Table \@ref(tab:tableSignificantContrasts)). However, for other datasets, the number of sites might be insufficient for creating sequence logos (see Note \@ref(nosignificantPTM)).
 
-We start by filtering the DPU data by $|\log_2(FC)| > 0.58$ and $FDR \le 0.05$. The Table \@ref(tab:tableSignificantContrasts) summarizes the number of PTM-features for each contrast, modification site, and up- or down-regulation. We observe that for serine (S) and threonine (T), there are many up- and downregulated sites, while for tyrosine (Y), there are only a few.
+We start by filtering the DPU data by $|\log_2(FC)| > 0.58$ and $FDR \le 0.05$. The Table \@ref(tab:tableSignificantContrasts) summarizes the number of PTM-features for each contrast, modification site, and up- or down-regulation. We observe that for serine (S) and threonine (T), there are many up- and downregulated sites, while for tyrosine (Y), there are only a few. Sites without a sequence window, and windows padded at a protein terminus, are left out (see Note \@ref(seqwindow)).
 
 
 ```{r filterdataforseqlogoplotting}
@@ -769,9 +769,8 @@ significant_sites <- combined_test_diff |>
   dplyr::filter(
     FDR_I < 0.05, 
     abs(diff_diff) > log_2FC_threshold, 
-    !is.na(posInProtein), 
-    !grepl("^_", SequenceWindow),
-    !grepl("_$", SequenceWindow)
+    !is.na(SequenceWindow),
+    !grepl("^X|X$", SequenceWindow)
   ) |>
   dplyr::mutate(
     regulation = dplyr::case_when(
@@ -780,15 +779,6 @@ significant_sites <- combined_test_diff |>
       TRUE ~ "no_change"
     )
   )
-```
-
-
-Before generating sequence logos, we must ensure that the sequence windows are properly centered on the phosphorylation site. This code validates that the 8th character (center position) of each sequence window matches the reported modified amino acid (Note \@ref(seqwindow)).
-
-
-```{r c1makeseqlog}
-significant_sites$seventh_chars <- toupper(substr(significant_sites$SequenceWindow, 8, 8))
-significant_sites <- significant_sites |> filter(seventh_chars == modAA)
 ```
 
 
@@ -877,9 +867,9 @@ Such discrepancies between DPA and DPU are often informative rather than problem
 This integrated analysis distinguishes PTM feature abundance from usage changes, enabling site-specific insights into how phosphorylation and other PTMs are regulated. By linking DPA and DPU results, it clarifies whether observed changes reflect protein-level expression or signaling pathway activity, and it highlights key regulatory sites for functional validation. Visualization in sequence context and rigorous statistical modeling further support interpretation, allowing researchers to generate mechanistic hypotheses, identify pathway-level regulation, and prioritize targeted follow-up experiments.
 
 
-## Extracting sequence windows with `prophosqua` {#seqwindow}
+## Sequence windows from the FASTA file {#seqwindow}
 
-Although _FragPipe_ reports the sequence windows in the single-site report, we observed that some of the extracted windows are not correctly aligned, making the filtering step necessary. Some upstream quantification applications only report the modified amino acid and the position in the protein sequence. For those cases, the `prophosqua` function `get_sequence_windows` can be used. The function expects a dataframe with two columns: the protein sequences and the position of the modified amino acid. For details, see `prophosqua` documentation [@10.5281/zenodo.15845272].
+The sequence windows are cut from the protein sequences of the FASTA file used in the search, $\pm 7$ residues around the modified residue, so the central residue is always the modified one. _FragPipe_ reports windows in its single-site output, but some of them are not correctly aligned, and other quantification applications report only the modified residue and its position; cutting every window from the FASTA gives all of them the same convention. Beyond a protein terminus the window is padded with X. The `prolfquappPTMreaders` function `get_sequence_windows` does the cutting; it expects the protein sequences and the position of the modified residue.
 
 ## Motif Analysis Limitations {#motiflimit}
 

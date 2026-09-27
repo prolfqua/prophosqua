@@ -2,21 +2,14 @@ test_that("filter_sequence_windows drops windows a motif scan cannot use", {
   data <- data.frame(
     SequenceWindow = c(
       "AAAAAAASAAAAAAA", # usable
-      "_AAAAAASAAAAAAA", # padded at the N terminus
-      "AAAAAAASAAAAAA_", # padded at the C terminus
-      "AASAAA", # too short
-      "", # empty
-      NA_character_
+      "XXXAAAASAAAAAAA", # padded at the N terminus
+      "AAAAAAASAAAAXXX", # padded at the C terminus
+      NA_character_ # no window: the protein is not in the FASTA
     )
   )
   out <- filter_sequence_windows(data)
 
   expect_equal(out$SequenceWindow, "AAAAAAASAAAAAAA")
-})
-
-test_that("filter_sequence_windows upper-cases what it keeps", {
-  data <- data.frame(SequenceWindow = "aaaaaaasaaaaaaa")
-  expect_equal(filter_sequence_windows(data)$SequenceWindow, "AAAAAAASAAAAAAA")
 })
 
 test_that("rank_sites_for_mea selects one contrast and orders it descending", {

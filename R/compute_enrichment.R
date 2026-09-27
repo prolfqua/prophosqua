@@ -24,9 +24,6 @@
 }
 
 .compute_kinase_tables <- function(data, term2gene, stat_column, min_size, max_size, n_perm) {
-  # Kinase Library writes the phosphorylated residue in lower case, e.g.
-  # "PETITIRsGPPSPLP"; the ranked windows are upper case.
-  term2gene <- data.frame(term = term2gene$term, gene = toupper(term2gene$gene))
   .kinasegsea_result(lapply(.rank_windows(data, stat_column), function(ranks) {
     clusterProfiler::GSEA(
       geneList = ranks,
@@ -93,19 +90,10 @@
   list(results = results, mea_clean = mea_clean, summary_df = summary_df)
 }
 
-# A motif scan needs a full, uninterrupted window: windows padded with
-# underscores at a protein terminus, or shorter than seven residues, carry too
-# little context and are dropped rather than scanned.
+# A motif scan needs a full window: a site without one, or whose window is
+# padded at a protein terminus, is dropped rather than scanned.
 filter_sequence_windows <- function(data) {
-  data |>
-    dplyr::filter(
-      !is.na(.data$SequenceWindow),
-      .data$SequenceWindow != "",
-      !grepl("^_", .data$SequenceWindow),
-      !grepl("_$", .data$SequenceWindow),
-      nchar(.data$SequenceWindow) >= 7
-    ) |>
-    dplyr::mutate(SequenceWindow = toupper(.data$SequenceWindow))
+  dplyr::filter(data, !is.na(.data$SequenceWindow), !.is_padded_window(.data$SequenceWindow))
 }
 
 # Motif enrichment walks one ranked list, so a window may appear only once.

@@ -38,20 +38,11 @@ NULL
     dplyr::ungroup()
 }
 
-# The same join seen from the other table: `c(a = "b")` becomes `c(b = "a")`.
-.reverse_join_column <- function(join_column) {
-  from <- names(join_column)
-  if (is.null(from)) {
-    return(join_column)
-  }
-  named <- nzchar(from)
-  stats::setNames(ifelse(named, from, join_column), ifelse(named, join_column, ""))
-}
-
 #' Compute MSstats-like test statistics for differential PTM usage
 #'
 #' Joins site-level and protein-level results, computes difference-of-differences,
-#' and performs t-tests for differential PTM usage.
+#' and performs t-tests for differential PTM usage. Only a site whose protein
+#' has a result has a usage difference, so the table holds the matched pairs.
 #'
 #' @param phos_res Data frame with phospho site-level results
 #' @param tot_res Data frame with protein-level results
@@ -59,7 +50,8 @@ NULL
 #' @param variant Variance and degrees-of-freedom pair to use. `moderated`
 #'   uses the reported moderated pair; `unmoderated` uses the pre-moderation
 #'   pair retained in the DEA output.
-#' @return Data frame with combined results including diff_diff test statistics
+#' @return Data frame with one row per matched site and protein, including the
+#'   diff_diff test statistics
 #' @export
 test_diff <- function(
   phos_res,
@@ -72,26 +64,12 @@ test_diff <- function(
   df <- if (variant == "moderated") "df" else "df.unmoderated"
   .require_columns(phos_res, c(std_err, df), "DPU site result")
   .require_columns(tot_res, c(std_err, df), "DPU protein result")
-  test_diff <- .test_diff_diff(
+  .test_diff_diff(
     phos_res,
     tot_res,
     by = join_column,
     std_err = std_err,
     df = df,
     require_positive_df = variant == "unmoderated"
-  )
-  test_diff$measured_In <- "both"
-  removed_from_site <- dplyr::anti_join(phos_res, tot_res, by = join_column)
-  removed_from_site$measured_In <- rep("site", nrow(removed_from_site))
-  removed_from_prot <- dplyr::anti_join(tot_res, phos_res, by = .reverse_join_column(join_column))
-  removed_from_prot$measured_In <- rep("prot", nrow(removed_from_prot))
-  common_columns <- setdiff(
-    intersect(colnames(removed_from_site), colnames(removed_from_prot)),
-    c(join_column, "measured_In")
-  )
-  dplyr::bind_rows(
-    test_diff,
-    dplyr::rename_with(removed_from_site, ~ paste0(., ".site"), tidyselect::all_of(common_columns)),
-    dplyr::rename_with(removed_from_prot, ~ paste0(., ".protein"), tidyselect::all_of(common_columns))
   )
 }

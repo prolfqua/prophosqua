@@ -43,7 +43,7 @@ trim_flanking_seq <- function(seq, trim_to = 15L) {
   substr(seq, floor(trim_each) + 1, nchar(seq) - ceiling(trim_each))
 }
 
-# One ranked list per contrast, named by the upper-case sequence window and
+# One ranked list per contrast, named by the sequence window and
 # sorted for GSEA. A window ranked twice keeps its first statistic.
 .rank_windows <- function(data, stat_column, trim_to = 15L) {
   .require_columns(data, c("SequenceWindow", stat_column, "contrast"), "ranked sites")
@@ -52,14 +52,14 @@ trim_flanking_seq <- function(seq, trim_to = 15L) {
   ranks <- lapply(contrasts, function(contrast) {
     rows <- data[data$contrast == contrast, , drop = FALSE]
     windows <- vapply(
-      toupper(trimws(as.character(rows$SequenceWindow))),
+      as.character(rows$SequenceWindow),
       trim_flanking_seq,
       character(1),
       trim_to = trim_to,
       USE.NAMES = FALSE
     )
     ranks <- stats::setNames(as.numeric(rows[[stat_column]]), windows)
-    ranks <- ranks[!is.na(ranks) & !is.na(names(ranks)) & names(ranks) != ""]
+    ranks <- ranks[!is.na(ranks) & !is.na(names(ranks))]
     sort(ranks[!duplicated(names(ranks))], decreasing = TRUE)
   })
   stats::setNames(ranks, contrasts)

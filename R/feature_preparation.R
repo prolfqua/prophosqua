@@ -10,7 +10,7 @@
 #' @param fdr_threshold Sites with FDR below it are kept.
 #' @param fc_threshold Sites with absolute log2 fold change above it are kept.
 #' @param require_sequence If TRUE, drop rows whose SequenceWindow is NA or
-#'   starts or ends with an underscore.
+#'   padded at a protein terminus.
 #' @return Filtered data frame with a `regulation` column.
 #' @export
 #' @examples
@@ -48,32 +48,12 @@ filter_significant_sites <- function(
     result <- dplyr::filter(
       result,
       !is.na(.data$SequenceWindow),
-      !grepl("^_", .data$SequenceWindow),
-      !grepl("_$", .data$SequenceWindow)
+      !.is_padded_window(.data$SequenceWindow)
     )
   }
   result
 }
 
-#' Validate sequence window alignment
-#'
-#' Keeps only rows where the central residue of the sequence window matches the
-#' reported modified amino acid, compared case-insensitively.
-#'
-#' @param data Data frame with PTM results containing SequenceWindow and modAA columns
-#' @param seq_col Name of the sequence window column.
-#' @param mod_col Name of the modified amino acid column.
-#' @param center_pos Position of the central residue (1-indexed).
-#' @return Filtered data frame with only valid sequence windows
-#' @export
-#' @examples
-#' data <- data.frame(
-#'   SequenceWindow = c("AAASAAAA", "BBBSBBB", "CCCACCC"),
-#'   modAA = c("S", "S", "S")
-#' )
-#' validate_sequence_window(data)
-validate_sequence_window <- function(data, seq_col = "SequenceWindow", mod_col = "modAA", center_pos = 8L) {
-  .require_columns(data, c(seq_col, mod_col), "PTM results")
-  matches <- toupper(substr(data[[seq_col]], center_pos, center_pos)) == toupper(data[[mod_col]])
-  data[!is.na(matches) & matches, , drop = FALSE]
-}
+# The PTM readers cut every window from the FASTA, padding it with X beyond a
+# protein terminus.
+.is_padded_window <- function(windows) grepl("^X|X$", windows)

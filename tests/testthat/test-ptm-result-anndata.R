@@ -49,7 +49,6 @@ test_that("PTM result tables retain statistics, annotations, and alignment", {
   actual_dpu <- ptm_result_row(enriched, "dpu__a_vs_b", site)
   expect_equal(actual_dpu$diff_diff, expected(dpa_dpu$combined_test_diff)$diff_diff)
   expect_equal(actual_dpu$FDR_I, expected(dpa_dpu$combined_test_diff)$FDR_I)
-  expect_equal(as.character(actual_dpu$measured_In), expected(dpa_dpu$combined_test_diff)$measured_In)
 
   actual_unmoderated <- ptm_result_row(enriched, "dpu_unmoderated__a_vs_b", site)
   expect_equal(actual_unmoderated$diff_diff, expected(dpa_dpu$combined_test_diff_unmoderated)$diff_diff)

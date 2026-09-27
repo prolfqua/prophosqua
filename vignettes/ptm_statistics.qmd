@@ -89,9 +89,14 @@ statistics <- if (inherits(ptm_stage, "PTM_statistics")) {
 inputs <- statistics$get_inputs()
 dpa_dpu <- statistics$get_dpa_dpu()
 cf <- statistics$get_cf()
-dpa <- as.data.frame(dpa_dpu$combined_site_prot)
-dpu <- as.data.frame(dpa_dpu$combined_test_diff)
-cf_results <- as.data.frame(cf$results)
+# Every analysis is computed from all models; the report shows only the rows
+# whose site estimate is observed, and counts the imputed ones.
+dpa <- prophosqua::observed_site_estimates(as.data.frame(dpa_dpu$combined_site_prot))
+dpu <- prophosqua::observed_site_estimates(as.data.frame(dpa_dpu$combined_test_diff))
+# The reported CorrectFirst is corrected with the protein DEA's imputed values.
+cf_reported <- statistics$get_cf_reported()
+cf_results <- prophosqua::observed_site_estimates(as.data.frame(cf_reported$results), "estimate_type")
+estimate_counts <- statistics$get_estimate_counts()
 design <- inputs$get_design()
 contrasts <- inputs$get_contrasts()
 provenance <- inputs$get_provenance()
@@ -219,6 +224,10 @@ dt_table <- function(data, caption, columns, page_length = 15) {
   )
 }
 
+estimate_count_table <- function(analysis) {
+  knitr::kable(dplyr::select(estimate_counts[estimate_counts$analysis == analysis, ], -"analysis"))
+}
+
 modification_counts <- function(data) {
   if (!all(c("contrast", "modAA") %in% names(data))) {
     return(data.frame(message = "Modification annotations are unavailable."))
@@ -240,10 +249,7 @@ prepare_logo_sites <- function(data, effect, fdr) {
     fc_threshold = fold_change_threshold,
     require_sequence = TRUE
   )
-  if (!nrow(sites)) {
-    return(sites)
-  }
-  prophosqua::validate_sequence_window(sites)
+  sites
 }
 
 format_contrast <- function(contrast) {
@@ -302,7 +308,7 @@ sequence_logo_plot <- function(data) {
     ) |>
     dplyr::group_by(.data$contrast, .data$direction) |>
     dplyr::summarize(
-      sequences = list(toupper(.data$SequenceWindow)),
+      sequences = list(.data$SequenceWindow),
       sites = dplyr::n(),
       .groups = "drop"
     ) |>
@@ -451,6 +457,12 @@ knitr::kable(modification_counts(dpa))
 
 :::
 
+```{r}
+#| label: tbl-dpa-estimate-counts
+#| tbl-cap: "DPA site-contrast rows by site estimate type. All are computed; this report shows only the observed ones."
+estimate_count_table("DPA")
+```
+
 ## Volcano
 
 ```{r}
@@ -542,25 +554,20 @@ dt_table(
 
 ## Summary
 
-Differential PTM usage compares the modelled site change with the modelled protein change. A positive value means the site increased more than its protein; a negative value means it increased less or decreased more.
+Differential PTM usage compares the modelled site change with the modelled protein change. A positive value means the site increased more than its protein; a negative value means it increased less or decreased more. Only a site whose protein has a result has a usage change, so DPU holds the matched sites.
 
 ::: {layout-ncol="2"}
-
-```{r}
-#| label: tbl-dpu-measurement-counts
-#| tbl-cap: "DPU rows by contrast and availability of site and protein estimates."
-dpu_measurements <- if ("measured_In" %in% names(dpu)) {
-  dplyr::count(dpu, .data$contrast, .data$measured_In, name = "rows")
-} else {
-  data.frame(message = "Measurement-status annotations are unavailable.")
-}
-knitr::kable(dpu_measurements)
-```
 
 ```{r}
 #| label: tbl-dpu-modification-counts
 #| tbl-cap: "DPU result rows by contrast and modified amino acid."
 knitr::kable(modification_counts(dpu))
+```
+
+```{r}
+#| label: tbl-dpu-estimate-counts
+#| tbl-cap: "DPU site-contrast rows by site estimate type. All are computed; this report shows only the observed ones; their protein estimate may be imputed."
+estimate_count_table("DPU")
 ```
 
 :::
@@ -642,7 +649,7 @@ dt_table(
   c(
     "protein_Id", "site", "gene_name.site", "modAA", "posInProtein",
     "SequenceWindow", "contrast", "diff.site", "diff.protein", "diff_diff",
-    "SE_I", "pValue_I", "FDR_I", "measured_In"
+    "SE_I", "pValue_I", "FDR_I"
   )
 )
 ```
@@ -653,9 +660,39 @@ dt_table(
 
 ::: {.panel-tabset}
 
+## Summary
+
+CorrectFirst subtracts the protein abundance from the site abundance on the log2 scale and adds back the sample's median protein abundance before modelling. A protein value missing in a sample is taken from the protein DEA's `lm_impute` model, so every site whose protein was quantified is corrected. The fitted site effect is then the change in PTM usage.
+
+::: {layout-ncol="2"}
+
+```{r}
+#| label: tbl-cf-modification-counts
+#| tbl-cap: "CorrectFirst result rows by contrast and modified amino acid."
+knitr::kable(modification_counts(cf_results))
+```
+
+```{r}
+#| label: tbl-cf-estimate-counts
+#| tbl-cap: "CorrectFirst site-contrast rows by estimate type. All are computed; this report shows only the observed ones."
+estimate_count_table("CF")
+```
+
+:::
+
+```{r}
+#| label: tbl-cf-contrasts
+#| tbl-cap: "Contrasts evaluated by the CorrectFirst model."
+contrast_table <- data.frame(
+  Contrast = names(cf$contrasts),
+  Definition = unname(cf$contrasts)
+)
+knitr::kable(contrast_table)
+```
+
 ## Quality control
 
-CorrectFirst subtracts the protein abundance from the site abundance on the log2 scale and adds back the sample's median protein abundance before modelling. The two plots assess the corrected sample-level values entering that model.
+The two plots assess the protein-corrected sample-level values entering the CorrectFirst model.
 
 ::: {layout-ncol="2"}
 
@@ -668,7 +705,7 @@ CorrectFirst subtracts the protein abundance from the site abundance on the log2
 #| fig-width: 6
 #| fig-height: 5
 safe_plot(
-  cf$ptm_data$get_Plotter()$intensity_distribution_density(),
+  cf_reported$ptm_data$get_Plotter()$intensity_distribution_density(),
   "CorrectFirst density plot unavailable."
 )
 ```
@@ -683,7 +720,7 @@ safe_plot(
 #| fig-height: 5
 safe_plot(
   prolfqua::AggregateLimpa$new(
-    cf$ptm_data,
+    cf_reported$ptm_data,
     impute_only = TRUE
   )$aggregate()$get_Plotter()$pca(),
   "CorrectFirst PCA unavailable."
@@ -747,28 +784,6 @@ These logos are recomputed from MuData during rendering using **`r logo_selectio
 #| out-width: "60%"
 difference_logo_plot(cf_logo_sites)
 ```
-
-## Model summary
-
-::: {layout-ncol="2"}
-
-```{r}
-#| label: tbl-cf-contrasts
-#| tbl-cap: "Contrasts evaluated by the CorrectFirst model."
-contrast_table <- data.frame(
-  Contrast = names(cf$contrasts),
-  Definition = unname(cf$contrasts)
-)
-knitr::kable(contrast_table)
-```
-
-```{r}
-#| label: tbl-cf-model-counts
-#| tbl-cap: "CorrectFirst site-contrast pairs by estimation method."
-knitr::kable(cf$model_counts)
-```
-
-:::
 
 ## Results
 

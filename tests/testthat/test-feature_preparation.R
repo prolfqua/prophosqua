@@ -61,14 +61,14 @@ test_that("filter_significant_sites handles require_sequence", {
   data <- data.frame(
     FDR.site = c(0.01, 0.02, 0.03, 0.04),
     diff.site = c(1.2, -0.8, 1.0, -1.5),
-    SequenceWindow = c("AAASAAAA", NA, "_BBBSBBB", "CCCSCCCC_")
+    SequenceWindow = c("AAASAAAA", NA, "XBBBSBBB", "CCCSCCCCX")
   )
 
   # Without require_sequence
   result1 <- filter_significant_sites(data, require_sequence = FALSE)
   expect_equal(nrow(result1), 4)
 
-  # With require_sequence - should filter out NA and underscore-bounded
+  # With require_sequence - should filter out NA and padded windows
   result2 <- filter_significant_sites(data, require_sequence = TRUE)
   expect_equal(nrow(result2), 1)
   expect_equal(result2$SequenceWindow, "AAASAAAA")

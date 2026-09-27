@@ -71,8 +71,7 @@ test_that("statistics vignette input is a complete final MuData artifact", {
       fdr_threshold = 0.05,
       fc_threshold = 0.5,
       require_sequence = TRUE
-    ) |>
-      validate_sequence_window()
+    )
     expect_gte(dplyr::n_distinct(sites$contrast), 2L)
     for (contrast in unique(sites$contrast)) {
       expect_setequal(

@@ -23,6 +23,7 @@ are read from the files when first asked for.
 \item \href{#method-PTM_results-get_enrichments}{\code{PTM_results$get_enrichments()}}
 \item \href{#method-PTM_results-get_enrichment_document}{\code{PTM_results$get_enrichment_document()}}
 \item \href{#method-PTM_results-get_tables}{\code{PTM_results$get_tables()}}
+\item \href{#method-PTM_results-get_estimate_counts}{\code{PTM_results$get_estimate_counts()}}
 \item \href{#method-PTM_results-write_h5mu}{\code{PTM_results$write_h5mu()}}
 \item \href{#method-PTM_results-clone}{\code{PTM_results$clone()}}
 }
@@ -95,7 +96,26 @@ Return the protsea document of one completed enrichment, as JSON text.
 \subsection{Method \code{get_tables()}}{
 Return standard statistics and abundance tables.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{PTM_results$get_tables()}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{PTM_results$get_tables(estimates = c("observed", "all"))}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{estimates}}{`"observed"` keeps the DPA, DPU and CF rows whose site
+estimate is observed; `"all"` keeps every row.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-PTM_results-get_estimate_counts"></a>}}
+\if{latex}{\out{\hypertarget{method-PTM_results-get_estimate_counts}{}}}
+\subsection{Method \code{get_estimate_counts()}}{
+Count the DPA, DPU and CF rows of each contrast by site
+  estimate type, before the imputed ones are dropped.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{PTM_results$get_estimate_counts()}\if{html}{\out{</div>}}
 }
 
 }

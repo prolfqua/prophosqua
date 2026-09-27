@@ -1,24 +1,75 @@
-.ptm_delivery_tables <- function(statistics) {
-  dpa_dpu <- statistics$get_dpa_dpu()
+# Reports, the workbook and the enrichments show CorrectFirst corrected with
+# the protein DEA's imputed values (variant A); CF and B stay in MuData.
+.CF_REPORTED <- "correct_first_protein_imputed"
+
+.cf_reported <- function(statistics) {
   cf <- statistics$get_cf()
+  variant <- cf$variants[[.CF_REPORTED]]
+  site <- statistics$get_inputs()$get_pair()$site
+  config <- cf$ptm_data$get_config()$clone(deep = TRUE)
+  ptm_data <- .cf_lfqdata(variant$abundances, site$var, site$obs, config)
+  c(list(results = variant$results, ptm_data = ptm_data), .cf_wide(ptm_data))
+}
+
+.ptm_result_tables <- function(statistics, estimates = c("observed", "all")) {
+  estimates <- match.arg(estimates)
+  dpa_dpu <- statistics$get_dpa_dpu()
+  tables <- list(
+    DPA = standardize_ptm_results(dpa_dpu$combined_site_prot, "dpa"),
+    DPU = standardize_ptm_results(dpa_dpu$combined_test_diff, "dpu"),
+    CF = standardize_ptm_results(statistics$get_cf()$variants[[.CF_REPORTED]]$results, "cf")
+  )
+  if (identical(estimates, "observed")) lapply(tables, observed_site_estimates) else tables
+}
+
+#' Keep the rows whose site estimate is observed
+#'
+#' Every analysis is computed from all `lm_impute` models, but reports, counts
+#' and enrichments use only the rows whose site-level estimate is not imputed.
+#' @param data PTM result table.
+#' @param column Column holding the site estimate type.
+#' @return `data` without its `lod_imputed` site estimates.
+#' @export
+#' @examples
+#' data <- data.frame(site = c("a", "b"), estimate_type.site = c("observed", "lod_imputed"))
+#' observed_site_estimates(data)
+observed_site_estimates <- function(data, column = "estimate_type.site") {
+  .require_columns(data, column, "PTM results")
+  data[data[[column]] %in% "observed", , drop = FALSE]
+}
+
+# Site-contrast rows of DPA, DPU and CF by estimate type, counted before the
+# imputed site estimates are dropped.
+.ptm_estimate_counts <- function(statistics) {
+  counts <- lapply(.ptm_result_tables(statistics, "all"), function(table) {
+    dplyr::count(table, .data$contrast, .data$estimate_type.site, name = "rows")
+  })
+  dplyr::bind_rows(counts, .id = "analysis") |>
+    tidyr::pivot_wider(names_from = "estimate_type.site", values_from = "rows", values_fill = 0L) |>
+    dplyr::mutate(total = as.integer(rowSums(dplyr::across(-c("analysis", "contrast")))))
+}
+
+.ptm_delivery_tables <- function(statistics, estimates = c("observed", "all")) {
+  cf_abundances <- statistics$get_cf()$variants[[.CF_REPORTED]]$abundances
   pair <- statistics$get_inputs()$get_pair()
   protein_abund <- .ptm_abundance_long(pair$protein) |>
-    dplyr::filter(!grepl("^rev_", .data$protein_Id)) |>
     canonicalize_uniprot_ids() |>
     dplyr::select(Name = tidyselect::all_of(pair$protein$sample_key), "protein_Id", "normalized_abundance") |>
     tidyr::pivot_wider(names_from = "Name", values_from = "normalized_abundance")
   site_abund_dpa <- .ptm_abundance_long(pair$site) |>
     dplyr::select(Name = tidyselect::all_of(pair$site$sample_key), "site", "protein_Id", "normalized_abundance") |>
     tidyr::pivot_wider(names_from = "Name", values_from = "normalized_abundance")
-  # The CF sheet holds the values CorrectFirst modelled.
+  # The CF sheet holds the values the reported CorrectFirst modelled.
   samples <- setdiff(names(site_abund_dpa), c("site", "protein_Id"))
-  list(
-    DPA = standardize_ptm_results(dpa_dpu$combined_site_prot, "dpa"),
-    DPU = standardize_ptm_results(dpa_dpu$combined_test_diff, "dpu"),
-    CF = standardize_ptm_results(cf$results, "cf"),
-    abundances_protein = protein_abund,
-    abundances_site_dpa = site_abund_dpa,
-    abundances_site_cf = dplyr::select(cf$wide_data, "site", tidyselect::all_of(samples))
+  site_abund_cf <- dplyr::as_tibble(t(cf_abundances), rownames = "site") |>
+    dplyr::select("site", tidyselect::all_of(samples))
+  c(
+    .ptm_result_tables(statistics, estimates),
+    list(
+      abundances_protein = protein_abund,
+      abundances_site_dpa = site_abund_dpa,
+      abundances_site_cf = site_abund_cf
+    )
   )
 }
 

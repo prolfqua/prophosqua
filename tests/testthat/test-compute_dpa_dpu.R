@@ -41,14 +41,13 @@ test_that("DPA leaves an unmatched site without a protein estimate", {
 test_that("DPU is the usage difference of a matched pair", {
   res <- suppressMessages(.compute_dpa_dpu_from_pair(dea_result_pair()))
 
-  paired <- res$combined_test_diff[res$combined_test_diff$measured_In == "both", ]
+  paired <- res$combined_test_diff
   expect_true(nrow(paired) > 0)
+  expect_false(anyNA(paired$diff.protein))
   expect_equal(paired$diff_diff, paired$diff.site - paired$diff.protein)
   expect_equal(paired$SE_I, sqrt(paired$std.error.site^2 + paired$std.error.protein^2))
   expect_equal(
-    res$combined_test_diff_unmoderated$SE_I[
-      res$combined_test_diff_unmoderated$measured_In == "both"
-    ],
+    res$combined_test_diff_unmoderated$SE_I,
     sqrt(paired$std.error.unmoderated.site^2 + paired$std.error.unmoderated.protein^2)
   )
   expect_equal(res$n_unmoderated_untestable, 0)

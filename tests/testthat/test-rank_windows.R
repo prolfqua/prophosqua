@@ -19,11 +19,11 @@ test_that(".rank_windows keeps the first statistic of a repeated window", {
   expect_equal(.rank_windows(data, "statistic.site")$A_vs_B, c(AAASAAAA = 2.5, BBBSBBB = -0.5))
 })
 
-test_that(".rank_windows upper-cases windows and drops missing statistics and windows", {
+test_that(".rank_windows drops sites without a statistic or a window", {
   data <- data.frame(
     contrast = "A_vs_B",
-    SequenceWindow = c(" aaasaaaa", "BBBSBBB", NA, ""),
-    statistic.site = c(2.5, NA, 1, 1)
+    SequenceWindow = c("AAASAAAA", "BBBSBBB", NA),
+    statistic.site = c(2.5, NA, 1)
   )
   expect_equal(.rank_windows(data, "statistic.site")$A_vs_B, c(AAASAAAA = 2.5))
 })

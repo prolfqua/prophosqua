@@ -91,28 +91,6 @@ knitr::kable(
 ```
 
 
-# Joining Phosphorylation Sites with Total Proteome
-
-```{r foundInGlobal, eval=TRUE}
-tt <- data_diff_diff |>
-  dplyr::select(protein_Id, measured_In) |>
-  dplyr::distinct() |>
-  dplyr::pull(measured_In) |>
-  table()
-
-# Calculate percentages
-percFoundInGlobal <- tt["both"] / (tt["both"] + tt["site"]) * 100
-totProtFromSites <- (tt["both"] + tt["site"])
-sitesM <- data_diff_diff |>  
-  dplyr::select(protein_Id, site, measured_In) |> 
-  dplyr::distinct() |> 
-  dplyr::pull(measured_In) |> 
-  table()
-```
-
-When phosphopeptide enrichment is performed, some peptides are identified for which there is no corresponding protein identification in the total proteome measurement. Therefore, protein-level information may be missing for some phosphorylation sites. Here, for `r percFoundInGlobal`% of all identified phosphoproteins (`r totProtFromSites` total), the corresponding protein is also quantified in the total proteome measurements. For `r sitesM["both"]` phosphorylation sites mapping to a total of `r tt["both"]` proteins, we can perform integrated analysis combining both datasets.
-
-
 # Integration with Total Proteome
 
 Next, we integrate the phosphorylation site statistics with the protein-level changes using the MSstatsPTM approach [@Kohler2023yo]. We refer to this as *MSstatsPTM adjustment* and refer to these statistics in our outputs as *diff_diff* and *FDR_I*. This analysis reveals differential PTM usage (DPU), which distinguishes between changes due to protein abundance and changes due to site-specific modification usage.

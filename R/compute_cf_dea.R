@@ -177,12 +177,9 @@ compute_cf_dea <- function(phospho_dea_dir, protein_dea_dir, remove_contaminants
 .cf_corrected <- function(site_data, protein_data, pair) {
   site_sample_col <- pair$site$sample_key
   protein_sample_col <- pair$protein$sample_key
-  accession_keyed <- function(data) {
-    canonicalize_uniprot_ids(dplyr::filter(data, !grepl("^rev_", .data$protein_Id)))
-  }
-  tot_d <- accession_keyed(protein_data) |>
+  tot_d <- canonicalize_uniprot_ids(protein_data) |>
     dplyr::select(tidyselect::all_of(protein_sample_col), "protein_Id", "normalized_abundance")
-  protein_observed <- accession_keyed(pair$protein$normalized_abundances)
+  protein_observed <- canonicalize_uniprot_ids(pair$protein$normalized_abundances)
   protein_sample_median <- protein_observed |>
     dplyr::summarize(
       protein_median = stats::median(.data$normalized_abundance, na.rm = TRUE),

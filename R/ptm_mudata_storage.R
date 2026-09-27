@@ -54,23 +54,26 @@
   cf
 }
 
-# The corrected values as the LFQData CF fitted: X on the modality's axes,
-# joined to the site keys and the design.
+# The corrected values as the LFQData CF fitted: X on the modality's axes.
 .cf_ptm_data <- function(cf, config) {
-  config <- prolfqua::list_to_AnalysisConfiguration(config)
   values <- as.matrix(cf$X)
-  dimnames(values) <- list(cf$obs_names, cf$var_names)
-  keys <- dplyr::as_tibble(as.data.frame(cf$var)[config$hierarchy_keys()], rownames = ".feature")
+  dimnames(values) <- list(cf$obs_names, as.data.frame(cf$var)$site)
+  .cf_lfqdata(values, cf$var, cf$obs, prolfqua::list_to_AnalysisConfiguration(config))
+}
+
+# Corrected values, samples x site ids, as an LFQData: joined to the site keys
+# and the design.
+.cf_lfqdata <- function(values, var, obs, config) {
+  keys <- dplyr::distinct(dplyr::as_tibble(as.data.frame(var)[config$hierarchy_keys()]))
   long <- tidyr::pivot_longer(
-    dplyr::as_tibble(t(values), rownames = ".feature"),
-    cols = -".feature",
+    dplyr::as_tibble(t(values), rownames = "site"),
+    cols = -"site",
     names_to = config$sample_name,
     values_to = config$get_response()
   ) |>
-    dplyr::inner_join(keys, by = ".feature") |>
-    dplyr::filter(any(!is.na(.data[[config$get_response()]])), .by = ".feature") |>
-    dplyr::select(-".feature") |>
-    dplyr::left_join(dplyr::as_tibble(as.data.frame(cf$obs)), by = config$sample_name)
+    dplyr::inner_join(keys, by = "site") |>
+    dplyr::filter(any(!is.na(.data[[config$get_response()]])), .by = "site") |>
+    dplyr::left_join(dplyr::as_tibble(as.data.frame(obs)), by = config$sample_name)
   prolfqua::LFQData$new(long, config)
 }
 
