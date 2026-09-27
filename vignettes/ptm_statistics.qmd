@@ -163,6 +163,19 @@ volcano_plot <- function(data, effect, fdr, title) {
     ggplot2::theme(legend.position = "bottom")
 }
 
+# A figure faceted by contrast keeps ggplot2's panel grid and gets, per panel,
+# the size a single-contrast figure has; its displayed width grows with it, so
+# the panels and their text keep their size on the page.
+facet_size <- function(data) {
+  dims <- ggplot2::wrap_dims(max(1L, dplyr::n_distinct(data$contrast)))
+  width <- 1 + 5 * dims[[2]]
+  list(
+    width = width,
+    height = 1.3 + 3.7 * dims[[1]],
+    out = paste0(min(100, round(40 * width / 6)), "%")
+  )
+}
+
 site_protein_plot <- function(data) {
   required <- c("diff.protein", "diff.site", "contrast")
   if (!all(required %in% names(data))) {
@@ -389,6 +402,13 @@ difference_logo_plot <- function(data) {
     logo_theme()
 }
 
+# Both logo figures lay their panels out two per row, a sequence logo per
+# contrast and direction, a difference logo per contrast; the figure grows by
+# a fixed height per row, so more contrasts do not squeeze the panels.
+logo_height <- function(panels) 1.5 + 1.9 * max(1L, ceiling(panels / 2))
+sequence_logo_height <- function(data) logo_height(nrow(dplyr::distinct(data, .data$contrast, .data$regulation)))
+difference_logo_height <- function(data) logo_height(dplyr::n_distinct(data$contrast))
+
 dpa_logo_sites <- prepare_logo_sites(dpa, "diff.site", "FDR.site")
 dpu_logo_sites <- prepare_logo_sites(dpu, "diff_diff", "FDR_I")
 cf_logo_sites <- prepare_logo_sites(cf_results, "diff.site", "FDR.site")
@@ -477,6 +497,9 @@ knitr::kable(modification_counts(dpa))
 
 ```{r}
 #| label: fig-dpa-volcano
+#| fig-width: !expr facet_size(dpa)$width
+#| fig-height: !expr facet_size(dpa)$height
+#| out-width: !expr facet_size(dpa)$out
 #| fig-cap: >-
 #|   Differential PTM abundance by contrast. Each point is one PTM site; the
 #|   x-axis is its site-level log2 fold change and the y-axis is -log10(FDR).
@@ -488,6 +511,9 @@ volcano_plot(dpa, "diff.site", "FDR.site", "Differential PTM abundance")
 
 ```{r}
 #| label: fig-dpa-site-protein
+#| fig-width: !expr facet_size(dpa)$width
+#| fig-height: !expr facet_size(dpa)$height
+#| out-width: !expr facet_size(dpa)$out
 #| fig-cap: >-
 #|   PTM-site log2 fold change as a function of the matched protein log2 fold
 #|   change. Each point is one matched site; the diagonal denotes equal site and
@@ -510,7 +536,7 @@ The logos use significant, sequence-validated PTM sites and separate each contra
 #|   contains one contrast and regulation direction after applying the displayed
 #|   FDR and absolute fold-change thresholds.
 #| fig-width: 12
-#| fig-height: 5.2
+#| fig-height: !expr sequence_logo_height(dpa_logo_sites)
 #| out-width: "60%"
 sequence_logo_plot(dpa_logo_sites)
 ```
@@ -536,7 +562,7 @@ These logos are recomputed from MuData during rendering using **`r logo_selectio
 #|   upregulated sites; letters below zero are enriched around downregulated
 #|   sites in the same contrast.
 #| fig-width: 12
-#| fig-height: 4.2
+#| fig-height: !expr difference_logo_height(dpa_logo_sites)
 #| out-width: "60%"
 difference_logo_plot(dpa_logo_sites)
 ```
@@ -586,6 +612,9 @@ knitr::kable(modification_counts(dpu))
 
 ```{r}
 #| label: fig-dpu-volcano
+#| fig-width: !expr facet_size(dpu)$width
+#| fig-height: !expr facet_size(dpu)$height
+#| out-width: !expr facet_size(dpu)$out
 #| fig-cap: >-
 #|   Differential PTM usage by contrast. Each point is one PTM site; the x-axis
 #|   is the site-minus-protein log2 fold change and the y-axis is -log10(FDR)
@@ -598,6 +627,9 @@ volcano_plot(dpu, "diff_diff", "FDR_I", "Differential PTM usage")
 
 ```{r}
 #| label: fig-dpu-site-protein
+#| fig-width: !expr facet_size(dpu)$width
+#| fig-height: !expr facet_size(dpu)$height
+#| out-width: !expr facet_size(dpu)$out
 #| fig-cap: >-
 #|   Site and protein log2 fold changes used to calculate DPU. Points above the
 #|   diagonal have positive PTM usage changes and points below it have negative
@@ -619,7 +651,7 @@ The DPU logos group sites by the direction of their protein-adjusted change. Pan
 #|   Sequence motifs around sites with significant differential PTM usage,
 #|   separated by contrast and direction.
 #| fig-width: 12
-#| fig-height: 5.2
+#| fig-height: !expr sequence_logo_height(dpu_logo_sites)
 #| out-width: "60%"
 sequence_logo_plot(dpu_logo_sites)
 ```
@@ -644,7 +676,7 @@ These logos are recomputed from MuData during rendering using **`r logo_selectio
 #|   Difference logos for DPU, showing the amino-acid probability around
 #|   upregulated sites minus that around downregulated sites in each contrast.
 #| fig-width: 12
-#| fig-height: 4.2
+#| fig-height: !expr difference_logo_height(dpu_logo_sites)
 #| out-width: "60%"
 difference_logo_plot(dpu_logo_sites)
 ```
@@ -733,6 +765,9 @@ safe_plot(
 
 ```{r}
 #| label: fig-cf-volcano
+#| fig-width: !expr facet_size(cf_results)$width
+#| fig-height: !expr facet_size(cf_results)$height
+#| out-width: !expr facet_size(cf_results)$out
 #| fig-cap: >-
 #|   CorrectFirst differential PTM usage by contrast. Each point is one PTM
 #|   site modelled after sample-level protein correction; the x-axis is its log2
@@ -755,7 +790,7 @@ The CorrectFirst logos use the direction of the effect fitted after sample-level
 #|   Sequence motifs around sites with significant CorrectFirst differential
 #|   PTM usage, separated by contrast and direction.
 #| fig-width: 12
-#| fig-height: 5.2
+#| fig-height: !expr sequence_logo_height(cf_logo_sites)
 #| out-width: "60%"
 sequence_logo_plot(cf_logo_sites)
 ```
@@ -780,7 +815,7 @@ These logos are recomputed from MuData during rendering using **`r logo_selectio
 #|   Difference logos for CorrectFirst DPU, showing the amino-acid probability
 #|   around upregulated sites minus that around downregulated sites.
 #| fig-width: 12
-#| fig-height: 4.2
+#| fig-height: !expr difference_logo_height(cf_logo_sites)
 #| out-width: "60%"
 difference_logo_plot(cf_logo_sites)
 ```

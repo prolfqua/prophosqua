@@ -325,6 +325,37 @@ volcano_plot <- function(data) {
     ggplot2::theme(legend.position = "bottom")
 }
 
+# Figures that grow with the contrasts get, per contrast, the room a
+# single-contrast figure has, and a displayed width in proportion, so their
+# panels and text keep their size on the page. A faceted figure follows
+# ggplot2's panel grid; a dot plot or heatmap has a column per contrast and a
+# row per term.
+figure_size <- function(width, height) {
+  list(width = width, height = height, out = paste0(min(100, round(40 * width / 6)), "%"))
+}
+
+facet_size <- function(data) {
+  dims <- ggplot2::wrap_dims(max(1L, dplyr::n_distinct(data$table$contrast)))
+  figure_size(1 + 5 * dims[[2]], 1.3 + 3.7 * dims[[1]])
+}
+
+term_grid_size <- function(plot, data) {
+  n_contrasts <- dplyr::n_distinct(data$table$contrast)
+  n_terms <- length(unique(ggplot2::layer_data(plot)$y))
+  figure_size(
+    if (n_contrasts > 1L) 4.5 + 0.8 * n_contrasts else 6,
+    max(5, 1.8 + 0.22 * n_terms)
+  )
+}
+
+chunk_size <- function(size) {
+  c(
+    sprintf("#| fig-width: %.1f", size$width),
+    sprintf("#| fig-height: %.1f", size$height),
+    sprintf("#| out-width: '%s'", size$out)
+  )
+}
+
 nonempty_native_results <- function(data) {
   if (is.null(data$native)) {
     return(list())
@@ -533,21 +564,25 @@ render_method <- function(method) {
   method_label <- method_labels[[method]]
   id <- paste(tolower(analysis), tolower(method), sep = "-")
   caption <- function(what) sprintf("%s %s: %s", analysis_labels[[analysis]], method_label, what)
+  sized <- nrow(method_data$table) > 0L
+  dot_size <- if (sized) chunk_size(term_grid_size(dot_plot(method_data), method_data))
+  heatmap_size <- if (sized) chunk_size(term_grid_size(heatmap_plot(method_data), method_data))
+  volcano_size <- if (sized) chunk_size(facet_size(method_data))
   child <- c(
     "::: {.panel-tabset}", "", "## Summary", "",
     "```{r}", sprintf("#| label: tbl-%s-summary", id),
     sprintf("#| tbl-cap: '%s'", caption("result counts by contrast and direction.")),
     "knitr::kable(summary_table(method_data))", "```", "",
     "## Dot plot", "",
-    "```{r}", sprintf("#| label: fig-%s-dotplot", id),
+    "```{r}", sprintf("#| label: fig-%s-dotplot", id), dot_size,
     sprintf("#| fig-cap: '%s'", caption("leading enrichment terms reconstructed from JSON.")),
     "dot_plot(method_data)", "```", "",
     "## Heatmap", "",
-    "```{r}", sprintf("#| label: fig-%s-heatmap", id),
+    "```{r}", sprintf("#| label: fig-%s-heatmap", id), heatmap_size,
     sprintf("#| fig-cap: '%s'", caption("normalized enrichment scores across contrasts.")),
     "heatmap_plot(method_data)", "```", "",
     "## Volcano", "",
-    "```{r}", sprintf("#| label: fig-%s-volcano", id),
+    "```{r}", sprintf("#| label: fig-%s-volcano", id), volcano_size,
     sprintf("#| fig-cap: '%s'", caption("normalized enrichment score versus FDR.")),
     "volcano_plot(method_data)", "```", "",
     "## Rank distributions", "",
