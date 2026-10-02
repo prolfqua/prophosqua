@@ -477,7 +477,8 @@ Usage
   total,
   resources = list(),
   parameters = list(),
-  provenance = list()
+  provenance = list(),
+  total_peptide = NULL
 )</pre>
 </div>
 <h5 class="anchored">
@@ -508,6 +509,12 @@ Analysis parameters. ‘remove_contaminants = TRUE’ drops the features either 
 </dt>
 <dd>
 Source identities recorded during import.
+</dd>
+<dt>
+<code>total_peptide</code>
+</dt>
+<dd>
+Optional peptide-level DEA of the total proteome, with the same samples and contrasts. No analysis reads it; every stage carries it as the modality ‘total_peptide’.
 </dd>
 </dl>
 </div>

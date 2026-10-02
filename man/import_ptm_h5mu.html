@@ -421,7 +421,8 @@ ul.task-list li input[type="checkbox"] {
   total_h5ad,
   output_h5mu,
   parameters = list(),
-  ptmsigdb = NULL
+  ptmsigdb = NULL,
+  total_peptide_h5ad = NULL
 )
 </code></pre>
 </section>
@@ -458,6 +459,14 @@ Analysis parameters, the merged pipeline configuration.
 </td>
 <td>
 Filtered PTMsigDB as ‘.rds’ or ‘.gmt’. When ‘NULL’ and the kinase analyses are enabled, PTMsigDB is downloaded and filtered as ‘parameters$ptmsigdb’ asks.
+</td>
+</tr>
+<tr>
+<td style="white-space: collapse; font-family: monospace; vertical-align: top">
+<code id="total_peptide_h5ad">total_peptide_h5ad</code>
+</td>
+<td>
+Optional peptide-level DEA of the total proteome, with the same samples and contrasts, carried as the modality ‘total_peptide’.
 </td>
 </tr>
 </tbody></table>
