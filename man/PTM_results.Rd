@@ -11,7 +11,7 @@ Final PTM results: the statistics and the enrichment of every enabled analysis
 \details{
 The enrichment is kept in files beside the final MuData, laid out as the
 pipeline lays out each analysis directory: protsea documents for the
-completed PTM-SEA, Kinase GSEA and MEA, CBOR for the kinase-library
+completed PTM-SEA, Kinase GSEA and MEA, gzipped JSON for the kinase-library
 preparations. The MuData holds only their names and checksums; the results
 are read from the files when first asked for.
 }

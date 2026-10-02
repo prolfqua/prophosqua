@@ -29,6 +29,6 @@ Output path, invisibly.
 }
 \description{
 PTM-SEA and Kinase GSEA are written as protsea documents, gzipped JSON; the
-kinase-library inputs as a gzipped CBOR envelope. The MEA is computed by the
+kinase-library inputs as a gzipped JSON envelope. The MEA is computed by the
 kinase-library tool, which writes its own protsea document.
 }

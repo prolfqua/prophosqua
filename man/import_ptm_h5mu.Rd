@@ -9,7 +9,8 @@ import_ptm_h5mu(
   total_h5ad,
   output_h5mu,
   parameters = list(),
-  ptmsigdb = NULL
+  ptmsigdb = NULL,
+  total_peptide_h5ad = NULL
 )
 }
 \arguments{
@@ -22,6 +23,10 @@ import_ptm_h5mu(
 \item{ptmsigdb}{Filtered PTMsigDB as `.rds` or `.gmt`. When `NULL` and the
 kinase analyses are enabled, PTMsigDB is downloaded and filtered as
 `parameters$ptmsigdb` asks.}
+
+\item{total_peptide_h5ad}{Optional peptide-level DEA of the total proteome,
+with the same samples and contrasts, carried as the modality
+`total_peptide`.}
 }
 \value{
 Complete paired-input stage, invisibly.

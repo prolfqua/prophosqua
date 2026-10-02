@@ -8,7 +8,7 @@ test_that("the pipeline layout names one file per stage and analysis", {
   expect_identical(files[["PTMSEA__DPA"]], file.path("out", "PTM_DPA", "result_ptm_sea.json.gz"))
   expect_identical(
     files[["KinaseAssignments__CF"]],
-    file.path("out", "PTM_CF_DPU", "intermediate_kinase_assignments.cbor.gz")
+    file.path("out", "PTM_CF_DPU", "intermediate_kinase_assignments.json.gz")
   )
   expect_length(.ptm_enrichment_files(modifyList(parameters, list(run_kinase = FALSE)), "out"), 0L)
 })

@@ -19,8 +19,9 @@ render_ptm_report(name, output_file, output_dir, params = list())
 Invisibly, the path of the rendered file.
 }
 \description{
-Renders one of the installed Quarto reports, `ptm_statistics.qmd` or
-`ptm_enrichment.qmd`, so a project never carries a copy of a template.
+Renders one of the installed Quarto reports, `ptm_statistics.qmd`,
+`ptm_enrichment.qmd` or the landing page `ptm_index.qmd`, so a project never
+carries a copy of a template.
 }
 \details{
 The template is staged into a private directory under `output_dir`: Quarto

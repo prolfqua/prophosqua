@@ -7,8 +7,8 @@ opt <- parse_args(OptionParser(
     make_option("--output", type = "character", help = "target file"),
     make_option("--stage", type = "character", help = "PTMSEA, KinaseInputs or KinaseGSEA"),
     make_option("--analysis", type = "character", help = "DPA, DPU or CF"),
-    make_option("--kinase_inputs", type = "character", help = "KinaseInputs CBOR"),
-    make_option("--kinase_assignments", type = "character", help = "KinaseAssignments CBOR")
+    make_option("--kinase_inputs", type = "character", help = "KinaseInputs file (json.gz)"),
+    make_option("--kinase_assignments", type = "character", help = "KinaseAssignments file (json.gz)")
   )
 ))
 stopifnot(!is.null(opt$statistics), !is.null(opt$output), !is.null(opt$stage), !is.null(opt$analysis))

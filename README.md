@@ -56,7 +56,7 @@ devtools::install_github('prolfqua/prophosqua', dependencies = TRUE, build_vigne
 
 1. Run DEA with `prolfquapp` for enriched sites and total protein.
 2. Import both `AnnData.h5ad` files, the analysis parameters and the reference data into `PTM_inputs.h5mu`.
-3. Compute DPA, DPU and CorrectFirst into `PTM_statistics.h5mu`, then the enrichment of each analysis into files beside it: PTM-SEA, Kinase GSEA and MEA as protsea documents (`.json.gz`), the kinase-library preparations as gzipped CBOR.
+3. Compute DPA, DPU and CorrectFirst into `PTM_statistics.h5mu`, then the enrichment of each analysis into files beside it: PTM-SEA, Kinase GSEA and MEA as protsea documents (`.json.gz`), the kinase-library preparations as gzipped JSON.
 4. Assemble `PTM_results.h5mu`, which names these files but holds no enrichment, render the reports from it, and export the delivery workbook last. The `ptm-pipeline` workflow coordinates these steps.
 
 Each persisted stage has its own R6 type, and MuData is the persistence boundary:

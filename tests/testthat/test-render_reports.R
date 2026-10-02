@@ -27,12 +27,43 @@ test_that("report_file resolves every analysis report from the installed doc/", 
     "package installed without vignettes built"
   )
 
-  reports <- c("ptm_statistics.qmd", "ptm_enrichment.qmd")
+  reports <- c("ptm_statistics.qmd", "ptm_enrichment.qmd", "ptm_index.qmd")
   for (report in reports) {
     path <- report_file(report)
     expect_true(file.exists(path), info = report)
     expect_equal(basename(dirname(path)), "doc", info = report)
   }
+})
+
+test_that("the landing page links every report and the workbook, and no archive", {
+  skip_if(
+    !nzchar(system.file("doc", "ptm_index.qmd", package = "prophosqua")),
+    "package installed without vignettes built"
+  )
+  skip_if(!nzchar(Sys.which("quarto")), "quarto is not installed")
+  output_dir <- tempfile("index")
+  page <- readLines(
+    suppressMessages(render_ptm_report(
+      "ptm_index.qmd",
+      "index.html",
+      output_dir,
+      params = list(fdr_threshold = 0.05, fold_change_threshold = 0.5, pipeline_version = "0.0.0")
+    )),
+    warn = FALSE
+  )
+  page <- paste(page, collapse = "\n")
+  for (href in c(
+    "ptm_statistics.html",
+    "PTM_DPA/ptm_enrichment.html",
+    "PTM_DPU/ptm_enrichment.html",
+    "PTM_CF_DPU/ptm_enrichment.html",
+    "PTM_results.xlsx"
+  )) {
+    expect_match(page, sprintf('href="%s"', href), fixed = TRUE, info = href)
+  }
+  expect_no_match(page, ".zip", fixed = TRUE)
+  expect_match(page, "CorrectFirst DPU", fixed = TRUE)
+  expect_match(page, "ptm-pipeline 0.0.0", fixed = TRUE)
 })
 
 test_that("report_file says what an install without vignettes is missing", {

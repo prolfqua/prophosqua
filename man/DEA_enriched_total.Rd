@@ -41,7 +41,8 @@ Validate and retain both complete DEA experiments.
   total,
   resources = list(),
   parameters = list(),
-  provenance = list()
+  provenance = list(),
+  total_peptide = NULL
 )}\if{html}{\out{</div>}}
 }
 
@@ -57,6 +58,10 @@ drops the features either DEA flags as contaminants (`CON`); they are
 kept otherwise.}
 
 \item{\code{provenance}}{Source identities recorded during import.}
+
+\item{\code{total_peptide}}{Optional peptide-level DEA of the total proteome,
+with the same samples and contrasts. No analysis reads it; every stage
+carries it as the modality `total_peptide`.}
 }
 \if{html}{\out{</div>}}
 }

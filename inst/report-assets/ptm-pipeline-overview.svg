@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 600" role="img" aria-labelledby="title desc">
+  <title id="title">PTM pipeline from differential expression inputs to reports and result files</title>
+  <desc id="desc">Two differential expression analyses, one on enriched PTM sites and one on the total proteome, enter the PTM statistics stage with its DPA, DPU and CorrectFirst DPU branches. Each branch ranks the sites for PTM-SEA, Kinase GSEA and motif enrichment. The reports and an Excel workbook are delivered together in one archive.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1575b6"/>
+    </marker>
+    <style>
+      .title { font: 700 32px Arial, sans-serif; fill: #17324d; }
+      .label { font: 700 24px Arial, sans-serif; fill: #17324d; }
+      .body { font: 20px Arial, sans-serif; fill: #29485f; }
+      .small { font: 18px Arial, sans-serif; fill: #355b73; }
+      .file { font: 18px "Courier New", monospace; fill: #355b73; }
+      .input { fill: #e7f4fb; stroke: #1575b6; stroke-width: 3; }
+      .analysis { fill: #f2f8fc; stroke: #1575b6; stroke-width: 3; }
+      .branch { fill: #ffffff; stroke: #1575b6; stroke-width: 2; }
+      .output { fill: #eef7ef; stroke: #2f855a; stroke-width: 3; }
+      .arrow { stroke: #1575b6; stroke-width: 5; fill: none; marker-end: url(#arrow); }
+    </style>
+  </defs>
+  <text x="800" y="48" text-anchor="middle" class="title">From two differential expression analyses to PTM reports and result files</text>
+
+  <rect x="40" y="120" width="290" height="130" rx="18" class="input"/>
+  <text x="185" y="165" text-anchor="middle" class="label">PTM site DEA</text>
+  <text x="185" y="198" text-anchor="middle" class="body">enriched sample set</text>
+  <text x="185" y="228" text-anchor="middle" class="small">site abundances per contrast</text>
+
+  <rect x="40" y="350" width="290" height="130" rx="18" class="input"/>
+  <text x="185" y="395" text-anchor="middle" class="label">Total protein DEA</text>
+  <text x="185" y="428" text-anchor="middle" class="body">unenriched sample set</text>
+  <text x="185" y="458" text-anchor="middle" class="small">protein abundances per contrast</text>
+
+  <path d="M 330 185 L 420 185" class="arrow"/>
+  <path d="M 330 415 L 420 415" class="arrow"/>
+
+  <rect x="440" y="90" width="360" height="430" rx="22" class="analysis"/>
+  <text x="620" y="132" text-anchor="middle" class="label">PTM statistics</text>
+  <rect x="470" y="160" width="300" height="86" rx="14" class="branch"/>
+  <text x="620" y="193" text-anchor="middle" class="label">DPA</text>
+  <text x="620" y="226" text-anchor="middle" class="small">site-level change</text>
+  <rect x="470" y="262" width="300" height="86" rx="14" class="branch"/>
+  <text x="620" y="295" text-anchor="middle" class="label">DPU</text>
+  <text x="620" y="328" text-anchor="middle" class="small">site effect − protein effect</text>
+  <rect x="470" y="364" width="300" height="86" rx="14" class="branch"/>
+  <text x="620" y="397" text-anchor="middle" class="label">CorrectFirst DPU</text>
+  <text x="620" y="430" text-anchor="middle" class="small">correct abundances, then model</text>
+  <text x="620" y="495" text-anchor="middle" class="file">ptm_statistics.html</text>
+
+  <path d="M 800 305 L 890 305" class="arrow"/>
+
+  <rect x="910" y="90" width="330" height="430" rx="22" class="analysis"/>
+  <text x="1075" y="132" text-anchor="middle" class="label">Enrichment</text>
+  <text x="1075" y="160" text-anchor="middle" class="small">one report per statistics branch</text>
+  <rect x="940" y="184" width="270" height="70" rx="14" class="branch"/>
+  <text x="1075" y="214" text-anchor="middle" class="label">PTM-SEA</text>
+  <text x="1075" y="242" text-anchor="middle" class="small">signature sets from PTMsigDB</text>
+  <rect x="940" y="272" width="270" height="70" rx="14" class="branch"/>
+  <text x="1075" y="302" text-anchor="middle" class="label">Kinase GSEA</text>
+  <text x="1075" y="330" text-anchor="middle" class="small">Kinase Library substrate scores</text>
+  <rect x="940" y="360" width="270" height="70" rx="14" class="branch"/>
+  <text x="1075" y="390" text-anchor="middle" class="label">MEA</text>
+  <text x="1075" y="418" text-anchor="middle" class="small">motif enrichment analysis</text>
+  <text x="1075" y="495" text-anchor="middle" class="file">ptm_enrichment.html</text>
+
+  <path d="M 1240 305 L 1330 305" class="arrow"/>
+
+  <rect x="1350" y="150" width="215" height="310" rx="22" class="output"/>
+  <text x="1457" y="195" text-anchor="middle" class="label">Result files</text>
+  <text x="1457" y="255" text-anchor="middle" class="file">index.html</text>
+  <text x="1457" y="305" text-anchor="middle" class="file">PTM_results.xlsx</text>
+  <text x="1457" y="375" text-anchor="middle" class="small">delivered together</text>
+  <text x="1457" y="403" text-anchor="middle" class="small">in one zip archive</text>
+</svg>

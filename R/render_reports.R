@@ -1,7 +1,8 @@
 #' Render a Report Shipped with prophosqua
 #'
-#' Renders one of the installed Quarto reports, `ptm_statistics.qmd` or
-#' `ptm_enrichment.qmd`, so a project never carries a copy of a template.
+#' Renders one of the installed Quarto reports, `ptm_statistics.qmd`,
+#' `ptm_enrichment.qmd` or the landing page `ptm_index.qmd`, so a project never
+#' carries a copy of a template.
 #'
 #' The template is staged into a private directory under `output_dir`: Quarto
 #' names its intermediates after the input document, and two renders of the

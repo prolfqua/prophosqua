@@ -12,10 +12,18 @@ opt <- parse_args(OptionParser(
       default = NULL,
       help = "existing filtered reference RDS or GMT to import"
     ),
+    make_option("--total_peptide", type = "character", default = NULL, help = "optional peptide-level total DEA H5AD"),
     make_option("--output", type = "character", help = "paired-input H5MU")
   )
 ))
 stopifnot(!is.null(opt$enriched), !is.null(opt$total), !is.null(opt$config_json), !is.null(opt$output))
 parameters <- jsonlite::fromJSON(opt$config_json, simplifyVector = FALSE)
 dir.create(dirname(opt$output), recursive = TRUE, showWarnings = FALSE)
-prophosqua::import_ptm_h5mu(opt$enriched, opt$total, opt$output, parameters, opt$ptmsigdb)
+prophosqua::import_ptm_h5mu(
+  opt$enriched,
+  opt$total,
+  opt$output,
+  parameters,
+  opt$ptmsigdb,
+  total_peptide_h5ad = opt$total_peptide
+)

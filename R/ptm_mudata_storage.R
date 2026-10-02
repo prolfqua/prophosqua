@@ -146,7 +146,8 @@ read_ptm_h5mu <- function(path, expected = NULL) {
     container$modalities$total,
     resources = .unpack_ptm_value(metadata$resources),
     parameters = .unpack_ptm_value(metadata$parameters),
-    provenance = .unpack_ptm_value(metadata$provenance)
+    provenance = .unpack_ptm_value(metadata$provenance),
+    total_peptide = container$modalities$total_peptide
   )
 }
 
@@ -191,16 +192,30 @@ read_ptm_h5mu <- function(path, expected = NULL) {
 #' @param ptmsigdb Filtered PTMsigDB as `.rds` or `.gmt`. When `NULL` and the
 #'   kinase analyses are enabled, PTMsigDB is downloaded and filtered as
 #'   `parameters$ptmsigdb` asks.
+#' @param total_peptide_h5ad Optional peptide-level DEA of the total proteome,
+#'   with the same samples and contrasts, carried as the modality
+#'   `total_peptide`.
 #' @return Complete paired-input stage, invisibly.
 #' @export
-import_ptm_h5mu <- function(enriched_h5ad, total_h5ad, output_h5mu, parameters = list(), ptmsigdb = NULL) {
-  paths <- c(enriched = enriched_h5ad, total = total_h5ad)
+import_ptm_h5mu <- function(
+  enriched_h5ad,
+  total_h5ad,
+  output_h5mu,
+  parameters = list(),
+  ptmsigdb = NULL,
+  total_peptide_h5ad = NULL
+) {
+  paths <- c(enriched = enriched_h5ad, total = total_h5ad, total_peptide = total_peptide_h5ad)
   inputs <- DEA_enriched_total$new(
     anndataR::read_h5ad(enriched_h5ad),
     anndataR::read_h5ad(total_h5ad),
     resources = .import_ptm_resources(parameters, ptmsigdb),
     parameters = parameters,
-    provenance = list(paths = normalizePath(paths), md5 = unname(tools::md5sum(paths)))
+    provenance = list(
+      paths = stats::setNames(normalizePath(paths), names(paths)),
+      md5 = unname(tools::md5sum(paths))
+    ),
+    total_peptide = if (!is.null(total_peptide_h5ad)) anndataR::read_h5ad(total_peptide_h5ad)
   )
   inputs$write_h5mu(output_h5mu)
   invisible(inputs)

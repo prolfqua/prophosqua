@@ -16,7 +16,17 @@ DEA_enriched_total <- R6::R6Class(
     #'   drops the features either DEA flags as contaminants (`CON`); they are
     #'   kept otherwise.
     #' @param provenance Source identities recorded during import.
-    initialize = function(enriched, total, resources = list(), parameters = list(), provenance = list()) {
+    #' @param total_peptide Optional peptide-level DEA of the total proteome,
+    #'   with the same samples and contrasts. No analysis reads it; every stage
+    #'   carries it as the modality `total_peptide`.
+    initialize = function(
+      enriched,
+      total,
+      resources = list(),
+      parameters = list(),
+      provenance = list(),
+      total_peptide = NULL
+    ) {
       pair <- .ptm_pair(
         prolfquapp::DEAResultReader$new(enriched),
         prolfquapp::DEAResultReader$new(total),
@@ -26,8 +36,14 @@ DEA_enriched_total <- R6::R6Class(
       if (!identical(by_name(pair$site$contrasts), by_name(pair$protein$contrasts))) {
         stop("Paired DEA contrast definitions differ.")
       }
+      if (!is.null(total_peptide)) {
+        .validate_total_peptide(total_peptide, pair)
+      }
       private$pair <- pair
-      private$modalities <- list(enriched = enriched$clone(deep = TRUE), total = total$clone(deep = TRUE))
+      private$modalities <- c(
+        list(enriched = enriched$clone(deep = TRUE), total = total$clone(deep = TRUE)),
+        if (!is.null(total_peptide)) list(total_peptide = total_peptide$clone(deep = TRUE))
+      )
       private$metadata <- list(
         resources = .pack_ptm_value(resources),
         parameters = .pack_ptm_value(parameters),
@@ -56,13 +72,24 @@ DEA_enriched_total <- R6::R6Class(
     #' @description Return a detached storage representation.
     as_container = function() {
       list(
-        modalities = list(enriched = self$get_enriched(), total = self$get_total()),
+        modalities = lapply(private$modalities, function(experiment) experiment$clone(deep = TRUE)),
         obs = self$get_design(),
         uns = list(prophosqua = c(list(schema_version = "2.0.0", stage = "DEA_enriched_total"), private$metadata))
       )
     }
   )
 )
+
+# The peptide-level total DEA belongs to the pair when prolfquapp decodes it
+# with the pair's samples and contrasts.
+.validate_total_peptide <- function(total_peptide, pair) {
+  peptide <- .dea_record(prolfquapp::DEAResultReader$new(total_peptide))
+  .validate_paired_samples(pair$site, peptide)
+  by_name <- function(contrasts) contrasts[order(names(contrasts))]
+  if (!identical(by_name(peptide$contrasts), by_name(pair$site$contrasts))) {
+    stop("Contrast definitions of total_peptide differ from the paired DEA.", call. = FALSE)
+  }
+}
 
 .write_ptm_container <- function(container, path) {
   prolfquapp::write_h5mu(container$modalities, path, container$obs, container$uns)

@@ -1,15 +1,15 @@
 # The enrichment of each analysis is kept in files beside the final MuData,
 # never inside it. The completed PTM-SEA, Kinase GSEA and MEA results are
 # protsea documents, gzipped JSON; the two kinase-library preparations are
-# gzipped CBOR envelopes naming the stage, the analysis and the statistics
+# gzipped JSON envelopes naming the stage, the analysis and the statistics
 # they were computed from.
 
 # The file of each stage in an analysis directory; the pipeline's Snakefile
 # names the same files.
 .ptm_stage_files <- c(
   PTMSEA = "result_ptm_sea.json.gz",
-  KinaseInputs = "intermediate_kinase_inputs.cbor.gz",
-  KinaseAssignments = "intermediate_kinase_assignments.cbor.gz",
+  KinaseInputs = "intermediate_kinase_inputs.json.gz",
+  KinaseAssignments = "intermediate_kinase_assignments.json.gz",
   KinaseGSEA = "result_kinase_gsea.json.gz",
   MEA = "result_mea.json.gz"
 )
@@ -27,7 +27,7 @@
   MEA = list(category = "MEA", objects = "results", method = "gseapy", build = function(x) .mea_result(x))
 )
 
-.ptm_cbor_version <- "1.0.0"
+.ptm_stage_version <- "1.0.0"
 
 .ptm_file_sha256 <- function(path) digest::digest(path, algo = "sha256", file = TRUE)
 
@@ -71,7 +71,7 @@
   name <- class(stage)[1L]
   artifact <- list(
     format = "prophosqua_stage",
-    version = .ptm_cbor_version,
+    version = .ptm_stage_version,
     stage = name,
     analysis = stage$get_analysis(),
     statistics_sha256 = statistics_hash,
@@ -80,12 +80,13 @@
   if (identical(name, "KinaseInputs")) {
     artifact$settings <- stage$get_statistics()$get_inputs()$get_parameters()$kinaselib
   }
-  # gzfile writes a real gzip container; memCompress("gzip") would emit a bare
-  # zlib stream that no gzip reader accepts, and the .gz name would be a lie.
+  # The packed values carry their own types and missing masks, so null stands
+  # for every missing value; 17 significant digits keep each double exact.
+  json <- jsonlite::toJSON(artifact, auto_unbox = TRUE, digits = I(17), na = "null", null = "null")
   .ptm_write_atomic(path, function(temporary) {
-    connection <- gzfile(temporary, "wb")
+    connection <- gzfile(temporary, "w")
     on.exit(close(connection))
-    writeBin(secretbase::cborenc(artifact), connection)
+    writeLines(json, connection)
   })
 }
 
@@ -93,17 +94,22 @@
   if (is.null(path)) {
     stop("Missing ", stage, " input for ", analysis)
   }
-  compressed <- readBin(path, what = "raw", n = file.info(path)$size)
-  artifact <- secretbase::cbordec(memDecompress(compressed, type = "gzip"))
+  connection <- gzfile(path, "r")
+  artifact <- jsonlite::fromJSON(
+    paste(readLines(connection, warn = FALSE), collapse = "\n"),
+    simplifyDataFrame = FALSE,
+    simplifyMatrix = FALSE
+  )
+  close(connection)
   .require_ptm_fields(artifact, c("format", "version", "stage", "analysis", "statistics_sha256", "result"), path)
-  if (!identical(artifact$format, "prophosqua_stage") || !identical(artifact$version, .ptm_cbor_version)) {
-    stop("Unsupported PTM CBOR artifact: ", path)
+  if (!identical(artifact$format, "prophosqua_stage") || !identical(artifact$version, .ptm_stage_version)) {
+    stop("Unsupported PTM stage file: ", path)
   }
   if (!identical(artifact$stage, stage) || !identical(artifact$analysis, analysis)) {
-    stop("Wrong PTM CBOR stage or analysis: ", path)
+    stop("Wrong PTM stage or analysis: ", path)
   }
   if (!identical(artifact$statistics_sha256, statistics_hash)) {
-    stop("PTM CBOR artifact was produced from different statistics: ", path)
+    stop("PTM stage file was produced from different statistics: ", path)
   }
   .unpack_ptm_value(artifact$result)
 }
@@ -146,7 +152,7 @@
 #' Compute one enrichment result, or the kinase-library inputs, of one analysis
 #'
 #' PTM-SEA and Kinase GSEA are written as protsea documents, gzipped JSON; the
-#' kinase-library inputs as a gzipped CBOR envelope. The MEA is computed by the
+#' kinase-library inputs as a gzipped JSON envelope. The MEA is computed by the
 #' kinase-library tool, which writes its own protsea document.
 #' @param statistics_h5mu The shared, read-only statistics MuData file.
 #' @param output Output file, as the pipeline lays out an analysis directory.

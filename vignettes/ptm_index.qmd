@@ -1,0 +1,142 @@
+---
+title: "PTM analysis results"
+params:
+  input_h5mu: null
+  fdr_threshold: 0.05
+  fold_change_threshold: 0.5
+  pipeline_version: "unknown"
+vignette: >
+  %\VignetteIndexEntry{PTM Analysis Results: Landing Page}
+  %\VignetteEngine{quarto::format}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup}
+#| include: false
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+input_h5mu <- params$input_h5mu
+if (is.null(input_h5mu) || !length(input_h5mu) || !nzchar(input_h5mu)) {
+  input_h5mu <- system.file("extdata", "ptm_results_example", "PTM_results.h5mu", package = "prophosqua")
+}
+# Any PTM stage carries the paired DEA inputs, their design and the pipeline
+# parameters; the pipeline passes PTM_inputs.h5mu, the smallest of them.
+stage <- prophosqua::read_ptm_h5mu(input_h5mu)
+inputs <- if (inherits(stage, "DEA_enriched_total")) stage else stage$get_statistics()$get_inputs()
+parameters <- inputs$get_parameters()
+contrasts <- names(inputs$get_contrasts())
+dea_paths <- inputs$get_provenance()$paths
+dea_labels <- c(
+  enriched = "PTM site DEA",
+  total = "Total protein DEA",
+  total_peptide = "Total peptide DEA"
+)
+
+analysis_labels <- c(dpa = "DPA", dpu = "DPU", cf = "CorrectFirst DPU")
+analyses <- names(parameters$analyses)
+labels <- unname(analysis_labels[analyses])
+subdirs <- vapply(parameters$analyses, function(analysis) analysis$subdir, character(1))
+run_kinase <- isTRUE(parameters$run_kinase)
+delivery <- basename(dirname(normalizePath(input_h5mu)))
+generated_at <- format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z")
+
+link <- function(text, href) sprintf("[%s](%s)", text, href)
+button <- function(text, href, style) sprintf("[%s](%s){.btn .btn-%s .btn-sm .mb-1}", text, href, style)
+file_table <- function(table) knitr::kable(table, escape = FALSE, col.names = c("Open", "What it contains", "File"))
+```
+
+::: {.panel-tabset}
+
+# Overview
+
+:::: {.grid}
+
+::: {.g-col-12 .g-col-lg-7}
+<img src="`r knitr::image_uri(system.file("report-assets", "ptm-pipeline-overview.svg", package = "prophosqua"))`" alt="Two differential expression analyses, on enriched PTM sites and on the total proteome, enter the PTM statistics stage with its DPA, DPU and CorrectFirst DPU branches. Each branch feeds PTM-SEA, Kinase GSEA and motif enrichment. The reports and an Excel workbook are delivered in one archive." style="width: 100%; max-height: 24rem; object-fit: contain;">
+:::
+
+::: {.g-col-12 .g-col-lg-5}
+::: {.callout-note appearance="simple" icon=false title="Open the results"}
+Two DEAs, of the PTM sites and of the total proteome, enter three statistics branches: **DPA**, the change of each site; **DPU**, the site change minus its protein change; and **CorrectFirst DPU**, a model fitted to protein-corrected site abundances.`r if (run_kinase) " Each branch's site ranking feeds PTM-SEA, Kinase GSEA and MEA."`
+
+**`r length(contrasts)`** contrast`r if (length(contrasts) != 1) "s"`: `r paste(contrasts, collapse = "; ")`. Significant at FDR < `r params$fdr_threshold` and |log2 fold change| > `r params$fold_change_threshold`.
+
+```{r buttons}
+#| results: asis
+cat(button("PTM statistics report", "ptm_statistics.html", "primary"), "\n")
+if (run_kinase) {
+  cat(button(paste(labels, "enrichment"), file.path(subdirs, "ptm_enrichment.html"), "outline-primary"), "\n")
+}
+cat(button("Excel workbook", "PTM_results.xlsx", "outline-secondary"), "\n")
+```
+:::
+:::
+
+::::
+
+# Reports and files
+
+```{r reports}
+#| tbl-cap: "Interactive HTML reports. Each report opens in the browser and carries its own overview, methods and provenance sections."
+reports <- data.frame(
+  open = link("PTM statistics", "ptm_statistics.html"),
+  contents = "DPA, DPU and CorrectFirst DPU side by side: input summary, volcano plots, site versus protein plots, sequence and difference logos, summaries and searchable result tables per contrast.",
+  file = "`ptm_statistics.html`"
+)
+if (run_kinase) {
+  reports <- rbind(reports, data.frame(
+    open = link(paste(labels, "enrichment"), file.path(subdirs, "ptm_enrichment.html")),
+    contents = paste0(
+      "PTM-SEA, Kinase GSEA and MEA for the ", labels,
+      " ranking: enrichment overview, summary plots, running-score plots and the complete tested-term tables."
+    ),
+    file = paste0("`", file.path(subdirs, "ptm_enrichment.html"), "`")
+  ))
+}
+file_table(reports)
+```
+
+```{r results}
+#| tbl-cap: "Result tables for your own filtering and plotting in Excel or R."
+file_table(data.frame(
+  open = link("Excel workbook", "PTM_results.xlsx"),
+  contents = paste0(
+    "One sheet per statistics branch (", paste(labels, collapse = ", "),
+    ") with site identifiers, positions, modified residues, log2 fold changes, p-values and FDR per contrast, plus the enrichment result tables."
+  ),
+  file = "`PTM_results.xlsx`"
+))
+```
+
+# Analysis settings
+
+```{r settings}
+#| tbl-cap: "Settings of this analysis as recorded with its results."
+settings <- data.frame(
+  Setting = c(
+    "Results folder",
+    "Contrasts",
+    "FDR threshold",
+    "Absolute log2 fold-change threshold",
+    "Statistics branches",
+    "Enrichment",
+    if (length(dea_paths)) unname(dea_labels[names(dea_paths)]),
+    "Pipeline",
+    "Generated at"
+  ),
+  Value = c(
+    delivery,
+    paste(contrasts, collapse = "; "),
+    format(params$fdr_threshold),
+    format(params$fold_change_threshold),
+    paste(labels, collapse = ", "),
+    if (run_kinase) "PTM-SEA, Kinase GSEA, MEA" else "not run",
+    if (length(dea_paths)) unname(basename(dirname(dirname(dea_paths)))),
+    paste("ptm-pipeline", params$pipeline_version),
+    generated_at
+  )
+)
+knitr::kable(settings)
+```
+
+:::

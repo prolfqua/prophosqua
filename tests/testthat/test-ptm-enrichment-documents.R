@@ -78,7 +78,7 @@ test_that("kinase preparations must come from the statistics they are restored o
   statistics_hash <- .ptm_file_sha256(fixture$statistics_path)
   expect_s3_class(.read_ptm_preparation(inputs, "KinaseInputs", "DPA", statistics_hash)$seqwindows, "data.frame")
   expect_error(.read_ptm_preparation(inputs, "KinaseInputs", "DPA", strrep("0", 64)), "different statistics")
-  expect_error(.read_ptm_preparation(inputs, "KinaseAssignments", "DPA", statistics_hash), "Wrong PTM CBOR stage")
+  expect_error(.read_ptm_preparation(inputs, "KinaseAssignments", "DPA", statistics_hash), "Wrong PTM stage")
   results <- PTM_results$new(fixture$final$get_statistics(), fixture$files, strrep("0", 64))
   expect_error(results$get_enrichments(), "different statistics")
 })

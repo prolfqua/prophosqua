@@ -55,3 +55,24 @@ test_that("portable report values preserve empty results, named ranks and missin
   )
   expect_equal(.unpack_ptm_value(.pack_ptm_value(value)), value)
 })
+
+test_that("the peptide-level total DEA travels through every stage as a passive modality", {
+  paths <- anndata_pair_fixture()
+  input <- tempfile(fileext = ".h5mu")
+  output <- tempfile(fileext = ".h5mu")
+  # The protein DEA stands in for a peptide-level one: same samples, same contrasts.
+  import_ptm_h5mu(paths$site, paths$protein, input, total_peptide_h5ad = paths$protein)
+  inputs <- read_ptm_h5mu(input, DEA_enriched_total)
+  expect_equal(names(inputs$get_provenance()$paths), c("enriched", "total", "total_peptide"))
+  suppressWarnings(compute_ptm_results_h5mu(input, output))
+  container <- prolfquapp::read_h5mu(output)
+  expect_equal(
+    names(container$modalities),
+    c("enriched", "total", "total_peptide", "enriched_CF")
+  )
+  expect_equal(
+    container$modalities$total_peptide$X,
+    anndataR::read_h5ad(paths$protein)$X,
+    ignore_attr = TRUE
+  )
+})
