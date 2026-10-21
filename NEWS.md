@@ -1,5 +1,7 @@
 # prophosqua 0.3.0
 
+- The enrichment report shows the ranked-site distributions and the term similarity as one numbered figure each, with lettered panels: one per contrast for the distributions, the enrichment map and the term-similarity tree for the similarity. The panels no longer repeat the figure caption, and the distribution panels drop their per-contrast title, which the subcaption now carries. A missing enrichment map or similarity tree is shown as an empty panel that says why.
+
 - A peptide-level DEA of the total proteome travels with the PTM stages. `import_ptm_h5mu()` takes an optional `total_peptide_h5ad` (the import command's `--total_peptide`), and `DEA_enriched_total$new()` takes it as `total_peptide`; it must have the paired DEAs' samples and contrasts. Every stage file carries it as the modality `total_peptide`; no analysis, report or export reads it yet. The recorded input paths are named by modality, and the landing page labels each input DEA by that name.
 
 - New report `ptm_index.qmd`, the landing page of a pipeline run, rendered with `render_ptm_report()` like the statistics and enrichment reports; it moved here from ptm-pipeline, whose projects no longer carry a copy. It reads the contrasts, branches and input DEAs from any PTM stage file, takes the thresholds and the pipeline version as parameters, and has three tabs: Overview, with the pipeline figure (`report-assets/ptm-pipeline-overview.svg`) beside a box that links every report and the workbook; Reports and files; and Analysis settings.

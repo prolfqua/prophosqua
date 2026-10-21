@@ -389,10 +389,6 @@ rank_distribution_plots <- function(data) {
       fill = "p.adjust"
     ) +
       ggplot2::labs(
-        title = paste0(
-          gsub("_", " ", contrast_name, fixed = TRUE),
-          " · ranked-site distributions"
-        ),
         x = "Site ranking statistic",
         fill = "FDR"
       ) +
@@ -461,21 +457,13 @@ term_similarity_plots <- function(data) {
       ),
     error = function(e) NULL
   )
-  plots <- Filter(Negate(is.null), list(map, tree))
-  attr(plots, "tree_unavailable") <- is.null(tree) && !is.null(map)
-  plots
+  list(map = map, tree = tree)
 }
 
 print_term_similarity <- function(data) {
   plots <- term_similarity_plots(data)
-  if (!length(plots)) {
-    plots <- list(empty_plot("No term-similarity plot can be drawn for these results."))
-  } else if (isTRUE(attr(plots, "tree_unavailable"))) {
-    plots <- c(plots, list(empty_plot("A similarity tree could not be constructed for these sets.")))
-  }
-  for (plot in plots) {
-    print(plot)
-  }
+  print(if (is.null(plots$map)) empty_plot("No enrichment map can be drawn for these results.") else plots$map)
+  print(if (is.null(plots$tree)) empty_plot("A similarity tree could not be constructed for these sets.") else plots$tree)
   invisible(NULL)
 }
 
@@ -559,6 +547,15 @@ knitr::kable(overview)
 
 ```{r method-helper}
 #| include: false
+# One numbered figure whose panels are lettered, instead of one figure per
+# printed plot that all repeat the same caption.
+subcaptions <- function(labels) {
+  if (!length(labels)) {
+    return(character())
+  }
+  c("#| fig-subcap:", sprintf("#|   - '%s'", labels))
+}
+
 render_method <- function(method) {
   method_data <- enrichment[[method]]
   method_label <- method_labels[[method]]
@@ -568,6 +565,7 @@ render_method <- function(method) {
   dot_size <- if (sized) chunk_size(term_grid_size(dot_plot(method_data), method_data))
   heatmap_size <- if (sized) chunk_size(term_grid_size(heatmap_plot(method_data), method_data))
   volcano_size <- if (sized) chunk_size(facet_size(method_data))
+  ridge_contrasts <- gsub("_", " ", names(nonempty_native_results(method_data)), fixed = TRUE)
   child <- c(
     "::: {.panel-tabset}", "", "## Summary", "",
     "```{r}", sprintf("#| label: tbl-%s-summary", id),
@@ -589,6 +587,7 @@ render_method <- function(method) {
     "```{r}", sprintf("#| label: fig-%s-ridge", id),
     "#| layout-ncol: 2", "#| out-width: '100%'",
     sprintf("#| fig-cap: '%s'", caption("ranked-site distributions of leading terms, one panel per contrast.")),
+    subcaptions(ridge_contrasts),
     "print_rank_distributions(method_data)", "```", "",
     "## Gene-set network", "",
     "```{r}", sprintf("#| label: fig-%s-network", id),
@@ -598,6 +597,7 @@ render_method <- function(method) {
     "```{r}", sprintf("#| label: fig-%s-similarity", id),
     "#| layout-ncol: 2", "#| out-width: '100%'",
     sprintf("#| fig-cap: '%s'", caption("term overlap map and similarity tree.")),
+    subcaptions(c("Enrichment map", "Term-similarity tree")),
     "print_term_similarity(method_data)", "```", "",
     "## Results", "",
     "```{r}", sprintf("#| label: tbl-%s-results", id),
