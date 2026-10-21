@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.10.18">
+<meta name="generator" content="quarto-1.10.19">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -42,10 +42,10 @@ ul.task-list li input[type="checkbox"] {
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-bf27225e3a48a9273f3daa8f8e829971.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-d76b89148f2051d413c67903796ad183.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-d7887780f02896508125a9451238a397.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -411,6 +411,7 @@ ul.task-list li input[type="checkbox"] {
 <section id="prophosqua-0.3.0" class="level1">
 <h1>prophosqua 0.3.0</h1>
 <ul>
+<li><p>The enrichment report shows the ranked-site distributions and the term similarity as one numbered figure each, with lettered panels: one per contrast for the distributions, the enrichment map and the term-similarity tree for the similarity. The panels no longer repeat the figure caption, and the distribution panels drop their per-contrast title, which the subcaption now carries. A missing enrichment map or similarity tree is shown as an empty panel that says why.</p></li>
 <li><p>A peptide-level DEA of the total proteome travels with the PTM stages. <code>import_ptm_h5mu()</code> takes an optional <code>total_peptide_h5ad</code> (the import command’s <code>--total_peptide</code>), and <code>DEA_enriched_total$new()</code> takes it as <code>total_peptide</code>; it must have the paired DEAs’ samples and contrasts. Every stage file carries it as the modality <code>total_peptide</code>; no analysis, report or export reads it yet. The recorded input paths are named by modality, and the landing page labels each input DEA by that name.</p></li>
 <li><p>New report <code>ptm_index.qmd</code>, the landing page of a pipeline run, rendered with <code>render_ptm_report()</code> like the statistics and enrichment reports; it moved here from ptm-pipeline, whose projects no longer carry a copy. It reads the contrasts, branches and input DEAs from any PTM stage file, takes the thresholds and the pipeline version as parameters, and has three tabs: Overview, with the pipeline figure (<code>report-assets/ptm-pipeline-overview.svg</code>) beside a box that links every report and the workbook; Reports and files; and Analysis settings.</p></li>
 <li><p>Reports, the workbook and the enrichments use only the rows whose site estimate is observed; every analysis is still computed from all <code>lm_impute</code> models, and MuData keeps every row. <code>get_tables()</code> of <code>PTM_statistics</code> and <code>PTM_results</code> returns the observed DPA, DPU and CF rows by default and every row with <code>estimates = "all"</code>, so PTM-SEA, the kinase inputs and the Kinase GSEA rank observed sites only. <code>get_estimate_counts()</code> counts the rows of each analysis and contrast by estimate type before the filter; the workbook carries it as the <code>estimate_counts</code> sheet, and each Summary tab of the statistics report shows it. The report filters with the exported <code>observed_site_estimates()</code>. The CorrectFirst the reports, the workbook (<code>CF</code>, <code>abundances_site_cf</code>, <code>CF_intensities</code>) and the enrichments show is the variant corrected with the protein DEA’s imputed values, <code>correct_first_protein_imputed</code>, returned by the new <code>PTM_statistics$get_cf_reported()</code>; CF and the site-imputed variant stay in MuData. <code>test_diff()</code> returns only the matched site and protein pairs: the site-only and protein-only rows it appended, which carried no usage difference, and their <code>measured_In</code> column are gone, so DPU has no more rows than there are matched sites. The DPU availability table leaves the report, and the unused match-rate section leaves <code>_Overview_PhosphoAndIntegration_site.Rmd</code>. The statistics report’s CorrectFirst DPU section opens with a Summary tab, as DPA and DPU do, which replaces the Model summary tab. The three Summary tabs share one layout, the estimate counts beside the observed rows by modified residue; the contrasts and the site-protein match rates, which concern all three analyses, move to the Overview. Every report figure that grows with the contrasts is sized by them, so reports with many contrasts no longer squeeze their panels: the sequence and difference logos by their rows of panels; the statistics volcanoes and site-versus-protein plots, and the enrichment volcanoes, by ggplot2’s panel grid, a single-contrast figure’s size per panel; the enrichment dot plots and heatmaps by their contrast columns and term rows. The displayed width grows with the figure, so panels and text keep their size on the page.</p></li>
