@@ -5,44 +5,42 @@
 \title{Kinase-Library Motif-Scan Assignments of One Analysis}
 \description{
 Kinase-Library Motif-Scan Assignments of One Analysis
-
-Kinase-Library Motif-Scan Assignments of One Analysis
 }
 \section{Super class}{
-\code{\link[prophosqua:PTM_enrichment]{prophosqua::PTM_enrichment}} -> \code{KinaseAssignments}
+\code{\link[prophosqua:PTM_enrichment]{PTM_enrichment}} -> \code{KinaseAssignments}
 }
 \section{Methods}{
 \subsection{Public methods}{
-\itemize{
-\item \href{#method-KinaseAssignments-clone}{\code{KinaseAssignments$clone()}}
+  \itemize{
+    \item \href{#method-KinaseAssignments-clone}{\code{KinaseAssignments$clone()}}
+  }
 }
-}
-\if{html}{\out{
-<details open><summary>Inherited methods</summary>
+\if{html}{\out{<details open><summary>Inherited methods</summary>
 <ul>
-<li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_analysis"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_analysis'><code>prophosqua::PTM_enrichment$get_analysis()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_results"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_results'><code>prophosqua::PTM_enrichment$get_results()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_source"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_source'><code>prophosqua::PTM_enrichment$get_source()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_statistics"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_statistics'><code>prophosqua::PTM_enrichment$get_statistics()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="initialize"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-initialize'><code>prophosqua::PTM_enrichment$initialize()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_analysis"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_analysis'><code>PTM_enrichment$get_analysis()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_results"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_results'><code>PTM_enrichment$get_results()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_source"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_source'><code>PTM_enrichment$get_source()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_statistics"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_statistics'><code>PTM_enrichment$get_statistics()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="initialize"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-initialize'><code>PTM_enrichment$initialize()</code></a></span></li>
 </ul>
-</details>
-}}
+</details>}}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-KinaseAssignments-clone"></a>}}
 \if{latex}{\out{\hypertarget{method-KinaseAssignments-clone}{}}}
-\subsection{Method \code{clone()}}{
-The objects of this class are cloneable with this method.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{KinaseAssignments$clone(deep = FALSE)}\if{html}{\out{</div>}}
+\subsection{\code{KinaseAssignments$clone()}}{
+  The objects of this class are cloneable with this method.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{KinaseAssignments$clone(deep = FALSE)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{deep}}{Whether to make a deep clone.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{deep}}{Whether to make a deep clone.}
-}
-\if{html}{\out{</div>}}
-}
-}
 }

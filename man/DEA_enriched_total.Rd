@@ -4,190 +4,205 @@
 \alias{DEA_enriched_total}
 \title{Complete paired enriched and total DEA experiments}
 \description{
-Complete paired enriched and total DEA experiments
-
-Complete paired enriched and total DEA experiments
-}
-\details{
 The first PTM stage: both DEA experiments as prolfquapp wrote them, with the
 reference resources and analysis parameters imported beside them. MuData is
 the persistence boundary of every stage.
 }
 \section{Methods}{
 \subsection{Public methods}{
-\itemize{
-\item \href{#method-DEA_enriched_total-new}{\code{DEA_enriched_total$new()}}
-\item \href{#method-DEA_enriched_total-get_enriched}{\code{DEA_enriched_total$get_enriched()}}
-\item \href{#method-DEA_enriched_total-get_total}{\code{DEA_enriched_total$get_total()}}
-\item \href{#method-DEA_enriched_total-get_design}{\code{DEA_enriched_total$get_design()}}
-\item \href{#method-DEA_enriched_total-get_contrasts}{\code{DEA_enriched_total$get_contrasts()}}
-\item \href{#method-DEA_enriched_total-get_pair}{\code{DEA_enriched_total$get_pair()}}
-\item \href{#method-DEA_enriched_total-get_resources}{\code{DEA_enriched_total$get_resources()}}
-\item \href{#method-DEA_enriched_total-get_parameters}{\code{DEA_enriched_total$get_parameters()}}
-\item \href{#method-DEA_enriched_total-get_provenance}{\code{DEA_enriched_total$get_provenance()}}
-\item \href{#method-DEA_enriched_total-write_h5mu}{\code{DEA_enriched_total$write_h5mu()}}
-\item \href{#method-DEA_enriched_total-as_container}{\code{DEA_enriched_total$as_container()}}
-\item \href{#method-DEA_enriched_total-clone}{\code{DEA_enriched_total$clone()}}
-}
+  \itemize{
+    \item \href{#method-DEA_enriched_total-initialize}{\code{DEA_enriched_total$new()}}
+    \item \href{#method-DEA_enriched_total-get_enriched}{\code{DEA_enriched_total$get_enriched()}}
+    \item \href{#method-DEA_enriched_total-get_total}{\code{DEA_enriched_total$get_total()}}
+    \item \href{#method-DEA_enriched_total-get_design}{\code{DEA_enriched_total$get_design()}}
+    \item \href{#method-DEA_enriched_total-get_contrasts}{\code{DEA_enriched_total$get_contrasts()}}
+    \item \href{#method-DEA_enriched_total-get_pair}{\code{DEA_enriched_total$get_pair()}}
+    \item \href{#method-DEA_enriched_total-get_resources}{\code{DEA_enriched_total$get_resources()}}
+    \item \href{#method-DEA_enriched_total-get_parameters}{\code{DEA_enriched_total$get_parameters()}}
+    \item \href{#method-DEA_enriched_total-get_provenance}{\code{DEA_enriched_total$get_provenance()}}
+    \item \href{#method-DEA_enriched_total-write_h5mu}{\code{DEA_enriched_total$write_h5mu()}}
+    \item \href{#method-DEA_enriched_total-as_container}{\code{DEA_enriched_total$as_container()}}
+    \item \href{#method-DEA_enriched_total-clone}{\code{DEA_enriched_total$clone()}}
+  }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-DEA_enriched_total-new"></a>}}
-\if{latex}{\out{\hypertarget{method-DEA_enriched_total-new}{}}}
-\subsection{Method \code{new()}}{
-Validate and retain both complete DEA experiments.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{DEA_enriched_total$new(
+\if{html}{\out{<a id="method-DEA_enriched_total-initialize"></a>}}
+\if{latex}{\out{\hypertarget{method-DEA_enriched_total-initialize}{}}}
+\subsection{\code{DEA_enriched_total$new()}}{
+  Validate and retain both complete DEA experiments.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{DEA_enriched_total$new(
   enriched,
   total,
   resources = list(),
   parameters = list(),
   provenance = list(),
   total_peptide = NULL
-)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{enriched, total}}{AnnData experiments written by prolfquapp.}
-
-\item{\code{resources}}{Imported reference data.}
-
-\item{\code{parameters}}{Analysis parameters. `remove_contaminants = TRUE`
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{enriched, total}}{AnnData experiments written by prolfquapp.}
+      \item{\code{resources}}{Imported reference data.}
+      \item{\code{parameters}}{Analysis parameters. `remove_contaminants = TRUE`
 drops the features either DEA flags as contaminants (`CON`); they are
 kept otherwise.}
-
-\item{\code{provenance}}{Source identities recorded during import.}
-
-\item{\code{total_peptide}}{Optional peptide-level DEA of the total proteome,
+      \item{\code{provenance}}{Source identities recorded during import.}
+      \item{\code{total_peptide}}{Optional peptide-level DEA of the total proteome,
 with the same samples and contrasts. No analysis reads it; every stage
 carries it as the modality `total_peptide`.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
-\if{html}{\out{</div>}}
-}
-}
+
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-DEA_enriched_total-get_enriched"></a>}}
 \if{latex}{\out{\hypertarget{method-DEA_enriched_total-get_enriched}{}}}
-\subsection{Method \code{get_enriched()}}{
-Return an independent enriched experiment.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{DEA_enriched_total$get_enriched()}\if{html}{\out{</div>}}
+\subsection{\code{DEA_enriched_total$get_enriched()}}{
+  Return an independent enriched experiment.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{DEA_enriched_total$get_enriched()}
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-DEA_enriched_total-get_total"></a>}}
 \if{latex}{\out{\hypertarget{method-DEA_enriched_total-get_total}{}}}
-\subsection{Method \code{get_total()}}{
-Return an independent total experiment.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{DEA_enriched_total$get_total()}\if{html}{\out{</div>}}
+\subsection{\code{DEA_enriched_total$get_total()}}{
+  Return an independent total experiment.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{DEA_enriched_total$get_total()}
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-DEA_enriched_total-get_design"></a>}}
 \if{latex}{\out{\hypertarget{method-DEA_enriched_total-get_design}{}}}
-\subsection{Method \code{get_design()}}{
-Return shared design in enriched sample order.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{DEA_enriched_total$get_design()}\if{html}{\out{</div>}}
+\subsection{\code{DEA_enriched_total$get_design()}}{
+  Return shared design in enriched sample order.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{DEA_enriched_total$get_design()}
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-DEA_enriched_total-get_contrasts"></a>}}
 \if{latex}{\out{\hypertarget{method-DEA_enriched_total-get_contrasts}{}}}
-\subsection{Method \code{get_contrasts()}}{
-Return stored named contrast expressions.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{DEA_enriched_total$get_contrasts()}\if{html}{\out{</div>}}
+\subsection{\code{DEA_enriched_total$get_contrasts()}}{
+  Return stored named contrast expressions.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{DEA_enriched_total$get_contrasts()}
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-DEA_enriched_total-get_pair"></a>}}
 \if{latex}{\out{\hypertarget{method-DEA_enriched_total-get_pair}{}}}
-\subsection{Method \code{get_pair()}}{
-Return the experiments as prolfquapp's reader decoded them.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{DEA_enriched_total$get_pair()}\if{html}{\out{</div>}}
+\subsection{\code{DEA_enriched_total$get_pair()}}{
+  Return the experiments as prolfquapp's reader decoded them.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{DEA_enriched_total$get_pair()}
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-DEA_enriched_total-get_resources"></a>}}
 \if{latex}{\out{\hypertarget{method-DEA_enriched_total-get_resources}{}}}
-\subsection{Method \code{get_resources()}}{
-Return imported reference resources.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{DEA_enriched_total$get_resources()}\if{html}{\out{</div>}}
+\subsection{\code{DEA_enriched_total$get_resources()}}{
+  Return imported reference resources.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{DEA_enriched_total$get_resources()}
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-DEA_enriched_total-get_parameters"></a>}}
 \if{latex}{\out{\hypertarget{method-DEA_enriched_total-get_parameters}{}}}
-\subsection{Method \code{get_parameters()}}{
-Return recorded analysis parameters.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{DEA_enriched_total$get_parameters()}\if{html}{\out{</div>}}
+\subsection{\code{DEA_enriched_total$get_parameters()}}{
+  Return recorded analysis parameters.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{DEA_enriched_total$get_parameters()}
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-DEA_enriched_total-get_provenance"></a>}}
 \if{latex}{\out{\hypertarget{method-DEA_enriched_total-get_provenance}{}}}
-\subsection{Method \code{get_provenance()}}{
-Return original source identities.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{DEA_enriched_total$get_provenance()}\if{html}{\out{</div>}}
+\subsection{\code{DEA_enriched_total$get_provenance()}}{
+  Return original source identities.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{DEA_enriched_total$get_provenance()}
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-DEA_enriched_total-write_h5mu"></a>}}
 \if{latex}{\out{\hypertarget{method-DEA_enriched_total-write_h5mu}{}}}
-\subsection{Method \code{write_h5mu()}}{
-Write this complete stage atomically.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{DEA_enriched_total$write_h5mu(path)}\if{html}{\out{</div>}}
+\subsection{\code{DEA_enriched_total$write_h5mu()}}{
+  Write this complete stage atomically.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{DEA_enriched_total$write_h5mu(path)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{path}}{Destination H5MU file.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{path}}{Destination H5MU file.}
-}
-\if{html}{\out{</div>}}
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-DEA_enriched_total-as_container"></a>}}
 \if{latex}{\out{\hypertarget{method-DEA_enriched_total-as_container}{}}}
-\subsection{Method \code{as_container()}}{
-Return a detached storage representation.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{DEA_enriched_total$as_container()}\if{html}{\out{</div>}}
+\subsection{\code{DEA_enriched_total$as_container()}}{
+  Return a detached storage representation.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{DEA_enriched_total$as_container()}
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-DEA_enriched_total-clone"></a>}}
 \if{latex}{\out{\hypertarget{method-DEA_enriched_total-clone}{}}}
-\subsection{Method \code{clone()}}{
-The objects of this class are cloneable with this method.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{DEA_enriched_total$clone(deep = FALSE)}\if{html}{\out{</div>}}
+\subsection{\code{DEA_enriched_total$clone()}}{
+  The objects of this class are cloneable with this method.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{DEA_enriched_total$clone(deep = FALSE)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{deep}}{Whether to make a deep clone.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{deep}}{Whether to make a deep clone.}
-}
-\if{html}{\out{</div>}}
-}
-}
 }

@@ -4,74 +4,69 @@
 \alias{KinaseInputs}
 \title{Kinase-Library Inputs of One Analysis}
 \description{
-Kinase-Library Inputs of One Analysis
-
-Kinase-Library Inputs of One Analysis
-}
-\details{
 The sequence windows the kinase-library tool scans and the ranked windows of
 each contrast its motif enrichment walks.
 }
 \section{Super class}{
-\code{\link[prophosqua:PTM_enrichment]{prophosqua::PTM_enrichment}} -> \code{KinaseInputs}
+\code{\link[prophosqua:PTM_enrichment]{PTM_enrichment}} -> \code{KinaseInputs}
 }
 \section{Methods}{
 \subsection{Public methods}{
-\itemize{
-\item \href{#method-KinaseInputs-new}{\code{KinaseInputs$new()}}
-\item \href{#method-KinaseInputs-clone}{\code{KinaseInputs$clone()}}
+  \itemize{
+    \item \href{#method-KinaseInputs-initialize}{\code{KinaseInputs$new()}}
+    \item \href{#method-KinaseInputs-clone}{\code{KinaseInputs$clone()}}
+  }
 }
-}
-\if{html}{\out{
-<details open><summary>Inherited methods</summary>
+\if{html}{\out{<details open><summary>Inherited methods</summary>
 <ul>
-<li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_analysis"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_analysis'><code>prophosqua::PTM_enrichment$get_analysis()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_results"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_results'><code>prophosqua::PTM_enrichment$get_results()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_source"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_source'><code>prophosqua::PTM_enrichment$get_source()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_statistics"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_statistics'><code>prophosqua::PTM_enrichment$get_statistics()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_analysis"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_analysis'><code>PTM_enrichment$get_analysis()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_results"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_results'><code>PTM_enrichment$get_results()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_source"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_source'><code>PTM_enrichment$get_source()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_statistics"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_statistics'><code>PTM_enrichment$get_statistics()</code></a></span></li>
 </ul>
-</details>
-}}
+</details>}}
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-KinaseInputs-new"></a>}}
-\if{latex}{\out{\hypertarget{method-KinaseInputs-new}{}}}
-\subsection{Method \code{new()}}{
-Compute the kinase-library inputs of one analysis, or restore them.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{KinaseInputs$new(
+\if{html}{\out{<a id="method-KinaseInputs-initialize"></a>}}
+\if{latex}{\out{\hypertarget{method-KinaseInputs-initialize}{}}}
+\subsection{\code{KinaseInputs$new()}}{
+  Compute the kinase-library inputs of one analysis, or restore them.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{KinaseInputs$new(
   source,
   analysis,
   result = .compute_kinaseinputs_stage(source, analysis)
-)}\if{html}{\out{</div>}}
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{source}}{Complete PTM_statistics stage.}
+      \item{\code{analysis}}{DPA, DPU or CF.}
+      \item{\code{result}}{Stored result, when restoring.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{source}}{Complete PTM_statistics stage.}
-
-\item{\code{analysis}}{DPA, DPU or CF.}
-
-\item{\code{result}}{Stored result, when restoring.}
-}
-\if{html}{\out{</div>}}
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-KinaseInputs-clone"></a>}}
 \if{latex}{\out{\hypertarget{method-KinaseInputs-clone}{}}}
-\subsection{Method \code{clone()}}{
-The objects of this class are cloneable with this method.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{KinaseInputs$clone(deep = FALSE)}\if{html}{\out{</div>}}
+\subsection{\code{KinaseInputs$clone()}}{
+  The objects of this class are cloneable with this method.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{KinaseInputs$clone(deep = FALSE)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{deep}}{Whether to make a deep clone.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{deep}}{Whether to make a deep clone.}
-}
-\if{html}{\out{</div>}}
-}
-}
 }

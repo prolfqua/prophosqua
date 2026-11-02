@@ -5,65 +5,63 @@
 \title{PTM-SEA of One Analysis against PTMsigDB}
 \description{
 PTM-SEA of One Analysis against PTMsigDB
-
-PTM-SEA of One Analysis against PTMsigDB
 }
 \section{Super class}{
-\code{\link[prophosqua:PTM_enrichment]{prophosqua::PTM_enrichment}} -> \code{PTMSEA}
+\code{\link[prophosqua:PTM_enrichment]{PTM_enrichment}} -> \code{PTMSEA}
 }
 \section{Methods}{
 \subsection{Public methods}{
-\itemize{
-\item \href{#method-PTMSEA-new}{\code{PTMSEA$new()}}
-\item \href{#method-PTMSEA-clone}{\code{PTMSEA$clone()}}
+  \itemize{
+    \item \href{#method-PTMSEA-initialize}{\code{PTMSEA$new()}}
+    \item \href{#method-PTMSEA-clone}{\code{PTMSEA$clone()}}
+  }
 }
-}
-\if{html}{\out{
-<details open><summary>Inherited methods</summary>
+\if{html}{\out{<details open><summary>Inherited methods</summary>
 <ul>
-<li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_analysis"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_analysis'><code>prophosqua::PTM_enrichment$get_analysis()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_results"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_results'><code>prophosqua::PTM_enrichment$get_results()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_source"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_source'><code>prophosqua::PTM_enrichment$get_source()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_statistics"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_statistics'><code>prophosqua::PTM_enrichment$get_statistics()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_analysis"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_analysis'><code>PTM_enrichment$get_analysis()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_results"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_results'><code>PTM_enrichment$get_results()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_source"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_source'><code>PTM_enrichment$get_source()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_statistics"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_statistics'><code>PTM_enrichment$get_statistics()</code></a></span></li>
 </ul>
-</details>
-}}
+</details>}}
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-PTMSEA-new"></a>}}
-\if{latex}{\out{\hypertarget{method-PTMSEA-new}{}}}
-\subsection{Method \code{new()}}{
-Compute PTM-SEA of one analysis, or restore it.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{PTMSEA$new(source, analysis, result = .compute_ptmsea_stage(source, analysis))}\if{html}{\out{</div>}}
+\if{html}{\out{<a id="method-PTMSEA-initialize"></a>}}
+\if{latex}{\out{\hypertarget{method-PTMSEA-initialize}{}}}
+\subsection{\code{PTMSEA$new()}}{
+  Compute PTM-SEA of one analysis, or restore it.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{PTMSEA$new(source, analysis, result = .compute_ptmsea_stage(source, analysis))}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{source}}{Complete PTM_statistics stage.}
+      \item{\code{analysis}}{DPA, DPU or CF.}
+      \item{\code{result}}{Stored result, when restoring.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{source}}{Complete PTM_statistics stage.}
-
-\item{\code{analysis}}{DPA, DPU or CF.}
-
-\item{\code{result}}{Stored result, when restoring.}
-}
-\if{html}{\out{</div>}}
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-PTMSEA-clone"></a>}}
 \if{latex}{\out{\hypertarget{method-PTMSEA-clone}{}}}
-\subsection{Method \code{clone()}}{
-The objects of this class are cloneable with this method.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{PTMSEA$clone(deep = FALSE)}\if{html}{\out{</div>}}
+\subsection{\code{PTMSEA$clone()}}{
+  The objects of this class are cloneable with this method.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{PTMSEA$clone(deep = FALSE)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{deep}}{Whether to make a deep clone.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{deep}}{Whether to make a deep clone.}
-}
-\if{html}{\out{</div>}}
-}
-}
 }

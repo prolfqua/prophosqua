@@ -4,11 +4,6 @@
 \alias{PTM_results}
 \title{Final PTM results: the statistics and the enrichment of every enabled analysis}
 \description{
-Final PTM results: the statistics and the enrichment of every enabled analysis
-
-Final PTM results: the statistics and the enrichment of every enabled analysis
-}
-\details{
 The enrichment is kept in files beside the final MuData, laid out as the
 pipeline lays out each analysis directory: protsea documents for the
 completed PTM-SEA, Kinase GSEA and MEA, gzipped JSON for the kinase-library
@@ -17,141 +12,154 @@ are read from the files when first asked for.
 }
 \section{Methods}{
 \subsection{Public methods}{
-\itemize{
-\item \href{#method-PTM_results-new}{\code{PTM_results$new()}}
-\item \href{#method-PTM_results-get_statistics}{\code{PTM_results$get_statistics()}}
-\item \href{#method-PTM_results-get_enrichments}{\code{PTM_results$get_enrichments()}}
-\item \href{#method-PTM_results-get_enrichment_document}{\code{PTM_results$get_enrichment_document()}}
-\item \href{#method-PTM_results-get_tables}{\code{PTM_results$get_tables()}}
-\item \href{#method-PTM_results-get_estimate_counts}{\code{PTM_results$get_estimate_counts()}}
-\item \href{#method-PTM_results-write_h5mu}{\code{PTM_results$write_h5mu()}}
-\item \href{#method-PTM_results-clone}{\code{PTM_results$clone()}}
-}
+  \itemize{
+    \item \href{#method-PTM_results-initialize}{\code{PTM_results$new()}}
+    \item \href{#method-PTM_results-get_statistics}{\code{PTM_results$get_statistics()}}
+    \item \href{#method-PTM_results-get_enrichments}{\code{PTM_results$get_enrichments()}}
+    \item \href{#method-PTM_results-get_enrichment_document}{\code{PTM_results$get_enrichment_document()}}
+    \item \href{#method-PTM_results-get_tables}{\code{PTM_results$get_tables()}}
+    \item \href{#method-PTM_results-get_estimate_counts}{\code{PTM_results$get_estimate_counts()}}
+    \item \href{#method-PTM_results-write_h5mu}{\code{PTM_results$write_h5mu()}}
+    \item \href{#method-PTM_results-clone}{\code{PTM_results$clone()}}
+  }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-PTM_results-new"></a>}}
-\if{latex}{\out{\hypertarget{method-PTM_results-new}{}}}
-\subsection{Method \code{new()}}{
-Pair the statistics with the enrichment files of every enabled analysis.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{PTM_results$new(statistics, files = character(), statistics_sha256 = NULL)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{statistics}}{Complete PTM_statistics stage.}
-
-\item{\code{files}}{Every stage file of every enabled analysis, keyed by stage
+\if{html}{\out{<a id="method-PTM_results-initialize"></a>}}
+\if{latex}{\out{\hypertarget{method-PTM_results-initialize}{}}}
+\subsection{\code{PTM_results$new()}}{
+  Pair the statistics with the enrichment files of every enabled analysis.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{PTM_results$new(statistics, files = character(), statistics_sha256 = NULL)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{statistics}}{Complete PTM_statistics stage.}
+      \item{\code{files}}{Every stage file of every enabled analysis, keyed by stage
 and analysis, as the pipeline lays them out.}
-
-\item{\code{statistics_sha256}}{Checksum of the statistics file the kinase
+      \item{\code{statistics_sha256}}{Checksum of the statistics file the kinase
 preparations were computed from.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
-\if{html}{\out{</div>}}
-}
-}
+
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-PTM_results-get_statistics"></a>}}
 \if{latex}{\out{\hypertarget{method-PTM_results-get_statistics}{}}}
-\subsection{Method \code{get_statistics()}}{
-Return the complete statistics component.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{PTM_results$get_statistics()}\if{html}{\out{</div>}}
+\subsection{\code{PTM_results$get_statistics()}}{
+  Return the complete statistics component.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{PTM_results$get_statistics()}
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-PTM_results-get_enrichments"></a>}}
 \if{latex}{\out{\hypertarget{method-PTM_results-get_enrichments}{}}}
-\subsection{Method \code{get_enrichments()}}{
-Return the completed PTMSEA, KinaseGSEA and MEA of every enabled analysis.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{PTM_results$get_enrichments()}\if{html}{\out{</div>}}
+\subsection{\code{PTM_results$get_enrichments()}}{
+  Return the completed PTMSEA, KinaseGSEA and MEA of every enabled analysis.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{PTM_results$get_enrichments()}
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-PTM_results-get_enrichment_document"></a>}}
 \if{latex}{\out{\hypertarget{method-PTM_results-get_enrichment_document}{}}}
-\subsection{Method \code{get_enrichment_document()}}{
-Return the protsea document of one completed enrichment, as JSON text.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{PTM_results$get_enrichment_document(method, analysis)}\if{html}{\out{</div>}}
+\subsection{\code{PTM_results$get_enrichment_document()}}{
+  Return the protsea document of one completed enrichment, as JSON text.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{PTM_results$get_enrichment_document(method, analysis)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{method}}{PTMSEA, KinaseGSEA or MEA.}
+      \item{\code{analysis}}{DPA, DPU or CF.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{method}}{PTMSEA, KinaseGSEA or MEA.}
-
-\item{\code{analysis}}{DPA, DPU or CF.}
-}
-\if{html}{\out{</div>}}
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-PTM_results-get_tables"></a>}}
 \if{latex}{\out{\hypertarget{method-PTM_results-get_tables}{}}}
-\subsection{Method \code{get_tables()}}{
-Return standard statistics and abundance tables.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{PTM_results$get_tables(estimates = c("observed", "all"))}\if{html}{\out{</div>}}
+\subsection{\code{PTM_results$get_tables()}}{
+  Return standard statistics and abundance tables.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{PTM_results$get_tables(estimates = c("observed", "all"))}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{estimates}}{`"observed"` keeps the DPA, DPU and CF rows whose site
+estimate is observed; `"all"` keeps every row.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{estimates}}{`"observed"` keeps the DPA, DPU and CF rows whose site
-estimate is observed; `"all"` keeps every row.}
-}
-\if{html}{\out{</div>}}
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-PTM_results-get_estimate_counts"></a>}}
 \if{latex}{\out{\hypertarget{method-PTM_results-get_estimate_counts}{}}}
-\subsection{Method \code{get_estimate_counts()}}{
-Count the DPA, DPU and CF rows of each contrast by site
+\subsection{\code{PTM_results$get_estimate_counts()}}{
+  Count the DPA, DPU and CF rows of each contrast by site
   estimate type, before the imputed ones are dropped.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{PTM_results$get_estimate_counts()}\if{html}{\out{</div>}}
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{PTM_results$get_estimate_counts()}
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-PTM_results-write_h5mu"></a>}}
 \if{latex}{\out{\hypertarget{method-PTM_results-write_h5mu}{}}}
-\subsection{Method \code{write_h5mu()}}{
-Write the final artifact atomically. The enrichment files
+\subsection{\code{PTM_results$write_h5mu()}}{
+  Write the final artifact atomically. The enrichment files
   must lie beside it.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{PTM_results$write_h5mu(path)}\if{html}{\out{</div>}}
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{PTM_results$write_h5mu(path)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{path}}{Destination H5MU file.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{path}}{Destination H5MU file.}
-}
-\if{html}{\out{</div>}}
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-PTM_results-clone"></a>}}
 \if{latex}{\out{\hypertarget{method-PTM_results-clone}{}}}
-\subsection{Method \code{clone()}}{
-The objects of this class are cloneable with this method.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{PTM_results$clone(deep = FALSE)}\if{html}{\out{</div>}}
+\subsection{\code{PTM_results$clone()}}{
+  The objects of this class are cloneable with this method.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{PTM_results$clone(deep = FALSE)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{deep}}{Whether to make a deep clone.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{deep}}{Whether to make a deep clone.}
-}
-\if{html}{\out{</div>}}
-}
-}
 }

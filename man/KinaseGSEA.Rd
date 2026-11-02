@@ -5,69 +5,67 @@
 \title{Kinase GSEA of One Analysis against the Motif-Scan Assignments}
 \description{
 Kinase GSEA of One Analysis against the Motif-Scan Assignments
-
-Kinase GSEA of One Analysis against the Motif-Scan Assignments
 }
 \section{Super class}{
-\code{\link[prophosqua:PTM_enrichment]{prophosqua::PTM_enrichment}} -> \code{KinaseGSEA}
+\code{\link[prophosqua:PTM_enrichment]{PTM_enrichment}} -> \code{KinaseGSEA}
 }
 \section{Methods}{
 \subsection{Public methods}{
-\itemize{
-\item \href{#method-KinaseGSEA-new}{\code{KinaseGSEA$new()}}
-\item \href{#method-KinaseGSEA-clone}{\code{KinaseGSEA$clone()}}
+  \itemize{
+    \item \href{#method-KinaseGSEA-initialize}{\code{KinaseGSEA$new()}}
+    \item \href{#method-KinaseGSEA-clone}{\code{KinaseGSEA$clone()}}
+  }
 }
-}
-\if{html}{\out{
-<details open><summary>Inherited methods</summary>
+\if{html}{\out{<details open><summary>Inherited methods</summary>
 <ul>
-<li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_analysis"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_analysis'><code>prophosqua::PTM_enrichment$get_analysis()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_results"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_results'><code>prophosqua::PTM_enrichment$get_results()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_source"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_source'><code>prophosqua::PTM_enrichment$get_source()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_statistics"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_statistics'><code>prophosqua::PTM_enrichment$get_statistics()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_analysis"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_analysis'><code>PTM_enrichment$get_analysis()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_results"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_results'><code>PTM_enrichment$get_results()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_source"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_source'><code>PTM_enrichment$get_source()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="prophosqua" data-topic="PTM_enrichment" data-id="get_statistics"><a href='../../prophosqua/html/PTM_enrichment.html#method-PTM_enrichment-get_statistics'><code>PTM_enrichment$get_statistics()</code></a></span></li>
 </ul>
-</details>
-}}
+</details>}}
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-KinaseGSEA-new"></a>}}
-\if{latex}{\out{\hypertarget{method-KinaseGSEA-new}{}}}
-\subsection{Method \code{new()}}{
-Compute the kinase GSEA of one analysis, or restore it.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{KinaseGSEA$new(
+\if{html}{\out{<a id="method-KinaseGSEA-initialize"></a>}}
+\if{latex}{\out{\hypertarget{method-KinaseGSEA-initialize}{}}}
+\subsection{\code{KinaseGSEA$new()}}{
+  Compute the kinase GSEA of one analysis, or restore it.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{KinaseGSEA$new(
   source,
   analysis,
   result = .compute_kinasegsea_stage(source, analysis)
-)}\if{html}{\out{</div>}}
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{source}}{Complete KinaseAssignments stage.}
+      \item{\code{analysis}}{DPA, DPU or CF.}
+      \item{\code{result}}{Stored result, when restoring.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{source}}{Complete KinaseAssignments stage.}
-
-\item{\code{analysis}}{DPA, DPU or CF.}
-
-\item{\code{result}}{Stored result, when restoring.}
-}
-\if{html}{\out{</div>}}
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-KinaseGSEA-clone"></a>}}
 \if{latex}{\out{\hypertarget{method-KinaseGSEA-clone}{}}}
-\subsection{Method \code{clone()}}{
-The objects of this class are cloneable with this method.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{KinaseGSEA$clone(deep = FALSE)}\if{html}{\out{</div>}}
+\subsection{\code{KinaseGSEA$clone()}}{
+  The objects of this class are cloneable with this method.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{KinaseGSEA$clone(deep = FALSE)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{deep}}{Whether to make a deep clone.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{deep}}{Whether to make a deep clone.}
-}
-\if{html}{\out{</div>}}
-}
-}
 }

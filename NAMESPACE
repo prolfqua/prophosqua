@@ -34,48 +34,56 @@ export(render_ptm_report)
 export(report_file)
 export(test_diff)
 importFrom(R6,R6Class)
-importFrom(dplyr,arrange)
-importFrom(dplyr,case_when)
-importFrom(dplyr,filter)
-importFrom(dplyr,group_by)
-importFrom(dplyr,mutate)
-importFrom(dplyr,pull)
-importFrom(dplyr,slice_min)
-importFrom(dplyr,summarize)
-importFrom(ggplot2,aes)
-importFrom(ggplot2,annotate)
-importFrom(ggplot2,element_text)
-importFrom(ggplot2,facet_wrap)
-importFrom(ggplot2,geom_hline)
-importFrom(ggplot2,geom_point)
-importFrom(ggplot2,geom_rect)
-importFrom(ggplot2,geom_segment)
-importFrom(ggplot2,geom_text)
-importFrom(ggplot2,geom_tile)
-importFrom(ggplot2,geom_vline)
-importFrom(ggplot2,ggplot)
-importFrom(ggplot2,ggtitle)
-importFrom(ggplot2,guide_legend)
-importFrom(ggplot2,guides)
-importFrom(ggplot2,labs)
-importFrom(ggplot2,scale_alpha_manual)
-importFrom(ggplot2,scale_color_gradient2)
-importFrom(ggplot2,scale_color_manual)
-importFrom(ggplot2,scale_fill_gradient2)
-importFrom(ggplot2,scale_fill_manual)
-importFrom(ggplot2,scale_linetype_manual)
-importFrom(ggplot2,scale_shape_manual)
-importFrom(ggplot2,scale_x_continuous)
-importFrom(ggplot2,theme)
-importFrom(ggplot2,theme_bw)
-importFrom(ggplot2,theme_minimal)
+importFrom(dplyr,
+  arrange,
+  case_when,
+  filter,
+  group_by,
+  mutate,
+  pull,
+  slice_min,
+  summarize
+)
+importFrom(ggplot2,
+  aes,
+  annotate,
+  element_text,
+  facet_wrap,
+  geom_hline,
+  geom_point,
+  geom_rect,
+  geom_segment,
+  geom_text,
+  geom_tile,
+  geom_vline,
+  ggplot,
+  ggtitle,
+  guide_legend,
+  guides,
+  labs,
+  scale_alpha_manual,
+  scale_color_gradient2,
+  scale_color_manual,
+  scale_fill_gradient2,
+  scale_fill_manual,
+  scale_linetype_manual,
+  scale_shape_manual,
+  scale_x_continuous,
+  theme,
+  theme_bw,
+  theme_minimal
+)
 importFrom(ggseqlogo,ggseqlogo)
 importFrom(optparse,make_option)
 importFrom(patchwork,wrap_plots)
 importFrom(purrr,map_dfr)
 importFrom(rlang,.data)
-importFrom(stats,p.adjust)
-importFrom(stats,pt)
-importFrom(stats,reorder)
-importFrom(utils,setTxtProgressBar)
-importFrom(utils,txtProgressBar)
+importFrom(stats,
+  p.adjust,
+  pt,
+  reorder
+)
+importFrom(utils,
+  setTxtProgressBar,
+  txtProgressBar
+)

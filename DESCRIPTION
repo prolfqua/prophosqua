@@ -21,7 +21,6 @@ BugReports: https://github.com/prolfqua/prophosqua/issues
 Encoding: UTF-8
 LazyData: true
 LazyDataCompression: xz
-RoxygenNote: 7.3.3
 VignetteBuilder: quarto
 Depends:
     R (>= 4.1.0)
@@ -74,3 +73,4 @@ Remotes:
     github::prolfqua/prolfquapp,
     github::prolfqua/protsea,
     github::wolski/anndataR
+Config/roxygen2/version: 8.1.1
