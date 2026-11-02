@@ -94,7 +94,6 @@ run_ptmsea <- function(ranks_list, pathways, min_size = 3, max_size = 500, n_per
       pvalueCutoff = pvalueCutoff,
       pAdjustMethod = "BH",
       verbose = FALSE,
-      by = "fgsea",
       nPermSimple = n_perm
     )
   })
