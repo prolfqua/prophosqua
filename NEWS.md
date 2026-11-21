@@ -1,5 +1,6 @@
 # prophosqua 0.3.0
 
+- Requires prolfqua >= 1.9.5 and calls its renamed configuration functions (`r6_extract_values()`, `list_to_analysis_configuration()`).
 - PTM-SEA runs again with clusterProfiler 4.20 (Bioconductor 3.23). That release removed the `by` argument of `GSEA()`, and PTM-SEA failed with `unused argument (by = "fgsea")`.
 
 - The enrichment report shows the ranked-site distributions and the term similarity as one numbered figure each, with lettered panels: one per contrast for the distributions, the enrichment map and the term-similarity tree for the similarity. The panels no longer repeat the figure caption, and the distribution panels drop their per-contrast title, which the subcaption now carries. A missing enrichment map or similarity tree is shown as an empty panel that says why.

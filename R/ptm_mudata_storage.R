@@ -40,7 +40,7 @@
   )
   metadata <- c(
     result[.CF_METADATA],
-    list(ptm_config = prolfqua::R6_extract_values(result$ptm_data$get_config()))
+    list(ptm_config = prolfqua::r6_extract_values(result$ptm_data$get_config()))
   )
   cf$uns$prophosqua <- list(cf = .pack_ptm_value(metadata))
   cf <- .add_ptm_method(cf, result$results, "correct_first", contrasts)
@@ -58,7 +58,7 @@
 .cf_ptm_data <- function(cf, config) {
   values <- as.matrix(cf$X)
   dimnames(values) <- list(cf$obs_names, as.data.frame(cf$var)$site)
-  .cf_lfqdata(values, cf$var, cf$obs, prolfqua::list_to_AnalysisConfiguration(config))
+  .cf_lfqdata(values, cf$var, cf$obs, prolfqua::list_to_analysis_configuration(config))
 }
 
 # Corrected values, samples x site ids, as an LFQData: joined to the site keys
