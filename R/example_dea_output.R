@@ -15,7 +15,6 @@
   config$hierarchy_depth <- length(hierarchy)
   config$factors <- list(G_ = "G_")
   config$factor_depth <- 1
-  config$isotope_label <- "isotopeLabel"
   config$ident_q_value <- "qValue"
   config$nr_children <- "nr_children"
   config$sample_name <- "Name"
@@ -41,7 +40,6 @@
 .example_dea_dir <- function(dea_dir, long, hierarchy, row_annot, contrasts) {
   long$intensity <- 2^long$normalized_abundance
   long$normalized_abundance <- NULL
-  long$isotopeLabel <- "light"
   long$qValue <- 0
   long$nr_children <- 1L
   config <- .example_dea_config(hierarchy)
