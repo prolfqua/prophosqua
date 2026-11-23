@@ -406,6 +406,7 @@ ul.task-list li input[type="checkbox"] {
 <section id="prophosqua-0.3.0" class="level1">
 <h1>prophosqua 0.3.0</h1>
 <ul>
+<li><p>Copies its run scripts and splits the site keys with prolfquapp’s <code>script_copy_helper_vec()</code> and <code>separate_hierarchy()</code>, which moved there from prolfqua 1.9.5; requires prolfquapp &gt;= 2.11.2.</p></li>
 <li><p>The example DEA output (<code>.example_dea_dir()</code>) no longer sets an isotope label, which label-free prolfqua 1.9.5 removed.</p></li>
 <li><p>Requires prolfqua &gt;= 1.9.5 and calls its renamed configuration functions (<code>r6_extract_values()</code>, <code>list_to_analysis_configuration()</code>).</p></li>
 <li><p>PTM-SEA runs again with clusterProfiler 4.20 (Bioconductor 3.23). That release removed the <code>by</code> argument of <code>GSEA()</code>, and PTM-SEA failed with <code>unused argument (by = "fgsea")</code>.</p></li>
