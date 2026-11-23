@@ -7,7 +7,7 @@ copy_phospho_integration <- function(workdir = getwd()) {
     "application/_Overview_PhosphoAndIntegration_site.Rmd",
     "application/bibliography2025.bib"
   )
-  prolfqua::script_copy_helper_vec(runscripts, workdir = workdir, packagename = "prophosqua")
+  prolfquapp::script_copy_helper_vec(runscripts, workdir = workdir, packagename = "prophosqua")
 }
 
 #' Copy the PTM Command Wrapper into a Working Directory
@@ -24,12 +24,12 @@ copy_phospho_integration <- function(workdir = getwd()) {
 #'
 #' @param workdir directory where to copy the wrapper - default is the current
 #'   working directory.
-#' @return The path copied, from [prolfqua::script_copy_helper_vec()].
+#' @return The path copied, from [prolfquapp::script_copy_helper_vec()].
 #' @export
 #' @examples
 #' basename(copy_ptm_shell_script(tempdir()))
 copy_ptm_shell_script <- function(workdir = getwd()) {
-  copied <- prolfqua::script_copy_helper_vec(
+  copied <- prolfquapp::script_copy_helper_vec(
     file.path("application", "bin", "ptm.sh"),
     workdir = workdir,
     packagename = "prophosqua"

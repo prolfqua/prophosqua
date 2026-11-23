@@ -1,5 +1,6 @@
 # prophosqua 0.3.0
 
+- Copies its run scripts and splits the site keys with prolfquapp's `script_copy_helper_vec()` and `separate_hierarchy()`, which moved there from prolfqua 1.9.5; requires prolfquapp >= 2.11.2.
 - The example DEA output (`.example_dea_dir()`) no longer sets an isotope label, which label-free prolfqua 1.9.5 removed.
 - Requires prolfqua >= 1.9.5 and calls its renamed configuration functions (`r6_extract_values()`, `list_to_analysis_configuration()`).
 - PTM-SEA runs again with clusterProfiler 4.20 (Bioconductor 3.23). That release removed the `by` argument of `GSEA()`, and PTM-SEA failed with `unused argument (by = "fgsea")`.

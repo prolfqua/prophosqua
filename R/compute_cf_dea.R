@@ -236,7 +236,7 @@ compute_cf_dea <- function(phospho_dea_dir, protein_dea_dir, remove_contaminants
 .cf_wide <- function(ptm_data) {
   wide <- ptm_data$data_wide()
   list(
-    wide_data = prolfqua::separate_hierarchy(wide$data, ptm_data$get_config()),
+    wide_data = prolfquapp::separate_hierarchy(wide$data, ptm_data$get_config()),
     wide_annotation = wide$annotation
   )
 }

@@ -36,7 +36,7 @@ Imports:
     optparse,
     patchwork,
     prolfqua (>= 1.9.5),
-    prolfquapp (>= 2.10.5),
+    prolfquapp (>= 2.11.2),
     protsea,
     purrr,
     R6,

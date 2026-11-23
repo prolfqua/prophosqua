@@ -11,7 +11,7 @@ copy_ptm_shell_script(workdir = getwd())
 working directory.}
 }
 \value{
-The path copied, from [prolfqua::script_copy_helper_vec()].
+The path copied, from [prolfquapp::script_copy_helper_vec()].
 }
 \description{
 Places `ptm.sh` from `inst/application/bin` in `workdir`. It is one script
