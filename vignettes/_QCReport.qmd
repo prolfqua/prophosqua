@@ -188,11 +188,10 @@ prot_annot <- prolfquapp::dataset_protein_annot(
   protein_annot = "fasta.header",
   more_columns = "nrPeptides")
 
-psm$qValue <- 1 - psm$Probability
+psm$identification_confidence <- psm$Probability
 
 config <- prolfqua::AnalysisConfiguration$new()
 config$ident_score = "Probability"
-config$ident_q_value = "qValue"
 config$file_name = "channel"
 
 config$opt_rt = "Retention"

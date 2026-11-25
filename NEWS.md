@@ -1,5 +1,6 @@
 # prophosqua 0.3.0
 
+- Follows prolfqua 1.9.11's `identification_confidence`, which replaced `ident_q_value`: the example DEA output sets the confidence to 1, the QC report uses the PeptideProphet probability as confidence, and the example PTM results (`PTM_results.h5mu`) are rebuilt so their stored configuration loads; their statistics are unchanged.
 - Copies its run scripts and splits the site keys with prolfquapp's `script_copy_helper_vec()` and `separate_hierarchy()`, which moved there from prolfqua 1.9.5; requires prolfquapp >= 2.11.2.
 - The example DEA output (`.example_dea_dir()`) no longer sets an isotope label, which label-free prolfqua 1.9.5 removed.
 - Requires prolfqua >= 1.9.5 and calls its renamed configuration functions (`r6_extract_values()`, `list_to_analysis_configuration()`).
